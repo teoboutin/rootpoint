@@ -56,3 +56,10 @@ An agent or a script drives the editor through a text protocol of commands: it p
 operations and reads back the state. It is met when an LLM session can build and change a
 presentation while the GUI shows the result live, and when the same commands drive a headless
 session in tests.
+
+## The editor and presenter mode run in a web browser `##runs-in-browser`
+
+The tool also builds to WebAssembly, so a presentation can be edited and shown in a browser with no
+install. It is met when the same editing operations and presenter mode work in a browser build as
+in the native build. The owner may abandon this goal if it constrains the design more than its use
+justifies.

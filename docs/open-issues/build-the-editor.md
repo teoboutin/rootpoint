@@ -20,8 +20,8 @@ protocol do not exist. Their design is not discussed yet.
 Every goal of rootpoint is unmet while this stands: `goal@rootpoint@real-presentations`,
 `goal@rootpoint@no-language-no-build`, `goal@rootpoint@free-slide-division`,
 `goal@rootpoint@minimal-content-set`, `goal@rootpoint@presenter-mode`,
-`goal@rootpoint@readable-save-file`, `goal@rootpoint@headless-core` and
-`goal@rootpoint@text-command-protocol`.
+`goal@rootpoint@readable-save-file`, `goal@rootpoint@headless-core`,
+`goal@rootpoint@text-command-protocol` and `goal@rootpoint@runs-in-browser`.
 
 ### What would close it
 
