@@ -1,0 +1,10 @@
+[package]
+name = "xtask"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+knowledge-architect = "=0.8.0"
+knowledge-architect-gates = "=0.8.0"

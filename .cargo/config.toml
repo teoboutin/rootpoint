@@ -1,0 +1,6 @@
+[alias]
+x = "run -q -p xtask --"
+klarch = "run -q --release -p xtask -- klarch"
+
+[env]
+ROOTPOINT_CHECKOUT = { value = ".", relative = true, force = true }
