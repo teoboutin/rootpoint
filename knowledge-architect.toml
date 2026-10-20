@@ -1,0 +1,60 @@
+# What this project declares must stay conformant, and what is exempt from it.
+#
+# This file is the manifest knowledge-architect's checker reads, run here as `cargo klarch`, and
+# its presence is what makes a directory a project root: the tool walks up from the working
+# directory looking for this name and refuses to run without it. Nothing about this repository
+# is compiled into the tool, so the same binary checks a mock project under
+# `tools/rules-corpus/tests/projects/` with no special case anywhere.
+#
+# Every list here is a claim about this repository that a checker enforces. A path that
+# should not be checked has to say so here, in one place, with a reason next to it.
+#
+# The walk parses `.md` and `.rs` and nothing else, so no reference in this file is checked. A
+# comment here names a decision in the reference grammar, `<kind>@<anchor>@<id>`, and writes a
+# path the way the declaration beside it writes one, relative to this file's own directory.
+
+
+# This describes the project structure and its components
+# Each component is described by a path to the project root
+# Each component must have:
+# <component_path>/README.md : what the component does and how to use (API for libraries, CLI for binaries)
+# <component_path>/CLAUDE.md : any knowledge about the code that is useful for someone working inside the component
+# and the home of every component-scoped register:
+# - design    : the current decided design. `docs/design.md`, or a `docs/design/` directory whose
+#               README.md is the head and table of contents. Exactly one of the two shapes, never
+#               both.
+# - goal      : what the component is for. `docs/goals.md` or `docs/goals/`, same two shapes.
+# - rejected  : the designs not kept, and why. `docs/rejected.md` or `docs/rejected/`.
+# - tripwire  : what would reopen a decision. `docs/tripwires.md` or `docs/tripwires/`.
+# - issue     : what is currently open. `docs/open-issues/`, one file per entry, with a
+#               hand-written README.md and a generated index.md.
+
+# The project itself counts as a component, and carries the same documents.
+
+[project]
+name = "rootpoint"
+# The exact version of the checker this project runs: the `=` requirement every `Cargo.toml`
+# naming `knowledge-architect` carries. The binary refuses every command when the two differ,
+# so moving the pin edits both. The binary tests of rules-corpus read it here, to give each
+# copied mock project the version the binary accepts.
+checker-version = "0.8.0"
+# The command a session runs the checker by. knowledge-architect prints it in its messages and
+# fills it into the installed agent skills at install, so a change here is followed by
+# `cargo klarch install-agent-skills`.
+command = "cargo klarch"
+components = [
+]
+
+[walk]
+
+skip-dirs=[]
+skip-files=[]
+
+
+[commits]
+# `commits` reports a run of 7 to 64 lowercase hex digits that prefixes the SHA of a commit of its
+# range, in a message or in a document of a commit's tree. A branch is rebased onto main before it
+# merges, and a rebase gives its commits new SHAs, so such a citation would then name nothing: a
+# commit of the branch is named by its subject. A SHA already on main may be cited. The option is
+# read from each commit's own manifest.
+refuse-branch-shas = true
