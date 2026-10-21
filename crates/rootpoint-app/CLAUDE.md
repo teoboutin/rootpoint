@@ -30,7 +30,7 @@ the one with more.
 ## A gesture's undo group closes before another opens
 
 A gesture opens its group through `App::open_group`, which first closes any group still open, per
-`design@rootpoint-app@actions-are-commands`. An action that does not join the gesture, as undo, an
+`design@rootpoint-app@gesture-groups`. An action that does not join the gesture, as undo, an
 open, a save or presenting does, closes any group still open before it acts.
 
 ## The tests find widgets by the places the last frame recorded

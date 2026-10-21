@@ -41,6 +41,7 @@ impl App {
 
     /// Add a slide after the shown one, or at the end when none is shown.
     pub fn add_slide(&mut self) {
+        self.end_gestures();
         let doc = self.session.document();
         let at = self
             .shown_slide()
@@ -49,13 +50,17 @@ impl App {
         self.run(Command::AddSlide { at: Some(at) });
     }
 
+    /// Remove the shown slide.
     pub fn remove_slide(&mut self) {
+        self.end_gestures();
         if let Some(slide) = self.shown_slide() {
             self.run(Command::RemoveSlide { slide });
         }
     }
 
+    /// Insert a copy of the shown slide after it.
     pub fn duplicate_slide(&mut self) {
+        self.end_gestures();
         if let Some(slide) = self.shown_slide() {
             self.run(Command::DuplicateSlide { slide });
         }
@@ -63,6 +68,7 @@ impl App {
 
     /// A drop of a slide on the row at `to` in the slide list.
     pub fn move_slide(&mut self, slide: SlideId, to: usize) {
+        self.end_gestures();
         self.run(Command::MoveSlide { slide, to });
     }
 
@@ -91,6 +97,7 @@ impl App {
     /// A split button, or Shift and an arrow: split the selection at its middle, the new area on
     /// that edge.
     pub fn split_middle(&mut self, edge: Edge) {
+        self.end_gestures();
         let (axis, side) = edge.split();
         if let Some(node) = self.session.view().selected
             && self.can_split_middle(axis)
@@ -106,6 +113,7 @@ impl App {
 
     /// A click with Ctrl or Shift held: split the node at the preview line.
     pub fn split_at(&mut self, p: Preview) {
+        self.end_gestures();
         self.run(Command::Split {
             node: p.node,
             axis: p.axis,
@@ -116,6 +124,7 @@ impl App {
 
     /// Delete: remove the selection.
     pub fn remove_selection(&mut self) {
+        self.end_gestures();
         if let Some(node) = self.session.view().selected {
             self.run(Command::Remove { node });
         }
@@ -124,9 +133,16 @@ impl App {
     /// Open an undo group for a gesture, after closing any group still open, so that within one
     /// frame a group closes before another opens. `false` when the session refuses it.
     fn open_group(&mut self) -> bool {
+        self.end_gestures();
+        matches!(self.run(Command::Begin), Reply::Ok(_))
+    }
+
+    /// Before an edit that is no part of a gesture: close any group still open, a drag's or the
+    /// text field's, so the edit is a step of its own. A button of the slide list is handled
+    /// before the side panel sees its text field lose focus, so the field's group can be open.
+    fn end_gestures(&mut self) {
         self.release_drag();
         self.blur_text();
-        matches!(self.run(Command::Begin), Reply::Ok(_))
     }
 
     /// The press that grabs a divider opens an undo group, so the whole drag is one undo step.
@@ -220,6 +236,7 @@ impl App {
     /// A double-click on a divider sets it halfway between its neighbours, the neighbouring
     /// dividers or the split's edges.
     pub fn reset_divider(&mut self, split: NodeId, index: usize) {
+        self.end_gestures();
         let Some(Node::Split(s)) = self.node(split) else {
             return;
         };
@@ -245,6 +262,7 @@ impl App {
 
     /// Set the selected area's content to empty.
     pub fn clear_content(&mut self) {
+        self.end_gestures();
         if let Some(area) = self.selected_area() {
             self.run(Command::Clear { area });
         }
@@ -252,6 +270,7 @@ impl App {
 
     /// Set the selected area's content to an empty text, in the default style.
     pub fn set_text_content(&mut self) {
+        self.end_gestures();
         if let Some(area) = self.selected_area() {
             self.run(Command::Text {
                 area,
@@ -296,6 +315,7 @@ impl App {
 
     /// Set one option of the selected text's style.
     pub fn set_style(&mut self, option: StyleOption) {
+        self.end_gestures();
         if let (Some(area), Some(Content::Text(t))) =
             (self.selected_area(), self.selected_content())
         {
@@ -310,6 +330,7 @@ impl App {
 
     /// Set the selected area's content to an image asset, fitted or filling the area.
     pub fn set_image(&mut self, asset: AssetId, fit: ImageFit) {
+        self.end_gestures();
         if let Some(area) = self.selected_area() {
             self.run(Command::Image { area, asset, fit });
         }
@@ -317,26 +338,27 @@ impl App {
 
     /// Add an image asset, by its path relative to the session's directory.
     pub fn add_asset(&mut self, path: String) {
+        self.end_gestures();
         self.run(Command::Asset { path });
     }
 
     /// Undo the last step: a drag or a focus of the text field still open ends first, and is that
     /// step.
     pub fn undo(&mut self) {
-        self.release_drag();
-        self.blur_text();
+        self.end_gestures();
         self.run(Command::Undo);
     }
 
+    /// Redo the last step undone, after closing any group still open.
     pub fn redo(&mut self) {
-        self.release_drag();
-        self.blur_text();
+        self.end_gestures();
         self.run(Command::Redo);
     }
 
     /// Load a presentation file; Save then writes to it.
     pub fn open_file(&mut self, path: String) {
-        self.blur_text();
+        self.end_gestures();
+        let path = self.relative_if_absolute(path);
         if let Reply::Ok(_) = self.run(Command::Load { path: path.clone() }) {
             self.path = Some(path);
         }
@@ -344,7 +366,8 @@ impl App {
 
     /// Save the presentation to a file; Save then writes to it again.
     pub fn save_to(&mut self, path: String) {
-        self.blur_text();
+        self.end_gestures();
+        let path = self.relative_if_absolute(path);
         if let Reply::Ok(_) = self.run(Command::Save { path: path.clone() }) {
             self.path = Some(path);
         }
@@ -352,7 +375,7 @@ impl App {
 
     /// Open the built-in sample, which has no file of its own.
     pub fn open_sample(&mut self) {
-        self.blur_text();
+        self.end_gestures();
         if let Reply::Ok(_) = self.run(Command::Sample) {
             self.path = None;
         }
@@ -387,7 +410,7 @@ impl App {
         let picked = rfd::FileDialog::new()
             .add_filter("rootpoint presentation", &["ron"])
             .pick_file();
-        if let Some(path) = picked.and_then(|p| self.path_from_working_directory(&p)) {
+        if let Some(path) = picked.and_then(|p| self.utf8(&p)) {
             self.open_file(path);
         }
     }
@@ -406,7 +429,7 @@ impl App {
             .add_filter("rootpoint presentation", &["ron"])
             .set_file_name("presentation.ron")
             .save_file();
-        if let Some(path) = picked.and_then(|p| self.path_from_working_directory(&p)) {
+        if let Some(path) = picked.and_then(|p| self.utf8(&p)) {
             self.save_to(path);
         }
     }
@@ -439,18 +462,25 @@ impl App {
         }
     }
 
-    /// A path a dialog returned, which is absolute, made relative to the working directory, as
-    /// the command line's is. The session compares its directory and a save's target by their
+    /// A path given to load or save, from a dialog or the command line, made relative to the
+    /// working directory when it is absolute, so every path the session holds has one form. The
+    /// session compares its directory and a save's target by their
     /// text, so a relative directory and an absolute target would never match, and a save would
     /// copy an asset already inside the target's directory, as
     /// `issue@rootpoint-protocol@save-mixes-relative-and-absolute` records. A path that has none
     /// from the working directory stays absolute.
-    fn path_from_working_directory(&mut self, path: &Path) -> Option<String> {
-        let path = match std::env::current_dir() {
-            Ok(cwd) => relative(&normalize(path), &normalize(&cwd)).unwrap_or(path.to_path_buf()),
-            Err(_) => path.to_path_buf(),
+    fn relative_if_absolute(&mut self, path: String) -> String {
+        let given = Path::new(&path);
+        if !given.is_absolute() {
+            return path;
+        }
+        let Ok(cwd) = std::env::current_dir() else {
+            return path;
         };
-        self.utf8(&path)
+        match relative(&normalize(given), &normalize(&cwd)) {
+            Some(rel) => self.utf8(&rel).unwrap_or(path),
+            None => path,
+        }
     }
 
     /// A path as UTF-8, which the protocol's commands hold, or `None` with the status naming it.

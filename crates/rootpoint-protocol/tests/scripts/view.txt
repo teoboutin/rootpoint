@@ -19,8 +19,8 @@ stop
 view
 deselect
 view
-# The native GUI slice: `select` on a slide shows it and selects no node, and an operation that
-# removes the shown slide drops it.
+# `select` on a slide shows it and selects no node, and an operation that removes the shown slide
+# drops it, `design@rootpoint-protocol@view-state`.
 select s3
 view
 remove-slide s3

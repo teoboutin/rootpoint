@@ -30,4 +30,4 @@ saved file's directory, at any depth, keeps its file, and its path is rewritten 
 directory. Any other asset, and an embedded one such as an image of the built-in sample, is copied
 into that directory under its file name, or `asset-<id>` and an extension for embedded bytes; a
 name whose file holds other bytes takes a suffix, `-2`, `-3` and on, so no file is overwritten. A
-save that cannot read an asset replies `err`, naming it, and writes nothing.
+save that cannot read an asset it must copy replies `err`, naming it, and writes nothing.

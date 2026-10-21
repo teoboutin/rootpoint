@@ -28,7 +28,7 @@ three conditions, and ruled that it is a decision of the design rather than a go
 The editor's slide view, presenter mode and a headless image all show a slide at one scale on
 both axes, the largest at which the whole slide fits the view, centred, the rest black.
 `slide_to_pixels` of the render crate gives that scale and offset for an image of a given size;
-`render_slide` draws through it, and the app places its marks and tests the pointer through it,
+`render_slide` draws through it, as `design@rootpoint-render@slide-renderer` says, and the app places its marks and tests the pointer through it,
 so every display of one slide is the same slide, at any size, which
 `goal@rootpoint-render@same-slide-everywhere` asks. It applies the model's
 `design@rootpoint-model@slide-units` to every display: a scale per axis, or a slide that fills the

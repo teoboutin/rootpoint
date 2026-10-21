@@ -1,4 +1,4 @@
-# Claim 4 of the native GUI slice: one gesture is one undo step.
+# One gesture is one undo step, `design@rootpoint-protocol@gesture-undo`.
 add-slide
 split n2 beside 0.4
 # A drag: one undo reverts it whole, and one redo makes it again.

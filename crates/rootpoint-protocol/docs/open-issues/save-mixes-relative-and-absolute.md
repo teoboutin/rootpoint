@@ -36,13 +36,15 @@ save D/deck2.ron        (D written as an absolute path)
 
 Every command replies `ok`. `deck.ron` holds `source: Path("img/cat.png")`; `deck2.ron` holds
 `source: Path("cat.png")`, and a new file `D/cat.png`, a copy of `D/img/cat.png`, is written. The
-mix the other way round, a session loaded by an absolute path and saved by a relative one, takes
-the same comparison; it is an `assumption` that it copies in the same way, not run.
+mix the other way round copies in the same way, measured by a review of the native GUI slice with
+a protocol test over `MemoryFiles`: `load /D/deck.ron`, whose asset is `img/cat.png`, then
+`save deck2.ron`, writes a `cat.png` and a `deck2.ron` holding `source: Path("cat.png")`.
 
 Ruled out: the overwrite clause holds, so no file of other bytes is replaced. The GUI no longer
-produces the mix: the paths its dialogs return are made relative to the working directory before
-`load` and `save`, in `App::path_from_working_directory` of `path@rootpoint-app@src/actions.rs`. A
-headless script, or a later client of the protocol, still can.
+produces the mix: every path it gives `load` and `save`, from a dialog or the command line, is
+made relative to the working directory when it is absolute, in `App::relative_if_absolute` of
+`path@rootpoint-app@src/actions.rs`. A headless script, or a later client of the protocol, still
+can.
 
 ### Why it matters
 

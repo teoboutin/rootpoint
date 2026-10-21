@@ -56,7 +56,7 @@ reverts the last edit, not the selection. An operation that removes the selected
 shown slide or the presented slide drops it from the view, so the view never names what the
 document does not hold. Selection, the slide shown and presenter mode then run headless, in a test or a script, as
 `goal@rootpoint@headless-core` asks of every operation the GUI offers. The rival, a view state the
-GUI alone holds, would leave both out of every headless test.
+GUI alone holds, would leave all three out of every headless test.
 
 ### The session opens no file: its host gives it a `Files` `##session-files`
 
@@ -88,9 +88,10 @@ The groups keep the session the only state and keep the grouping visible in a sc
 commands are the crate's interface, so a script replays a gesture as the GUI made it. `begin` and
 `end` is the family Qt, Cocoa, GTK and Emacs ship, and `cancel` is Emacs's
 `cancel-change-group`; without it, cancelling a gesture is `end` then `undo`, which leaves a redo
-step. The rivals lost: a preview on a copy, `rejected@rootpoint-protocol@preview-on-copy`, and the
-session merging consecutive commands, `rejected@rootpoint-protocol@merged-commands`. On the owner's
-word: the owner chose explicit groups over both, and chose to add `cancel`.
+step. The rivals lost: a preview on a copy, `rejected@rootpoint-protocol@preview-on-copy`, which
+keeps the protocol unchanged but leaves the session behind the screen, and the session merging
+consecutive commands, `rejected@rootpoint-protocol@merged-commands`. On the owner's word: the
+owner chose explicit groups over both.
 
 ## Saving
 
@@ -102,28 +103,32 @@ a `Path` asset whose file lies inside D, at any depth, keeps its file, its path 
 to D; any other asset, one outside D or an embedded one, is written into D under its file name, or
 `asset-<id>` with the extension its bytes name, and its path becomes that name. A name taken by a
 file of other bytes takes a suffix, `-2`, `-3` and on, before the extension, and one with the same
-bytes is used as it is, so a save overwrites no file of other bytes. Every asset is read before
-anything is written, and one that cannot be read makes the save reply `err`, naming it, and write
-nothing. A saved file therefore holds no embedded bytes, which stay what packing writes, per
+bytes is used as it is, so a save overwrites no file of other bytes. Every asset to write is read
+before anything is written, and one that cannot be read makes the save reply `err`, naming it, and
+write nothing; an asset that keeps its file is not read. A saved file therefore holds no embedded bytes, which stay what packing writes, per
 `design@rootpoint-model@asset-source`.
 
-The new paths enter the document through `apply`, one `Op::SetAssetSource` per changed asset, after
-the files are written, as `design@rootpoint-model@edit-operation-core` asks of every change. They
-are no undo step, since an undo to the old path after the directory changed would name another
-file; the session rewrites the same asset's source in the operations its stacks hold, and an asset
-only the stacks hold gets its path from the new directory, with `..` where needed, or its bytes
-where no such path exists. On the owner's word: the owner accepted this default when the spec's
-review found the model had no operation to change a source.
-
 It applies `design@rootpoint-model@image-storage`: assets are files beside the presentation, and
-the browser build opens one presentation directory, so it cannot read a file outside it, which
-rules out rewriting paths in place with `..`. Refusing a save into another directory would refuse
-the first save of every presentation built in the GUI with an image. On the owner's word: the
-owner chose copies beside the presentation file over a subfolder for them, for now, and wants the
-author free later to arrange assets in subdirectories of any depth, a tree a later packing keeps;
-the rule keeps such a tree already. Where the session's directory is relative and a save's path
-absolute, or the reverse, the comparison fails, as
-`issue@rootpoint-protocol@save-mixes-relative-and-absolute` records.
+the browser build of `spec@first-prototype@browser-build` opens one presentation directory, so it
+cannot read a file outside it, which rules out rewriting paths in place with `..`. Refusing a save
+into another directory would refuse the first save of every presentation built in the GUI with an
+image, against `goal@rootpoint@no-language-no-build`. On the owner's word: the owner chose copies
+beside the presentation file over a subfolder for them, for now, and wants the author free, later
+than the first prototype, to arrange assets in subdirectories of any depth, a tree that packing,
+then unpacking elsewhere, keeps; the rule keeps such a tree already.
+
+### A save changes the open document's asset paths to the saved file's, through `apply` and with no undo step `##save-updates-sources`
+
+After a save writes its files, the paths that changed enter the document through `apply`, one
+`Op::SetAssetSource` per asset, as `design@rootpoint-model@edit-operation-core` asks of every
+change, so the open document is the file just saved. They are no undo step: the session rewrites
+the same asset's source in the operations its undo and redo stacks hold, so an undo after the save
+restores an asset with the path the saved file uses, and an asset that only the stacks hold gets
+its path from the new directory, with `..` where needed, or its bytes where no such path exists.
+
+The rivals: the new paths as an undo step, whose undo would name another file once the directory
+changed; and a session that keeps its old paths, whose document would then differ from the file it
+just saved, against `goal@rootpoint@readable-save-file`.
 
 ## The built-in sample
 
@@ -132,9 +137,10 @@ absolute, or the reverse, the comparison fails, as
 The protocol crate holds a sample presentation, a RON text and its image files, included at build
 time from `path@rootpoint-protocol@sample/`. `sample` replaces the session's document by it, its
 images as embedded assets, with empty stacks and the working directory as its directory, as
-`load` does; a save writes its images beside the saved file, by `design@rootpoint-protocol@asset-save-rule`.
-So the sample opens in the GUI, headless and in the browser by one command. Its slides say how to
-split, select, drag and swap, and its images stay under 50 KB in all.
+`load` does; a save writes its images beside the saved file, by
+`design@rootpoint-protocol@asset-save-rule`. So the sample opens in the GUI and headless by one
+command, and the command is the interface every client of the protocol uses. Its slides say how
+to split, select, drag and swap, and its images stay under 50 KB in all.
 
 On the owner's word: the owner wants the sample kept as a permanent feature of every build, a
 tutorial and a demonstrator anywhere, not only in the browser. The rival, a file the app's `Files`

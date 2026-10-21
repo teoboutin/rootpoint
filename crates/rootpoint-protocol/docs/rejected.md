@@ -14,8 +14,8 @@ against `split n2 beside 0.5`.
 
 `live`. During the drag the session's document and the image on screen differ, so an agent
 watching live sees the old divider until the release, and the survey of split editing,
-`path@rootpoint@docs/grounding/split-editing.md`, found that a preview then a commit loses the live
-re-layout of the slide during the drag. It keeps the protocol unchanged, which is its strength.
+`path@rootpoint@docs/grounding/split-editing.md`, assumed, without checking, that a preview then a
+commit loses the live re-layout of the slide during the drag. It keeps the protocol unchanged, which is its strength.
 
 ### The session merging consecutive commands into one undo step `##merged-commands`
 

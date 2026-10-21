@@ -542,3 +542,37 @@ fn before_position(doc: &Document, split: NodeId, index: usize) -> f64 {
         _ => panic!("{split} is no split"),
     }
 }
+
+#[test]
+fn a_slide_list_button_pressed_while_the_text_field_has_focus_is_a_step_of_its_own() {
+    let mut d = Driver::new();
+    let n3 = NodeId(3);
+    let before = text(&d, n3);
+    d.select(n3);
+    let field = d.app.text_field_rect().unwrap();
+    d.click(field.center());
+    d.frame(vec![Event::Text("X".to_owned())], Modifiers::NONE);
+    let typed = text(&d, n3);
+    assert_ne!(typed, before);
+    // The slide list's "Add" button is above its first row: probe up from the row until it adds.
+    let rows = d.app.slide_rows().to_vec();
+    let slides = d.doc().slides.len();
+    for dy in [8.0f32, 12.0, 16.0, 20.0, 24.0, 28.0, 32.0] {
+        d.click(Pos2::new(rows[0].1.min.x + 14.0, rows[0].1.min.y - dy));
+        d.frame(vec![], Modifiers::NONE);
+        if d.doc().slides.len() != slides {
+            break;
+        }
+    }
+    assert_eq!(
+        d.doc().slides.len(),
+        slides + 1,
+        "the Add button added a slide"
+    );
+    // One undo removes the slide alone; the typing is a step of its own.
+    assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
+    assert_eq!(d.doc().slides.len(), slides);
+    assert_eq!(text(&d, n3), typed);
+    assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
+    assert_eq!(text(&d, n3), before);
+}

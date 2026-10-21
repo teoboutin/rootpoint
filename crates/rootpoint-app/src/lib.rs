@@ -152,7 +152,10 @@ impl App {
     }
 
     /// The lines under the slide view: the last command's error, and each list of the last
-    /// render's report that names something not drawn as the document asks.
+    /// render's report that names something not drawn as the document asks, so that a missing
+    /// image or a missing glyph reaches the author, which
+    /// `tripwire@rootpoint-render@glyph-missing-everywhere` watches through
+    /// `Report::missing_glyphs`.
     pub fn status(&self) -> Vec<String> {
         let mut lines: Vec<String> = self.error.iter().cloned().collect();
         let report = &self.view.report;
