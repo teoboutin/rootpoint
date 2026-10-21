@@ -18,8 +18,8 @@ again. The
 binary `rootpoint-headless` runs a `Session` on its stdin, one reply per command on its stdout.
 
 The commands serve what a readable save file cannot: an edit applied to a running editor, a query
-of its state, and a script run headless, as `goal@rootpoint@text-command-protocol` and
-`goal@rootpoint@headless-core` ask. An agent or a person types them at a terminal or in a script,
+of its state, and a script run headless, as `goal@rootpoint-protocol@commands-drive-everything`
+and `goal@rootpoint@headless-core` ask. An agent or a person types them at a terminal or in a script,
 and reads one line per reply. The rival, JSON-RPC, `rejected@rootpoint-protocol@json-rpc-commands`,
 is easier to parse and harder to type. The grammar and the replies are this crate's interface to
 every program that drives rootpoint.
@@ -51,7 +51,7 @@ both out of every headless test.
 `Session` reads and writes the presentation, its assets and rendered images only through the
 `Files` trait its caller passes to each command, and touches no file system itself; the headless
 binary gives it the native file system. The session is part of the browser build, per
-`goal@rootpoint@runs-in-browser`, and there `std::fs` compiles and fails only when called, so the
-wasm gate cannot catch a direct file access: a rule every file access of the session respects, and
-every host that implements `Files`. It is the session's counterpart of
+`goal@rootpoint-protocol@browser-buildable`, and there `std::fs` compiles and fails only when
+called, so the wasm gate cannot catch a direct file access: a rule every file access of the session
+respects, and every host that implements `Files`. It is the session's counterpart of
 `design@rootpoint-render@caller-supplies-assets`.

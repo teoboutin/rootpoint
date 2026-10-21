@@ -23,7 +23,7 @@ cites.
    of its arrival, through egui's `request_repaint` from the socket's thread. Test: the integration
    test of claim 1 times the reply.
 3. **The scripts of the protocol run through the socket.** Every script of
-   `spec@first-prototype@command-protocol`'s tests gives the same replies through `rootpoint-ctl`
+   `path@rootpoint-protocol@tests/scripts/` gives the same replies through `rootpoint-ctl`
    as through `rootpoint-headless`.
 
 ## Audit subjects

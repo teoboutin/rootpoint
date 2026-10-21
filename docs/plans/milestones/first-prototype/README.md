@@ -233,8 +233,8 @@ recorded decision.
 
 Binding. Source: `goal@rootpoint@headless-core`, whose body reads every operation the GUI offers.
 Met by `thread@first-prototype@edit-operation-core` and `thread@first-prototype@crate-split`: the
-model crate has no GUI dependency; and by the view commands of
-`spec@first-prototype@command-protocol`, through which the GUI selects and presents.
+model crate has no GUI dependency; and by the view commands,
+`design@rootpoint-protocol@view-state`, through which the GUI selects and presents.
 
 ### Text commands drive a live GUI and a headless session `##c2-command-driving`
 
@@ -403,7 +403,8 @@ crate's Component.
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-37`). Closed by O10's
 whole-table agreement. Final state: approved. Shape: built, for the ids, in
-`design@rootpoint-model@stable-ids`, and `spec@first-prototype@command-protocol`.
+`design@rootpoint-model@stable-ids`, and, for addressing, in
+`design@rootpoint-protocol@protocol-addressing`.
 Harvest: the rule that ids are stored and never reused, in the model crate's Component; addressing
 by id in the protocol, in the protocol crate's Component, citing the first.
 
@@ -411,9 +412,9 @@ by id in the protocol, in the protocol crate's Component, citing the first.
 
 Proposed by the session before round 1 and in round 1 (`argument@first-prototype@arg-8`,
 `argument@first-prototype@arg-38`). Closed by O10's whole-table agreement. Final state: approved;
-JSON-RPC lost. Shape: the decided designs of `spec@first-prototype@command-protocol` and
-`spec@first-prototype@live-control`. Harvest: the line grammar and the stdin binary in the protocol
-crate's Component, at `spec@first-prototype@command-protocol`; the socket listener and its threads
+JSON-RPC lost. Shape: built, for stdin, in `design@rootpoint-protocol@protocol-transport`; for the
+socket, the decided design of `spec@first-prototype@live-control`. Harvest: the line grammar and the stdin binary in the protocol
+crate's Component, at the slice `command-protocol`; the socket listener and its threads
 in the app crate's Component, at `spec@first-prototype@live-control`.
 
 ### The save file is RON, with a version field `##save-format`
@@ -929,7 +930,8 @@ packing.
 The mapping tables are in the slice specs that build their functions:
 `path@rootpoint-model@src/ops.rs`, built by the slice `model-core` (each operation to its
 inverse, in the doc comments of `Op`), and
-`spec@first-prototype@command-protocol` (each command to its operation).
+`path@rootpoint-protocol@src/session.rs`, built by the slice `command-protocol` (each command to
+its operation, in `Session::operation`).
 
 ## Losing alternatives
 
@@ -1082,7 +1084,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
    format; the wasm gate. Judges AC5.
 2. the slice `slide-rendering`: the render crate and a headless PNG. Judges AC2's 4K
    bound.
-3. `spec@first-prototype@command-protocol`: the protocol crate and the headless binary.
+3. the slice `command-protocol`: the protocol crate and the headless binary.
 4. `spec@first-prototype@editor-shell`: the app crate, native, with presenter mode. Judges AC2's
    drag bound.
 5. `spec@first-prototype@text-editing`: editing text in place. Judges AC1.
@@ -1092,7 +1094,6 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 
 | slice spec |
 | --- |
-| [The text protocol and the headless binary](command-protocol.md) |
 | [The native GUI and presenter mode](editor-shell.md) |
 | [Editing text in place](text-editing.md) |
 | [Driving the running GUI by text commands](live-control.md) |
@@ -1102,9 +1103,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 
 - the slice `model-core` before the slice `slide-rendering`: the renderer
   draws the rectangles and contents that the model defines.
-- the slice `slide-rendering` before `spec@first-prototype@command-protocol`: the
+- the slice `slide-rendering` before the slice `command-protocol`: the
   protocol's `render` command calls the renderer.
-- `spec@first-prototype@command-protocol` before `spec@first-prototype@editor-shell`: the GUI
+- the slice `command-protocol` before `spec@first-prototype@editor-shell`: the GUI
   applies the same operations, and its tests drive it through the protocol's session.
 - `spec@first-prototype@editor-shell` before `spec@first-prototype@text-editing`: in-place editing
   needs a hosted slide view and input forwarding.
