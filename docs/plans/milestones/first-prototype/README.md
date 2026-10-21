@@ -1123,7 +1123,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   build opens a presentation directory, the RON file and its images, through the browser's directory
   picker, and the built-in sample; it edits them in memory and presents them; it does not save.
   Saving in the browser comes with packing. The built-in sample is a permanent feature of every
-  build, native and web, as a tutorial and demonstrator. Bears on
+  build, native and web, as a tutorial and demonstrator. At the review before the merge, the owner
+  confirmed, as Q6, the directory opening and the load-only browser build as written: "Q6 default
+  accepted." Bears on
   `thread@first-prototype@prototype-scope` and `thread@first-prototype@image-storage`.
 - **D4, ruled.** AC4 compares with a general-purpose slide editor, the comparison
   `goal@rootpoint@free-slide-division` states. The owner ruled: "D4: against a general purpose
