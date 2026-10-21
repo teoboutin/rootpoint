@@ -149,7 +149,8 @@ slice's spec, with the gates run before each commit.
   quoted in that slice's spec with the questions **Q15 to Q21** they answer; that session's
   acceptance criterion **AC6** and tripwire **T5** are in "Acceptance criteria" and "Premortem".
   **O17**: the owner's answer to **Q22**, the material finding of that slice spec's review, quoted
-  in the same spec.
+  in the same spec. **O18**: the owner's answer to **Q23**, the app crate's goals drafted per D2,
+  quoted in the same spec.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
@@ -1162,7 +1163,8 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   `path@rootpoint@crates/` under the crate's own name, and its goals are drafted under
   `skill@knowledge-architect-goal-setting` for the owner's ruling before that slice merges. Bears on
   `thread@first-prototype@crate-split`. The harvest rows of the slice specs name those Components'
-  homes. The owner ruled: "D2 accepted".
+  homes. The owner ruled: "D2 accepted". The goals of the app crate's Component were ruled in O18,
+  quoted in `spec@first-prototype@editor-shell`.
 - **T3 and T4, ruled**, in "Premortem": recorded. The owner ruled: "T3 and T4 too".
 - **D3, ruled.** The default put to the owner: in the browser build, opening, saving and adding an
   image wait on packing, and the build edits only a built-in sample. Its rival: open a presentation

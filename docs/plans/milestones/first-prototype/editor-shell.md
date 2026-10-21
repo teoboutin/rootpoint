@@ -190,6 +190,11 @@ spec's review:
 
 > Q22 default accepted
 
+**O18**, answering Q23, the goals of the app crate's Component drafted per D2 of the milestone
+document, all five written in `register@rootpoint-app@goal`:
+
+> Q23: all goals approved, proceed with step 3
+
 ## Criteria
 
 The session judged its threads against the milestone's criteria
