@@ -1,4 +1,4 @@
-# Claim 5: the render crate's fixture "fit and fill", a side-by-side split with the image fitted on
+# The render crate's fixture "fit and fill", a side-by-side split with the image fitted on
 # the left and filling the right. The presentation is saved first, so the asset is read beside it.
 add-slide
 split n2 beside 0.5

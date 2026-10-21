@@ -1,4 +1,4 @@
-# Claim 6: selection and presenter mode run headless, and `view` reports each state.
+# Selection and presenter mode run headless, and `view` reports each state.
 add-slide
 add-slide
 split n2 beside 0.5
