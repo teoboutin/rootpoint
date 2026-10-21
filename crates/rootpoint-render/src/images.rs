@@ -1,0 +1,51 @@
+//! The decoded images of a document's assets, which the caller builds from the assets' bytes: the
+//! renderer reads no file, since the browser build has none to read.
+
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
+use rootpoint_model::AssetId;
+use vello_cpu::PixelMetadata;
+use vello_cpu::Pixmap;
+use vello_cpu::peniko::ImageAlphaType;
+
+/// Why an asset's bytes gave no image.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DecodeError(pub String);
+
+/// The images the renderer can draw, by asset id.
+#[derive(Clone, Default)]
+pub struct ImageSet {
+    images: BTreeMap<AssetId, Arc<Pixmap>>,
+}
+
+impl ImageSet {
+    pub fn new() -> Self {
+        ImageSet::default()
+    }
+
+    /// Decode the bytes of an image file, PNG or JPEG, as the image of the asset `id`.
+    pub fn insert_bytes(&mut self, id: AssetId, bytes: &[u8]) -> Result<(), DecodeError> {
+        let decoded = image::load_from_memory(bytes).map_err(|e| DecodeError(e.to_string()))?;
+        let rgba = decoded.to_rgba8();
+        let (width, height) = rgba.dimensions();
+        let too_big = |side: u32| DecodeError(format!("a side of {side} pixels exceeds 65535"));
+        let width = u16::try_from(width).map_err(|_| too_big(width))?;
+        let height = u16::try_from(height).map_err(|_| too_big(height))?;
+        let pixmap = Pixmap::from_parts(
+            rgba.into_raw(),
+            width,
+            height,
+            PixelMetadata {
+                may_have_transparency: true,
+                alpha_type: ImageAlphaType::Alpha,
+            },
+        );
+        self.images.insert(id, Arc::new(pixmap));
+        Ok(())
+    }
+
+    pub(crate) fn get(&self, id: AssetId) -> Option<&Arc<Pixmap>> {
+        self.images.get(&id)
+    }
+}
