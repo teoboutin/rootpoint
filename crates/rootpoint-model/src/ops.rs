@@ -4,6 +4,7 @@
 //! undoes it. The GUI, the protocol and the tests change a document through nothing else.
 
 use crate::document::*;
+use crate::validate::Invalid;
 
 /// Which part of a split node the new area takes: the part before the split position, or after.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -89,7 +90,7 @@ pub enum OpError {
     IdTaken(u64),
     NotAnArea(NodeId),
     NotASplit(NodeId),
-    /// A slide's root cannot be removed; emptying its content is the way to clear it.
+    /// A slide's root cannot be removed; to clear a slide, replace its tree or empty its area.
     RootNotRemovable(NodeId),
     IndexOutOfRange {
         index: usize,
@@ -99,6 +100,8 @@ pub enum OpError {
     /// neighbours.
     PositionOutOfRange(f64),
     AssetInUse(AssetId),
+    /// The result would break an invariant of the document, which the reason names.
+    Invalid(String),
 }
 
 /// Apply `op` to `doc`, and return the operation that undoes it. On an error the document is
@@ -107,6 +110,11 @@ pub fn apply(doc: &mut Document, op: Op) -> Result<Op, OpError> {
     // Work on a copy, so that a refusal found halfway leaves `doc` as it was. Documents are small.
     let mut work = doc.clone();
     let inverse = apply_in(&mut work, op)?;
+    // An operation whose result breaks an invariant is refused: a restored slide or asset whose
+    // ids collide, a tree given whole, or a split whose divider positions rounding has made equal
+    // or has pushed to 0 or 1.
+    work.validate()
+        .map_err(|Invalid(reason)| OpError::Invalid(reason))?;
     *doc = work;
     Ok(inverse)
 }

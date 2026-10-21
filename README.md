@@ -1,6 +1,7 @@
 # rootpoint
 
-A minimal presentation editor with an interactive GUI, written in Rust. Nothing is built yet.
+A minimal presentation editor with an interactive GUI, written in Rust. Its document model is built;
+the renderer, the protocol and the GUI are not yet.
 
 ## Layout of the repository
 

@@ -68,6 +68,7 @@ fn round_trip(doc: &Document, op: Op) -> Document {
     check_invariants(&work);
     let after = work.clone();
     apply(&mut work, inverse).unwrap();
+    check_invariants(&work);
     assert!(
         work.same_content(doc),
         "the inverse of {op:?} did not restore the document"
@@ -415,20 +416,17 @@ struct Step {
 }
 
 fn step() -> impl Strategy<Value = Step> {
-    (
-        0u8..9,
-        any::<usize>(),
-        any::<usize>(),
-        0.05f64..0.95,
-        any::<bool>(),
-    )
-        .prop_map(|(kind, pick, other, at, flag)| Step {
+    // Positions near 0 and 1 as well as ordinary ones, where rounding meets the dividers.
+    let at = prop_oneof![0.05f64..0.95, 1e-12f64..1e-3, (1.0 - 1e-3)..(1.0 - 1e-12)];
+    (0u8..14, any::<usize>(), any::<usize>(), at, any::<bool>()).prop_map(
+        |(kind, pick, other, at, flag)| Step {
             kind,
             pick,
             other,
             at,
             flag,
-        })
+        },
+    )
 }
 
 fn all_nodes(doc: &Document) -> Vec<&Node> {
@@ -459,6 +457,7 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
             Node::Area(_) => None,
         })
         .collect();
+    let assets: Vec<AssetId> = doc.assets.keys().copied().collect();
     let pick = |len: usize| s.pick % len.max(1);
     let axis = if s.flag {
         Axis::Vertical
@@ -515,6 +514,42 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
             slide: doc.slides[pick(doc.slides.len())].id,
             to: s.other % doc.slides.len(),
         },
+        9 => Op::AddAsset {
+            asset: Asset {
+                source: if s.flag {
+                    AssetSource::Path(format!("image{}.png", s.other % 10))
+                } else {
+                    AssetSource::Embedded(vec![s.other as u8; 3])
+                },
+            },
+        },
+        10 if !assets.is_empty() => Op::RemoveAsset {
+            id: assets[pick(assets.len())],
+        },
+        11 if !areas.is_empty() && !assets.is_empty() => Op::SetContent {
+            area: areas[pick(areas.len())],
+            content: Content::Image(ImageContent {
+                asset: assets[s.other % assets.len()],
+                fit: if s.flag {
+                    ImageFit::Fit
+                } else {
+                    ImageFit::Fill
+                },
+            }),
+        },
+        12 if !areas.is_empty() && !assets.is_empty() => Op::SetContent {
+            area: areas[pick(areas.len())],
+            content: Content::Text(TextContent {
+                text: "in an asset font".to_owned(),
+                style: TextStyle {
+                    font: FontRef::Asset(assets[s.other % assets.len()]),
+                    ..TextStyle::default()
+                },
+            }),
+        },
+        13 if !doc.slides.is_empty() => Op::RemoveSlide {
+            slide: doc.slides[pick(doc.slides.len())].id,
+        },
         _ => return None,
     })
 }
@@ -532,7 +567,9 @@ proptest! {
                 Ok(inverse) => {
                     check_invariants(&doc);
                     let mut undone = doc.clone();
+                    // The inverse is applied, and validated, as any operation is.
                     apply(&mut undone, inverse).unwrap();
+                    check_invariants(&undone);
                     prop_assert!(undone.same_content(&before), "{:?} not undone", op);
                 }
                 Err(_) => prop_assert_eq!(&doc, &before),

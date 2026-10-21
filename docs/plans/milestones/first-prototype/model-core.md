@@ -181,7 +181,10 @@ that undoes it; an error leaves the document unchanged. The GUI, the protocol an
 nothing else to change a document (`thread@first-prototype@edit-operation-core`). `OpError` names
 the cause: an unknown id, a node of the wrong kind (an area where a split is needed, or the
 reverse), an attempt to remove a root, an index out of range, a divider position out of order or
-out of (0, 1), an asset in use.
+out of (0, 1), an asset in use, or a result that breaks an invariant of the document
+(`OpError::Invalid`). Every result is checked by `Document::validate`, so a restored slide or
+asset whose ids collide, a tree given whole, or a split whose divider positions rounding has made
+equal or has pushed to 0 or 1, is refused.
 
 Nearest rival: the GUI mutating the document directly; see "Losing alternatives" of the milestone
 document.
@@ -189,8 +192,8 @@ document.
 ### The file
 
 `save_ron(&Document) -> String` and `load_ron(&str) -> Result<Document, LoadError>`: RON, through
-serde, with a top-level `version` field equal to `FORMAT_VERSION`, 1 in this slice. `LoadError` is
-`Parse` with the parser's message, or `Version { found, expected }`
+serde, with a top-level `version` field equal to `FORMAT_VERSION`, 1 in this slice. `LoadError` is `Parse` with the parser's message, `Version { found, expected }`, or
+`Invalid` with the invariant a hand-edited file breaks, as `Document::validate` finds it
 (`thread@first-prototype@save-format`).
 
 Nearest rival: JSON; see "Losing alternatives" of the milestone document.

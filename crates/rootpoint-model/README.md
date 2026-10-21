@@ -4,4 +4,6 @@ The document model of rootpoint: a presentation, its slides, the tree of splits 
 slide into areas, the content of each area, and the operations that change them. It opens no
 window and needs no GUI, so every editing operation runs headless. It also builds for the browser.
 
-Nothing of the model is built yet.
+Its public API: the types of `Document`, `apply` with the operations of `Op`, `area_rects`, and
+`save_ron` and `load_ron` for the RON save file. A file or an operation that would break an
+invariant of the document is refused, which `Document::validate` checks.

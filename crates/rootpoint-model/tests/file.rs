@@ -85,11 +85,11 @@ fn the_fixture_round_trips_and_matches_its_committed_file() {
     let text = save_ron(&doc);
     assert_eq!(load_ron(&text), Ok(doc));
     let path = data("fixture.ron");
-    let committed = std::fs::read_to_string(&path).unwrap_or_else(|_| {
-        // The first run writes the file, which is then committed.
+    // `ROOTPOINT_BLESS=1` rewrites the committed file, after a deliberate change of the format.
+    if std::env::var_os("ROOTPOINT_BLESS").is_some() {
         std::fs::write(&path, &text).unwrap();
-        text.clone()
-    });
+    }
+    let committed = std::fs::read_to_string(&path).expect("the committed fixture file");
     assert_eq!(
         committed,
         text,
@@ -168,11 +168,12 @@ fn source() -> impl Strategy<Value = AssetSource> {
 }
 
 proptest! {
-    /// Over random documents, of several slides, random trees, every kind of content and both
-    /// kinds of asset source, loading the saved text gives the document back.
+    /// Over random documents, of several slides, random trees and divider positions, every kind
+    /// of content, fonts from the asset table, and both kinds of asset source, loading the saved
+    /// text gives the document back.
     #[test]
     fn saving_then_loading_gives_the_document_back(
-        steps in prop::collection::vec((0u8..4, any::<usize>(), 0.05f64..0.95, any::<bool>(), content(), source()), 1..30)
+        steps in prop::collection::vec((0u8..7, any::<usize>(), 0.05f64..0.95, any::<bool>(), content(), source()), 1..30)
     ) {
         let mut doc = Document::default();
         apply(&mut doc, Op::AddSlide { at: 0 }).unwrap();
@@ -180,18 +181,42 @@ proptest! {
             let slide = &doc.slides[pick % doc.slides.len()];
             let areas: Vec<NodeId> = slide.root.areas().iter().map(|a| a.id).collect();
             let area = areas[pick % areas.len()];
-            let op = match kind {
-                0 => Op::AddSlide { at: 0 },
-                1 => Op::Split {
+            let asset = doc.assets.keys().nth(pick % doc.assets.len().max(1)).copied();
+            let op = match (kind, asset) {
+                (0, _) => Op::AddSlide { at: 0 },
+                (1, _) => Op::Split {
                     node: area,
                     axis: if flag { Axis::Vertical } else { Axis::Horizontal },
                     at,
-                    side: Side::After,
+                    side: if pick % 2 == 0 { Side::Before } else { Side::After },
                 },
-                2 => Op::SetContent { area, content },
+                (2, _) => Op::SetContent { area, content },
+                (3, Some(asset)) => Op::SetContent {
+                    area,
+                    content: Content::Image(ImageContent {
+                        asset,
+                        fit: if flag { ImageFit::Fit } else { ImageFit::Fill },
+                    }),
+                },
+                (4, Some(asset)) => Op::SetContent {
+                    area,
+                    content: Content::Text(TextContent {
+                        text: "in an asset font".to_owned(),
+                        style: TextStyle { font: FontRef::Asset(asset), ..TextStyle::default() },
+                    }),
+                },
+                (5, _) => match &slide.root {
+                    Node::Split(sp) => Op::MoveDivider {
+                        split: sp.id,
+                        index: 0,
+                        pos: at * sp.dividers.get(1).copied().unwrap_or(1.0),
+                    },
+                    Node::Area(_) => continue,
+                },
                 _ => Op::AddAsset { asset: Asset { source } },
             };
-            apply(&mut doc, op).unwrap();
+            // An operation the document refuses, such as a divider out of order, is skipped.
+            let _ = apply(&mut doc, op);
         }
         let text = save_ron(&doc);
         prop_assert_eq!(load_ron(&text), Ok(doc));
@@ -238,5 +263,6 @@ fn a_file_edited_by_an_agent_loads_with_its_edits() {
         },
     )
     .unwrap();
-    assert!(edited.same_content(&expected));
+    // Plain equality, the id counter included: the agent changed nothing else.
+    assert_eq!(edited, expected);
 }

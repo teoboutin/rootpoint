@@ -19,6 +19,9 @@ pub enum LoadError {
     Parse(String),
     /// The file is of another version of the format.
     Version { found: u32, expected: u32 },
+    /// The file parses, but its document breaks an invariant, which the reason names: a file
+    /// edited by hand can, and loading it would let a later operation meet a broken tree.
+    Invalid(String),
 }
 
 /// The file as written: the version first, so a reader of the text sees it before the rest.
@@ -72,10 +75,13 @@ pub fn load_ron(text: &str) -> Result<Document, LoadError> {
         });
     }
     let file: File = ron::from_str(text).map_err(|e| LoadError::Parse(e.to_string()))?;
-    Ok(Document {
+    let doc = Document {
         aspect: file.aspect,
         slides: file.slides,
         assets: file.assets,
         next_id: file.next_id,
-    })
+    };
+    doc.validate()
+        .map_err(|crate::validate::Invalid(reason)| LoadError::Invalid(reason))?;
+    Ok(doc)
 }

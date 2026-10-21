@@ -3,6 +3,8 @@
 
 use std::collections::BTreeMap;
 
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 /// The id of a slide, unique in its document and never reused.
@@ -20,10 +22,31 @@ pub struct NodeId(pub u64);
 #[serde(transparent)]
 pub struct AssetId(pub u64);
 
+// The printed form of an id, `s<n>`, `n<n>` or `a<n>`, as the protocol shows it; the file writes
+// the plain number.
+impl fmt::Display for SlideId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "s{}", self.0)
+    }
+}
+
+impl fmt::Display for NodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "n{}", self.0)
+    }
+}
+
+impl fmt::Display for AssetId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "a{}", self.0)
+    }
+}
+
 /// A presentation: its aspect ratio, its slides in order, and its assets.
 ///
 /// Every id of the document comes from one counter, which only grows, so a removed slide, node or
-/// asset never lends its id to another.
+/// asset never lends its id to another. Change a document only through [`crate::apply`], which
+/// keeps the invariants [`Document::validate`] checks; a loaded file is checked by it too.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
     pub aspect: AspectRatio,
