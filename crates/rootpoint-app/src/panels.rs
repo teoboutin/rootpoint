@@ -62,7 +62,8 @@ impl App {
     }
 
     /// The slide list: a row per slide, which a click shows and a drag moves, and the buttons
-    /// that add a slide after the shown one, and remove or duplicate the shown one.
+    /// that add a slide after the shown one, and remove or duplicate the shown one. A drag moves a
+    /// slide to any place at once, where move-up and move-down buttons cost a click per place.
     pub(crate) fn slide_list(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             if ui.button("Add").clicked() {

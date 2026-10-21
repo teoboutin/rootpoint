@@ -1,8 +1,9 @@
 //! Hit testing matches the drawing: through `slide_to_pixels`, at two view sizes, a point selects
 //! the area whose rectangle holds it, and a press within 4 points of a divider grabs it, the nearer
 //! of two; a pointer over a drop target falls in the zone the hint names; and a snapped line lies
-//! on a twelfth of its node or on a divider within 8 points. Claim 2 of
-//! `spec@first-prototype@editor-shell`.
+//! on a twelfth of its node or on a divider within 8 points, per
+//! `design@rootpoint-app@divider-drag`, `design@rootpoint-app@split-preview` and
+//! `design@rootpoint-app@swap-gesture`.
 
 use eframe::egui::{Pos2, Rect, Vec2};
 use rootpoint_app::hit::{Edge, Layout, MIN_PART, Press, Zone};

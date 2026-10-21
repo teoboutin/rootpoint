@@ -9,3 +9,17 @@ by the design head whose argument covers it, in `register@rootpoint-protocol@des
 is easier for a program to parse, and harder for a person or an agent to type by hand at a terminal
 or in a script: `{"jsonrpc":"2.0","method":"split","params":{"node":"n2","axis":"beside","at":0.5},"id":1}`
 against `split n2 beside 0.5`.
+
+### A gesture previewed on a copy of the document and committed once at its end `##preview-on-copy`
+
+`live`. During the drag the session's document and the image on screen differ, so an agent
+watching live sees the old divider until the release, and the survey of split editing,
+`path@rootpoint@docs/grounding/split-editing.md`, found that a preview then a commit loses the live
+re-layout of the slide during the drag. It keeps the protocol unchanged, which is its strength.
+
+### The session merging consecutive commands into one undo step `##merged-commands`
+
+`live`. Two `divider` lines in a script, then `undo`, would revert both, which a reader of the
+script cannot see. The survey of split editing found that merging by key needs a break rule, or
+two separate drags of one divider merge, and that merging by time conflicts with replaying text
+commands deterministically.

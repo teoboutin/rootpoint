@@ -47,12 +47,14 @@ in every `split` command.
 ### The view state lives in the session, outside the document's operations `##view-state`
 
 Besides its document and its undo and redo stacks, a `Session` holds a `View`: the selected node,
-if any, and the slide presenter mode shows, if it is on. The view commands, `select`, `deselect`,
+if any, the slide the editor shows, if one is named, and the slide presenter mode shows, if it is
+on. `select n<id>` selects a node and shows its slide; `select s<id>` shows a slide and selects no
+node; with no slide named the editor shows the first. The view commands, `select`, `deselect`,
 `present`, `next`, `prev` and `stop`, change it and apply no operation; `view` reports it. Since
 they apply no operation, `undo` and `redo` do not step through them: an `undo` after a `select`
-reverts the last edit, not the selection. An operation that removes the selected node or the
-presented slide drops it from the view, so the view never names what the document does not hold.
-Selection and presenter mode then run headless, in a test or a script, as
+reverts the last edit, not the selection. An operation that removes the selected node, the
+shown slide or the presented slide drops it from the view, so the view never names what the
+document does not hold. Selection, the slide shown and presenter mode then run headless, in a test or a script, as
 `goal@rootpoint@headless-core` asks of every operation the GUI offers. The rival, a view state the
 GUI alone holds, would leave both out of every headless test.
 
@@ -67,3 +69,74 @@ records: read in Rust 1.98's `std`, `wasm32-unknown-unknown` takes the module
 `sys::fs::unsupported`, whose `File::open` returns an `Unsupported` error. It is a rule every
 file access of the session respects, and every host that implements `Files`. It is the session's counterpart of
 `design@rootpoint-render@caller-supplies-assets`.
+
+## Undo
+
+### One gesture is one undo step: the commands `begin`, `end` and `cancel` group the edits between them `##gesture-undo`
+
+`begin` opens a group, and replies `err` while one is open, since groups do not nest. `end` closes
+it: every operation applied inside is one undo step, undone and redone together, and an empty
+group leaves no step; `err` with no group open. `cancel` reverts every operation applied inside
+the group and restores the undo and redo stacks as they were at its `begin`; `err` with no group
+open. `undo` and `redo` inside a group close it first, as `end` does, then act; `new`, `load` and
+`sample` close it as part of replacing the document and the stacks; view commands join nothing.
+The stacks hold steps, each the inverses of one group or of one command, applied atomically: a
+step that fails leaves the document and the view as they were.
+
+A drag that sent one command a frame with no grouping would leave about sixty undo steps a second.
+The groups keep the session the only state and keep the grouping visible in a script, and the
+commands are the crate's interface, so a script replays a gesture as the GUI made it. `begin` and
+`end` is the family Qt, Cocoa, GTK and Emacs ship, and `cancel` is Emacs's
+`cancel-change-group`; without it, cancelling a gesture is `end` then `undo`, which leaves a redo
+step. The rivals lost: a preview on a copy, `rejected@rootpoint-protocol@preview-on-copy`, and the
+session merging consecutive commands, `rejected@rootpoint-protocol@merged-commands`. On the owner's
+word: the owner chose explicit groups over both, and chose to add `cancel`.
+
+## Saving
+
+### A save keeps the assets inside its directory and copies every other asset, and every embedded one, beside the saved file `##asset-save-rule`
+
+Every `Path` asset of a session is relative to `Session::directory`. At a `save` to a file whose
+directory is D, paths compared after joining them to their directory and removing `.` and `..`:
+a `Path` asset whose file lies inside D, at any depth, keeps its file, its path written relative
+to D; any other asset, one outside D or an embedded one, is written into D under its file name, or
+`asset-<id>` with the extension its bytes name, and its path becomes that name. A name taken by a
+file of other bytes takes a suffix, `-2`, `-3` and on, before the extension, and one with the same
+bytes is used as it is, so a save overwrites no file of other bytes. Every asset is read before
+anything is written, and one that cannot be read makes the save reply `err`, naming it, and write
+nothing. A saved file therefore holds no embedded bytes, which stay what packing writes, per
+`design@rootpoint-model@asset-source`.
+
+The new paths enter the document through `apply`, one `Op::SetAssetSource` per changed asset, after
+the files are written, as `design@rootpoint-model@edit-operation-core` asks of every change. They
+are no undo step, since an undo to the old path after the directory changed would name another
+file; the session rewrites the same asset's source in the operations its stacks hold, and an asset
+only the stacks hold gets its path from the new directory, with `..` where needed, or its bytes
+where no such path exists. On the owner's word: the owner accepted this default when the spec's
+review found the model had no operation to change a source.
+
+It applies `design@rootpoint-model@image-storage`: assets are files beside the presentation, and
+the browser build opens one presentation directory, so it cannot read a file outside it, which
+rules out rewriting paths in place with `..`. Refusing a save into another directory would refuse
+the first save of every presentation built in the GUI with an image. On the owner's word: the
+owner chose copies beside the presentation file over a subfolder for them, for now, and wants the
+author free later to arrange assets in subdirectories of any depth, a tree a later packing keeps;
+the rule keeps such a tree already. Where the session's directory is relative and a save's path
+absolute, or the reverse, the comparison fails, as
+`issue@rootpoint-protocol@save-mixes-relative-and-absolute` records.
+
+## The built-in sample
+
+### Every build carries a sample presentation that `sample` opens `##builtin-sample`
+
+The protocol crate holds a sample presentation, a RON text and its image files, included at build
+time from `path@rootpoint-protocol@sample/`. `sample` replaces the session's document by it, its
+images as embedded assets, with empty stacks and the working directory as its directory, as
+`load` does; a save writes its images beside the saved file, by `design@rootpoint-protocol@asset-save-rule`.
+So the sample opens in the GUI, headless and in the browser by one command. Its slides say how to
+split, select, drag and swap, and its images stay under 50 KB in all.
+
+On the owner's word: the owner wants the sample kept as a permanent feature of every build, a
+tutorial and a demonstrator anywhere, not only in the browser. The rival, a file the app's `Files`
+alone serves, would open in the GUI and in no headless session, against
+`goal@rootpoint@headless-core`.

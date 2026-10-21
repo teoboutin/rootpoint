@@ -121,7 +121,7 @@ slice's spec, with the gates run before each commit.
 
 - **The wasm gate.** The slice `model-core` created one gate named `wasm`. Each crate
   the browser build links joins it in the slice that creates it: the model, render and protocol
-  crates. The app crate is created native in `spec@first-prototype@editor-shell` and joins it in
+  crates. The app crate is created native in the slice `editor-shell` and joins it in
   `spec@first-prototype@browser-build`, the slice that builds its web target. This keeps
   `thread@first-prototype@prototype-scope`'s wasm build checked from the first slice; the per-crate
   cut is this milestone's.
@@ -145,8 +145,8 @@ slice's spec, with the gates run before each commit.
   in their commits and their specs, since deleted; Q14 was numbered in the conversation only.
   **D1 to D5**: the defaults put to the owner, listed in their own section.
 - **O1 to O12**: the owner's messages, quoted in "Status and audience". **O13 to O16**: the
-  owner's messages in the design session held at the audit of `spec@first-prototype@editor-shell`,
-  quoted in that slice's spec with the questions **Q15 to Q21** they answer; that session's
+  owner's messages in the design session held at the audit of the slice `editor-shell`,
+  quoted in that slice's spec, since deleted, with the questions **Q15 to Q21** they answer; that session's
   acceptance criterion **AC6** and tripwire **T5** are in "Acceptance criteria" and "Premortem".
   **O17**: the owner's answer to **Q22**, the material finding of that slice spec's review, quoted
   in the same spec. **O18**: the owner's answer to **Q23**, the app crate's goals drafted per D2,
@@ -357,7 +357,8 @@ Proposed by the session in round 1 (`argument@first-prototype@arg-11`,
 whole-table agreement. Final state: approved. Shape: "Decided design" below. Harvest: the slide
 units and the area geometry in the model crate's Component, at the slice `model-core`;
 the uniform scaling of every display in rootpoint's design home, since the render and app crates
-both respect it, at `spec@first-prototype@editor-shell`.
+both respect it, at the slice `editor-shell`, where it is recorded as
+`design@rootpoint@uniform-scaling`.
 
 ### Content stored apart, with areas holding references to it `##content-by-reference`
 
@@ -406,7 +407,7 @@ Proposed by the session in round 1, conditional on `thread@first-prototype@slide
 instead, iced." Closed by O10's whole-table agreement, with the renderer on (b). Final state:
 approved. If `thread@first-prototype@slide-renderer` is reopened toward (a), iced is the host the
 discussion named.
-Shape: the decided design of `spec@first-prototype@editor-shell`. Harvest: a design head of the app
+Shape: built, and recorded in `design@rootpoint-app@gui-toolkit`. Harvest: a design head of the app
 crate's Component.
 
 ### Slides and nodes are addressed by stable ids `##protocol-addressing`
@@ -841,7 +842,7 @@ own"; one spec "would be one PR of perhaps several thousand lines ... which is w
 The names below are the shapes the design needs. A slice's design audit may rename one, in place,
 before the slice's code is written. Every one was new when this document was written; those of the
 model and render crates, and those of the protocol crate but `rootpoint-ctl`, now exist in the
-code; the names `spec@first-prototype@editor-shell` adds are listed under their crates below.
+code; the names the slice `editor-shell` added are listed under their crates below.
 
 ```text
 crates/rootpoint-model/   (crate rootpoint-model)
@@ -922,7 +923,7 @@ save and load; presenter mode, full screen, with previous and next; the protocol
 live; a headless PNG render; a wasm build checked by the gates from the first slice; a built-in
 sample presentation, in every build, as a tutorial and demonstrator, per D3.
 
-**The UI actions** of the native GUI, which `spec@first-prototype@editor-shell` builds and
+**The UI actions** of the native GUI, which the slice `editor-shell` built and
 `spec@first-prototype@browser-build` checks in the browser:
 
 - in the slide list: add, remove, reorder by drag, and duplicate a slide;
@@ -1009,7 +1010,7 @@ Each cause assumes the prototype was built and failed. Each verdict below is the
 O12, "All tripwires and AC can be kept, proceed", for AC1 to AC5 and T1 and T2, and in the owner's
 message after the milestone was written, "D2 accepted; T3 and T4 too", for T3 and T4. T5 and AC6
 come from the premortem of the design session held at the audit of
-`spec@first-prototype@editor-shell`, and the owner's ruling on them is O16 of that slice's spec,
+the slice `editor-shell`, and the owner's ruling on them is O16 of that slice's spec, since deleted,
 "Keep both AC6 and T5,proceed".
 
 - **In-place text editing on Parley is poor.** Stresses `thread@first-prototype@slide-renderer` and
@@ -1047,16 +1048,16 @@ come from the premortem of the design session held at the audit of
   background, footer or layout on several slides beyond what "duplicate slide" gives. Response:
   reopen templates in a design session. Re-entry: the first real talk given with the prototype.
   Recorded as T3 is.
-- **T5. A command of another client joins the GUI's undo group.** Stresses #gesture-undo of
-  `spec@first-prototype@editor-shell`, in the design session held at its audit. Fires when: in
+- **T5. A command of another client joins the GUI's undo group.** Stresses
+  `design@rootpoint-protocol@gesture-undo`, decided in the design session held at the audit of the
+  slice `editor-shell`. Fires when: in
   `spec@first-prototype@live-control`, a command from the socket arrives while a group the GUI
   opened with `begin` is open, and joins it, so one `undo` reverts the agent's edit with the
   GUI's gesture. Response: reopen that decision, for example with one group per client. Re-entry:
   the audit of `spec@first-prototype@live-control`. Recorded on the owner's word in O16, at the
-  harvest of `spec@first-prototype@editor-shell`, in the protocol crate's Component's tripwires
-  home, guarding the head that harvest writes for that decision.
-- **AC6. The desktop takes the editor's modifier keys.** Stresses #split-preview and
-  #node-selection of `spec@first-prototype@editor-shell`. Becomes AC6,
+  harvest of the slice `editor-shell`, as `tripwire@rootpoint-protocol@client-joins-gui-group`.
+- **AC6. The desktop takes the editor's modifier keys.** Stresses
+  `design@rootpoint-app@split-preview` and `design@rootpoint-app@node-selection`. Becomes AC6,
   `acceptance@first-prototype@modifiers-reach-app`.
 
 ## Acceptance criteria
@@ -1072,7 +1073,7 @@ character such as "é" cannot be typed. Response: reopen `thread@first-prototype
 
 Guards `thread@first-prototype@slide-renderer`. Judged in two parts: the 4K bound by
 the slice `slide-rendering`, where it did not fire, the drag bound by
-`spec@first-prototype@editor-shell`. Fires
+the slice `editor-shell`, where it did not fire: the largest frame took 5.9 ms. Fires
 when, in a release build on the owner's machine, any frame of a divider drag in a 1600×900 editor
 view takes more than 33 ms to redraw, or any render of one 3840×2160 presenter slide with text and
 an image takes more than 200 ms. The owner kept these bounds in O12. Response: reopen
@@ -1107,10 +1108,11 @@ those changes. Response: reopen `thread@first-prototype@save-format`.
 
 ### AC6. Every modifier gesture of the editor reaches the app on the owner's desktop `##modifiers-reach-app`
 
-Guards the decisions of `spec@first-prototype@editor-shell` on splitting at the pointer with a
-preview and snapping, #split-preview, and on selecting by keys, #node-selection, and the heads
-that slice's harvest writes for them. Judged at step 5 of that slice, on the owner's machine and
-desktop. Fires when any of these does not reach the app: Ctrl+click and Shift+click with their
+Guards the decisions on splitting at the pointer with a preview and snapping,
+`design@rootpoint-app@split-preview`, and on selecting by keys,
+`design@rootpoint-app@node-selection`. Judged at step 5 of the slice `editor-shell`, on the owner's
+machine and desktop, where it did not fire: every gesture below reached the app, on the owner's
+report. Fires when any of these does not reach the app: Ctrl+click and Shift+click with their
 preview lines, Alt snapping during a split and during a divider drag, Alt+↑, Alt+↓, Alt+← and
 Alt+→. Response: the gesture that does not reach the app is bound to another key, and the decision
 that holds it is reopened for its keys. Kept on the owner's word in O16 of that slice's spec.
@@ -1124,7 +1126,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 2. the slice `slide-rendering`: the render crate and a headless PNG. Judges AC2's 4K
    bound.
 3. the slice `command-protocol`: the protocol crate and the headless binary.
-4. `spec@first-prototype@editor-shell`: the app crate, native, with presenter mode. Judges AC2's
+4. the slice `editor-shell`: the app crate, native, with presenter mode. Judges AC2's
    drag bound and AC6.
 5. `spec@first-prototype@text-editing`: editing text in place. Judges AC1.
 6. `spec@first-prototype@live-control`: the control socket and its client.
@@ -1133,7 +1135,6 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 
 | slice spec |
 | --- |
-| [The native GUI and presenter mode](editor-shell.md) |
 | [Editing text in place](text-editing.md) |
 | [Driving the running GUI by text commands](live-control.md) |
 | [The editor and presenter in a web browser](browser-build.md) |
@@ -1144,9 +1145,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   draws the rectangles and contents that the model defines.
 - the slice `slide-rendering` before the slice `command-protocol`: the
   protocol's `render` command calls the renderer.
-- the slice `command-protocol` before `spec@first-prototype@editor-shell`: the GUI
+- the slice `command-protocol` before the slice `editor-shell`: the GUI
   applies the same operations, and its tests drive it through the protocol's session.
-- `spec@first-prototype@editor-shell` before `spec@first-prototype@text-editing`: in-place editing
+- the slice `editor-shell` before `spec@first-prototype@text-editing`: in-place editing
   needs a hosted slide view and input forwarding.
 - `spec@first-prototype@text-editing` before `spec@first-prototype@live-control`: the control socket
   drives a GUI whose editing is complete, so a failure of the socket is not one of editing.
@@ -1164,7 +1165,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   `skill@knowledge-architect-goal-setting` for the owner's ruling before that slice merges. Bears on
   `thread@first-prototype@crate-split`. The harvest rows of the slice specs name those Components'
   homes. The owner ruled: "D2 accepted". The goals of the app crate's Component were ruled in O18,
-  quoted in `spec@first-prototype@editor-shell`.
+  quoted in the spec of the slice `editor-shell`, since deleted.
 - **T3 and T4, ruled**, in "Premortem": recorded. The owner ruled: "T3 and T4 too".
 - **D3, ruled.** The default put to the owner: in the browser build, opening, saving and adding an
   image wait on packing, and the build edits only a built-in sample. Its rival: open a presentation
@@ -1214,7 +1215,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   file, completing `goal@rootpoint@readable-save-file` and `goal@rootpoint@runs-in-browser`. The
   owner wants, later than the prototype, assets organised by the author in subdirectories of any
   depth, and a pack then an unpack elsewhere to keep that tree, in the owner's words in O14 of
-  `spec@first-prototype@editor-shell`: "ultimately (later than initial prototype), I'd like to
+  the slice `editor-shell`: "ultimately (later than initial prototype), I'd like to
   allow the user to organize the assets in any way they want with subdirectories of any level, and
   for a "pack then unpack elsewhere" action to preserve the tree." The save rule of that slice keeps
   every asset already inside the presentation's directory at its path, at any depth.

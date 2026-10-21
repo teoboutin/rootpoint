@@ -53,8 +53,8 @@ impl App {
     }
 
     /// The axis of the split at the pointer that the held keys ask for, Ctrl a vertical line, which
-    /// splits beside, and Shift a horizontal one, which stacks, and whether Alt snaps it; `None` with neither key
-    /// held, or after Esc until both are released.
+    /// splits beside, and Shift a horizontal one, which stacks, and whether Alt snaps it; `None`
+    /// with neither key held, or after Esc until both are released.
     fn split_keys(&mut self, ui: &Ui) -> Option<(Axis, bool)> {
         let m = ui.input(|i| i.modifiers);
         let axis = if m.command {

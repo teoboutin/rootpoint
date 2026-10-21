@@ -251,7 +251,8 @@ impl App {
         } else if key(ui, Key::ArrowLeft) || key(ui, Key::PageUp) {
             self.previous_slide();
         }
-        // A key may have left presenter mode, which the next frame shows, or moved to another slide.
+        // A key may have left presenter mode, which the next frame shows, or moved to another
+        // slide.
         let Some(slide) = self.session.view().presenting else {
             return;
         };

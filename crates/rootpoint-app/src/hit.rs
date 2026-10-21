@@ -39,8 +39,9 @@ pub struct Divider {
     extent: f64,
 }
 
-/// What a press in the slide view takes, per "Pointer input to gestures" of the slice's spec: the
-/// first that applies.
+/// What a press in the slide view takes, the first that applies in the order of the variants: the
+/// grip comes before a divider, which comes before an area, since a press on the grip or a
+/// divider's band starts a drag (`design@rootpoint-app@node-selection`).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Press {
     /// On the grip of the selected area.

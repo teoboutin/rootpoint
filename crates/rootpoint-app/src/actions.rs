@@ -1,6 +1,6 @@
-//! The editor's actions, each the protocol commands that "UI actions to commands" of the slice's
-//! spec maps it to, run through `App::run`. A test calls each on an app with no window, and runs the
-//! same commands on a second session.
+//! The editor's actions, each the protocol commands that do what it does, run through `App::run`,
+//! per `design@rootpoint-app@actions-are-commands`. A test calls each on an app with no window,
+//! and runs the same commands on a second session.
 
 use std::path::{Component, Path, PathBuf};
 

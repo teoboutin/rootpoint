@@ -2,9 +2,8 @@
 
 ## Every action is a command
 
-Every action of the editor goes through `App::run`, which runs a protocol `Command` on the
-session, so a script of the same commands gives the same document and view. The session is
-changed nowhere else.
+Every action of the editor runs protocol `Command`s through `App::run`, and the session is changed
+nowhere else, per `design@rootpoint-app@actions-are-commands`.
 
 ## The slide's texture is rendered again only when something changed
 
@@ -14,11 +13,11 @@ size can change once after the first.
 
 ## Presenter mode draws the slide as the editor does
 
-`App::presenter` renders through `App::draw` into the same texture as the slide view, and draws
-nothing over it, so at one pixel size its image is the editor's: the test of claim 3 in
-`path@rootpoint-app@tests/presenter.rs` compares the two. Every editor mark is drawn by
-`App::overlay`, never into the image `draw` uploads. `App::frame` asks the window for full screen
-whenever presenter mode starts, and to leave it when it ends.
+Every editor mark is drawn by `App::overlay` over the texture, never into the image `App::draw`
+uploads, per `design@rootpoint-app@editor-overlay`; `App::presenter` renders through `App::draw`
+and draws nothing over it, and `path@rootpoint-app@tests/presenter.rs` compares its image with the
+editor's. `App::frame` asks the window for full screen whenever presenter mode starts, and to
+leave it when it ends.
 
 ## The slide view's marks and hits come from one layout
 
@@ -30,10 +29,9 @@ the one with more.
 
 ## A gesture's undo group closes before another opens
 
-A divider drag, a grip drag and a focus of the text field each open a group with `begin`, through
-`App::open_group`, which first closes any group still open; a release, the loss of the field's
-focus and the loss of the window's focus close it. An action that does not join the gesture, as
-undo, an open, a save or presenting does, closes any group still open before it acts.
+A gesture opens its group through `App::open_group`, which first closes any group still open, per
+`design@rootpoint-app@actions-are-commands`. An action that does not join the gesture, as undo, an
+open, a save or presenting does, closes any group still open before it acts.
 
 ## The tests find widgets by the places the last frame recorded
 

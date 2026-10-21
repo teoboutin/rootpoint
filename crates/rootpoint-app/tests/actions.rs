@@ -1,7 +1,7 @@
 //! Every UI action goes through the session: each action of the app, called with no window, leaves
 //! the document and the view that its commands, run on a second session, leave; and one `undo`
-//! after it leaves them equal too, so the action groups its commands as they do. Claim 1 of
-//! `spec@first-prototype@editor-shell`.
+//! after it leaves them equal too, so the action groups its commands as they do, as
+//! `design@rootpoint-app@actions-are-commands` says.
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
