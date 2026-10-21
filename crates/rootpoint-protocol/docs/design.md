@@ -33,6 +33,15 @@ never reuses one, `design@rootpoint-model@stable-ids`. A position shifts at ever
 removal, so a script's later command would name another area,
 `rejected@rootpoint-model@addressing-by-position`.
 
+### A split's axis is typed as a short word for where its children go `##protocol-axis-words`
+
+`split` and `tree` write a `LeftToRight` split as `beside` and a `TopToBottom` split as `stacked`.
+Each word says where the children go, as the model's names do, `design@rootpoint-model@axis-names`,
+and not the direction of the dividers, which a fresh agent read both ways,
+`rejected@rootpoint-model@divider-direction-names`. Between these words and the model's own names
+written as `left-to-right` and `top-to-bottom`, the owner chose the shorter words, which are typed
+in every `split` command.
+
 ## The session
 
 ### The view state lives in the session, outside the document's operations `##view-state`
