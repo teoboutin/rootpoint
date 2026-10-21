@@ -1,18 +1,22 @@
 ok s1 root=n2
 ok s3 root=n4
 ok new=n5 split=n6
-ok selected=- presenting=-
+ok selected=- shown=- presenting=-
 ok
-ok selected=n5 presenting=-
+ok selected=n5 shown=s1 presenting=-
 ok s1
-ok selected=n5 presenting=s1
+ok selected=n5 shown=s1 presenting=s1
 ok s3
-ok selected=n5 presenting=s3
+ok selected=n5 shown=s1 presenting=s3
 err at the last slide
 ok s1
-ok selected=n5 presenting=s1
+ok selected=n5 shown=s1 presenting=s1
 err at the first slide
 ok
-ok selected=n5 presenting=-
+ok selected=n5 shown=s1 presenting=-
 ok
-ok selected=- presenting=-
+ok selected=- shown=s1 presenting=-
+ok
+ok selected=- shown=s3 presenting=-
+ok
+ok selected=- shown=- presenting=-

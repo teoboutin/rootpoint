@@ -3,7 +3,7 @@
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use rootpoint_model::{
     Asset, AssetId, AssetSource, Content, Document, FontRef, ImageContent, Node, NodeId, Op,
@@ -13,6 +13,7 @@ use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
 
 use crate::command::{Command, StyleOption, parse_command};
 use crate::files::Files;
+use crate::save::{extension, inside, normalize, relative, with_suffix};
 use crate::tree::slide_tree;
 
 /// The reply to one command: `ok` with its result, or `err` with the reason. It prints as one
@@ -39,12 +40,25 @@ impl fmt::Display for Reply {
     }
 }
 
-/// What the session shows besides the document: the selected node, and the slide presenter mode
-/// shows, if it is on.
+/// What the session shows besides the document: the selected node, the slide the editor shows,
+/// and the slide presenter mode shows, if it is on. With no slide shown, the editor shows the
+/// first.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct View {
     pub selected: Option<NodeId>,
+    pub shown: Option<SlideId>,
     pub presenting: Option<SlideId>,
+}
+
+/// One undo step: the operations that revert one command, or every command of one group, applied
+/// in order.
+type Step = Vec<Op>;
+
+/// A group opened by `begin`: the inverses of its edits, in the order they were applied, and the
+/// redo stack as it was at the `begin`, which `cancel` restores.
+struct Group {
+    inverses: Vec<Op>,
+    redo: Vec<Step>,
 }
 
 /// One document, its undo and redo stacks, and its view, changed only by commands.
@@ -52,8 +66,9 @@ pub struct Session {
     doc: Document,
     /// The directory of the presentation file, against which asset paths are read.
     dir: PathBuf,
-    undo: Vec<Op>,
-    redo: Vec<Op>,
+    undo: Vec<Step>,
+    redo: Vec<Step>,
+    group: Option<Group>,
     view: View,
 }
 
@@ -71,6 +86,7 @@ impl Session {
             dir: PathBuf::new(),
             undo: Vec::new(),
             redo: Vec::new(),
+            group: None,
             view: View::default(),
         }
     }
@@ -81,6 +97,12 @@ impl Session {
 
     pub fn view(&self) -> &View {
         &self.view
+    }
+
+    /// The directory an asset's path is read against: the presentation's, or the working
+    /// directory, the empty path, before a first save or load.
+    pub fn directory(&self) -> &Path {
+        &self.dir
     }
 
     /// Run one line: a command's reply, or `None` for a blank line or a comment, which starts
@@ -111,8 +133,13 @@ impl Session {
                 Ok(String::new())
             }
             Command::Save { path } => {
-                files.write(&path, save_ron(&self.doc).as_bytes())?;
-                self.dir = parent(&path);
+                self.save(&path, files)?;
+                Ok(String::new())
+            }
+            Command::Sample => {
+                let doc = crate::sample::sample()?;
+                *self = Session::new();
+                self.doc = doc;
                 Ok(String::new())
             }
             Command::Load { path } => {
@@ -173,25 +200,61 @@ impl Session {
                 files.write(&path, &out.png())?;
                 Ok(report)
             }
-            Command::Undo => {
-                let inverse = self.undo.pop().ok_or("nothing to undo")?;
-                let redo = self
-                    .apply_op(inverse.clone())
-                    .inspect_err(|_| self.undo.push(inverse))?;
-                self.redo.push(redo);
+            Command::Undo | Command::Redo => {
+                // An `undo` or a `redo` inside a group closes it first, as `end` does.
+                self.end_group();
+                let undo = matches!(command, Command::Undo);
+                let from = if undo { &mut self.undo } else { &mut self.redo };
+                let step = from.pop().ok_or(format!("nothing to {command}"))?;
+                match self.apply_step(step.clone()) {
+                    Ok(back) if undo => self.redo.push(back),
+                    Ok(back) => self.undo.push(back),
+                    Err(e) => {
+                        let from = if undo { &mut self.undo } else { &mut self.redo };
+                        from.push(step);
+                        return Err(e);
+                    }
+                }
                 Ok(String::new())
             }
-            Command::Redo => {
-                let op = self.redo.pop().ok_or("nothing to redo")?;
-                let undo = self
-                    .apply_op(op.clone())
-                    .inspect_err(|_| self.redo.push(op))?;
-                self.undo.push(undo);
+            Command::Begin => {
+                if self.group.is_some() {
+                    return Err("a group is open".to_owned());
+                }
+                self.group = Some(Group {
+                    inverses: Vec::new(),
+                    redo: self.redo.clone(),
+                });
+                Ok(String::new())
+            }
+            Command::End => {
+                self.group.as_ref().ok_or("no group is open")?;
+                self.end_group();
+                Ok(String::new())
+            }
+            Command::Cancel => {
+                let group = self.group.as_ref().ok_or("no group is open")?;
+                let step: Step = group.inverses.iter().rev().cloned().collect();
+                self.apply_step(step)?;
+                let group = self.group.take().expect("checked above");
+                self.redo = group.redo;
                 Ok(String::new())
             }
             Command::Select { node } => {
-                self.doc.node(node).ok_or(format!("no node {node}"))?;
+                let slide = self
+                    .doc
+                    .slides
+                    .iter()
+                    .find(|s| s.root.find(node).is_some())
+                    .ok_or(format!("no node {node}"))?;
+                self.view.shown = Some(slide.id);
                 self.view.selected = Some(node);
+                Ok(String::new())
+            }
+            Command::SelectSlide { slide } => {
+                self.doc.slide(slide).ok_or(format!("no slide {slide}"))?;
+                self.view.shown = Some(slide);
+                self.view.selected = None;
                 Ok(String::new())
             }
             Command::Deselect => {
@@ -236,8 +299,9 @@ impl Session {
             Command::View => {
                 let show = |id: Option<String>| id.unwrap_or_else(|| "-".to_owned());
                 Ok(format!(
-                    "selected={} presenting={}",
+                    "selected={} shown={} presenting={}",
                     show(self.view.selected.map(|n| n.to_string())),
+                    show(self.view.shown.map(|s| s.to_string())),
                     show(self.view.presenting.map(|s| s.to_string()))
                 ))
             }
@@ -245,7 +309,10 @@ impl Session {
                 let op = self.operation(editing)?;
                 let before = ids(&self.doc);
                 let inverse = self.apply_op(op)?;
-                self.undo.push(inverse.clone());
+                match &mut self.group {
+                    Some(group) => group.inverses.push(inverse.clone()),
+                    None => self.undo.push(vec![inverse.clone()]),
+                }
                 self.redo.clear();
                 Ok(self.created(&before, &inverse))
             }
@@ -333,17 +400,177 @@ impl Session {
         {
             self.view.presenting = None;
         }
+        if let Some(slide) = self.view.shown
+            && self.doc.slide(slide).is_none()
+        {
+            self.view.shown = None;
+        }
         Ok(inverse)
+    }
+
+    /// Apply the operations of a step in order, and return the step that reverts it. A step that
+    /// fails partway leaves the document and the view as they were.
+    fn apply_step(&mut self, step: Step) -> Result<Step, String> {
+        let (doc, view) = (self.doc.clone(), self.view.clone());
+        let mut back = Vec::with_capacity(step.len());
+        for op in step {
+            match self.apply_op(op) {
+                Ok(inverse) => back.push(inverse),
+                Err(e) => {
+                    (self.doc, self.view) = (doc, view);
+                    return Err(e);
+                }
+            }
+        }
+        back.reverse();
+        Ok(back)
+    }
+
+    /// Save the document to `path`, so that every asset is readable beside the saved file: an
+    /// asset whose file lies in the saved file's directory keeps it, and any other is written
+    /// there, under a name no other file holds. Every asset to write is read before anything is
+    /// written, so a save that cannot read one writes nothing.
+    fn save(&mut self, path: &str, files: &mut dyn Files) -> Result<(), String> {
+        let target = normalize(&parent(path));
+        let own = Path::new(path)
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned());
+        // The new source of each asset whose source changes, and the files to write.
+        let mut sources: BTreeMap<AssetId, String> = BTreeMap::new();
+        let mut writes: Vec<(String, Vec<u8>)> = Vec::new();
+        let mut kept = BTreeSet::new();
+        let mut copied = Vec::new();
+        for (&id, asset) in &self.doc.assets {
+            match &asset.source {
+                AssetSource::Path(p) => {
+                    let full = normalize(&self.dir.join(p));
+                    if let Some(rel) = inside(&full, &target) {
+                        if rel != *p {
+                            sources.insert(id, rel.clone());
+                        }
+                        kept.insert(rel);
+                        continue;
+                    }
+                    let bytes = files
+                        .read(&full.to_string_lossy())
+                        .map_err(|e| format!("{id}: {e}"))?;
+                    let name = Path::new(p)
+                        .file_name()
+                        .map(|n| n.to_string_lossy().into_owned())
+                        .unwrap_or_else(|| format!("asset-{}{}", id.0, extension(&bytes)));
+                    copied.push((id, name, bytes));
+                }
+                AssetSource::Embedded(bytes) => {
+                    let name = format!("asset-{}{}", id.0, extension(bytes));
+                    copied.push((id, name, bytes.clone()));
+                }
+            }
+        }
+        // The names this save gives, each with the bytes it holds once the save is done.
+        let mut given: BTreeMap<String, Vec<u8>> = BTreeMap::new();
+        for (id, name, bytes) in copied {
+            let mut n = 1;
+            let chosen = loop {
+                let candidate = if n == 1 {
+                    name.clone()
+                } else {
+                    with_suffix(&name, n)
+                };
+                n += 1;
+                if Some(&candidate) == own.as_ref() {
+                    continue;
+                }
+                if let Some(held) = given.get(&candidate) {
+                    if *held == bytes {
+                        break candidate;
+                    }
+                    continue;
+                }
+                let file = target.join(&candidate).to_string_lossy().into_owned();
+                if files.exists(&file).map_err(|e| format!("{id}: {e}"))? {
+                    let held = files.read(&file).map_err(|e| format!("{id}: {e}"))?;
+                    if held == bytes {
+                        given.insert(candidate.clone(), bytes);
+                        break candidate;
+                    }
+                    continue;
+                }
+                // A kept asset's file that is missing still holds its name.
+                if kept.contains(&candidate) {
+                    continue;
+                }
+                given.insert(candidate.clone(), bytes.clone());
+                writes.push((file, bytes));
+                break candidate;
+            };
+            if self.doc.assets[&id].source != AssetSource::Path(chosen.clone()) {
+                sources.insert(id, chosen);
+            }
+        }
+        let mut doc = self.doc.clone();
+        for (&id, source) in &sources {
+            let op = Op::SetAssetSource {
+                id,
+                source: AssetSource::Path(source.clone()),
+            };
+            apply(&mut doc, op).map_err(|e| format!("{e:?}"))?;
+        }
+        for (file, bytes) in &writes {
+            files.write(file, bytes)?;
+        }
+        files.write(path, save_ron(&doc).as_bytes())?;
+        // The new sources are no undo step: an undo to an old path, read against the new
+        // directory, would name another file. The operations the stacks hold are given the same
+        // sources instead, and an asset only they hold a path that names the same file.
+        let old_dir = std::mem::replace(&mut self.dir, target);
+        self.doc = doc;
+        let group = self
+            .group
+            .iter_mut()
+            .flat_map(|g| std::iter::once(&mut g.inverses).chain(g.redo.iter_mut()));
+        let steps = self
+            .undo
+            .iter_mut()
+            .chain(self.redo.iter_mut())
+            .chain(group);
+        for op in steps.flatten() {
+            if let Op::RestoreAsset { id, asset } = op {
+                if let Some(source) = sources.get(id) {
+                    asset.source = AssetSource::Path(source.clone());
+                } else if let AssetSource::Path(p) = &asset.source {
+                    let full = normalize(&old_dir.join(p));
+                    match relative(&full, &self.dir) {
+                        Some(rel) => asset.source = AssetSource::Path(rel),
+                        // No path names the file from the new directory; its bytes do.
+                        None => {
+                            if let Ok(bytes) = files.read(&full.to_string_lossy()) {
+                                asset.source = AssetSource::Embedded(bytes);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Close the open group, if any: its edits become one undo step, and an empty group none.
+    fn end_group(&mut self) {
+        if let Some(group) = self.group.take()
+            && !group.inverses.is_empty()
+        {
+            self.undo.push(group.inverses.into_iter().rev().collect());
+        }
     }
 
     /// An asset's bytes: embedded in the document, or read from its path, relative to the
     /// presentation's directory.
-    fn asset_bytes(&self, id: AssetId, files: &mut dyn Files) -> Result<Vec<u8>, String> {
+    pub fn asset_bytes(&self, id: AssetId, files: &mut dyn Files) -> Result<Vec<u8>, String> {
         let asset = self.doc.assets.get(&id).ok_or(format!("no asset {id}"))?;
         match &asset.source {
             AssetSource::Embedded(bytes) => Ok(bytes.clone()),
             AssetSource::Path(path) => {
-                let full = self.dir.join(path);
+                let full = normalize(&self.dir.join(path));
                 files.read(&full.to_string_lossy())
             }
         }

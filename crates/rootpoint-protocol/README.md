@@ -20,3 +20,14 @@ ok s1 n4:beside(0.5)[n2 empty | n3 empty]
 The paths of `save`, `load` and `render` are relative to the working directory. An asset's path is
 relative to the directory of the presentation last saved or loaded, or to the working directory
 before either.
+
+`sample` opens the built-in sample, a presentation of three slides that says how the editor's
+gestures work; the crate holds its RON text and its image, in `sample/`, so it opens in every host
+with no file.
+
+A `save` leaves every asset readable beside the saved file. An asset whose file lies inside the
+saved file's directory, at any depth, keeps its file, and its path is rewritten relative to that
+directory. Any other asset, and an embedded one such as an image of the built-in sample, is copied
+into that directory under its file name, or `asset-<id>` and an extension for embedded bytes; a
+name whose file holds other bytes takes a suffix, `-2`, `-3` and on, so no file is overwritten. A
+save that cannot read an asset replies `err`, naming it, and writes nothing.

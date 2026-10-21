@@ -1,0 +1,56 @@
+# Claim 4 of the native GUI slice: one gesture is one undo step.
+add-slide
+split n2 beside 0.4
+# A drag: one undo reverts it whole, and one redo makes it again.
+begin
+divider n4 0 0.41
+divider n4 0 0.43
+divider n4 0 0.47
+end
+tree s1
+undo
+tree s1
+redo
+tree s1
+# Cancel reverts the group's edits, and leaves the stacks as they were at its begin.
+undo
+begin
+divider n4 0 0.6
+text n2 "typed"
+cancel
+tree s1
+redo
+tree s1
+# An empty group leaves no step: this undo reverts the redo above.
+begin
+end
+undo
+tree s1
+# No nesting, and end and cancel need an open group.
+begin
+begin
+end
+end
+cancel
+# An undo inside a group closes it first, then reverts it.
+begin
+text n3 "a"
+text n3 "ab"
+undo
+tree s1
+end
+# View commands inside a group join nothing.
+begin
+select n3
+text n3 "c"
+deselect
+end
+undo
+tree s1
+view
+# New closes an open group.
+begin
+text n3 "lost"
+new
+end
+undo

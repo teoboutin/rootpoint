@@ -30,6 +30,10 @@ impl Files for MemoryFiles {
         self.files.insert(path.to_owned(), bytes.to_vec());
         Ok(())
     }
+
+    fn exists(&mut self, path: &str) -> Result<bool, String> {
+        Ok(self.files.contains_key(path))
+    }
 }
 
 /// Run each line of a script, and return the replies, one per command.

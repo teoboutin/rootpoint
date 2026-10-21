@@ -7,6 +7,8 @@ const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod command;
 mod files;
+mod sample;
+mod save;
 mod session;
 mod tree;
 

@@ -1,0 +1,48 @@
+ok s1 root=n2
+ok new=n3 split=n4
+ok
+ok
+ok
+ok
+ok
+ok s1 n4:beside(0.47)[n2 empty | n3 empty]
+ok
+ok s1 n4:beside(0.4)[n2 empty | n3 empty]
+ok
+ok s1 n4:beside(0.47)[n2 empty | n3 empty]
+ok
+ok
+ok
+ok
+ok
+ok s1 n4:beside(0.4)[n2 empty | n3 empty]
+ok
+ok s1 n4:beside(0.47)[n2 empty | n3 empty]
+ok
+ok
+ok
+ok s1 n4:beside(0.4)[n2 empty | n3 empty]
+ok
+err a group is open
+ok
+err no group is open
+err no group is open
+ok
+ok
+ok
+ok
+ok s1 n4:beside(0.4)[n2 empty | n3 empty]
+err no group is open
+ok
+ok
+ok
+ok
+ok
+ok
+ok s1 n4:beside(0.4)[n2 empty | n3 empty]
+ok selected=- shown=s1 presenting=-
+ok
+ok
+ok
+err no group is open
+err nothing to undo

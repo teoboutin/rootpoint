@@ -1,7 +1,8 @@
 //! Runs protocol commands with no window: one command per line from stdin, one reply per command
 //! to stdout, until the end of its input. The paths of `save`, `load` and `render` are relative to
 //! the working directory; an asset's path, to the directory of the presentation last saved or
-//! loaded, or to the working directory before either.
+//! loaded, or to the working directory before either. A `save` copies beside the saved file every
+//! asset whose file lies outside its directory, and every embedded one.
 
 use std::io::{BufRead, Write};
 
@@ -20,6 +21,10 @@ impl Files for NativeFiles {
 
     fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String> {
         std::fs::write(path, bytes).map_err(|e| format!("{path}: {e}"))
+    }
+
+    fn exists(&mut self, path: &str) -> Result<bool, String> {
+        std::fs::exists(path).map_err(|e| format!("{path}: {e}"))
     }
 }
 

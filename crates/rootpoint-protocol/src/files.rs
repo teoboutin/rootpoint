@@ -7,4 +7,7 @@
 pub trait Files {
     fn read(&mut self, path: &str) -> Result<Vec<u8>, String>;
     fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String>;
+    /// Whether a file is at the path: an error when the host cannot tell, so that a save never
+    /// takes a file it cannot read for a missing one, and writes over it.
+    fn exists(&mut self, path: &str) -> Result<bool, String>;
 }

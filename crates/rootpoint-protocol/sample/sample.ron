@@ -1,0 +1,233 @@
+#![enable(unwrap_variant_newtypes)]
+(
+    version: 1,
+    aspect: (
+        width: 16,
+        height: 9,
+    ),
+    next_id: 20,
+    assets: {
+        19: (
+            source: Path("splits.png"),
+        ),
+    },
+    slides: [
+        (
+            id: 1,
+            root: Split(
+                id: 4,
+                axis: TopToBottom,
+                children: [
+                    Area(
+                        id: 2,
+                        content: Text(
+                            text: "rootpoint",
+                            style: (
+                                font: Builtin("sans"),
+                                size: 120.0,
+                                bold: true,
+                                italic: false,
+                                colour: (
+                                    r: 0,
+                                    g: 0,
+                                    b: 0,
+                                    a: 255,
+                                ),
+                                h_align: Center,
+                                v_align: Middle,
+                            ),
+                        ),
+                    ),
+                    Split(
+                        id: 6,
+                        axis: LeftToRight,
+                        children: [
+                            Area(
+                                id: 3,
+                                content: Text(
+                                    text: "A slide is a tree of splits. Select an area and split it: the split buttons of the side panel, or Shift and an arrow, cut it at its middle. Ctrl or Shift and a click cut it where you click; hold Alt to snap.",
+                                    style: (
+                                        font: Builtin("sans"),
+                                        size: 40.0,
+                                        bold: false,
+                                        italic: false,
+                                        colour: (
+                                            r: 0,
+                                            g: 0,
+                                            b: 0,
+                                            a: 255,
+                                        ),
+                                        h_align: Left,
+                                        v_align: Top,
+                                    ),
+                                ),
+                            ),
+                            Area(
+                                id: 5,
+                                content: Text(
+                                    text: "Click an area to select it. Alt+Up selects its parent, Alt+Down a child, Alt+Left and Alt+Right its siblings. The breadcrumb in the side panel shows the path from the slide\'s root.",
+                                    style: (
+                                        font: Builtin("sans"),
+                                        size: 40.0,
+                                        bold: false,
+                                        italic: false,
+                                        colour: (
+                                            r: 0,
+                                            g: 0,
+                                            b: 0,
+                                            a: 255,
+                                        ),
+                                        h_align: Left,
+                                        v_align: Top,
+                                    ),
+                                ),
+                            ),
+                        ],
+                        dividers: [
+                            0.5,
+                        ],
+                    ),
+                ],
+                dividers: [
+                    0.3,
+                ],
+            ),
+        ),
+        (
+            id: 7,
+            root: Split(
+                id: 10,
+                axis: TopToBottom,
+                children: [
+                    Area(
+                        id: 8,
+                        content: Text(
+                            text: "Dividers and moving",
+                            style: (
+                                font: Builtin("sans"),
+                                size: 80.0,
+                                bold: true,
+                                italic: false,
+                                colour: (
+                                    r: 42,
+                                    g: 157,
+                                    b: 143,
+                                    a: 255,
+                                ),
+                                h_align: Left,
+                                v_align: Middle,
+                            ),
+                        ),
+                    ),
+                    Split(
+                        id: 12,
+                        axis: LeftToRight,
+                        children: [
+                            Area(
+                                id: 9,
+                                content: Text(
+                                    text: "Drag a divider to resize the areas on each side; Esc cancels the drag, and a double-click puts the divider halfway.",
+                                    style: (
+                                        font: Builtin("sans"),
+                                        size: 40.0,
+                                        bold: false,
+                                        italic: false,
+                                        colour: (
+                                            r: 0,
+                                            g: 0,
+                                            b: 0,
+                                            a: 255,
+                                        ),
+                                        h_align: Left,
+                                        v_align: Top,
+                                    ),
+                                ),
+                            ),
+                            Area(
+                                id: 11,
+                                content: Text(
+                                    text: "Drag an area\'s grip onto another area to swap them, or onto its edge to move it there. The hint says what the drop will do.",
+                                    style: (
+                                        font: Builtin("sans"),
+                                        size: 40.0,
+                                        bold: false,
+                                        italic: true,
+                                        colour: (
+                                            r: 38,
+                                            g: 70,
+                                            b: 83,
+                                            a: 255,
+                                        ),
+                                        h_align: Left,
+                                        v_align: Top,
+                                    ),
+                                ),
+                            ),
+                        ],
+                        dividers: [
+                            0.5,
+                        ],
+                    ),
+                ],
+                dividers: [
+                    0.25,
+                ],
+            ),
+        ),
+        (
+            id: 13,
+            root: Split(
+                id: 16,
+                axis: TopToBottom,
+                children: [
+                    Split(
+                        id: 18,
+                        axis: LeftToRight,
+                        children: [
+                            Area(
+                                id: 14,
+                                content: Image(
+                                    asset: 19,
+                                    fit: Fit,
+                                ),
+                            ),
+                            Area(
+                                id: 17,
+                                content: Image(
+                                    asset: 19,
+                                    fit: Fill,
+                                ),
+                            ),
+                        ],
+                        dividers: [
+                            0.5,
+                        ],
+                    ),
+                    Area(
+                        id: 15,
+                        content: Text(
+                            text: "The same image in fit, left, and in fill, right.",
+                            style: (
+                                font: Builtin("sans"),
+                                size: 36.0,
+                                bold: false,
+                                italic: false,
+                                colour: (
+                                    r: 0,
+                                    g: 0,
+                                    b: 0,
+                                    a: 255,
+                                ),
+                                h_align: Center,
+                                v_align: Middle,
+                            ),
+                        ),
+                    ),
+                ],
+                dividers: [
+                    0.8,
+                ],
+            ),
+        ),
+    ],
+)

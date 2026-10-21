@@ -186,6 +186,10 @@ fn every_operation_is_undone_by_its_inverse() {
             asset: image.clone(),
         },
         Op::RemoveAsset { id: asset },
+        Op::SetAssetSource {
+            id: asset,
+            source: AssetSource::Embedded(vec![1, 2, 3]),
+        },
     ];
     for op in ops {
         round_trip(&doc, op);
@@ -353,6 +357,10 @@ fn a_refused_operation_changes_nothing() {
             }),
         },
         Op::RemoveAsset { id: AssetId(999) },
+        Op::SetAssetSource {
+            id: AssetId(999),
+            source: AssetSource::Path("dog.png".to_owned()),
+        },
         Op::AddSlide { at: 5 },
     ];
     for op in refused {

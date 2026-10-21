@@ -75,10 +75,22 @@ pub enum Command {
     RemoveAsset {
         asset: AssetId,
     },
+    /// Replace the document by the built-in sample.
+    Sample,
     Undo,
     Redo,
+    /// Open a group: the edits until its `end` are one undo step.
+    Begin,
+    End,
+    /// Revert the edits of the open group, and close it with no step.
+    Cancel,
+    /// Select a node, and show its slide.
     Select {
         node: NodeId,
+    },
+    /// Show a slide, and select no node.
+    SelectSlide {
+        slide: SlideId,
     },
     Deselect,
     /// Enter presenter mode on a slide, the first when none is named.
@@ -189,11 +201,24 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         "remove-asset" => Command::RemoveAsset {
             asset: parse_asset(&args.word("an asset")?)?,
         },
+        "sample" => Command::Sample,
         "undo" => Command::Undo,
         "redo" => Command::Redo,
-        "select" => Command::Select {
-            node: parse_node(&args.word("a node")?)?,
-        },
+        "begin" => Command::Begin,
+        "end" => Command::End,
+        "cancel" => Command::Cancel,
+        "select" => {
+            let target = args.word("a node or a slide")?;
+            if target.starts_with('s') {
+                Command::SelectSlide {
+                    slide: parse_slide(&target)?,
+                }
+            } else {
+                Command::Select {
+                    node: parse_node(&target)?,
+                }
+            }
+        }
         "deselect" => Command::Deselect,
         "present" => Command::Present {
             slide: args.optional(parse_slide)?,
@@ -264,9 +289,14 @@ impl fmt::Display for Command {
             Command::Clear { area } => write!(f, "clear {area}"),
             Command::Asset { path } => write!(f, "asset {}", quote(path)),
             Command::RemoveAsset { asset } => write!(f, "remove-asset {asset}"),
+            Command::Sample => f.write_str("sample"),
             Command::Undo => f.write_str("undo"),
             Command::Redo => f.write_str("redo"),
+            Command::Begin => f.write_str("begin"),
+            Command::End => f.write_str("end"),
+            Command::Cancel => f.write_str("cancel"),
             Command::Select { node } => write!(f, "select {node}"),
+            Command::SelectSlide { slide } => write!(f, "select {slide}"),
             Command::Deselect => f.write_str("deselect"),
             Command::Present { slide: None } => f.write_str("present"),
             Command::Present { slide: Some(s) } => write!(f, "present {s}"),

@@ -95,9 +95,14 @@ fn every_command_prints_back_as_it_parses() {
             path: "images/cat.png".into(),
         },
         Command::RemoveAsset { asset: AssetId(5) },
+        Command::Sample,
         Command::Undo,
         Command::Redo,
+        Command::Begin,
+        Command::End,
+        Command::Cancel,
         Command::Select { node: NodeId(2) },
+        Command::SelectSlide { slide: SlideId(3) },
         Command::Deselect,
         Command::Present { slide: None },
         Command::Present {
@@ -121,6 +126,7 @@ fn every_scripted_line_prints_back_as_a_line_that_parses_to_it() {
     let mut parsed = 0;
     for name in [
         "golden.txt",
+        "groups.txt",
         "ids-build.txt",
         "ids-readdress.txt",
         "view.txt",
@@ -364,6 +370,8 @@ fn a_refused_command_changes_nothing() {
         "duplicate-slide s9",
         "clear n9",
         "select n9",
+        "select s9",
+        "select a3",
         "present s9",
         "next",
         "prev",
@@ -383,6 +391,8 @@ fn a_refused_command_changes_nothing() {
         "deselect n3",
         "view all",
         "asset",
+        "sample s1",
+        "begin now",
     ];
     assert_refused(&mut s, &mut files, &refused);
     // With no history and presenter mode off.
@@ -390,7 +400,7 @@ fn a_refused_command_changes_nothing() {
     assert_refused(
         &mut fresh,
         &mut files,
-        &["undo", "redo", "stop", "next", "prev"],
+        &["undo", "redo", "stop", "next", "prev", "end", "cancel"],
     );
 }
 
@@ -464,5 +474,70 @@ fn a_command_built_through_the_api_keeps_the_grammars_sizes() {
             &mut files,
         );
         assert!(matches!(reply, Reply::Err(_)), "size {size} gave {reply:?}");
+    }
+}
+
+#[test]
+fn one_gesture_is_one_undo_step() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    let replies: Vec<String> = run(&mut s, &mut files, &script("groups.txt"))
+        .iter()
+        .map(|r| format!("{r}\n"))
+        .collect();
+    assert_eq!(replies.concat(), script("groups.replies"));
+}
+
+#[test]
+fn a_cancelled_group_restores_the_document_and_both_stacks() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    run(
+        &mut s,
+        &mut files,
+        "add-slide\nsplit n2 beside 0.4\ntext n2 \"A\"\nundo",
+    );
+    let doc = s.document().clone();
+    run(
+        &mut s,
+        &mut files,
+        "begin\nsplit n3 stacked 0.5\ndivider n4 0 0.7\nremove n3\ncancel",
+    );
+    assert!(s.document().same_content(&doc));
+    // The redo stack is back: the text the undo above reverted is typed again.
+    ok(&mut s, &mut files, "redo");
+    assert_eq!(
+        ok(&mut s, &mut files, "tree s1"),
+        "s1 n4:beside(0.4)[n2 text \"A\" | n3 empty]"
+    );
+    // And the undo stack: two undos reach the empty slide, and a third has nothing.
+    run(&mut s, &mut files, "undo\nundo");
+    assert_eq!(ok(&mut s, &mut files, "tree s1"), "s1 n2 empty");
+}
+
+#[test]
+fn the_sample_opens_with_its_images_and_no_history() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    run(&mut s, &mut files, "add-slide\nbegin\ntext n2 \"x\"");
+    ok(&mut s, &mut files, "sample");
+    let doc = s.document().clone();
+    assert!(doc.slides.len() >= 3);
+    assert!(
+        doc.assets
+            .values()
+            .all(|a| matches!(a.source, AssetSource::Embedded(_)))
+    );
+    assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
+    assert!(matches!(s.execute("end", &mut files), Some(Reply::Err(_))));
+    for slide in doc.slides {
+        assert_eq!(
+            ok(
+                &mut s,
+                &mut files,
+                &format!("render {} out.png 192 108", slide.id)
+            ),
+            "fallback=- missing=- glyphs=-"
+        );
     }
 }

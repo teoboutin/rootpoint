@@ -36,7 +36,7 @@ slice's audit are below, since only this slice cites them.
   - the command `sample`, which opens the built-in sample, per "The built-in sample";
   - the view's shown slide, per "Selection";
   - in `save`, the asset rule of "Saving assets", which closes
-    `issue@rootpoint-protocol@asset-paths-follow-save`;
+    `asset-paths-follow-save`;
   - in `path@rootpoint-protocol@src/files.rs`, `Files::exists`, so a save tells a missing file from
     one it cannot read;
   - in `path@rootpoint-protocol@src/session.rs`, `Session::asset_bytes` made public, so the app
@@ -81,7 +81,7 @@ slice's audit are below, since only this slice cites them.
    is written out as a file and stored as a path; an existing file of other bytes keeps its bytes,
    and the copy takes a suffix; an asset the save cannot read makes it reply `err`, naming it, and
    write nothing. Test: protocol tests over `MemoryFiles`, and the reproduction of
-   `issue@rootpoint-protocol@asset-paths-follow-save`. Shown to fail: the session as it stands,
+   `asset-paths-follow-save`. Shown to fail: the session as it stands,
    whose render after the save reports `missing=a3`.
 
 ## Audit subjects
@@ -137,7 +137,7 @@ The decisions the design session's searches graded as bearing on this slice, and
   `goal@rootpoint-model@faithful-readable-file`, `goal@rootpoint-protocol@commands-drive-everything`
   and `goal@rootpoint@headless-core`: met, by "UI actions to commands" and by the save rule.
 - `rejected@rootpoint-model@gui-mutation`: not brought back; a drag is session commands.
-- `issue@rootpoint-protocol@asset-paths-follow-save`: closed by this slice. `issue@rootpoint-model@linked-dividers`:
+- `asset-paths-follow-save`: closed by this slice. `issue@rootpoint-model@linked-dividers`:
   its trigger is not met; snapping eases the need it defers. `tripwire@rootpoint-model@grouping-lost-to-merge`:
   does not fire; no gesture moves a group of same-axis areas as one unit.
 
@@ -145,7 +145,7 @@ The decisions the design session's searches graded as bearing on this slice, and
 
 The audit stopped the slice on four questions: the interaction design; what one undo step is for a
 drag or for typing, since each `divider` and `text` command pushes one step; what a save into
-another directory does to asset paths, `issue@rootpoint-protocol@asset-paths-follow-save`; and
+another directory does to asset paths, `asset-paths-follow-save`; and
 what a save of the built-in sample writes, since its images are embedded and
 `design@rootpoint-model@asset-source` names packing as what writes embedded bytes. The session
 that held it begins at the owner's message "Start working on the next slice" that opens this
@@ -293,7 +293,7 @@ in O17: "Q22 default accepted". Final state: approved. Absorbs `thread@first-pro
 in "Decided design". Harvest: a design head of the protocol crate's Component, citing
 `design@rootpoint-model@image-storage`, the choice of Q17 attributed to the owner with its "for
 now"; the losing shapes judged for a `rejected` entry; the closure
-of `issue@rootpoint-protocol@asset-paths-follow-save`.
+of `asset-paths-follow-save`.
 
 ### Saving the built-in sample writes its images as files `##sample-save`
 
@@ -853,4 +853,4 @@ losing shapes judged for `rejected` entries; the shown slide into `design@rootpo
 `Op::SetAssetSource` into `design@rootpoint-model@edit-operation-core`'s list where it names the
 operations; T5 into the protocol crate's tripwires home, guarding the head of
 `thread@first-prototype@gesture-undo`; the closure of
-`issue@rootpoint-protocol@asset-paths-follow-save`. AC6 reported at step 5.
+`asset-paths-follow-save`. AC6 reported at step 5.

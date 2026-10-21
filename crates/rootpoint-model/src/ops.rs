@@ -80,6 +80,12 @@ pub enum Op {
         id: AssetId,
         asset: Asset,
     },
+    /// Replace an asset's source, as a save does when it writes the asset's bytes beside the
+    /// presentation; the asset keeps its id, so the areas that name it are unchanged.
+    SetAssetSource {
+        id: AssetId,
+        source: AssetSource,
+    },
 }
 
 /// Why an operation was refused. A refused operation leaves the document unchanged.
@@ -259,6 +265,11 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             }
             doc.assets.insert(id, asset);
             Ok(Op::RemoveAsset { id })
+        }
+        Op::SetAssetSource { id, source } => {
+            let asset = doc.assets.get_mut(&id).ok_or(OpError::UnknownAsset(id))?;
+            let old = std::mem::replace(&mut asset.source, source);
+            Ok(Op::SetAssetSource { id, source: old })
         }
     }
 }

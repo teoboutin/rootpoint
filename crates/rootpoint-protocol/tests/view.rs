@@ -27,11 +27,17 @@ fn view_commands_are_not_undone() {
         "add-slide\nsplit n2 beside 0.5\nselect n3",
     );
     ok(&mut s, &mut files, "undo");
-    // The undo removed the split, and with it the selected area.
-    assert_eq!(ok(&mut s, &mut files, "view"), "selected=- presenting=-");
+    // The undo removed the split, and with it the selected area; its slide stays shown.
+    assert_eq!(
+        ok(&mut s, &mut files, "view"),
+        "selected=- shown=s1 presenting=-"
+    );
     run(&mut s, &mut files, "present s1");
     ok(&mut s, &mut files, "redo");
-    assert_eq!(ok(&mut s, &mut files, "view"), "selected=- presenting=s1");
+    assert_eq!(
+        ok(&mut s, &mut files, "view"),
+        "selected=- shown=s1 presenting=s1"
+    );
 }
 
 #[test]
@@ -39,5 +45,8 @@ fn a_removed_slide_stops_presenter_mode() {
     let mut files = MemoryFiles::default();
     let mut s = Session::new();
     run(&mut s, &mut files, "add-slide\npresent s1\nremove-slide s1");
-    assert_eq!(ok(&mut s, &mut files, "view"), "selected=- presenting=-");
+    assert_eq!(
+        ok(&mut s, &mut files, "view"),
+        "selected=- shown=- presenting=-"
+    );
 }
