@@ -1020,6 +1020,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rootpoint-protocol"
+version = "0.0.0"
+dependencies = [
+ "rootpoint-model",
+ "rootpoint-render",
+]
+
+[[package]]
 name = "rootpoint-render"
 version = "0.0.0"
 dependencies = [

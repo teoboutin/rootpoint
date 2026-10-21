@@ -1,0 +1,13 @@
+[package]
+name = "rootpoint-protocol"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+rootpoint-model = { path = "../rootpoint-model" }
+rootpoint-render = { path = "../rootpoint-render" }
+
+[[bin]]
+name = "rootpoint-headless"
+path = "src/bin/rootpoint-headless.rs"

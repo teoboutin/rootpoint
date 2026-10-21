@@ -6,7 +6,7 @@ cites.
 
 ## Builds
 
-- The crate `rootpoint-protocol` at `planned@rootpoint@crates/rootpoint-protocol/`: `Command`,
+- The crate `rootpoint-protocol` at `path@rootpoint@crates/rootpoint-protocol/`: `Command`,
   `parse_command`, `ParseError`, `Session`, which holds one document, its undo stack and a view
   state, and executes commands, and `Reply`.
 - The binary `rootpoint-headless`: reads one command per line from stdin, writes one reply per

@@ -69,7 +69,7 @@ fn main() -> ExitCode {
 /// The crates the browser build links, each built for the wasm target. A crate the browser build
 /// links is listed here when it is created, so a dependency that cannot build for the browser fails
 /// the gates at once rather than at the browser build.
-const WASM_CRATES: &[&str] = &["rootpoint-model", "rootpoint-render"];
+const WASM_CRATES: &[&str] = &["rootpoint-model", "rootpoint-protocol", "rootpoint-render"];
 
 fn wasm_gate() -> Gate {
     let mut args = vec![
