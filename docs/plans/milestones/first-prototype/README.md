@@ -840,7 +840,7 @@ crates/rootpoint-model/   (crate rootpoint-model)
   FontRef { Builtin(String), Asset(AssetId) }, Rgba, HAlign { Left, Center, Right },
   VAlign { Top, Middle, Bottom }, ImageContent, ImageFit { Fit, Fill }, AssetId, Asset,
   AssetSource { Path(String), Embedded(Vec<u8>) }, AspectRatio { width, height },
-  Rect { x, y, w, h }, area_rects, FORMAT_VERSION, save_ron, load_ron, LoadError,
+  Rect { x, y, w, h }, area_rects, node_rects, FORMAT_VERSION, save_ron, load_ron, LoadError,
   Op { AddSlide, RemoveSlide, RestoreSlide, MoveSlide, DuplicateSlide, Split, Remove,
        SetTree, MoveDivider, Swap, SetContent, AddAsset, RemoveAsset, RestoreAsset },
   OpError, apply
