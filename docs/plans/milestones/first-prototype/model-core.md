@@ -27,10 +27,12 @@ cites.
    over one hand-built document per variant, plus a property test over random operation sequences,
    comparing with an equality that skips the counter. Shown to fail: an inverse of `MoveDivider`
    that returns the new position in place of the old one fails the test.
-2. **A split along its parent's axis merges into the parent.** Splitting a child of a vertical
-   split vertically gives one vertical split with one more child, never a nested vertical split.
-   Test: unit tests on each side (before, after) and on a split of the root. Shown to fail: removing
-   the merge leaves a nested split, which the test's tree comparison reports.
+2. **No split has a child of its own axis.** Splitting a child of a vertical split vertically, or a
+   vertical split itself vertically, gives one vertical split with one more child, never a nested
+   vertical split; a removal that collapses a split keeps it so. Test: unit tests on each side
+   (before, after), on a split of the root and on a collapse, plus a property test over random
+   operation sequences. Shown to fail: removing the merge leaves a nested split, which the test's
+   tree comparison reports.
 3. **Removing an area gives its extent to one neighbour, and a split left with one child
    collapses.** Test: unit tests that read the divider positions and the tree after `Remove`.
    Shown to fail: a removal that keeps a one-child split fails the tree comparison.
@@ -118,11 +120,15 @@ empty area takes the part before `at` or after it.
 - When `axis` equals the axis of the node's parent, the new area is inserted into the parent beside
   the node, and the parent gains one divider at the node's start plus `at` times its extent, in
   fractions of the parent. This is the merge, and the tree stays unique for each layout.
+- When the node is itself a split of `axis`, the new area becomes its first child (`Before`) or
+  its last (`After`), taking the part of its extent before or after `at`; its former dividers are
+  scaled into the rest. Wrapping it would nest two splits of one axis.
 
 `Remove { node }` removes any node but a slide's root, which `SetContent` empties instead. The
 removed child's extent goes to the sibling before it, or to the sibling after it when it is the
 first child: the divider between them is removed. A split left with one child is replaced by that
-child.
+child; when that child is a split of its new parent's axis, its children are merged into the
+parent, their dividers scaled into the extent it held, so no split has a child of its own axis.
 
 `Swap { a, b }` exchanges the contents of two areas, of the same slide or not; the areas, their ids
 and their positions stay.
