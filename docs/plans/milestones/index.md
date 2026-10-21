@@ -1,3 +1,7 @@
 **Generated — do not edit.** `cargo klarch index`
 
-0 entries
+1 entry
+
+| id | title |
+| --- | --- |
+| first-prototype | [Milestone: the first prototype of rootpoint](first-prototype/README.md) |
