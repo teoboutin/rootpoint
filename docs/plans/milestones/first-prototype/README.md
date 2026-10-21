@@ -150,7 +150,7 @@ slice's spec, with the gates run before each commit.
   acceptance criterion **AC6** and tripwire **T5** are in "Acceptance criteria" and "Premortem".
   **O17**: the owner's answer to **Q22**, the material finding of that slice spec's review, quoted
   in the same spec. **O18**: the owner's answer to **Q23**, the app crate's goals drafted per D2,
-  quoted in the same spec.
+  quoted in the same spec. **O19**: the owner's report of AC6, quoted in the same spec.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.

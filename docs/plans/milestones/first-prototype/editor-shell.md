@@ -195,6 +195,12 @@ document, all five written in `register@rootpoint-app@goal`:
 
 > Q23: all goals approved, proceed with step 3
 
+**O19**, the owner's report of AC6, judged at step 5 on the owner's machine and desktop, after the
+session listed Ctrl+click and Shift+click with their lines, Alt snapping during a split and a
+divider drag, and Alt with each arrow:
+
+> AC6: all of these controls are working just fine.
+
 ## Criteria
 
 The session judged its threads against the milestone's criteria
@@ -842,6 +848,12 @@ slide of five areas mixing text and an image, saved with its image beside it fro
 crate's `mixed` test slide. A frame's time runs from the start of the app's `ui` call to the end of
 its `TextureHandle::set`, taken with `std::time::Instant` and logged for each of 100 frames; the
 bound holds when every frame is within it, and the largest is reported.
+
+Judged at step 5. AC2's drag bound holds: every frame of the 100 took 4.7 ms to 5.9 ms, release
+build, on the owner's Intel Core Ultra 7 165H, the largest 5.9 ms; the measurement is in the
+commit "Build presenter mode, and measure AC2's drag bound, for the native GUI slice". AC6 does
+not fire: every gesture it lists reaches the app on the owner's desktop, on the owner's report in
+O19.
 
 ## Harvest
 
