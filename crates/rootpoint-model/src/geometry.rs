@@ -41,14 +41,14 @@ fn collect(node: &Node, rect: Rect, out: &mut Vec<(NodeId, Rect)>) {
             for (i, child) in s.children.iter().enumerate() {
                 let (start, end) = s.child_extent(i);
                 let part = match s.axis {
-                    // Vertical dividers: children side by side, left to right.
-                    Axis::Vertical => Rect {
+                    // Children side by side, left to right.
+                    Axis::SideBySide => Rect {
                         x: rect.x + start * rect.w,
                         w: (end - start) * rect.w,
                         ..rect
                     },
-                    // Horizontal dividers: children stacked, top to bottom.
-                    Axis::Horizontal => Rect {
+                    // Children stacked, top to bottom.
+                    Axis::Stacked => Rect {
                         y: rect.y + start * rect.h,
                         h: (end - start) * rect.h,
                         ..rect

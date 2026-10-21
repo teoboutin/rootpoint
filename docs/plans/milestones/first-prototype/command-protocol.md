@@ -19,9 +19,9 @@ cites.
   and `std::fs` fails there at run time, as `path@rootpoint-model@CLAUDE.md` says; the headless
   binary gives it a `Files` on the native file system. Asset paths are relative to the
   presentation file's directory, or to the working directory of a presentation not yet saved.
-- The renaming of the model's axes to `Axis::SideBySide` and `Axis::Stacked`, which
-  `issue@rootpoint-model@axis-names-need-inference` asks: a fresh agent read `Vertical` as stacked.
-  The protocol's words are `beside` and `stacked`. A default awaiting the owner, Q11.
+- The renaming of the model's axes to `Axis::SideBySide` and `Axis::Stacked`, built in this slice
+  and recorded in `design@rootpoint-model@split-tree-arity`: a fresh agent read `Vertical` as
+  stacked. The protocol's words are `beside` and `stacked`. A default awaiting the owner, Q11.
 - Per D2, the crate's Component.
 
 ## Claims
@@ -49,7 +49,7 @@ only the commands of the mapping table and of the view commands.
 
 ## Audit subjects
 
-- `issue@rootpoint-model@axis-names-need-inference`, on the names of the axes in `split`.
+- `design@rootpoint-model@split-tree-arity`, for the names of the axes in `split`.
 - `thread@first-prototype@protocol-addressing`, `thread@first-prototype@protocol-transport`,
   `thread@first-prototype@edit-operation-core`, `goal@rootpoint@headless-core`.
 - The model crate's `Op` and `apply`, and the render crate's `render_slide`, as landed.

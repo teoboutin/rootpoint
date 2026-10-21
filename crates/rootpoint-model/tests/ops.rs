@@ -108,13 +108,13 @@ fn child_ids(s: &rootpoint_model::Split) -> Vec<NodeId> {
     s.children.iter().map(Node::id).collect()
 }
 
-/// One slide: a vertical split of an area on the left and, on the right, a horizontal split of two
+/// One slide: a side-by-side split of an area on the left and, on the right, a stacked split of two
 /// areas. Returns the document and the ids (left, top right, bottom right).
 fn fixture() -> (Document, [NodeId; 3]) {
     let (mut doc, _, left) = new_doc();
-    split(&mut doc, left, Axis::Vertical, 0.5, Side::After);
+    split(&mut doc, left, Axis::SideBySide, 0.5, Side::After);
     let right = root_split(&doc).children[1].id();
-    split(&mut doc, right, Axis::Horizontal, 0.5, Side::After);
+    split(&mut doc, right, Axis::Stacked, 0.5, Side::After);
     let Node::Split(r) = &root_split(&doc).children[1] else {
         panic!("the right child is not a split");
     };
@@ -141,7 +141,7 @@ fn every_operation_is_undone_by_its_inverse() {
         },
     )
     .unwrap();
-    let vertical = doc.slides[0].root.id();
+    let beside = doc.slides[0].root.id();
     let removed = doc.slides[0].clone();
     let ops = vec![
         Op::AddSlide { at: 1 },
@@ -149,13 +149,13 @@ fn every_operation_is_undone_by_its_inverse() {
         Op::DuplicateSlide { slide },
         Op::Split {
             node: left,
-            axis: Axis::Horizontal,
+            axis: Axis::Stacked,
             at: 0.3,
             side: Side::Before,
         },
         Op::Split {
-            node: vertical,
-            axis: Axis::Vertical,
+            node: beside,
+            axis: Axis::SideBySide,
             at: 0.25,
             side: Side::After,
         },
@@ -170,7 +170,7 @@ fn every_operation_is_undone_by_its_inverse() {
             }),
         },
         Op::MoveDivider {
-            split: vertical,
+            split: beside,
             index: 0,
             pos: 0.4,
         },
@@ -226,11 +226,11 @@ fn add_asset(doc: &mut Document, asset: Asset) -> RemoveAssetId {
 fn splitting_a_child_along_its_parents_axis_merges_into_the_parent() {
     for side in [Side::Before, Side::After] {
         let (mut doc, _, root) = new_doc();
-        split(&mut doc, root, Axis::Vertical, 0.5, Side::After);
+        split(&mut doc, root, Axis::SideBySide, 0.5, Side::After);
         let right = root_split(&doc).children[1].id();
-        split(&mut doc, right, Axis::Vertical, 0.5, side);
+        split(&mut doc, right, Axis::SideBySide, 0.5, side);
         let s = root_split(&doc);
-        assert_eq!(s.axis, Axis::Vertical);
+        assert_eq!(s.axis, Axis::SideBySide);
         assert_eq!(s.children.len(), 3, "{side:?}");
         assert_eq!(s.dividers, vec![0.5, 0.75], "{side:?}");
         let new = match side {
@@ -246,19 +246,19 @@ fn splitting_a_child_along_its_parents_axis_merges_into_the_parent() {
 #[test]
 fn splitting_a_split_along_its_own_axis_adds_a_first_or_last_child() {
     let (mut doc, _, root) = new_doc();
-    split(&mut doc, root, Axis::Vertical, 0.5, Side::After);
-    let vertical = doc.slides[0].root.id();
+    split(&mut doc, root, Axis::SideBySide, 0.5, Side::After);
+    let beside = doc.slides[0].root.id();
     let before = child_ids(root_split(&doc));
-    split(&mut doc, vertical, Axis::Vertical, 0.75, Side::After);
+    split(&mut doc, beside, Axis::SideBySide, 0.75, Side::After);
     let s = root_split(&doc);
     assert_eq!(s.dividers, vec![0.375, 0.75]);
     assert_eq!(&child_ids(s)[..2], &before[..]);
     check_invariants(&doc);
 
     let (mut doc, _, root) = new_doc();
-    split(&mut doc, root, Axis::Vertical, 0.5, Side::After);
-    let vertical = doc.slides[0].root.id();
-    split(&mut doc, vertical, Axis::Vertical, 0.25, Side::Before);
+    split(&mut doc, root, Axis::SideBySide, 0.5, Side::After);
+    let beside = doc.slides[0].root.id();
+    split(&mut doc, beside, Axis::SideBySide, 0.25, Side::Before);
     assert_eq!(root_split(&doc).dividers, vec![0.25, 0.625]);
     check_invariants(&doc);
 }
@@ -266,12 +266,12 @@ fn splitting_a_split_along_its_own_axis_adds_a_first_or_last_child() {
 #[test]
 fn splitting_across_the_parents_axis_wraps_the_node() {
     let (mut doc, [left, ..]) = fixture();
-    split(&mut doc, left, Axis::Horizontal, 0.4, Side::Before);
+    split(&mut doc, left, Axis::Stacked, 0.4, Side::Before);
     let s = root_split(&doc);
     let Node::Split(wrapped) = &s.children[0] else {
         panic!("the left child is not a split");
     };
-    assert_eq!(wrapped.axis, Axis::Horizontal);
+    assert_eq!(wrapped.axis, Axis::Stacked);
     assert_eq!(wrapped.dividers, vec![0.4]);
     assert_eq!(wrapped.children[1].id(), left);
     check_invariants(&doc);
@@ -280,9 +280,9 @@ fn splitting_across_the_parents_axis_wraps_the_node() {
 #[test]
 fn removing_gives_the_extent_to_the_sibling_before_or_after() {
     let (mut doc, _, root) = new_doc();
-    split(&mut doc, root, Axis::Vertical, 0.25, Side::After);
+    split(&mut doc, root, Axis::SideBySide, 0.25, Side::After);
     let second = root_split(&doc).children[1].id();
-    split(&mut doc, second, Axis::Vertical, 0.5, Side::After);
+    split(&mut doc, second, Axis::SideBySide, 0.5, Side::After);
     // Dividers at 0.25 and 0.625, children [root, second, third].
     let ids = child_ids(root_split(&doc));
     let mut middle = doc.clone();
@@ -299,22 +299,22 @@ fn removing_gives_the_extent_to_the_sibling_before_or_after() {
 fn a_split_left_with_one_child_collapses() {
     let (mut doc, [left, top, bottom]) = fixture();
     apply(&mut doc, Op::Remove { node: left }).unwrap();
-    // The vertical root lost a child, and its one child, the horizontal split, became the root.
+    // The side-by-side root lost a child, and its one child, the stacked split, became the root.
     let s = root_split(&doc);
-    assert_eq!(s.axis, Axis::Horizontal);
+    assert_eq!(s.axis, Axis::Stacked);
     assert_eq!(child_ids(s), vec![top, bottom]);
     check_invariants(&doc);
 }
 
 #[test]
 fn a_collapse_into_a_split_of_the_parents_axis_merges() {
-    // Vertical root [a | H[b / V[c | d]]]: removing b leaves H with one child V[c | d], which
-    // merges into the vertical root.
+    // Side-by-side root [a | H[b / V[c | d]]]: removing b leaves H with one child V[c | d], which
+    // merges into the side-by-side root.
     let (mut doc, [a, b, below]) = fixture();
-    split(&mut doc, below, Axis::Vertical, 0.5, Side::After);
+    split(&mut doc, below, Axis::SideBySide, 0.5, Side::After);
     apply(&mut doc, Op::Remove { node: b }).unwrap();
     let s = root_split(&doc);
-    assert_eq!(s.axis, Axis::Vertical);
+    assert_eq!(s.axis, Axis::SideBySide);
     assert_eq!(s.children.len(), 3);
     assert_eq!(s.children[0].id(), a);
     assert_eq!(s.dividers, vec![0.5, 0.75]);
@@ -324,18 +324,18 @@ fn a_collapse_into_a_split_of_the_parents_axis_merges() {
 #[test]
 fn a_refused_operation_changes_nothing() {
     let (doc, [left, ..]) = fixture();
-    let vertical = doc.slides[0].root.id();
+    let beside = doc.slides[0].root.id();
     let refused = [
-        Op::Remove { node: vertical },
+        Op::Remove { node: beside },
         Op::Remove { node: NodeId(999) },
         Op::Split {
             node: left,
-            axis: Axis::Vertical,
+            axis: Axis::SideBySide,
             at: 1.0,
             side: Side::After,
         },
         Op::MoveDivider {
-            split: vertical,
+            split: beside,
             index: 0,
             pos: 1.5,
         },
@@ -344,10 +344,7 @@ fn a_refused_operation_changes_nothing() {
             index: 0,
             pos: 0.5,
         },
-        Op::Swap {
-            a: left,
-            b: vertical,
-        },
+        Op::Swap { a: left, b: beside },
         Op::SetContent {
             area: left,
             content: Content::Image(ImageContent {
@@ -462,9 +459,9 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
     let assets: Vec<AssetId> = doc.assets.keys().copied().collect();
     let pick = |len: usize| s.pick % len.max(1);
     let axis = if s.flag {
-        Axis::Vertical
+        Axis::SideBySide
     } else {
-        Axis::Horizontal
+        Axis::Stacked
     };
     Some(match s.kind {
         0 => Op::AddSlide {

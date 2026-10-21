@@ -100,15 +100,15 @@ pub fn text(text: &str, style: TextStyle) -> Content {
 }
 
 /// One slide of nine text areas, three columns by three rows: each column one horizontal
-/// alignment, left to right, each row one vertical alignment, top to bottom.
+/// alignment, left to right, each row one beside alignment, top to bottom.
 pub fn alignments() -> Document {
     let (mut doc, root) = one_slide();
-    split(&mut doc, root, Axis::Vertical, 1.0 / 3.0);
+    split(&mut doc, root, Axis::SideBySide, 1.0 / 3.0);
     let second = doc.slides[0].root.areas()[1].id;
-    split(&mut doc, second, Axis::Vertical, 0.5);
+    split(&mut doc, second, Axis::SideBySide, 0.5);
     let columns: Vec<NodeId> = doc.slides[0].root.areas().iter().map(|a| a.id).collect();
     for column in &columns {
-        split(&mut doc, *column, Axis::Horizontal, 1.0 / 3.0);
+        split(&mut doc, *column, Axis::Stacked, 1.0 / 3.0);
         let rest = match doc.node(*column) {
             Some(_) => {
                 let rect_areas = doc.slides[0].root.areas();
@@ -117,7 +117,7 @@ pub fn alignments() -> Document {
             }
             None => unreachable!(),
         };
-        split(&mut doc, rest, Axis::Horizontal, 0.5);
+        split(&mut doc, rest, Axis::Stacked, 0.5);
     }
     let areas: Vec<NodeId> = doc.slides[0].root.areas().iter().map(|a| a.id).collect();
     let h = [HAlign::Left, HAlign::Center, HAlign::Right];
@@ -142,13 +142,13 @@ pub fn alignments() -> Document {
 /// a column of a bold paragraph, an italic coloured line and an empty area.
 pub fn mixed() -> (Document, AssetId) {
     let (mut doc, title) = one_slide();
-    split(&mut doc, title, Axis::Horizontal, 0.2);
+    split(&mut doc, title, Axis::Stacked, 0.2);
     let body = doc.slides[0].root.areas()[1].id;
-    split(&mut doc, body, Axis::Vertical, 0.4);
+    split(&mut doc, body, Axis::SideBySide, 0.4);
     let column = doc.slides[0].root.areas()[2].id;
-    split(&mut doc, column, Axis::Horizontal, 0.6);
+    split(&mut doc, column, Axis::Stacked, 0.6);
     let last = doc.slides[0].root.areas()[3].id;
-    split(&mut doc, last, Axis::Horizontal, 0.5);
+    split(&mut doc, last, Axis::Stacked, 0.5);
     let areas: Vec<NodeId> = doc.slides[0].root.areas().iter().map(|a| a.id).collect();
     assert_eq!(areas.len(), 5);
     let asset = add_asset(&mut doc, "two-colours.png");

@@ -52,3 +52,9 @@ are kept as tests in `path@rootpoint-model@tests/invalid.rs`.
 
 `live`. A position, such as the second child of the first child of a slide's root, shifts at every
 split or removal, so a command written after one edit names another node after the next.
+
+### Naming a split's axis by its dividers' direction, `Vertical` and `Horizontal` `##divider-direction-names`
+
+`live`. Both readings are common: the direction the children are stacked in, or the direction of
+the divider line, as with vim's `:vsplit`. A fresh agent given only a saved 2×2 slide and asked to
+change its bottom-left area changed the area the other reading puts there.

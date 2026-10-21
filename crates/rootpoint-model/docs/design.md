@@ -9,8 +9,10 @@ rootpoint-model is for is in `register@rootpoint-model@goal`.
 ### A split divides its extent along one axis into any number of children, and never holds a child split of its own axis `##split-tree-arity`
 
 A slide's root is a node: an area, or a split with an axis and k ≥ 2 children separated by k−1
-dividers. A `Vertical` split lays its children side by side, left to right; a `Horizontal` split
-stacks them, top to bottom. A split along the axis of the split that holds it is merged into it,
+dividers. A `SideBySide` split lays its children side by side, left to right; a `Stacked` split
+stacks them, top to bottom. The names say where the children go, in the file and in the protocol's
+`beside` and `stacked`: the names of the dividers' direction, `Vertical` and `Horizontal`,
+`rejected@rootpoint-model@divider-direction-names`, were read both ways by a fresh agent. A split along the axis of the split that holds it is merged into it,
 and so is a child left alone by a removal when its axis is its new parent's, so each layout has
 exactly one tree.
 

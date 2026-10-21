@@ -42,7 +42,7 @@ fn a_16_9_slide_is_1920_by_1080() {
 }
 
 #[test]
-fn a_vertical_split_lays_its_children_side_by_side() {
+fn a_side_by_side_split_lays_its_children_left_to_right() {
     let mut doc = Document::default();
     apply(&mut doc, Op::AddSlide { at: 0 }).unwrap();
     let root = doc.slides[0].root.id();
@@ -50,7 +50,7 @@ fn a_vertical_split_lays_its_children_side_by_side() {
         &mut doc,
         Op::Split {
             node: root,
-            axis: Axis::Vertical,
+            axis: Axis::SideBySide,
             at: 0.25,
             side: Side::After,
         },
@@ -90,7 +90,7 @@ proptest! {
         let mut doc = Document::default();
         doc.aspect = AspectRatio { width, height };
         apply(&mut doc, Op::AddSlide { at: 0 }).unwrap();
-        for (pick, vertical, at, after, remove) in steps {
+        for (pick, beside, at, after, remove) in steps {
             let ids: Vec<NodeId> = {
                 fn walk(n: &Node, out: &mut Vec<NodeId>) {
                     out.push(n.id());
@@ -108,7 +108,7 @@ proptest! {
             } else {
                 Op::Split {
                     node,
-                    axis: if vertical { Axis::Vertical } else { Axis::Horizontal },
+                    axis: if beside { Axis::SideBySide } else { Axis::Stacked },
                     at,
                     side: if after { Side::After } else { Side::Before },
                 }

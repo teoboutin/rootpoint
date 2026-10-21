@@ -7,10 +7,10 @@ use common::*;
 use rootpoint_model::*;
 use rootpoint_render::{FontSet, ImageSet, Precision, render_slide};
 
-/// One slide, a vertical split: the image fitted in the left half, filling the right half.
+/// One slide, a side-by-side split: the image fitted in the left half, filling the right half.
 fn fit_and_fill() -> (Document, ImageSet, AssetId) {
     let (mut doc, left) = one_slide();
-    split(&mut doc, left, Axis::Vertical, 0.5);
+    split(&mut doc, left, Axis::SideBySide, 0.5);
     let right = doc.slides[0].root.areas()[1].id;
     let asset = add_asset(&mut doc, "two-colours.png");
     for (area, fit) in [(left, ImageFit::Fit), (right, ImageFit::Fill)] {

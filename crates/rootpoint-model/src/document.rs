@@ -157,13 +157,14 @@ impl Node {
     }
 }
 
-/// The direction of a split's dividers. A `Vertical` split has vertical dividers and lays its
-/// children side by side, left to right; a `Horizontal` split has horizontal dividers and stacks
-/// its children top to bottom.
+/// Where a split puts its children. A `SideBySide` split lays them side by side, left to right,
+/// with vertical dividers between them; a `Stacked` split stacks them, top to bottom, with
+/// horizontal dividers. The names say where the children go, which a reader of the file needs:
+/// `Vertical` and `Horizontal` were read both ways (`design@rootpoint-model@split-tree-arity`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Axis {
-    Horizontal,
-    Vertical,
+    SideBySide,
+    Stacked,
 }
 
 /// A split of its extent along one axis into k ≥ 2 children.

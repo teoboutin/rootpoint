@@ -11,7 +11,7 @@ fn data(name: &str) -> PathBuf {
         .join(name)
 }
 
-/// One slide: a vertical split of an image area on the left and, on the right, a horizontal split
+/// One slide: a side-by-side split of an image area on the left and, on the right, a stacked split
 /// of two text areas. The image is a file beside the presentation.
 fn fixture() -> Document {
     let mut doc = Document::default();
@@ -29,9 +29,9 @@ fn fixture() -> Document {
         )
         .unwrap();
     };
-    split(&mut doc, left, Axis::Vertical);
+    split(&mut doc, left, Axis::SideBySide);
     let right = doc.slides[0].root.areas()[1].id;
-    split(&mut doc, right, Axis::Horizontal);
+    split(&mut doc, right, Axis::Stacked);
     let Op::RemoveAsset { id: asset } = apply(
         &mut doc,
         Op::AddAsset {
@@ -189,7 +189,7 @@ proptest! {
                 (0, _) => Op::AddSlide { at: 0 },
                 (1, _) => Op::Split {
                     node: area,
-                    axis: if flag { Axis::Vertical } else { Axis::Horizontal },
+                    axis: if flag { Axis::SideBySide } else { Axis::Stacked },
                     at,
                     side: if pick % 2 == 0 { Side::Before } else { Side::After },
                 },
@@ -245,7 +245,7 @@ fn a_file_edited_by_an_agent_loads_with_its_edits() {
     else {
         panic!("the top-right area holds no text");
     };
-    let vertical = expected.slides[0].root.id();
+    let beside = expected.slides[0].root.id();
     apply(
         &mut expected,
         Op::SetContent {
@@ -260,7 +260,7 @@ fn a_file_edited_by_an_agent_loads_with_its_edits() {
     apply(
         &mut expected,
         Op::MoveDivider {
-            split: vertical,
+            split: beside,
             index: 0,
             pos: 0.4,
         },
