@@ -33,7 +33,8 @@ only the caller knows. The two sets are part of the crate's public interface.
 
 Every text is laid out within its area less 24 slide units on each side. The padding sets the
 wrap width of every text, so changing it moves the line breaks of every saved slide. The value is
-the session's choice at the design audit of the renderer, which the owner may change.
+the session's choice at the design audit of the renderer; the owner judged it right, and may
+adjust it later.
 
 ### A render is limited to 16384 pixels a side `##size-limit`
 
