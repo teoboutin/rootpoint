@@ -1098,7 +1098,8 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 - `spec@first-prototype@text-editing` before `spec@first-prototype@live-control`: the control socket
   drives a GUI whose editing is complete, so a failure of the socket is not one of editing.
 - `spec@first-prototype@live-control` before `spec@first-prototype@browser-build`: the browser build
-  excludes the protocol, so it comes last, on a GUI whose native features are all built.
+  has no transport for the protocol, stdin or socket, though it links the session, so it comes
+  last, on a GUI whose native features are all built.
 
 ## Defaults awaiting the owner
 
