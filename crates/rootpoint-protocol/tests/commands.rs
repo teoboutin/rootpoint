@@ -114,6 +114,37 @@ fn every_command_prints_back_as_it_parses() {
     }
 }
 
+#[test]
+fn every_scripted_line_prints_back_as_a_line_that_parses_to_it() {
+    // The test above starts from commands; this one starts from lines written by hand, with the
+    // spacing and quoting a script uses.
+    let mut parsed = 0;
+    for name in [
+        "golden.txt",
+        "ids-build.txt",
+        "ids-readdress.txt",
+        "view.txt",
+    ] {
+        for line in script(name).lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            let Ok(command) = parse_command(line) else {
+                continue;
+            };
+            let printed = command.to_string();
+            assert_eq!(
+                parse_command(&printed),
+                Ok(command),
+                "`{line}` printed `{printed}`"
+            );
+            parsed += 1;
+        }
+    }
+    assert!(parsed > 0);
+}
+
 /// Each editing command applies the operation the mapping table gives: the document after the
 /// command equals the document after `apply` of that operation.
 #[test]
