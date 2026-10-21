@@ -1,3 +1,3 @@
 [workspace]
 resolver = "3"
-members = ["tools/xtask"]
+members = ["crates/rootpoint-model", "tools/xtask"]

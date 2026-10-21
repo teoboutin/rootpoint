@@ -6,7 +6,7 @@ cites.
 
 ## Builds
 
-- The crate `rootpoint-model` at `planned@rootpoint@crates/rootpoint-model/`, a member of the
+- The crate `rootpoint-model` at `path@rootpoint@crates/rootpoint-model/`, a member of the
   workspace: the document types, `apply` with its inverses, the area geometry `area_rects`, and the
   RON format with `save_ron` and `load_ron`. Its library root reads `ROOTPOINT_CHECKOUT`, as
   `path@xtask@CLAUDE.md` requires of every library root added to the workspace.
@@ -15,7 +15,7 @@ cites.
   `"wasm"`, `program` `"cargo"`, `args` the command below, `envs` empty, `resolves: true` (the gates
   then append `--locked`), `rebased_only: false`, `distiller: Distiller::WithoutProgress`. It runs
   `cargo build --target wasm32-unknown-unknown -p rootpoint-model`.
-- Per D2, the manifest declares `crates/rootpoint-model` as a Component, with the documents and
+- Per D2, the manifest declares `path@rootpoint@crates/rootpoint-model/` as a Component, with the documents and
   register homes of `skill@knowledge-architect-setup@component-documents`, and its goals drafted
   under `skill@knowledge-architect-goal-setting` for the owner's ruling.
 

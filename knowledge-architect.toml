@@ -43,6 +43,7 @@ checker-version = "0.8.0"
 # `cargo klarch install-agent-skills`.
 command = "cargo klarch"
 components = [
+    "crates/rootpoint-model",
     "tools/xtask",
 ]
 

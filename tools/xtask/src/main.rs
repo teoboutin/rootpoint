@@ -3,7 +3,7 @@ use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
 use knowledge_architect::cli;
-use knowledge_architect_gates::{Checker, GatesArgs, project_root, rust_project};
+use knowledge_architect_gates::{Checker, Distiller, Gate, GatesArgs, project_root, rust_project};
 
 // Ties this crate's build to its checkout.
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
@@ -37,7 +37,9 @@ fn main() -> ExitCode {
                 package: "xtask",
                 prefix: &["klarch"],
             };
-            knowledge_architect_gates::run(&root, &rust_project(checker, "origin/main"), &args)
+            let mut gates = rust_project(checker, "origin/main");
+            gates.push(wasm_gate());
+            knowledge_architect_gates::run(&root, &gates, &args)
         }
         Command::Klarch { command } => {
             let own = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -61,5 +63,31 @@ fn main() -> ExitCode {
                 ExitCode::from(2)
             })
         }
+    }
+}
+
+/// The crates the browser build links, each built for the wasm target. A crate joins this list
+/// in the slice that creates it, so a dependency that cannot build for the browser fails the gates
+/// at once rather than at the browser build.
+const WASM_CRATES: &[&str] = &["rootpoint-model"];
+
+fn wasm_gate() -> Gate {
+    let mut args = vec![
+        "build".to_owned(),
+        "--target".to_owned(),
+        "wasm32-unknown-unknown".to_owned(),
+    ];
+    for krate in WASM_CRATES {
+        args.push("-p".to_owned());
+        args.push((*krate).to_owned());
+    }
+    Gate {
+        name: "wasm".to_owned(),
+        program: "cargo".to_owned(),
+        args,
+        envs: Vec::new(),
+        resolves: true,
+        rebased_only: false,
+        distiller: Distiller::WithoutProgress,
     }
 }

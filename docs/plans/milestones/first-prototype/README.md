@@ -154,7 +154,7 @@ slice's spec, with the gates run before each commit.
 - **guillotine layout**: a layout made by straight cuts that each run across the whole area being
   cut.
 - **the model, render, protocol and app crates**: `rootpoint-model`, `rootpoint-render`,
-  `rootpoint-protocol` and `rootpoint-app`, under `planned@rootpoint@crates/`.
+  `rootpoint-protocol` and `rootpoint-app`, under `path@rootpoint@crates/`.
 - **the gates**: the command `cargo x gates`, served by `path@xtask@src/main.rs`.
 - **the wasm target**: the Rust target `wasm32-unknown-unknown`.
 - **(V), (A)**: a fact verified by reading a source, or assumed, in the surveys quoted by the
@@ -1107,7 +1107,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   `thread@first-prototype@prototype-scope`. The owner ruled: "A milestone was the right call
   here."
 - **D2, ruled.** Each crate is declared a Component of the manifest in the slice that creates it, at
-  `planned@rootpoint@crates/` under the crate's own name, and its goals are drafted under
+  `path@rootpoint@crates/` under the crate's own name, and its goals are drafted under
   `skill@knowledge-architect-goal-setting` for the owner's ruling before that slice merges. Bears on
   `thread@first-prototype@crate-split`. The harvest rows of the slice specs name those Components'
   homes. The owner ruled: "D2 accepted".
