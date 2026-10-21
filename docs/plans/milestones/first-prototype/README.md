@@ -148,6 +148,8 @@ slice's spec, with the gates run before each commit.
   owner's messages in the design session held at the audit of `spec@first-prototype@editor-shell`,
   quoted in that slice's spec with the questions **Q15 to Q21** they answer; that session's
   acceptance criterion **AC6** and tripwire **T5** are in "Acceptance criteria" and "Premortem".
+  **O17**: the owner's answer to **Q22**, the material finding of that slice spec's review, quoted
+  in the same spec.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.

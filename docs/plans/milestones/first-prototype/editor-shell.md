@@ -185,6 +185,11 @@ clause of `thread@first-prototype@asset-save-rule`:
 
 > Keep both AC6 and T5,proceed
 
+**O17**, answering Q22, the material finding of `argument@first-prototype@arg-80`, put after the
+spec's review:
+
+> Q22 default accepted
+
 ## Criteria
 
 The session judged its threads against the milestone's criteria
@@ -282,7 +287,9 @@ beside the presentation file, the session's default, or in a subfolder. Closed b
 to allow the user to organize the assets in any way they want with subdirectories of any level, and
 for a "pack then unpack elsewhere" action to preserve the tree." (`argument@first-prototype@arg-71`).
 The overwrite clause came from the premortem (`argument@first-prototype@arg-72`) and was confirmed
-by O16. Final state: approved. Absorbs `thread@first-prototype@sample-save`. Shape: "Saving assets"
+by O16. The change in memory, `Op::SetAssetSource` with no undo step, came back after the spec's
+review as a material finding (`argument@first-prototype@arg-80`), and the owner accepted its default
+in O17: "Q22 default accepted". Final state: approved. Absorbs `thread@first-prototype@sample-save`. Shape: "Saving assets"
 in "Decided design". Harvest: a design head of the protocol crate's Component, citing
 `design@rootpoint-model@image-storage`, the choice of Q17 attributed to the owner with its "for
 now"; the losing shapes judged for a `rejected` entry; the closure
@@ -509,6 +516,17 @@ gives AC6.
 Convergence, the premortem. Session. "an agent may send `text n5 "…"` while you are dragging. That
 edit joins your drag's group, and one `undo` reverts both"; "The live-control slice is where this
 first becomes possible." Bears on `thread@first-prototype@gesture-undo`; gives T5.
+
+### The model has no operation that changes an asset's source `##arg-80`
+
+The review of the spec, a material finding, put to the owner as Q22. Four axes found it alone. The
+session: "after a save, the session's in-memory asset paths must change to the new ones. The model
+allows a document to change only through an operation, and none can change an existing asset's
+path: an asset in use can't be removed and re-added." The default: `Op::SetAssetSource`, applied
+through `apply`, no undo step, the sources on the undo and redo stacks rewritten. Its rivals: the
+change as an undo step, "an undo would then name a missing file"; the paths left unchanged, "the
+open document would differ from the file it just saved." Bears on
+`thread@first-prototype@asset-save-rule`.
 
 ## Decided design
 
