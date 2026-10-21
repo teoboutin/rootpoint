@@ -1,6 +1,7 @@
 <!-- The report of the prior-art survey run on 2026-10-20 for the design discussion of the
-milestone of the first prototype, on slide tools that lay out a slide as a recursive split tree. Kept as
-the subagent wrote it; the milestone document quotes its facts. -->
+milestone of the first prototype, on slide tools that lay out a slide as a recursive split tree: first the report file the subagent wrote,
+then the message it returned, both verbatim. The milestone document's arguments quote the message.
+Its scratchpad paths no longer exist. -->
 
 # Prior art: slides laid out as a recursive split tree
 
@@ -58,4 +59,47 @@ These are UI widgets, not slide tools.
 
 ## Met outside the task
 
+None.
+
+## The message the subagent returned
+
+I found no shipped slide tool, GUI or markup, that lays a slide out as a recursive tree of horizontal and vertical splits with draggable ratios and one piece of content per region. That conclusion rests on about 15 searches; not finding it is not proof.
+
+The report is at /tmp/claude-266682/-home-catA-tb266682-Documents-code-rootpoint/3aa7f0e1-0c36-4134-9ed6-7435d1cdd42e/scratchpad/prior-art-split-layout.md
+
+How sure each item is:
+- **V (verified):** I read the page in this session: presenterm's layout docs and the open-scrl issue.
+- **S (search only):** the claim comes from a search-result summary: Slidev, mdx-deck, Touying, Figma, Gamma, Pitch, Canva, Beautiful.ai, and the research papers.
+- **K (assumed):** the claim comes from what I already knew, not re-checked: beamer, Quarto/pandoc/reveal.js, sent, pinpoint, Pympress, PowerPoint/Keynote/Google Slides, Tome.
+
+## Closest matches
+- **open-scrl, issue #23** (github.com/HeyPortal/open-scrl/issues/23, V): it proposes exactly this model. You start from one cell, split it horizontally or vertically and drag dividers. The layout is stored as a "normalised split tree" with snapped fractions, at most 12 cells and a 10% minimum cell size. But it is not built: the issue was opened on 2026-10-07, is still open and has no PR. It also covers only the app's photo-grid panel.
+- **Figma auto layout, also in Figma Slides** (S): frames nest as horizontal, vertical and grid stacks, and children of the grid flow, which is in beta, can span cells. What it lacks:
+  - Sizes come from fill, hug or fixed rules, not from a ratio set by dragging a divider.
+  - Auto layout cannot be set on the slide itself; a feature request asking for that dates from April 2026.
+- **Typst (Touying `composer`, Polylux `side-by-side`, nested `grid`/`stack`), beamer columns, Quarto/pandoc column divs** (S/K): each can express a split tree, but only as hand-written code. None has a tree data model, dragging, or splitting a region in place.
+
+## Others
+- **presenterm (Rust TUI)** (V): `column_layout: [3, 2]` gives weighted columns, and `reset_layout` goes back to full width. Its docs describe one level only, with no rows and no documented nesting.
+- **Slidev, mdx-deck** (S): fixed named templates (`two-cols`, `Split`, and so on).
+- **Gamma, Pitch, Canva grids, Beautiful.ai** (S): templates, simple columns, or preset grids that reflow. Gamma's columns come from a third-party guide I could not confirm.
+- **PowerPoint, Keynote, Google Slides, Tome** (K): placeholder layouts or free placement. Tome arranges tiles in rows, not a tree.
+- **sent, pinpoint** (K): one item per slide. Pympress is a viewer only.
+
+## Spanning or linked splits
+Only Figma's beta grid (children can span cells) and plain CSS grid have spanning. No tool I found links splits across different branches of the tree.
+
+## Theory and widgets
+- **Research:** recursive horizontal/vertical splitting of a page (called "guillotine" or "slicing-tree" layout) is studied for *automatic* layout. Examples:
+  - "Optimal guillotine layout", DocEng 2012, doi 10.1145/2361354.2361359;
+  - US patent 7634723, "Constrained document layout";
+  - Microsoft Research TR-2002-126, which describes DRESS, a system of binary slicing trees for web pages.
+
+  In all of these an algorithm chooses the tree; none lets a user edit it by hand.
+- **Widgets:** iced `pane_grid` (modelled on i3, awesome and tmux), ratatui-hypertile and hjkl-layout already implement the dragging interaction in Rust, but as general UI components, not slide tools.
+
+## Decided
+- I left the items marked K as assumptions instead of fetching each page. Ground: the word budget in the brief.
+
+## Met outside the task
 None.

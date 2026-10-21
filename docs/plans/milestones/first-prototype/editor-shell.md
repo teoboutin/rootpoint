@@ -2,82 +2,144 @@
 
 This slice's spec leaves the repository when the slice lands. The milestone document,
 `milestone@plans@first-prototype`, holds the names, the criteria, the threads and the arguments it
-cites; the threads, the arguments and the criteria of the design session held at this slice's
-audit are below, since only this slice cites them.
+cites, and AC6; the threads, the arguments and the two criteria of the design session held at this
+slice's audit are below, since only this slice cites them.
 
 ## Builds
 
-- The crate `rootpoint-app` at `planned@rootpoint@crates/rootpoint-app/`, with the binary
-  `rootpoint`, native only in this slice: every UI action that "The UI actions" in "The prototype's
-  scope" of the milestone document lists, in the interaction design that "Decided design" below
-  gives, the text of an area being edited in the side panel's plain text field, and presenter mode, full screen.
-  The binary target reads `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires.
-- The built-in sample presentation, embedded in the binary with its images as
-  `AssetSource::Embedded`, opened from a menu, as a tutorial and demonstrator, per D3.
+- The crate `rootpoint-app` at `planned@rootpoint@crates/rootpoint-app/`, native only in this
+  slice: a library root holding the app's state, its action handlers and its frame code, and the
+  binary `rootpoint`. It offers every UI action that "The UI actions" in "The prototype's scope" of
+  the milestone document lists, in the interaction design "Decided design" below gives, the text of
+  an area being edited in the side panel's plain text field, and presenter mode, full screen. Its
+  library root and its binary target read `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires.
+  It depends on eframe 0.37.0 without its `system_fonts` feature, and on `rfd` 0.17.2.
 - The crate is not added to the `wasm` gate here: its web target is built by
-  `spec@first-prototype@browser-build`, as "How the work is done" says.
-- Per D2, the crate's Component.
-- In `path@rootpoint-model@src/geometry.rs`, `node_rects`: every node of a slide, splits included,
-  with its rectangle in slide units, in tree order. The app finds a split and its dividers from it
-  and `Split::child_extent`, since the model owns the area geometry ("Slide coordinates" in the
-  milestone document).
-- In `path@rootpoint-protocol@src/session.rs`, `Session::asset_bytes` made public: the app decodes
-  the images and fonts it hands `render_slide` from the bytes the session reads, so the rule that
-  reads an asset's path stays in one place.
-- In the protocol, the grouping commands `begin`, `end` and `cancel`, per
-  `thread@first-prototype@gesture-undo`, with their grammar, their printing and their replies.
-- In the protocol's `save`, the asset rule of `thread@first-prototype@asset-save-rule`, which closes
-  `issue@rootpoint-protocol@asset-paths-follow-save`.
-- The file dialogs of open, save and "add an image asset" come from `rfd` 0.17.2, with its default
-  features, which use the desktop portal and link no GTK.
+  `spec@first-prototype@browser-build`, as "How the work is done" says. The comment on
+  `WASM_CRATES` in `path@xtask@src/main.rs`, which says a crate the browser build links is listed
+  when it is created, is reworded in the commit that creates the crate.
+- Per D2, the crate's Component, with its goals drafted for the owner's ruling.
+- In the model crate:
+  - in `path@rootpoint-model@src/geometry.rs`, `node_rects`: every node of a slide, splits
+    included, with its rectangle in slide units, in tree order. The app finds a split and its
+    dividers from it and `Split::child_extent`, since the model owns the area geometry ("Slide
+    coordinates" in the milestone document);
+  - in `path@rootpoint-model@src/ops.rs`, `Op::SetAssetSource { id, source }`, which replaces an
+    asset's source and returns the operation that restores the old one, per "Saving assets" below.
+- In the render crate, `slide_to_pixels`, the public form of the private `slide_transform` of
+  `path@rootpoint-render@src/lib.rs`: the scale and the offset that carry slide units to the pixels
+  of a `width`×`height` image. The app's hit testing and overlay use it, so they place every mark
+  where `render_slide` draws.
+- In the protocol crate:
+  - the commands `begin`, `end` and `cancel`, per "Undo groups", with their grammar, their printing,
+    their replies and explicit arms in `Session::run`;
+  - the command `sample`, which opens the built-in sample, per "The built-in sample";
+  - the view's shown slide, per "Selection";
+  - in `save`, the asset rule of "Saving assets", which closes
+    `issue@rootpoint-protocol@asset-paths-follow-save`;
+  - in `path@rootpoint-protocol@src/files.rs`, `Files::exists`, so a save tells a missing file from
+    one it cannot read;
+  - in `path@rootpoint-protocol@src/session.rs`, `Session::asset_bytes` made public, so the app
+    decodes the images and fonts it hands `render_slide` from the bytes the session reads and the
+    rule that reads an asset's path stays in one place, and `Session::directory`, the directory an
+    asset's path is read against;
+  - the texts that state the asset rule as it stands, updated: the protocol's README, the doc
+    comment of `path@rootpoint-protocol@src/bin/rootpoint-headless.rs`, and the test
+    `assets_are_read_beside_the_presentation` of `path@rootpoint-protocol@tests/files.rs`, which the
+    issue says changes with the fix;
+  - each new verb added to the hand-written lists of `path@rootpoint-protocol@tests/commands.rs`:
+    the commands printed back, and the refused commands.
 
 ## Claims
 
-1. **Every UI action goes through the session.** Each UI action issues protocol `Command`s to a
-   `Session`, editing commands or view commands, so the document and the view after a UI action
-   equal those after the same commands. Test: each of the app's action handlers is called on a
-   session in a unit test, with no window, and the same commands are run on a second session; their
+1. **Every UI action goes through the session.** Each UI action issues the protocol `Command`s that
+   "UI actions to commands" below maps it to, so the document and the view after a UI action equal
+   those after the same commands. Test: each of the app's action handlers is called on a session
+   in a unit test, with no window, and the same commands are run on a second session; their
    documents and views must be equal. `Session::document` gives only a shared reference, so a
    handler cannot edit the document but through a command. Shown to fail: a handler that issues
    another command than its action's, such as a split along the other axis.
-2. **Hit testing matches the drawing.** A click at a point selects the area whose rectangle from
-   `area_rects`, scaled to the view, contains it; a press within 4 pixels of a divider grabs it,
-   the nearer of two; a pointer over a drop target falls in the zone the hint names; a snapped
-   position lies on a twelfth of the node or on another divider within 8 pixels. Test: unit tests
-   over the geometry, with no window. Shown to fail: a grab band computed in slide units instead of
-   pixels, which a test at two view sizes catches.
+2. **Hit testing matches the drawing.** Through `slide_to_pixels`, at two view sizes: a click at a
+   point selects the area whose rectangle contains it; a press within 4 points of a divider grabs
+   it, the nearer of two; "Pointer input to gestures" below decides every overlap. At step 4,
+   also: a pointer over a drop target falls in the zone the hint names, and a snapped position lies
+   on a twelfth of the node or on another divider within 8 points. Test: unit tests over the
+   geometry, with no window. Shown to fail: a grab band computed in slide units instead of points,
+   which the test at two view sizes catches.
 3. **Presenter mode shows the slide the editor shows.** At the same pixel size, the presenter's
-   image equals the editor view's image of the same slide, so no editor mark is in the slide image.
+   image equals the image the editor view hands to its texture for the same slide, so no editor
+   mark is in the slide image. Test: both images, taken from the app's code with no window and
+   compared pixel by pixel. Shown to fail: an outline of the selection drawn into the image.
 4. **One gesture is one undo step.** Every edit between `begin` and `end` is undone by one `undo`
-   and redone by one `redo`; `cancel` restores the document of the `begin` and leaves no undo or
-   redo step; the rules of `thread@first-prototype@gesture-undo` hold for `undo` inside a group, a
-   nested `begin`, an empty group, and `new` or `load` inside a group. Test: protocol scripts.
-   Shown to fail: a session that pushes one step per edit inside a group, caught by an `undo` that
-   leaves the drag's middle position.
+   and redone by one `redo`; `cancel` restores the document and both stacks as they were at the
+   `begin`; the other rules of "Undo groups" hold for `undo` inside a group, a nested `begin`, an
+   empty group, and `new`, `load` or `sample` inside a group. Test: protocol scripts. Shown to fail:
+   a session that pushes one step per edit inside a group, caught by an `undo` that leaves the
+   drag's middle position.
 5. **A save leaves every asset readable beside the saved file, and overwrites nothing else.**
-   After a `save` into another directory, every asset renders with `missing=-`; an embedded asset is
-   written out as a file and stored as a path; an existing file of another content keeps its bytes,
-   and the copy takes a suffix. Test: protocol tests over `MemoryFiles`, and the reproduction of
+   After a `save` into another directory, every asset renders with `missing=-`; an embedded asset
+   is written out as a file and stored as a path; an existing file of other bytes keeps its bytes,
+   and the copy takes a suffix; an asset the save cannot read makes it reply `err`, naming it, and
+   write nothing. Test: protocol tests over `MemoryFiles`, and the reproduction of
    `issue@rootpoint-protocol@asset-paths-follow-save`. Shown to fail: the session as it stands,
    whose render after the save reports `missing=a3`.
 
 ## Audit subjects
 
+The audit is held; its findings are in the commit "Apply the design audit of the fourth slice, the
+native GUI", and its outcomes are in this spec. What it read:
+
 - `thread@first-prototype@gui-toolkit`, `thread@first-prototype@slide-renderer`,
   `thread@first-prototype@slide-coordinate-space`.
-- The documentation of `eframe` 0.37.0: textures, input, full screen.
-- The native libraries eframe's windowing needs on the owner's machine, which the existing `clippy`
-  and `test` gates build from this slice on, since they run over the whole workspace; not yet
-  established.
-- The duplicate `vello_cpu` versions: egui 0.37 depends, through epaint, on `vello_cpu` 0.2, while
-  `path@rootpoint@crates/rootpoint-render/` uses 0.3, so the workspace builds both once the app
-  crate exists (V, quoted in `argument@first-prototype@arg-26`). The audit measures the build time
-  and the binary size with both, and judges
-  whether that costs anything.
+- The sources of eframe and egui 0.37.0: textures, input, full screen. Three traps for the steps:
+  with click and drag both sensed, egui reports a drag only once the pointer has moved, so the press
+  position is read from `InputState::pointer.press_origin()`, not from the `drag_started` frame;
+  `consume_shortcut` ignores extra Shift, so Ctrl+Shift+Z is tested before Ctrl+Z; `eframe::App`
+  implements `ui`, and `Panel::show` replaces the deprecated `show_inside`.
+- The native libraries: a release build of a probe with eframe's default features and the render
+  crate linked only libc, libm and libgcc_s, and loads X11, Wayland, Vulkan and GL at run time; all
+  are present on the owner's machine. Assumed, not measured: the debug builds of the `clippy` and
+  `test` gates need the same libraries. Assumed, not seen: the full-screen command takes effect on
+  the owner's screen; step 5 sees it.
+- The duplicate `vello_cpu` versions, 0.2 through epaint and 0.3 through the render crate: about 6
+  to 11 s of a clean release build and 0.8 MB of binary, which the audit judges no cost worth acting
+  on. eframe's `system_fonts` feature also duplicates fontique, 0.11 beside parley's 0.12; the app
+  turns it off, since the editor's own text needs only egui's built-in fonts and the browser has no
+  system fonts.
 
-The interaction design (how a split is started, how a subtree is selected for a spanning split, how
-a divider is shown) is not decided by the milestone. The audit of this slice opens a design session
-on it under `skill@knowledge-architect-design`, before the code is written.
+## What is already decided
+
+The decisions the design session's searches graded as bearing on this slice, and how each bears:
+
+- `design@rootpoint-protocol@view-state`: stands, and gains a member, the slide the editor shows,
+  which its argument covers, "Selection". Undo groups change the undo stack, which the head does not
+  describe, and nothing of the view.
+- `design@rootpoint-model@edit-operation-core`: stands, and gains a member, `Op::SetAssetSource`,
+  which its argument covers; every change of a save goes through `apply`.
+- `design@rootpoint-protocol@protocol-transport`: stands; the new verbs print as lines that parse
+  back to them.
+- `design@rootpoint-protocol@protocol-addressing`: stands; every command names slides, nodes and
+  assets by id, and `move-slide` names its slide by id and its destination by index.
+- `design@rootpoint-protocol@session-files`: stands; every read and write of a save goes through
+  `Files`, which gains `exists`.
+- `design@rootpoint-model@image-storage` and `design@rootpoint-model@asset-source`: stand; every
+  `Path` the session holds is relative to the presentation's directory, the GUI passing a path
+  relative to `Session::directory`, and a saved file holds no embedded bytes.
+- `design@rootpoint-render@caller-supplies-assets` and `design@rootpoint-render@font-sources`: stand;
+  the app fills `ImageSet` and `FontSet` from `Session::asset_bytes`, and a font asset follows the
+  save rule as an image does.
+- `design@rootpoint-render@slide-renderer`, `goal@rootpoint-render@same-slide-everywhere` and
+  `rejected@rootpoint-render@toolkit-painter`: stand; the editor's marks are drawn over the texture,
+  and the drop hint's label is editor text, not slide content.
+- `design@rootpoint-model@divider-fractions` and `design@rootpoint-model@validated-documents`: stand;
+  a drag sends fractions, and stops before a divider would leave (0, 1) or meet its neighbour.
+- `design@rootpoint-model@inline-content-assets`, `goal@rootpoint-model@headless-changes`,
+  `goal@rootpoint-model@faithful-readable-file`, `goal@rootpoint-protocol@commands-drive-everything`
+  and `goal@rootpoint@headless-core`: met, by "UI actions to commands" and by the save rule.
+- `rejected@rootpoint-model@gui-mutation`: not brought back; a drag is session commands.
+- `issue@rootpoint-protocol@asset-paths-follow-save`: closed by this slice. `issue@rootpoint-model@linked-dividers`:
+  its trigger is not met; snapping eases the need it defers. `tripwire@rootpoint-model@grouping-lost-to-merge`:
+  does not fire; no gesture moves a group of same-axis areas as one unit.
 
 ## The design session at the audit
 
@@ -114,9 +176,12 @@ The session answered the question in Q15: shape B is shape A's controls plus the
 > Q20: yes
 > Q21: swap + edge moves loks fine, as long as there is a preview/hint of what dropping will do (a preview of the exact result might not be meaningful in this case, so some sort of hint has to do).
 
-**O16**, answering the checkpoint and the premortem, which said that a positive word given against
-the table also confirms its presumed-settled threads and the overwrite clause of
-`thread@first-prototype@asset-save-rule`:
+**O16**, answering the checkpoint and the premortem, which listed every thread with its state, put
+AC6 and T5, and said that a positive word given against the table also confirms its
+presumed-settled threads, `thread@first-prototype@node-selection`,
+`thread@first-prototype@span-selection`, `thread@first-prototype@editor-overlay`,
+`thread@first-prototype@divider-drag` and `thread@first-prototype@slide-reorder`, and the overwrite
+clause of `thread@first-prototype@asset-save-rule`:
 
 > Keep both AC6 and T5,proceed
 
@@ -135,7 +200,7 @@ Binding, derived from `design@rootpoint-model@edit-operation-core` and
 `thread@first-prototype@gesture-undo`, whose drag frames are session commands, and by
 `thread@first-prototype@swap-gesture`, whose edge move is existing commands.
 
-### One undo reverts one gesture: a whole drag, or one burst of typing `##c12-one-gesture-undo`
+### One undo reverts one gesture: a whole drag, or one stay of the text field's focus `##c12-one-gesture-undo`
 
 Weighed. Source: the audit's question on the undo history. Met by
 `thread@first-prototype@gesture-undo`, with `cancel`.
@@ -145,22 +210,24 @@ Weighed. Source: the audit's question on the undo history. Met by
 ### A node is selected by a click, and its ancestors, children and siblings by keys and a breadcrumb `##node-selection`
 
 Proposed by the session in round 1, with an addition in round 2 from the survey
-(`argument@first-prototype@arg-55`). Final state: approved, presumed-settled and confirmed by O16.
+(`argument@first-prototype@arg-55`). Final state: approved, by the owner's batch confirmation of the
+checkpoint in O16.
 Shape: "Selection" in "Decided design". Its rival, a click on a divider selecting its split, lost
 (`argument@first-prototype@arg-54`). Watched by AC6 for its keys. Harvest: judged by the entry
 tests, into the app crate's design home.
 
 ### A subtree is selected for a spanning split by parent navigation `##span-selection`
 
-Proposed by the session in round 1. Final state: approved, presumed-settled and confirmed by O16.
-Shape: "Selection" in "Decided design". Its rival, a rectangle drawn across areas, lost
+Proposed by the session in round 1. Final state: approved, by the owner's batch confirmation of the
+checkpoint in O16. Shape: "Selection" in "Decided design". Its rival, a rectangle drawn across areas, lost
 (`argument@first-prototype@arg-56`). Harvest: judged by the entry tests, into the app crate's design
 home.
 
 ### A split is started from the selection at its middle by buttons and keys, or at the pointer with a modifier `##selection-actions`
 
 Proposed by the session in round 1 as shape A, the middle split, and shape B, shape A plus a split
-at the pointer (`argument@first-prototype@arg-57`). Closed by the owner in O14: "Q15: shape B is the
+at the pointer (`argument@first-prototype@arg-57`). Q15 asked: shape A alone, or shape B, the
+session's default. Closed by the owner in O14: "Q15: shape B is the
 shape A controls plus an addition, right ? If yes, shape B is fine. The shape A controls look
 easy/intuitive to use, while the shape B additions would allow faster actions once keybinds are
 mastered. My initial idea (in my head) had just the shape B additions, but with shape A added the
@@ -172,15 +239,16 @@ owner.
 ### A split at the pointer is previewed before it commits, and snaps with Alt `##split-preview`
 
 Proposed by the session in round 2, from the survey (`argument@first-prototype@arg-59`,
-`argument@first-prototype@arg-60`). Closed by the owner in O15: "Q19: preview + snapping is good".
+`argument@first-prototype@arg-60`). Q19 asked: the preview and the snapping, or the preview only.
+Closed by the owner in O15: "Q19: preview + snapping is good".
 Final state: approved. Watched by AC6 for its keys. Shape: "Actions on the selection" and
 "Dividers" in "Decided design". Harvest: judged by the entry tests, into the app crate's design
 home.
 
 ### The editor's marks are drawn over the slide's texture, never into the slide's image `##editor-overlay`
 
-Proposed by the session in round 1 (`argument@first-prototype@arg-61`). Final state: argued,
-presumed-settled in round 1 and confirmed by O16. Its band of 6 pixels is replaced by
+Proposed by the session in round 1 (`argument@first-prototype@arg-61`). Final state: approved, by
+the owner's batch confirmation of the checkpoint in O16. Its band of 6 pixels is replaced by
 `thread@first-prototype@divider-drag`'s. Shape: "Dividers" in "Decided design". Harvest: judged by
 the entry tests, into the app crate's design home, citing
 `rejected@rootpoint-render@toolkit-painter` if it earns a head.
@@ -188,7 +256,7 @@ the entry tests, into the app crate's design home, citing
 ### A divider is grabbed within 4 pixels, keeps its areas at 40 slide units or more, and resets on a double-click `##divider-drag`
 
 Proposed by the session in round 2, from the survey (`argument@first-prototype@arg-62`). Final
-state: approved, presumed-settled and confirmed by O16. Shape: "Dividers" in "Decided design".
+state: approved, by the owner's batch confirmation of the checkpoint in O16. Shape: "Dividers" in "Decided design".
 Harvest: judged by the entry tests, into the app crate's design home.
 
 ### One gesture is one undo step, grouped by the commands begin, end and cancel `##gesture-undo`
@@ -196,24 +264,28 @@ Harvest: judged by the entry tests, into the app crate's design home.
 Proposed by the session in round 1 among three shapes (`argument@first-prototype@arg-63`,
 `argument@first-prototype@arg-64`, `argument@first-prototype@arg-65`), its rules completed and
 `cancel` proposed in round 2 (`argument@first-prototype@arg-66`,
-`argument@first-prototype@arg-67`). Closed by the owner in O14, "Q16: (c) is best.", and in O15,
-"Q20: yes". The completing rules were stated as completing the approved rule and confirmed with the
+`argument@first-prototype@arg-67`). Q16 asked: (a) a preview on a copy, (b) the session merging
+consecutive commands, or (c) explicit groups, the session's default; Q20 asked: add `cancel`, or
+not. Closed by the owner in O14, "Q16: (c) is best.", and in O15, "Q20: yes". The completing rules were stated as completing the approved rule and confirmed with the
 checkpoint by O16. Final state: approved. Shape: "Undo groups" in "Decided design". Watched by T5 of
 the milestone's premortem. Harvest: a design head of the protocol crate's Component, since the
-commands are the crate's interface; the losing shapes judged for a `rejected` entry; T5 into that
+commands are the crate's interface, the choices of Q16 and Q20 attributed to the owner; the losing
+shapes judged for a `rejected` entry; T5 into that
 Component's tripwires home, guarding the head.
 
 ### A save copies every asset outside the presentation's directory, and every embedded asset, beside the saved file `##asset-save-rule`
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-68`,
-`argument@first-prototype@arg-69`, `argument@first-prototype@arg-70`). Closed by the owner in O14:
+`argument@first-prototype@arg-69`, `argument@first-prototype@arg-70`). Q17 asked: the copied files
+beside the presentation file, the session's default, or in a subfolder. Closed by the owner in O14:
 "Q17: beside the presentation file for now. But ultimately (later than initial prototype), I'd like
 to allow the user to organize the assets in any way they want with subdirectories of any level, and
 for a "pack then unpack elsewhere" action to preserve the tree." (`argument@first-prototype@arg-71`).
 The overwrite clause came from the premortem (`argument@first-prototype@arg-72`) and was confirmed
 by O16. Final state: approved. Absorbs `thread@first-prototype@sample-save`. Shape: "Saving assets"
 in "Decided design". Harvest: a design head of the protocol crate's Component, citing
-`design@rootpoint-model@image-storage`; the losing shapes judged for a `rejected` entry; the closure
+`design@rootpoint-model@image-storage`, the choice of Q17 attributed to the owner with its "for
+now"; the losing shapes judged for a `rejected` entry; the closure
 of `issue@rootpoint-protocol@asset-paths-follow-save`.
 
 ### Saving the built-in sample writes its images as files `##sample-save`
@@ -224,8 +296,8 @@ Proposed by the session in round 1 (`argument@first-prototype@arg-73`). Final st
 ### Two areas are swapped, or one is moved to another's edge, by dragging its grip, with a hint of the drop's effect `##swap-gesture`
 
 Proposed by the session in round 1 as a grip drag that swaps (`argument@first-prototype@arg-74`),
-with edge moves added in round 2 from the survey (`argument@first-prototype@arg-75`). Closed by the
-owner in O15: "Q21: swap + edge moves loks fine, as long as there is a preview/hint of what dropping
+with edge moves added in round 2 from the survey (`argument@first-prototype@arg-75`). Q21 asked: swap
+only, or swap plus edge moves. Closed by the owner in O15: "Q21: swap + edge moves loks fine, as long as there is a preview/hint of what dropping
 will do (a preview of the exact result might not be meaningful in this case, so some sort of hint
 has to do)." The hint's shape was put at the checkpoint (`argument@first-prototype@arg-76`) and
 confirmed by O16. Final state: approved. Shape: "Moving content" in "Decided design". Harvest:
@@ -233,8 +305,8 @@ judged by the entry tests, into the app crate's design home.
 
 ### Slides are reordered by dragging them in the slide list `##slide-reorder`
 
-Proposed by the session in round 1 (`argument@first-prototype@arg-77`). Final state: argued,
-presumed-settled in round 1 and confirmed by O16. Shape: "The slide list" in "Decided design".
+Proposed by the session in round 1 (`argument@first-prototype@arg-77`). Final state: approved, by
+the owner's batch confirmation of the checkpoint in O16. Shape: "The slide list" in "Decided design".
 Harvest: judged by the entry tests, into the app crate's design home.
 
 ## Arguments
@@ -449,13 +521,14 @@ own hit testing; it draws no slide content itself (`thread@first-prototype@gui-t
 - The image `render_slide` returns is premultiplied RGBA8 in sRGB, the format of egui's
   `ColorImage::from_rgba_premultiplied`, so it is uploaded with no conversion, by
   `Context::load_texture` once and `TextureHandle::set` after each render.
-- The view is rendered at its size in physical pixels, its size in points times
-  `pixels_per_point`, and at most 8192 pixels per side: egui-wgpu 0.37.0 asks the GPU for
-  textures of at most 8192 per side, below the render crate's `MAX_SIDE` of 16384.
-- The app shows what a render could not draw, the `Report` of `render_slide`, as the protocol's
-  `render` reply does, so a missing image or a missing glyph reaches the author
-  (`tripwire@rootpoint-render@glyph-missing-everywhere` names `Report::missing_glyphs` as what it
-  watches).
+- The view is rendered with `Precision::Native` at its size in physical pixels, its size in points
+  times `pixels_per_point`, and at most 8192 pixels per side: egui-wgpu 0.37.0 asks the GPU for
+  textures of at most 8192 per side, in `egui-wgpu/src/setup.rs`, below the render crate's
+  `MAX_SIDE` of 16384. Presenter mode renders the same way.
+- The app shows every list of the `Report` of `render_slide` that names something not drawn as the
+  document asks: missing images, font fallbacks, missing glyphs and undrawn text, so a missing image
+  or a missing glyph reaches the author (`tripwire@rootpoint-render@glyph-missing-everywhere` names
+  `Report::missing_glyphs` as what it watches).
 - The frame code takes an `egui::Ui`, so a test drives it with `egui::Context::run_ui` and synthetic
   input events, with no window and no GPU.
 
@@ -464,33 +537,48 @@ Nearest rival: iced, and the others; see "Losing alternatives" of the milestone 
 ### Uniform scaling
 
 The slide view and presenter mode scale the slide uniformly to the largest size that fits the
-window, and letterbox the rest (`thread@first-prototype@slide-coordinate-space`).
+window, and letterbox the rest (`thread@first-prototype@slide-coordinate-space`), through
+`slide_to_pixels`.
 
 ### Selection
 
-`thread@first-prototype@node-selection`, `thread@first-prototype@span-selection`. A click on an
-area sends `select`. The side panel shows the path from the slide's root to the selection, as a
-breadcrumb, for instance `s1 › n4 beside › n8 stacked › n7 area`; a click on an entry selects it.
-Alt+↑ selects the parent, Alt+↓ the child selected last below the selection, or its first child,
-and Alt+← and Alt+→ the previous and next sibling. Every one of them is a `select` command, so the
-selection is the session's `View`. A subtree is selected for a spanning split by these, and by no
-rectangle selection. Nearest rival: a rectangle drawn across areas selecting the smallest node that
-holds them, defeated by `argument@first-prototype@arg-56`.
+`thread@first-prototype@node-selection`, `thread@first-prototype@span-selection`.
+
+- The session's `View` gains `shown`, the slide the editor shows. `select n<id>` selects a node and
+  shows its slide; `select s<id>` shows a slide and selects no node; `deselect` keeps the slide
+  shown. An operation that removes the shown slide drops it, and the editor then shows the first
+  slide, as it does when `shown` is none. `view` reports it. So the slide the editor shows is a
+  command, as `goal@rootpoint-protocol@commands-drive-everything` asks of every view the editor
+  shows.
+- A click on an area sends `select`. A click on a slide in the slide list sends `select s<id>`. The
+  side panel shows the path from the slide's root to the selection, as a breadcrumb, for instance
+  `s1 › n4 beside › n8 stacked › n7 area`; a click on an entry selects it.
+- Alt+↑ selects the parent, and does nothing at the root. Alt+↓ selects the child of the selection
+  selected last, or its first child, and does nothing on an area; the app keeps, for each split, the
+  child last selected in it, which only chooses the node a `select` names. Alt+← and Alt+→ select the
+  previous and next sibling, and do nothing at the first or the last.
+- A subtree is selected for a spanning split by these, and by no rectangle selection.
+
+Nearest rival: a rectangle drawn across areas selecting the smallest node that holds them, defeated
+by `argument@first-prototype@arg-56`.
 
 ### Actions on the selection
 
 `thread@first-prototype@selection-actions`, `thread@first-prototype@split-preview`.
 
-- Four buttons in the side panel, with a key each, split the selection at its middle, the new area
-  left, right, above or below: `split <node> beside|stacked 0.5 before|after`. Delete sends
-  `remove`. The side panel sets the content, its style or its fit, and adds an image asset.
+- Four buttons in the side panel split the selection at its middle, the new area left, right,
+  above or below, with the keys Shift+←, Shift+→, Shift+↑ and Shift+↓: `split <node> beside|stacked
+  0.5 before|after`. Delete sends `remove`. The side panel sets the content, its style or its fit,
+  and adds an image asset.
 - While Ctrl is held over the selected node, a vertical preview line follows the pointer; while
   Shift is held, a horizontal one. A click splits the node at the line, `beside` for Ctrl and
-  `stacked` for Shift, at the pointer's fraction of the node, the new empty area on the side of the
-  line where the pointer lies. Releasing the key or pressing Esc removes the line and issues
-  nothing.
+  `stacked` for Shift, at the line's fraction of the node. The new empty area is the smaller of the
+  two parts, `before` when it lies left of or above the line, `after` otherwise, and `after` when the
+  two are equal. Releasing the key or pressing Esc removes the line and issues nothing.
 - With Alt also held, the line snaps to the nearest twelfth of the node, and to a divider elsewhere
-  on the slide that lies within 8 pixels, the nearer of the two.
+  on the slide that lies within 8 points, the nearer of the two.
+- A split is refused, its button disabled and its click ignored, where a part would be less than 40
+  slide units along the split's axis, the bound a divider drag keeps.
 
 ```text
 Ctrl held over n2:        Ctrl+Alt, near n9's divider:
@@ -506,39 +594,43 @@ Nearest rival: the middle split alone, shape A, which the owner ruled below shap
 
 `thread@first-prototype@editor-overlay`, `thread@first-prototype@divider-drag`.
 
-- The editor draws, with egui over the slide's texture, a 1-pixel line on each divider, a highlight
+- The editor draws, with egui over the slide's texture, a 1-point line on each divider, a highlight
   on the divider under the pointer, an outline on the selected node, the preview line, and the drop
-  hint. None of them is drawn by `render_slide`, so the slide's image is the presenter's.
-- A press within 4 pixels of a divider grabs it, the nearer one where two are within 4 pixels; the
-  cursor is a resize cursor there. The drag sends `begin`, a `divider` command at each frame the
-  position changes, and `end` at the release; Esc sends `cancel`. A drag stops where a child of the
-  split would be less than 40 slide units wide or high. With Alt held, the position snaps as the
-  preview line does. A double-click on a divider sets it halfway between its two neighbours, the
-  neighbouring dividers or the split's edges, in one `divider` command.
+  hint, whose label is editor text, not slide content. None of them is drawn by `render_slide`, so
+  the slide's image is the presenter's.
+- A press within 4 points of a divider grabs it, the nearer one where two are within 4 points; the
+  cursor is a resize cursor there. The drag runs in an undo group, per "Undo groups", with a
+  `divider` command at each frame the position changes; Esc sends `cancel`. A drag stops where a
+  child of the split would be less than 40 slide units along the split's axis. With Alt held, the
+  position snaps as the preview line does. A double-click on a divider sets it halfway between its
+  two neighbours, the neighbouring dividers or the split's edges, in one `divider` command.
 
 Nearest rival: marks drawn into the slide image, defeated by claim 3,
 `argument@first-prototype@arg-61`.
 
 ### Moving content
 
-`thread@first-prototype@swap-gesture`. The selected area shows a grip at its top-left corner. While
-the grip is dragged, the area under the pointer is the target; its middle third, by width and by
-height, is the swap zone, and each edge strip of a third its move zone. The zone under the pointer is
-tinted, with a label beside the pointer: "swap", or "move left", "move right", "move up", "move
-down". A drop on the swap zone sends `swap a b`. A drop on a move zone sends, between `begin` and
-`end`, a `split` of the target on that side at 0.5, a `swap` of the dragged area with the new area,
-and a `remove` of the dragged area. A drop onto the dragged area, or outside any area, issues
-nothing.
+`thread@first-prototype@swap-gesture`. The selected area shows a grip, a square of 12 points set 8
+points inside its top-left corner, so no divider's band reaches it. A drag of the grip runs in an
+undo group, per "Undo groups". The area under the pointer is the target. Its middle third, by width
+and by height, is the swap zone; the rest is the move zone of the edge nearest the pointer, the
+distances to the edges taken as fractions of the target's width and height, left and right winning
+a tie. The zone under the pointer is tinted, with a label beside the pointer: "swap", or "move
+left", "move right", "move up", "move down". A drop on the swap zone sends `swap a b`. A drop on a
+move zone sends a `split` of the target on that side at 0.5, a `swap` of the dragged area with the
+new area, and a `remove` of the dragged area. The group then ends. A drop onto the dragged area, or
+outside any area, sends `cancel`.
 
 Nearest rival: a drag inside the area itself, defeated by AC1's text selection,
 `argument@first-prototype@arg-74`.
 
 ### The slide list
 
-`thread@first-prototype@slide-reorder`. The slide list shows each slide; its buttons add, remove
-and duplicate a slide, and a drag of a slide to another place sends `move-slide <slide> <index>`.
-egui's drag-and-drop helpers are assumed to serve it, which step 3 checks. Nearest rival: move-up and
-move-down buttons, defeated by `argument@first-prototype@arg-77`.
+`thread@first-prototype@slide-reorder`. The slide list shows each slide; its buttons add a slide
+after the shown one, remove the shown slide and duplicate it, and a drag of a slide to another place
+sends `move-slide <slide> <index>`, with egui's `Ui::dnd_drag_source` and `Ui::dnd_drop_zone`.
+Should they not serve, step 3 builds the drag from the rows' own drag responses. Nearest rival:
+move-up and move-down buttons, defeated by `argument@first-prototype@arg-77`.
 
 ### Undo groups
 
@@ -546,14 +638,17 @@ move-down buttons, defeated by `argument@first-prototype@arg-77`.
 
 - `begin` opens a group; `err` while one is open, since groups do not nest.
 - `end` closes the open group: every operation applied inside it is one undo step, undone and
-  redone together; an empty group leaves no step; `err` with no group open.
-- `cancel` reverts every operation applied inside the open group and closes it, leaving no undo
-  step and no redo step; `err` with no group open.
-- `undo` and `redo` inside a group close it first, as `end` does, then act. `new` and `load` close
-  an open group first. View commands inside a group apply no operation and join nothing.
-- The GUI sends `begin` at the press of a drag and when the text field gains focus, and `end` at the
-  release and when the field loses focus or the window loses focus, so a release never delivered
-  leaves no group open.
+  redone together; an empty group leaves no step; `err` with no group open. The session's undo and
+  redo stacks hold steps, each the inverses of one group or of one command.
+- `cancel` reverts every operation applied inside the open group, and restores the undo and redo
+  stacks as they were at its `begin`; `err` with no group open.
+- `undo` and `redo` inside a group close it first, as `end` does, then act. `new`, `load` and
+  `sample` close an open group first, as part of replacing the session's document and stacks. View
+  commands inside a group apply no operation and join nothing.
+- The GUI opens a group when a drag of a divider or of a grip starts, and when the text field gains
+  focus; it closes it at the release, when the field loses focus, and when the window loses focus,
+  so a release never delivered leaves no group open. Within one frame, the app closes an open group
+  before it opens another.
 
 ```text
 press     -> begin
@@ -567,30 +662,97 @@ consecutive commands, both defeated by `argument@first-prototype@arg-64`.
 
 ### Saving assets
 
-`thread@first-prototype@asset-save-rule`. At a `save`, for each asset of the document:
+`thread@first-prototype@asset-save-rule`. Every asset the session holds by `Path` holds a path
+relative to `Session::directory`, the directory of the presentation, or the working directory before
+a first save or load: `asset <path>` stores the path it is given, and the GUI gives the path its
+dialog returns made relative to that directory, with `..` where it lies outside. At a `save` to a
+file whose directory is D, each asset is placed as follows, paths compared lexically after joining
+them to their directory and removing `.` and `..` components:
 
-- an asset stored by a path that names a file inside the directory of the saved file, at any depth,
-  keeps its path;
-- any other asset, stored by a path that names a file outside that directory or as embedded bytes,
-  is written into that directory under its file name, `asset-<id>` with the extension of its image
-  format for embedded bytes, and its path becomes that name, relative to the saved file;
-- where a file of that name already exists there with other bytes, the name takes a suffix, `-2`,
-  `-3` and on, before the extension; a file with the same bytes is used as it is and not written.
+- a `Path` asset whose file lies inside D, at any depth, keeps its file, and its path is written
+  relative to D;
+- any other asset, a `Path` asset whose file lies outside D or an embedded one, is written into D:
+  under its file name, or `asset-<id>` with the extension its bytes name for embedded bytes, `.png`,
+  `.jpg`, `.ttf`, `.otf`, or none; and its path becomes that name;
+- where `Files::exists` finds a file of that name in D, it is read: with the same bytes it is used as
+  it is and not written; with other bytes the name takes a suffix, `-2`, `-3` and on, before the
+  extension;
+- every asset to write is read before anything is written; an asset that cannot be read, or a
+  `Files` that cannot tell whether a file exists, makes the save reply `err`, naming the asset, and
+  write nothing.
 
-Every read and write goes through the host's `Files`, per `design@rootpoint-protocol@session-files`.
-An asset added by `asset <path>` is read against the directory of the presentation, or the working
-directory before a first save, as today; the GUI passes the absolute path its dialog returns. A
-saved file therefore never holds embedded bytes, and `thread@first-prototype@sample-save` is this
-rule applied to the sample.
+The new paths enter the document through `apply`, one `Op::SetAssetSource` per asset whose source
+changes, after the files are written. They are no undo step, since an undo to the old source after
+the directory changed would name another file; the session rewrites the same asset's source in the
+operations its undo and redo stacks hold, so an undo after the save restores an asset with the path
+the saved file uses. A saved file therefore never holds embedded bytes, and
+`thread@first-prototype@sample-save` is this rule applied to the sample.
 
 ```text
-before: a3 = /home/u/Pictures/cat.png, a4 = logo.png beside the old file
-save talk/deck.ron -> talk/deck.ron, talk/cat.png, talk/logo.png
-                      a3 = "cat.png", a4 = "logo.png"
+before: dir /home/u/a, a3 = "../Pictures/cat.png", a4 = "logo.png"
+save /home/u/a/talk/deck.ron -> talk/deck.ron, talk/cat.png, talk/logo.png
+                                a3 = "cat.png", a4 = "logo.png"
 ```
 
-Nearest rivals: rewriting each path lexically, defeated by `argument@first-prototype@arg-68`, and
-refusing the save, defeated by `argument@first-prototype@arg-69`.
+Nearest rivals: rewriting each path lexically, with no copy, defeated by
+`argument@first-prototype@arg-68`, and refusing the save, defeated by
+`argument@first-prototype@arg-69`. For the change in memory: a save whose new paths are an undo
+step, whose undo would name another file once the directory changed; and a session that keeps its
+old paths while the saved file holds new ones, whose document would differ from the file it saved,
+against `criterion@first-prototype@c3-readable-roundtrip`.
+
+### The built-in sample
+
+The sample, per D3, is a presentation the protocol crate holds: a RON text and its image files,
+included in the crate at build time. `sample` replaces the session's document by it, its images as
+`AssetSource::Embedded`, with empty stacks and the working directory as its directory, as `load`
+does; a save writes its images beside the saved file, per "Saving assets". So the sample opens in
+the GUI, headless and in the browser by one command. It holds at least three slides: a title over
+two columns, a slide of text in two styles, and a slide of one image in `fit` and in `fill`; its
+texts say how to split, select, drag and swap. Its images stay under 50 KB in all.
+
+Nearest rival: a path the app's `Files` alone serves, which `load` would open in the GUI and in no
+headless session, against `goal@rootpoint@headless-core`.
+
+### UI actions to commands
+
+| UI action | commands |
+| --- | --- |
+| click an area; a breadcrumb entry; Alt+arrows | `select <node>` |
+| click a slide in the list | `select <slide>` |
+| add slide | `add-slide <index after the shown slide>` |
+| remove slide; duplicate slide | `remove-slide <shown>`; `duplicate-slide <shown>` |
+| drag a slide in the list | `move-slide <slide> <index>` |
+| split buttons, Shift+arrows | `split <node> beside\|stacked 0.5 before\|after` |
+| Ctrl or Shift click | `split <node> beside\|stacked <at> before\|after` |
+| Delete | `remove <node>` |
+| drag a divider | `begin`, `divider <split> <index> <pos>` per frame, `end`; Esc `cancel` |
+| double-click a divider | `divider <split> <index> <halfway>` |
+| drag the grip | `begin`, then at the drop `swap`, or `split` `swap` `remove`, then `end`; else `cancel` |
+| set the content to empty | `clear <area>` |
+| set the content to text; type in the field | `begin` at focus, `text <area> "<whole text>"` per change, `end` at focus loss |
+| set a style option | `text <area> "<text>" <option>` |
+| set the content to an image; its fit | `image <area> <asset> fit\|fill` |
+| add an image asset | `asset <path relative to the session's directory>` |
+| undo: Ctrl+Z; redo: Ctrl+Shift+Z, Ctrl+Y | `undo`; `redo` |
+| open: Ctrl+O; save: Ctrl+S | `load <path>`; `save <path>` |
+| open the built-in sample | `sample` |
+| present: F5; leave: Esc | `present <shown>`; `stop` |
+| next: →, Space, Page Down; previous: ←, Page Up | `next`; `prev` |
+
+While the text field has focus, keys go to the field, and Delete and the arrows act on the text.
+
+### Pointer input to gestures
+
+A press in the slide view, outside presenter mode, takes the first that applies:
+
+| # | where the press is | gesture |
+| --- | --- | --- |
+| 1 | on the grip of the selected area | grip drag |
+| 2 | within 4 points of a divider | divider drag, or a reset on a double-click |
+| 3 | inside the selected node, Ctrl or Shift held | split at the preview line |
+| 4 | inside an area | `select` of the area |
+| 5 | elsewhere, in the letterbox | nothing |
 
 ## Losing alternatives
 
@@ -600,8 +762,6 @@ refusing the save, defeated by `argument@first-prototype@arg-69`.
   selection path whose result can exceed the rectangle (`argument@first-prototype@arg-56`).
 - **The middle split alone**, shape A, lost to `thread@first-prototype@selection-actions` on the
   owner's word in O14 (`argument@first-prototype@arg-58`).
-- **A split at the pointer with no preview**, superseded by `thread@first-prototype@split-preview`,
-  on the owner's word in O15.
 - **Marks drawn into the slide image**, lost to `thread@first-prototype@editor-overlay`: claim 3
   (`argument@first-prototype@arg-61`).
 - **A preview on a copy committed at the release, and the session merging consecutive commands**,
@@ -609,7 +769,9 @@ refusing the save, defeated by `argument@first-prototype@arg-69`.
   word in O14.
 - **Rewriting asset paths lexically, and refusing a save into another directory**, lost to
   `thread@first-prototype@asset-save-rule` (`argument@first-prototype@arg-68`,
-  `argument@first-prototype@arg-69`).
+  `argument@first-prototype@arg-69`). Under it, `thread@first-prototype@sample-save`, superseded:
+  its shape, the sample's images written as files, is the rule applied to the sample
+  (`argument@first-prototype@arg-73`).
 - **A subfolder for the copied assets**, lost to `thread@first-prototype@asset-save-rule` on the
   owner's word in O14, "for now".
 - **A plain drag inside an area to swap, and a swap button with a target click**, lost to
@@ -632,42 +794,45 @@ refusing the save, defeated by `argument@first-prototype@arg-69`.
 
 ## Implementation sequence
 
-1. **Undo groups and the save rule in the protocol.** `begin`, `end` and `cancel`, and the asset
-   rule of `save`, with `Session::asset_bytes` public. Claims 4 and 5. Fails alone on: a protocol
-   script, with no app code.
-2. **A window that shows one slide.** The app opens a file and shows its first slide's render,
-   letterboxed, and the render's report. Fails alone on: the texture upload.
-3. **Selection, dividers and the slide list.** `node_rects`, the selection keys and breadcrumb, the
-   overlay, divider drags in groups, the slide list. Claim 2.
+1. **The protocol's changes.** `begin`, `end` and `cancel`; the save rule, with
+   `Op::SetAssetSource`, `Files::exists`, `Session::directory` and `Session::asset_bytes` public; the
+   view's shown slide; `sample` and the sample itself; the texts and the test the save rule changes.
+   Claims 4 and 5. Fails alone on: a protocol script, with no app code.
+2. **A window that shows one slide.** The app crate; `slide_to_pixels`; the app opens a file and
+   shows the shown slide's render, letterboxed, and the render's report. Fails alone on: the texture
+   upload.
+3. **Selection, dividers and the slide list.** `node_rects`, the selection, the breadcrumb and its
+   keys, the overlay, divider drags in groups, the slide list. Claim 2, its first part.
 4. **Editing from the UI.** The actions on the selection with the preview and snapping, moving
-   content, content and style, undo and redo, open and save, the built-in sample. Claim 1.
+   content with its hint, content and style, undo and redo, open and save, the built-in sample.
+   Claim 1, and claim 2, its second part.
 5. **Presenter mode.** Claim 3. Then AC2's drag bound, and AC6.
 
 ## Acceptance criteria
 
-This slice judges the drag bound of AC2, `acceptance@first-prototype@render-fast-enough`, at
-step 5: dragging a divider of the third render fixture in a 1600×900 editor view, release build, on
-the owner's machine, with the time of each of 100 frames taken; the bound holds when every frame is
-within it, and the largest is reported.
+This slice judges, at step 5, the drag bound of AC2, `acceptance@first-prototype@render-fast-enough`,
+and AC6, `acceptance@first-prototype@modifiers-reach-app`, whose item is in the milestone document.
 
-### AC6. Every modifier gesture of the editor reaches the app on the owner's desktop `##modifiers-reach-app`
-
-Guards `thread@first-prototype@split-preview` and `thread@first-prototype@node-selection`. Judged at
-step 5 of this slice, on the owner's machine and desktop. Fires when any of these does not reach
-the app: Ctrl+click and Shift+click with their preview lines, Alt snapping during a split and
-during a divider drag, Alt+↑, Alt+↓, Alt+← and Alt+→. Response: the gesture that does not reach the
-app is bound to another key, and the thread that holds it is reopened for its keys. Kept on the
-owner's word in O16.
+AC2's drag bound is measured on the owner's machine, release build, in a 1600×900 editor view: a
+drag of one divider of the fixture `planned@rootpoint@crates/rootpoint-app/tests/data/mixed.ron`, a
+slide of five areas mixing text and an image, saved with its image beside it from the render
+crate's `mixed` test slide. A frame's time runs from the start of the app's `ui` call to the end of
+its `TextureHandle::set`, taken with `std::time::Instant` and logged for each of 100 frames; the
+bound holds when every frame is within it, and the largest is reported.
 
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`: `thread@first-prototype@gui-toolkit`, and the
 threads of the design session whose harvest names the app crate's Component, into its design home;
-the built-in sample as a permanent feature of every build, attributed to the owner, per D3, into the
-same home; the uniform scaling of `thread@first-prototype@slide-coordinate-space`, which the render
-and app crates both respect, into rootpoint's design home; the losing hosts, judged for a `rejected`
-entry. `thread@first-prototype@gesture-undo` and `thread@first-prototype@asset-save-rule` into the
-protocol crate's design home, their losing shapes judged for `rejected` entries; T5 into the protocol
-crate's tripwires home, guarding the head of `thread@first-prototype@gesture-undo`; the closure of
-`issue@rootpoint-protocol@asset-paths-follow-save`. AC6 reported at step 5, and deleted with this
-document.
+the built-in sample as a permanent feature of every build, attributed to the owner, per D3, with its
+command `sample`, into the protocol crate's design home; the uniform scaling of
+`thread@first-prototype@slide-coordinate-space`, which the render and app crates both respect, into
+rootpoint's design home; the losing hosts, judged for a `rejected` entry; the app crate added to the
+crates `design@rootpoint@crate-existence-rule` lists. `thread@first-prototype@gesture-undo` and
+`thread@first-prototype@asset-save-rule` into the protocol crate's design home, each attributed to
+the owner where the owner chose: Q16 and Q20 for the first, Q17's "for now" for the second; their
+losing shapes judged for `rejected` entries; the shown slide into `design@rootpoint-protocol@view-state`;
+`Op::SetAssetSource` into `design@rootpoint-model@edit-operation-core`'s list where it names the
+operations; T5 into the protocol crate's tripwires home, guarding the head of
+`thread@first-prototype@gesture-undo`; the closure of
+`issue@rootpoint-protocol@asset-paths-follow-save`. AC6 reported at step 5.

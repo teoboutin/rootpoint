@@ -141,11 +141,13 @@ slice's spec, with the gates run before each commit.
   O10 to O12; **Q4**, put to the owner at the review of this document. The labels Q1 to Q7 inside
   O5, O6 and O8 and in `argument@first-prototype@arg-20`, `argument@first-prototype@arg-21` and
   `argument@first-prototype@arg-25` are those of the goal setting, A2 to A4, a separate numbering.
-  **D1 to D4**: the defaults put to the owner, listed in their own section.
+  **Q5 to Q13**: the questions put to the owner at the reviews and the audits of the first slices,
+  in their commits and their specs, since deleted; Q14 was numbered in the conversation only.
+  **D1 to D5**: the defaults put to the owner, listed in their own section.
 - **O1 to O12**: the owner's messages, quoted in "Status and audience". **O13 to O16**: the
   owner's messages in the design session held at the audit of `spec@first-prototype@editor-shell`,
-  quoted in that slice's spec, with its questions **Q15 to Q21**, its acceptance criterion **AC6**
-  and its tripwire **T5**.
+  quoted in that slice's spec with the questions **Q15 to Q21** they answer; that session's
+  acceptance criterion **AC6** and tripwire **T5** are in "Acceptance criteria" and "Premortem".
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
@@ -163,7 +165,9 @@ slice's spec, with the gates run before each commit.
 - **(V), (A)**: a fact verified by reading a source, or assumed, in the surveys quoted by the
   arguments.
 - **the prior-art survey, the toolkit survey**: two subagent reports of the session, on slide tools
-  that use split trees, and on Rust GUI toolkits and renderers; their facts are quoted in
+  that use split trees, and on Rust GUI toolkits and renderers, kept in
+  `path@rootpoint@docs/grounding/prior-art.md` and `path@rootpoint@docs/grounding/toolkits.md`,
+  each with the message its subagent returned; their facts are quoted, from those messages, in
   `argument@first-prototype@arg-19` and `argument@first-prototype@arg-26`. "The blitz wasm notes"
   is the file `HOWTO_WASM.md` of the blitz repository, which the toolkit survey read.
 - **difficulty 1 to 5**: the items of A1's list of what is harder than it looks, each quoted in its
@@ -833,7 +837,8 @@ own"; one spec "would be one PR of perhaps several thousand lines ... which is w
 
 The names below are the shapes the design needs. A slice's design audit may rename one, in place,
 before the slice's code is written. Every one was new when this document was written; those of the
-model crate now exist in the code.
+model and render crates, and those of the protocol crate but `rootpoint-ctl`, now exist in the
+code; the names `spec@first-prototype@editor-shell` adds are listed under their crates below.
 
 ```text
 crates/rootpoint-model/   (crate rootpoint-model)
@@ -843,18 +848,22 @@ crates/rootpoint-model/   (crate rootpoint-model)
   FontRef { Builtin(String), Asset(AssetId) }, Rgba, HAlign { Left, Center, Right },
   VAlign { Top, Middle, Bottom }, ImageContent, ImageFit { Fit, Fill }, AssetId, Asset,
   AssetSource { Path(String), Embedded(Vec<u8>) }, AspectRatio { width, height },
-  Rect { x, y, w, h }, area_rects, node_rects, FORMAT_VERSION, save_ron, load_ron, LoadError,
+  Rect { x, y, w, h }, area_rects, FORMAT_VERSION, save_ron, load_ron, LoadError,
   Op { AddSlide, RemoveSlide, RestoreSlide, MoveSlide, DuplicateSlide, Split, Remove,
        SetTree, MoveDivider, Swap, SetContent, AddAsset, RemoveAsset, RestoreAsset },
   OpError, apply
   (fields and shapes: "Decided design" and "Mapping tables" of its slice's spec)
+  added by the native GUI slice: node_rects, Op::SetAssetSource { id, source }
 crates/rootpoint-render/  (crate rootpoint-render)
   FontSet, RenderError, render_slide
+  added by the native GUI slice: slide_to_pixels
 crates/rootpoint-protocol/ (crate rootpoint-protocol)
   Command, ParseError, parse_command, Session, Reply, the view state
   binaries: rootpoint-headless, rootpoint-ctl
+  added by the native GUI slice: the commands begin, end, cancel and sample, View::shown,
+  Files::exists, Session::directory, Session::asset_bytes made public
 crates/rootpoint-app/     (crate rootpoint-app)
-  binary: rootpoint
+  a library root, and the binary rootpoint
 tools/xtask/src/main.rs   (existing file)
   the gate "wasm", pushed onto the list rust_project returns
 ```
@@ -995,7 +1004,10 @@ egui, not eframe's own manifest.
 
 Each cause assumes the prototype was built and failed. Each verdict below is the owner's ruling in
 O12, "All tripwires and AC can be kept, proceed", for AC1 to AC5 and T1 and T2, and in the owner's
-message after the milestone was written, "D2 accepted; T3 and T4 too", for T3 and T4.
+message after the milestone was written, "D2 accepted; T3 and T4 too", for T3 and T4. T5 and AC6
+come from the premortem of the design session held at the audit of
+`spec@first-prototype@editor-shell`, and the owner's ruling on them is O16 of that slice's spec,
+"Keep both AC6 and T5,proceed".
 
 - **In-place text editing on Parley is poor.** Stresses `thread@first-prototype@slide-renderer` and
   `thread@first-prototype@gui-toolkit`. Becomes AC1, `acceptance@first-prototype@caret-on-glyph`.
@@ -1039,8 +1051,10 @@ message after the milestone was written, "D2 accepted; T3 and T4 too", for T3 an
   GUI's gesture. Response: reopen that decision, for example with one group per client. Re-entry:
   the audit of `spec@first-prototype@live-control`. Recorded on the owner's word in O16, at the
   harvest of `spec@first-prototype@editor-shell`, in the protocol crate's Component's tripwires
-  home, guarding the head that harvest writes for that decision. AC6, ruled with it, is that
-  slice's.
+  home, guarding the head that harvest writes for that decision.
+- **AC6. The desktop takes the editor's modifier keys.** Stresses #split-preview and
+  #node-selection of `spec@first-prototype@editor-shell`. Becomes AC6,
+  `acceptance@first-prototype@modifiers-reach-app`.
 
 ## Acceptance criteria
 
@@ -1087,6 +1101,16 @@ Judged by the slice `model-core`, where it did not fire. Fires when an agent ses
 saved file,
 cannot change one text and one divider position by editing the file so that it loads back with
 those changes. Response: reopen `thread@first-prototype@save-format`.
+
+### AC6. Every modifier gesture of the editor reaches the app on the owner's desktop `##modifiers-reach-app`
+
+Guards the decisions of `spec@first-prototype@editor-shell` on splitting at the pointer with a
+preview and snapping, #split-preview, and on selecting by keys, #node-selection, and the heads
+that slice's harvest writes for them. Judged at step 5 of that slice, on the owner's machine and
+desktop. Fires when any of these does not reach the app: Ctrl+click and Shift+click with their
+preview lines, Alt snapping during a split and during a divider drag, Alt+↑, Alt+↓, Alt+← and
+Alt+→. Response: the gesture that does not reach the app is bound to another key, and the decision
+that holds it is reopened for its keys. Kept on the owner's word in O16 of that slice's spec.
 
 ## Implementation sequence
 
