@@ -454,8 +454,7 @@ T2 written in that Component's tripwires home.
 ### An asset entry is a path or embedded bytes, from version 1 of the format `##asset-source`
 
 Proposed by the session in round 2 (`argument@first-prototype@arg-50`). Closed in O11, by the same words, on the argument that adding `Embedded` later would force a
-migration. That argument proved false at the review before the slice's merge; the decision is kept
-as a default awaiting the owner, D5. Final state: approved, its ground awaiting the owner. Shape: built, and recorded in `design@rootpoint-model@asset-source`.
+migration. That argument proved false at the review before the slice's merge; the owner then kept the decision on the other argument, as D5. Final state: approved. Shape: built, and recorded in `design@rootpoint-model@asset-source`.
 Harvest: part of the head that `thread@first-prototype@inline-content-assets` gives, if the rules on
 one decision per head join them; a head of its own otherwise.
 
@@ -1131,10 +1130,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   editor. Though I'd be the judge anyway. I'm not even sure where my tikz macros are, I have not
   been using them for a while." The tikz comparison is dropped. Bears
   on `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`.
-- **D5, awaiting the owner.** `thread@first-prototype@asset-source` keeps `Embedded` in the format's
+- **D5, ruled.** `thread@first-prototype@asset-source` keeps `Embedded` in the format's
   first version, on the argument that the round-trip tests then cover it before packing writes it;
-  the argument it was approved on, a migration, proved false. Bears on
-  `design@rootpoint-model@asset-source`.
+  the argument it was approved on, a migration, proved false. Bears on `design@rootpoint-model@asset-source`. The owner ruled: "D5 keep".
 - **Q4, ruled.** A rewording of `goal@rootpoint@minimal-content-set`, whose "every feature the
   editor has" excluded, read literally, presenter mode, saving and the protocol, which other goals
   require. The owner ruled: "Q4 accepted, go ahead". The goal is reworded under
