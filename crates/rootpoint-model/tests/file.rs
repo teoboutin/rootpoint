@@ -29,9 +29,9 @@ fn fixture() -> Document {
         )
         .unwrap();
     };
-    split(&mut doc, left, Axis::SideBySide);
+    split(&mut doc, left, Axis::LeftToRight);
     let right = doc.slides[0].root.areas()[1].id;
-    split(&mut doc, right, Axis::Stacked);
+    split(&mut doc, right, Axis::TopToBottom);
     let Op::RemoveAsset { id: asset } = apply(
         &mut doc,
         Op::AddAsset {
@@ -189,7 +189,7 @@ proptest! {
                 (0, _) => Op::AddSlide { at: 0 },
                 (1, _) => Op::Split {
                     node: area,
-                    axis: if flag { Axis::SideBySide } else { Axis::Stacked },
+                    axis: if flag { Axis::LeftToRight } else { Axis::TopToBottom },
                     at,
                     side: if pick % 2 == 0 { Side::Before } else { Side::After },
                 },

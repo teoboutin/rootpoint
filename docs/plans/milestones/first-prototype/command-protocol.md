@@ -20,9 +20,11 @@ cites.
   binary gives it a `Files` on the native file system. Asset paths are relative to the
   presentation file's directory, or to the working directory of a presentation not yet saved. What
   a save into another directory does to them is open: `issue@rootpoint-protocol@asset-paths-follow-save`.
-- The renaming of the model's axes to `Axis::SideBySide` and `Axis::Stacked`, built in this slice
-  and recorded in `design@rootpoint-model@split-tree-arity`: a fresh agent read `Vertical` as
-  stacked. The protocol's words are `beside` and `stacked`. A default awaiting the owner, Q11.
+- The renaming of the model's axes to `Axis::LeftToRight` and `Axis::TopToBottom`, built in this
+  slice and recorded in `design@rootpoint-model@split-tree-arity`: a fresh agent read `Vertical` as
+  stacked. The protocol's words are `beside` and `stacked`. Q11, ruled: the default built was
+  `SideBySide` and `Stacked`, and the owner answered "The LeftToRight / TopToBottom reads better
+  IMO".
 - Per D2, the crate's Component.
 
 ## Claims

@@ -58,9 +58,12 @@ fn load_refused(text: &str) {
 #[test]
 fn a_split_whose_dividers_underflow_to_zero_is_refused() {
     let (mut doc, root) = one_slide();
-    split(&mut doc, root, Axis::SideBySide, 1e-200, Side::After);
+    split(&mut doc, root, Axis::LeftToRight, 1e-200, Side::After);
     let v = doc.slides[0].root.id();
-    refused(&mut doc, split_op(v, Axis::SideBySide, 1e-200, Side::After));
+    refused(
+        &mut doc,
+        split_op(v, Axis::LeftToRight, 1e-200, Side::After),
+    );
 }
 
 #[test]
@@ -69,28 +72,28 @@ fn a_split_whose_divider_rounds_to_one_is_refused() {
     split(
         &mut doc,
         root,
-        Axis::SideBySide,
+        Axis::LeftToRight,
         1.0 - f64::EPSILON / 2.0,
         Side::After,
     );
     let v = doc.slides[0].root.id();
-    refused(&mut doc, split_op(v, Axis::SideBySide, 0.5, Side::Before));
+    refused(&mut doc, split_op(v, Axis::LeftToRight, 0.5, Side::Before));
 }
 
 #[test]
 fn a_split_whose_dividers_round_to_equal_is_refused() {
     let (mut doc, root) = one_slide();
-    split(&mut doc, root, Axis::SideBySide, 1e-20, Side::After);
+    split(&mut doc, root, Axis::LeftToRight, 1e-20, Side::After);
     let v = doc.slides[0].root.id();
-    refused(&mut doc, split_op(v, Axis::SideBySide, 0.5, Side::Before));
+    refused(&mut doc, split_op(v, Axis::LeftToRight, 0.5, Side::Before));
 }
 
 #[test]
 fn a_split_into_a_parent_extent_of_one_ulp_is_refused() {
     let (mut doc, root) = one_slide();
-    split(&mut doc, root, Axis::SideBySide, 0.5, Side::After);
+    split(&mut doc, root, Axis::LeftToRight, 0.5, Side::After);
     let second = root_split(&doc).children[1].id();
-    split(&mut doc, second, Axis::SideBySide, 0.5, Side::After);
+    split(&mut doc, second, Axis::LeftToRight, 0.5, Side::After);
     let v = doc.slides[0].root.id();
     let next = f64::from_bits(0.5f64.to_bits() + 1);
     apply(
@@ -104,7 +107,7 @@ fn a_split_into_a_parent_extent_of_one_ulp_is_refused() {
     .unwrap();
     refused(
         &mut doc,
-        split_op(second, Axis::SideBySide, 0.5, Side::After),
+        split_op(second, Axis::LeftToRight, 0.5, Side::After),
     );
 }
 
@@ -113,13 +116,13 @@ fn repeated_ordinary_splits_stop_before_dividers_meet() {
     // Keep splitting the child right of 0.5 at 0.05, before it: its extent shrinks by 20 each
     // time, until rounding would make two dividers equal, which is refused.
     let (mut doc, root) = one_slide();
-    split(&mut doc, root, Axis::SideBySide, 0.5, Side::After);
+    split(&mut doc, root, Axis::LeftToRight, 0.5, Side::After);
     let mut target = root_split(&doc).children[1].id();
     let mut refusals = 0;
     for _ in 0..40 {
         match apply(
             &mut doc,
-            split_op(target, Axis::SideBySide, 0.05, Side::Before),
+            split_op(target, Axis::LeftToRight, 0.05, Side::Before),
         ) {
             Ok(_) => {
                 let s = root_split(&doc);
@@ -137,9 +140,9 @@ fn repeated_ordinary_splits_stop_before_dividers_meet() {
 #[test]
 fn a_merge_on_remove_into_a_tiny_extent_is_refused() {
     let (mut doc, a) = one_slide();
-    split(&mut doc, a, Axis::SideBySide, 0.5, Side::After);
+    split(&mut doc, a, Axis::LeftToRight, 0.5, Side::After);
     let r = root_split(&doc).children[1].id();
-    split(&mut doc, r, Axis::SideBySide, 0.5, Side::After);
+    split(&mut doc, r, Axis::LeftToRight, 0.5, Side::After);
     let v = doc.slides[0].root.id();
     let near = f64::from_bits(0.5f64.to_bits() + 4);
     apply(
@@ -151,12 +154,12 @@ fn a_merge_on_remove_into_a_tiny_extent_is_refused() {
         },
     )
     .unwrap();
-    split(&mut doc, r, Axis::Stacked, 0.5, Side::After);
+    split(&mut doc, r, Axis::TopToBottom, 0.5, Side::After);
     let Node::Split(h) = &root_split(&doc).children[1] else {
         panic!("the middle child is not a split");
     };
     let x = h.children[1].id();
-    split(&mut doc, x, Axis::SideBySide, 0.1, Side::After);
+    split(&mut doc, x, Axis::LeftToRight, 0.1, Side::After);
     refused(&mut doc, Op::Remove { node: r });
 }
 
@@ -230,7 +233,7 @@ fn a_tree_breaking_the_split_invariants_is_refused() {
     // A split of one child, with an id the counter has reached (the spare slide's).
     let bad = Node::Split(rootpoint_model::Split {
         id: NodeId(spare.0),
-        axis: Axis::SideBySide,
+        axis: Axis::LeftToRight,
         children: vec![Node::Area(Area {
             id: root,
             content: Content::Empty,
@@ -270,7 +273,7 @@ fn divider_positions_of_every_magnitude_survive_the_file() {
         2.225_073_858_507_201_4e-308,
     ] {
         let (mut doc, root) = one_slide();
-        split(&mut doc, root, Axis::SideBySide, 0.5, Side::After);
+        split(&mut doc, root, Axis::LeftToRight, 0.5, Side::After);
         let v = doc.slides[0].root.id();
         apply(
             &mut doc,

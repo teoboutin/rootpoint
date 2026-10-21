@@ -42,13 +42,13 @@ fn collect(node: &Node, rect: Rect, out: &mut Vec<(NodeId, Rect)>) {
                 let (start, end) = s.child_extent(i);
                 let part = match s.axis {
                     // Children side by side, left to right.
-                    Axis::SideBySide => Rect {
+                    Axis::LeftToRight => Rect {
                         x: rect.x + start * rect.w,
                         w: (end - start) * rect.w,
                         ..rect
                     },
                     // Children stacked, top to bottom.
-                    Axis::Stacked => Rect {
+                    Axis::TopToBottom => Rect {
                         y: rect.y + start * rect.h,
                         h: (end - start) * rect.h,
                         ..rect

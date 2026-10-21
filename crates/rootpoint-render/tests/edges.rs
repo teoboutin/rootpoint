@@ -271,7 +271,7 @@ fn adjacent_areas_leave_no_seam_at_a_fractional_edge() {
         .write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)
         .unwrap();
     let (mut doc, left) = one_slide();
-    split(&mut doc, left, Axis::SideBySide, 1.0 / 3.0);
+    split(&mut doc, left, Axis::LeftToRight, 1.0 / 3.0);
     let right = doc.slides[0].root.areas()[1].id;
     let asset = add_asset(&mut doc, "red.png");
     for area in [left, right] {

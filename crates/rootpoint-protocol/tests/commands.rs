@@ -41,13 +41,13 @@ fn every_command_prints_back_as_it_parses() {
         Command::DuplicateSlide { slide: SlideId(1) },
         Command::Split {
             node: NodeId(2),
-            axis: Axis::SideBySide,
+            axis: Axis::LeftToRight,
             at: 0.5,
             side: Side::After,
         },
         Command::Split {
             node: NodeId(2),
-            axis: Axis::Stacked,
+            axis: Axis::TopToBottom,
             at: 0.25,
             side: Side::Before,
         },
@@ -148,7 +148,7 @@ fn each_editing_command_applies_its_operation() {
             "split n2 stacked 0.3 before",
             Op::Split {
                 node: NodeId(2),
-                axis: Axis::Stacked,
+                axis: Axis::TopToBottom,
                 at: 0.3,
                 side: Side::Before,
             },
@@ -157,7 +157,7 @@ fn each_editing_command_applies_its_operation() {
             "split n4 beside 0.5",
             Op::Split {
                 node: NodeId(4),
-                axis: Axis::SideBySide,
+                axis: Axis::LeftToRight,
                 at: 0.5,
                 side: Side::After,
             },

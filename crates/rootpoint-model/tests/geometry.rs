@@ -50,7 +50,7 @@ fn a_side_by_side_split_lays_its_children_left_to_right() {
         &mut doc,
         Op::Split {
             node: root,
-            axis: Axis::SideBySide,
+            axis: Axis::LeftToRight,
             at: 0.25,
             side: Side::After,
         },
@@ -108,7 +108,7 @@ proptest! {
             } else {
                 Op::Split {
                     node,
-                    axis: if beside { Axis::SideBySide } else { Axis::Stacked },
+                    axis: if beside { Axis::LeftToRight } else { Axis::TopToBottom },
                     at,
                     side: if after { Side::After } else { Side::Before },
                 }

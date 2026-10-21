@@ -16,7 +16,7 @@
             id: 1,
             root: Split(
                 id: 4,
-                axis: SideBySide,
+                axis: LeftToRight,
                 children: [
                     Area(
                         id: 2,
@@ -27,7 +27,7 @@
                     ),
                     Split(
                         id: 6,
-                        axis: Stacked,
+                        axis: TopToBottom,
                         children: [
                             Area(
                                 id: 3,

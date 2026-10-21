@@ -14,8 +14,8 @@ fn node_tree(node: &Node) -> String {
     match node {
         Node::Split(s) => {
             let axis = match s.axis {
-                Axis::SideBySide => "beside",
-                Axis::Stacked => "stacked",
+                Axis::LeftToRight => "beside",
+                Axis::TopToBottom => "stacked",
             };
             let dividers: Vec<String> = s.dividers.iter().map(|d| d.to_string()).collect();
             let children: Vec<String> = s.children.iter().map(node_tree).collect();

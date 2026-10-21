@@ -235,8 +235,8 @@ impl fmt::Display for Command {
                 side,
             } => {
                 let axis = match axis {
-                    Axis::SideBySide => "beside",
-                    Axis::Stacked => "stacked",
+                    Axis::LeftToRight => "beside",
+                    Axis::TopToBottom => "stacked",
                 };
                 let side = match side {
                     Side::Before => "before",
@@ -507,8 +507,8 @@ fn parse_number(text: &str) -> Result<f64, ParseError> {
 
 fn parse_axis(text: &str) -> Result<Axis, ParseError> {
     match text {
-        "beside" => Ok(Axis::SideBySide),
-        "stacked" => Ok(Axis::Stacked),
+        "beside" => Ok(Axis::LeftToRight),
+        "stacked" => Ok(Axis::TopToBottom),
         other => Err(ParseError(format!(
             "`{other}` is not `beside` or `stacked`"
         ))),

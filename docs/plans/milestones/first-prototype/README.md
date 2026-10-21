@@ -833,7 +833,7 @@ model crate now exist in the code.
 
 ```text
 crates/rootpoint-model/   (crate rootpoint-model)
-  Document, Slide, SlideId, Node, NodeId, Split, Axis { SideBySide, Stacked },
+  Document, Slide, SlideId, Node, NodeId, Split, Axis { LeftToRight, TopToBottom },
   Side { Before, After }, Area,
   Content { Empty, Text(TextContent), Image(ImageContent) }, TextContent, TextStyle,
   FontRef { Builtin(String), Asset(AssetId) }, Rgba, HAlign { Left, Center, Right },
