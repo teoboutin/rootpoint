@@ -160,7 +160,7 @@ impl Node {
 /// Where a split puts its children. A `LeftToRight` split lays them side by side, left to right,
 /// with vertical dividers between them; a `TopToBottom` split stacks them, top to bottom, with
 /// horizontal dividers. The names say where the children go, which a reader of the file needs:
-/// `Vertical` and `Horizontal` were read both ways (`design@rootpoint-model@split-tree-arity`).
+/// `Vertical` and `Horizontal` were read both ways (`design@rootpoint-model@axis-names`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Axis {
     LeftToRight,

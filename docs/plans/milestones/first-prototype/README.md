@@ -927,7 +927,7 @@ packing.
 
 ## Mapping tables
 
-The mapping tables are in the slice specs that build their functions:
+The mapping tables are in the code that builds their functions:
 `path@rootpoint-model@src/ops.rs`, built by the slice `model-core` (each operation to its
 inverse, in the doc comments of `Op`), and
 `path@rootpoint-protocol@src/session.rs`, built by the slice `command-protocol` (each command to

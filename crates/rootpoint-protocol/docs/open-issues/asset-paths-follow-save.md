@@ -51,7 +51,9 @@ file. A `save` into another directory moves the presentation file and leaves its
 unchanged, so after it the paths name other files. The render reports the asset as missing
 (`missing=a3`), so no image is lost from disk, but the presentation saved under the new name is
 broken without any `err` reply. An agent that builds a presentation before choosing where to save
-it meets this on its first save, against `goal@rootpoint@text-command-protocol`.
+it meets this on its first save, against
+`goal@rootpoint-protocol@commands-drive-everything`, which refines
+`goal@rootpoint@text-command-protocol`.
 
 ### What would close it
 

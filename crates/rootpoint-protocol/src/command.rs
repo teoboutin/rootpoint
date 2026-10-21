@@ -505,6 +505,8 @@ fn parse_number(text: &str) -> Result<f64, ParseError> {
         .ok_or_else(|| ParseError(format!("`{text}` is not a number")))
 }
 
+// The words say where a split's children go, as the model's names do
+// (`design@rootpoint-model@axis-names`), and are shorter, since they are typed by hand.
 fn parse_axis(text: &str) -> Result<Axis, ParseError> {
     match text {
         "beside" => Ok(Axis::LeftToRight),

@@ -35,16 +35,17 @@ removal, so a script's later command would name another area,
 
 ## The session
 
-### The session holds a view state, which only commands change and which undo leaves alone `##view-state`
+### The view state lives in the session, outside the document's operations `##view-state`
 
 Besides its document and its undo and redo stacks, a `Session` holds a `View`: the selected node,
 if any, and the slide presenter mode shows, if it is on. The view commands, `select`, `deselect`,
-`present`, `next`, `prev` and `stop`, change it and apply no operation, so `undo` and `redo` do not
-step through them; `view` reports it. An operation that removes the selected node or the presented
-slide drops it from the view, so the view never names what the document does not hold. Selection
-and presenter mode then run headless, in a test or a script, as `goal@rootpoint@headless-core`
-asks of every operation the GUI offers. The rival, a view state the GUI alone holds, would leave
-both out of every headless test.
+`present`, `next`, `prev` and `stop`, change it and apply no operation; `view` reports it. Since
+they apply no operation, `undo` and `redo` do not step through them: an `undo` after a `select`
+reverts the last edit, not the selection. An operation that removes the selected node or the
+presented slide drops it from the view, so the view never names what the document does not hold.
+Selection and presenter mode then run headless, in a test or a script, as
+`goal@rootpoint@headless-core` asks of every operation the GUI offers. The rival, a view state the
+GUI alone holds, would leave both out of every headless test.
 
 ### The session opens no file: its host gives it a `Files` `##session-files`
 
@@ -52,6 +53,8 @@ both out of every headless test.
 `Files` trait its caller passes to each command, and touches no file system itself; the headless
 binary gives it the native file system. The session is part of the browser build, per
 `goal@rootpoint-protocol@browser-buildable`, and there `std::fs` compiles and fails only when
-called, so the wasm gate cannot catch a direct file access: a rule every file access of the session
-respects, and every host that implements `Files`. It is the session's counterpart of
+called, so the wasm gate cannot catch a direct file access, as `path@rootpoint-model@CLAUDE.md`
+records: read in Rust 1.98's `std`, `wasm32-unknown-unknown` takes the module
+`sys::fs::unsupported`, whose `File::open` returns an `Unsupported` error. It is a rule every
+file access of the session respects, and every host that implements `Files`. It is the session's counterpart of
 `design@rootpoint-render@caller-supplies-assets`.

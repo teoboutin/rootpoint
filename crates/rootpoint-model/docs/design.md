@@ -9,12 +9,7 @@ rootpoint-model is for is in `register@rootpoint-model@goal`.
 ### A split divides its extent along one axis into any number of children, and never holds a child split of its own axis `##split-tree-arity`
 
 A slide's root is a node: an area, or a split with an axis and k ≥ 2 children separated by k−1
-dividers. A `LeftToRight` split lays its children side by side, left to right; a `TopToBottom`
-split stacks them, top to bottom. The names say where the children go, in the file and in the
-protocol's `beside` and `stacked`: the names of the dividers' direction, `Vertical` and
-`Horizontal`, `rejected@rootpoint-model@divider-direction-names`, were read both ways by a fresh
-agent. Among names that say where the children go, the owner chose `LeftToRight` and `TopToBottom`
-over `SideBySide` and `Stacked`, as reading better. A split along the axis of the split that holds it is merged into it,
+dividers, its axis named by `design@rootpoint-model@axis-names`. A split along the axis of the split that holds it is merged into it,
 and so is a child left alone by a removal when its axis is its new parent's, so each layout has
 exactly one tree.
 
@@ -25,6 +20,17 @@ chose. With the merge, dragging a divider moves only its two neighbours. The tre
 of every saved file and of the crate's public types. It serves `goal@rootpoint@free-slide-division`.
 Whether merging removes a grouping an author wants is watched by
 `tripwire@rootpoint-model@grouping-lost-to-merge`.
+
+### A split's axis is named by where its children go `##axis-names`
+
+A `LeftToRight` split lays its children side by side, left to right, with vertical dividers; a
+`TopToBottom` split stacks them, top to bottom, with horizontal dividers. The names are written in
+every saved file, which a person or an agent reads and edits by hand, per
+`goal@rootpoint@readable-save-file`, and they are part of the crate's public types. The names of
+the dividers' direction, `Vertical` and `Horizontal`,
+`rejected@rootpoint-model@divider-direction-names`, were read both ways by a fresh agent. Among
+names that say where the children go, the owner chose `LeftToRight` and `TopToBottom` over
+`SideBySide` and `Stacked`, as reading better in the owner's opinion.
 
 ### Any node can be split, so an area can span the areas beside it `##split-any-node`
 

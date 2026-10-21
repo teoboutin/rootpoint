@@ -158,7 +158,7 @@ impl Session {
                     }
                 }
                 // The portable precision, so that a headless image is the same on every
-                // machine.
+                // machine (`design@rootpoint-render@portable-precision`).
                 let out = render_slide(
                     &self.doc,
                     slide,
