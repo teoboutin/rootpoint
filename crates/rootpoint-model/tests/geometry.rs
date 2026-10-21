@@ -1,5 +1,5 @@
 //! The area rectangles of a slide tile it: they do not overlap, and their areas sum to the
-//! slide's.
+//! slide's. Every node's rectangle, splits included, is the one its children tile.
 
 use proptest::prelude::*;
 use rootpoint_model::*;
@@ -7,7 +7,47 @@ use rootpoint_model::*;
 /// The tolerance on sums of floating-point areas, in square slide units.
 const EPSILON: f64 = 1e-6;
 
+/// The rectangle of every split is the union of its children's, which tile it, and the areas of
+/// `node_rects` are those of `area_rects`, in the same order.
+fn check_nodes(doc: &Document) {
+    for slide in &doc.slides {
+        let nodes = node_rects(slide, doc.aspect);
+        assert_eq!(nodes[0], (slide.root.id(), doc.aspect.slide_rect()));
+        let rect = |id: NodeId| nodes.iter().find(|(n, _)| *n == id).unwrap().1;
+        let areas: Vec<(NodeId, Rect)> = nodes
+            .iter()
+            .filter(|(id, _)| matches!(slide.root.find(*id), Some(Node::Area(_))))
+            .copied()
+            .collect();
+        assert_eq!(areas, area_rects(slide, doc.aspect));
+        for (id, r) in &nodes {
+            let Some(Node::Split(s)) = slide.root.find(*id) else {
+                continue;
+            };
+            let parts: Vec<Rect> = s.children.iter().map(|c| rect(c.id())).collect();
+            let sum: f64 = parts.iter().map(|p| p.w * p.h).sum();
+            assert!(
+                (sum - r.w * r.h).abs() < EPSILON,
+                "{id}: children sum to {sum}"
+            );
+            let left = parts.iter().map(|p| p.x).fold(f64::INFINITY, f64::min);
+            let top = parts.iter().map(|p| p.y).fold(f64::INFINITY, f64::min);
+            let right = parts
+                .iter()
+                .map(|p| p.x + p.w)
+                .fold(f64::NEG_INFINITY, f64::max);
+            let bottom = parts
+                .iter()
+                .map(|p| p.y + p.h)
+                .fold(f64::NEG_INFINITY, f64::max);
+            assert!((left - r.x).abs() < EPSILON && (top - r.y).abs() < EPSILON);
+            assert!((right - r.x - r.w).abs() < EPSILON && (bottom - r.y - r.h).abs() < EPSILON);
+        }
+    }
+}
+
 fn check_tiling(doc: &Document) {
+    check_nodes(doc);
     let whole = doc.aspect.slide_rect();
     for slide in &doc.slides {
         let rects = area_rects(slide, doc.aspect);
@@ -76,6 +116,60 @@ fn a_side_by_side_split_lays_its_children_left_to_right() {
             h: 1080.0
         }
     );
+}
+
+#[test]
+fn node_rects_names_a_split_before_its_children() {
+    let mut doc = Document::default();
+    apply(&mut doc, Op::AddSlide { at: 0 }).unwrap();
+    let first = doc.slides[0].root.id();
+    apply(
+        &mut doc,
+        Op::Split {
+            node: first,
+            axis: Axis::LeftToRight,
+            at: 0.5,
+            side: Side::After,
+        },
+    )
+    .unwrap();
+    let root = doc.slides[0].root.id();
+    let Node::Split(s) = &doc.slides[0].root else {
+        panic!("the root is a split");
+    };
+    let right = s.children[1].id();
+    apply(
+        &mut doc,
+        Op::Split {
+            node: right,
+            axis: Axis::TopToBottom,
+            at: 0.25,
+            side: Side::Before,
+        },
+    )
+    .unwrap();
+    let nodes = node_rects(&doc.slides[0], doc.aspect);
+    let ids: Vec<NodeId> = nodes.iter().map(|(id, _)| *id).collect();
+    let Node::Split(s) = &doc.slides[0].root else {
+        panic!("the root is a split");
+    };
+    let Node::Split(column) = &s.children[1] else {
+        panic!("the right child is a split");
+    };
+    assert_eq!(
+        ids,
+        [
+            root,
+            first,
+            column.id,
+            column.children[0].id(),
+            column.children[1].id()
+        ]
+    );
+    let r = |x, y, w, h| Rect { x, y, w, h };
+    assert_eq!(nodes[2].1, r(960.0, 0.0, 960.0, 1080.0));
+    assert_eq!(nodes[3].1, r(960.0, 0.0, 960.0, 270.0));
+    assert_eq!(nodes[4].1, r(960.0, 270.0, 960.0, 810.0));
 }
 
 proptest! {

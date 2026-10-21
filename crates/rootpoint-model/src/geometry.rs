@@ -30,32 +30,44 @@ impl AspectRatio {
 /// Every area of the slide with its rectangle, in tree order.
 pub fn area_rects(slide: &Slide, aspect: AspectRatio) -> Vec<(NodeId, Rect)> {
     let mut out = Vec::new();
-    collect(&slide.root, aspect.slide_rect(), &mut out);
+    collect(&slide.root, aspect.slide_rect(), &mut |node, rect| {
+        if let Node::Area(a) = node {
+            out.push((a.id, rect));
+        }
+    });
     out
 }
 
-fn collect(node: &Node, rect: Rect, out: &mut Vec<(NodeId, Rect)>) {
-    match node {
-        Node::Area(a) => out.push((a.id, rect)),
-        Node::Split(s) => {
-            for (i, child) in s.children.iter().enumerate() {
-                let (start, end) = s.child_extent(i);
-                let part = match s.axis {
-                    // Children side by side, left to right.
-                    Axis::LeftToRight => Rect {
-                        x: rect.x + start * rect.w,
-                        w: (end - start) * rect.w,
-                        ..rect
-                    },
-                    // Children stacked, top to bottom.
-                    Axis::TopToBottom => Rect {
-                        y: rect.y + start * rect.h,
-                        h: (end - start) * rect.h,
-                        ..rect
-                    },
-                };
-                collect(child, part, out);
-            }
+/// Every node of the slide, splits included, with its rectangle, in tree order: a split before
+/// its children. A split's dividers lie where `Split::child_extent` puts its children's edges.
+pub fn node_rects(slide: &Slide, aspect: AspectRatio) -> Vec<(NodeId, Rect)> {
+    let mut out = Vec::new();
+    collect(&slide.root, aspect.slide_rect(), &mut |node, rect| {
+        out.push((node.id(), rect));
+    });
+    out
+}
+
+fn collect(node: &Node, rect: Rect, visit: &mut dyn FnMut(&Node, Rect)) {
+    visit(node, rect);
+    if let Node::Split(s) = node {
+        for (i, child) in s.children.iter().enumerate() {
+            let (start, end) = s.child_extent(i);
+            let part = match s.axis {
+                // Children side by side, left to right.
+                Axis::LeftToRight => Rect {
+                    x: rect.x + start * rect.w,
+                    w: (end - start) * rect.w,
+                    ..rect
+                },
+                // Children stacked, top to bottom.
+                Axis::TopToBottom => Rect {
+                    y: rect.y + start * rect.h,
+                    h: (end - start) * rect.h,
+                    ..rect
+                },
+            };
+            collect(child, part, visit);
         }
     }
 }

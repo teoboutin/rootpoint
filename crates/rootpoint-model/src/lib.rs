@@ -12,6 +12,6 @@ mod validate;
 
 pub use document::*;
 pub use file::{FORMAT_VERSION, LoadError, load_ron, save_ron};
-pub use geometry::{Rect, SLIDE_HEIGHT, area_rects};
+pub use geometry::{Rect, SLIDE_HEIGHT, area_rects, node_rects};
 pub use ops::{Op, OpError, Side, apply};
 pub use validate::Invalid;
