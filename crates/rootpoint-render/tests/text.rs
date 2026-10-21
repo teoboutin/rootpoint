@@ -61,7 +61,7 @@ fn the_line_breaks_are_the_same_at_every_size() {
         .lines
     };
     let small = lines(&mut fonts, 960, 540);
-    // The paragraph wraps over more than one line, so the comparison sees its breaks.
+    // The paragraph wraps over more than two lines, so the comparison sees its breaks.
     assert!(small.iter().any(|(_, l)| l.len() > 2), "{small:?}");
     assert_eq!(lines(&mut fonts, 1920, 1080), small);
     assert_eq!(lines(&mut fonts, 3840, 2160), small);

@@ -4,6 +4,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use image::ImageDecoder;
 use rootpoint_model::AssetId;
 use vello_cpu::PixelMetadata;
 use vello_cpu::Pixmap;
@@ -26,7 +27,16 @@ impl ImageSet {
 
     /// Decode the bytes of an image file, PNG or JPEG, as the image of the asset `id`.
     pub fn insert_bytes(&mut self, id: AssetId, bytes: &[u8]) -> Result<(), DecodeError> {
-        let decoded = image::load_from_memory(bytes).map_err(|e| DecodeError(e.to_string()))?;
+        let error = |e: image::ImageError| DecodeError(e.to_string());
+        let mut decoder = image::ImageReader::new(std::io::Cursor::new(bytes))
+            .with_guessed_format()
+            .map_err(|e| DecodeError(e.to_string()))?
+            .into_decoder()
+            .map_err(error)?;
+        // A photograph's EXIF orientation is applied, so that it is drawn upright.
+        let orientation = decoder.orientation().map_err(error)?;
+        let mut decoded = image::DynamicImage::from_decoder(decoder).map_err(error)?;
+        decoded.apply_orientation(orientation);
         let rgba = decoded.to_rgba8();
         let (width, height) = rgba.dimensions();
         let too_big = |side: u32| DecodeError(format!("a side of {side} pixels exceeds 65535"));

@@ -5,6 +5,10 @@ edition = "2024"
 publish = false
 
 [dependencies]
+# The scalar SIMD level, `Level::fallback()`, which `Precision::Portable` uses, needs this feature.
+fearless_simd = { version = "0.7", features = ["force_support_fallback"] }
+# The synthetic bold of a font with no bold face is set through glifo's types.
+glifo = "0.4"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 # Without parley's default feature `system`, no font of the system is ever discovered.
 parley = { version = "0.12", default-features = false, features = ["std"] }

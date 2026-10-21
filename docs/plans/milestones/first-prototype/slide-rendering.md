@@ -19,8 +19,14 @@ cites.
 - `ImageSet`, the decoded images of a document's assets, which the caller builds from the bytes of
   each asset: the renderer reads no file, since `std::fs` fails at run time in the browser, as
   `path@rootpoint-model@CLAUDE.md` says. Images are decoded with the `image` crate, PNG and JPEG.
-- `render_slide` returns the image with a report: the fonts that fell back to the built-in sans,
-  and the assets that had no decoded image, drawn as an empty area.
+- `render_slide` returns the image with a report: the text areas whose font fell back to the
+  built-in sans, those holding a character no font has, and the image assets with no decoded
+  image, whose areas are drawn grey. A size above `MAX_SIDE`, 16384 pixels, is refused: vello_cpu
+  overflows its 16-bit tiles above 65408 pixels wide or 65532 high.
+- Fonts: a text's font stack ends with the built-in sans, so a character its font lacks is drawn in
+  Noto Sans; a font asset is registered under a family of its own, so two files of one family
+  stay two fonts; a font with no bold or italic face is emboldened or slanted, as parley asks.
+- A JPEG's EXIF orientation is applied, so photographs are drawn upright.
 - The crate added to the `wasm` gate.
 - Per D2, the crate's Component.
 
@@ -29,22 +35,25 @@ cites.
 1. **One layout at every size.** For a fixture slide, the line breaks of every text area are the
    same at 960×540, 1920×1080 and 3840×2160 pixels. Text is laid out by one function in slide
    units, whatever the pixel size, and `render_slide` draws that layout through its scale. Test:
-   compare the break positions of the layouts `render_slide` uses at each size. Shown to fail:
-   laying text out at the pixel size in place of slide units moves a break, which the test
-   reports.
+   compare the break positions of the layouts `render_slide` uses at each size. Shown to fail: wrapping at the width scaled by the pixel size moves a break. Laying text out at
+   the pixel size, font size and width both scaled, would not: unhinted, the layout scales
+   linearly, so this test cannot tell it from a layout in slide units, measured at review.
 2. **A slide renders the same twice.** Two renders of the same slide at the same size give
-   identical bytes. Test: render twice, compare. Shown to fail: a render that depends on a
-   hash-map iteration order differs.
+   identical bytes. Test: render twice, compare, for the image fixture and for the mixed fixture with text, with a
+   reused and a fresh `FontSet`. Shown to fail: a pixel coloured by the clock differs.
 3. **Golden images.** Each fixture renders to pixels equal to those of a committed golden PNG,
-   compared pixel by pixel, with vello_cpu's portable `Level::baseline()`, since its SIMD levels may
-   differ by a pixel between machines. `ROOTPOINT_BLESS=1` rewrites the golden files after a
+   compared pixel by pixel, with vello_cpu's scalar `Level::fallback()`, through fearless_simd's feature
+   `force_support_fallback`, since its SIMD levels may differ by a pixel between machines; its
+   `Level::baseline()` is SSE2 here and Neon on ARM. `ROOTPOINT_BLESS=1` rewrites the golden files after a
    deliberate change, as the model's fixture does. Shown to fail: changing a colour of the fixture
    breaks the comparison.
 4. **No system font is ever loaded.** `FontSet` is built from the embedded fonts and the document's
    font assets only. Test: a text whose font names `DejaVu Sans`, a font installed on the owner's
    machine and absent from both, renders with the built-in sans, and the report names it as a
-   fallback. Shown to fail: restoring parley's default features loads the system's fonts, and the
-   test sees `DejaVu Sans` resolve.
+   fallback. Two guards keep system fonts out, parley's feature `system` off and the collection created with
+   `system_fonts: false`; either alone suffices. Shown to fail: a set that registers DejaVu Sans
+   from the system makes the test fail, and a unit test pins the set's families to Noto Sans
+   alone. Restoring the feature did not build here: cargo found no version of `objc2 ^0.6.5`.
 5. **The render crate builds for the wasm target.** The `wasm` gate passes. Measured at the audit:
    a crate depending on parley 0.12 without `system`, vello_cpu 0.3 and image 0.25 with PNG and
    JPEG builds for the wasm target.
@@ -53,7 +62,7 @@ cites.
 
 Three slides built in code with the model crate's names: a text area in each `HAlign` and `VAlign`;
 an image area in `Fit` and in `Fill`; a split tree of five areas mixing both. The image is a
-committed PNG of the test directory.
+PNG the tests encode in memory.
 
 ## Audit subjects
 
@@ -77,8 +86,7 @@ committed PNG of the test directory.
 
 ## Implementation sequence
 
-1. **An empty render.** `render_slide` fills the slide with white at the given size; the PNG written
-   by a test. Measures the time of a 3840×2160 empty render as the baseline for AC2.
+1. **An empty render.** `render_slide` fills the slide with white at the given size. Measures the time of a 3840×2160 empty render as the baseline for AC2.
 2. **Areas and images.** Draw images in `Fit` and `Fill` into their rectangles. Claims 2, 3.
 3. **Text.** Parley layout in slide units, drawn through one scale transform, with hinting off.
    Claims 1, 3, 4.
@@ -95,7 +103,7 @@ by its fit. The padding is the session's choice, which the owner may change.
 
 ### Our own renderer
 
-Text is laid out with Parley in slide units, once per slide and style, and drawn with `vello_cpu`
+Text is laid out with Parley in slide units, on every render, and drawn with `vello_cpu`
 through one scale transform from slide units to pixels. The editor, the presenter and a headless
 PNG call the same `render_slide`, so they share one layout by construction
 (`thread@first-prototype@slide-renderer`). Hinting is off, since it snaps glyphs to the pixel grid

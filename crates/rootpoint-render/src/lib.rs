@@ -18,35 +18,44 @@ use rootpoint_model::{
 pub use text::{FontError, FontSet};
 use vello_cpu::color::AlphaColor;
 use vello_cpu::color::palette::css::{BLACK, WHITE};
-use vello_cpu::kurbo::{Affine, Rect, Shape};
+use vello_cpu::kurbo::{Affine, Point, Rect, Shape};
 use vello_cpu::peniko::ImageSampler;
 use vello_cpu::{
     Image, ImageSource, Level, Pixmap, RasterizerSettings, RenderContext, RenderSettings, Resources,
 };
 
-/// Which SIMD code the rasterizer runs. `Native` is the fastest the machine has; `Portable` gives
-/// the same pixels on every machine, for golden images.
+/// Which SIMD code the rasterizer runs. `Native` is the fastest the machine has; `Portable` is
+/// the scalar code, whose pixels do not depend on the machine's SIMD, for golden images.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Precision {
     Native,
     Portable,
 }
 
+/// The largest side of an image, in pixels. vello_cpu rounds a size up to its tiles in 16 bits,
+/// which overflows above 65408 wide or 65532 high; this limit stays well below.
+pub const MAX_SIDE: u16 = 16384;
+
 /// Why a slide was not drawn.
 #[derive(Clone, Debug, PartialEq)]
 pub enum RenderError {
     UnknownSlide(SlideId),
-    /// A side of zero pixels.
-    EmptySize,
+    /// A side of zero pixels, or of more than [`MAX_SIDE`].
+    BadSize {
+        width: u16,
+        height: u16,
+    },
 }
 
 /// What a render could not draw as the document asks.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Report {
-    /// The image assets with no decoded image in the `ImageSet`; their areas are drawn empty.
+    /// The image assets with no decoded image in the `ImageSet`; their areas are drawn grey.
     pub missing_images: Vec<AssetId>,
     /// The text areas whose font no font of the `FontSet` has; the built-in sans stands in.
     pub font_fallbacks: Vec<NodeId>,
+    /// The text areas holding a character that no font of the `FontSet` has, drawn as a box.
+    pub missing_glyphs: Vec<NodeId>,
     /// The text areas whose glyphs could not all be drawn, as from a damaged font file.
     pub undrawn_text: Vec<NodeId>,
     /// For each text area, the byte range of its text on each line, as laid out.
@@ -60,7 +69,7 @@ pub struct Rendered {
 }
 
 impl Rendered {
-    /// The image as a PNG file.
+    /// The image encoded as PNG bytes.
     pub fn png(self) -> Vec<u8> {
         self.pixmap
             .into_png()
@@ -75,7 +84,7 @@ const TEXT_PADDING: f64 = 24.0;
 const MISSING: AlphaColor<vello_cpu::color::Srgb> = AlphaColor::from_rgba8(224, 224, 224, 255);
 
 /// Draw the slide `slide` of `doc` into a `width`×`height` image. The slide is scaled uniformly to
-/// the largest size that fits, centred, and the rest is black.
+/// the largest size that fits, centred, and the rest is black. Text is laid out on every call.
 pub fn render_slide(
     doc: &Document,
     slide: SlideId,
@@ -85,13 +94,13 @@ pub fn render_slide(
     images: &ImageSet,
     precision: Precision,
 ) -> Result<Rendered, RenderError> {
-    if width == 0 || height == 0 {
-        return Err(RenderError::EmptySize);
+    if width == 0 || height == 0 || width > MAX_SIDE || height > MAX_SIDE {
+        return Err(RenderError::BadSize { width, height });
     }
     let the_slide = doc.slide(slide).ok_or(RenderError::UnknownSlide(slide))?;
     let level = match precision {
         Precision::Native => Level::try_detect().unwrap_or(Level::baseline()),
-        Precision::Portable => Level::baseline(),
+        Precision::Portable => Level::fallback(),
     };
     let mut ctx = RenderContext::new_with(
         width,
@@ -106,17 +115,19 @@ pub fn render_slide(
     ctx.set_paint(BLACK);
     ctx.fill_rect(&Rect::new(0.0, 0.0, f64::from(width), f64::from(height)));
     let to_pixels = slide_transform(doc, width, height);
-    ctx.set_transform(to_pixels);
     let whole = doc.aspect.slide_rect();
     ctx.set_paint(WHITE);
-    ctx.fill_rect(&Rect::new(0.0, 0.0, whole.w, whole.h));
+    ctx.fill_rect(&on_pixels(to_pixels, whole));
     for (id, area) in area_rects(the_slide, doc.aspect) {
         let Some(Node::Area(a)) = the_slide.root.find(id) else {
             continue;
         };
-        let bounds = Rect::new(area.x, area.y, area.x + area.w, area.y + area.h);
-        ctx.set_transform(to_pixels);
-        ctx.push_clip_layer(&bounds.to_path(0.1));
+        // The clip is snapped to whole pixels, so that two areas sharing an edge share a pixel
+        // boundary: an anti-aliased clip on a fractional edge would let the white slide show
+        // through the seam.
+        let clip = on_pixels(to_pixels, area);
+        ctx.set_transform(Affine::IDENTITY);
+        ctx.push_clip_layer(&clip.to_path(0.1));
         match &a.content {
             Content::Empty => {}
             Content::Text(content) => {
@@ -124,6 +135,9 @@ pub fn render_slide(
                 let laid = text::layout_text(fonts, content, inner as f32);
                 if laid.fell_back {
                     report.font_fallbacks.push(id);
+                }
+                if laid.missing_glyph {
+                    report.missing_glyphs.push(id);
                 }
                 let free = area.h - 2.0 * TEXT_PADDING - f64::from(laid.layout.height());
                 let dy = match content.style.v_align {
@@ -143,11 +157,11 @@ pub fn render_slide(
                 report.lines.push((id, laid.lines));
             }
             Content::Image(image) => match images.get(image.asset) {
-                Some(pixmap) => draw_image(&mut ctx, to_pixels, area, pixmap, image.fit),
+                Some(pixmap) => draw_image(&mut ctx, to_pixels, area, clip, pixmap, image.fit),
                 None => {
                     report.missing_images.push(image.asset);
                     ctx.set_paint(MISSING);
-                    ctx.fill_rect(&bounds);
+                    ctx.fill_rect(&clip);
                 }
             },
         }
@@ -170,12 +184,20 @@ fn slide_transform(doc: &Document, width: u16, height: u16) -> Affine {
     Affine::translate((x, y)) * Affine::scale(scale)
 }
 
+/// A rectangle in slide units, carried to pixels and rounded to whole pixels.
+fn on_pixels(to_pixels: Affine, r: SlideRect) -> Rect {
+    let a = to_pixels * Point::new(r.x, r.y);
+    let b = to_pixels * Point::new(r.x + r.w, r.y + r.h);
+    Rect::new(a.x.round(), a.y.round(), b.x.round(), b.y.round())
+}
+
 /// Draw an image into its area: `Fit` scales it to fit inside and centres it; `Fill` scales it to
 /// cover the area and centres it, the clip of the area cropping the rest.
 fn draw_image(
     ctx: &mut RenderContext,
     to_pixels: Affine,
     area: SlideRect,
+    clip: Rect,
     pixmap: &Arc<Pixmap>,
     fit: ImageFit,
 ) {
@@ -187,10 +209,23 @@ fn draw_image(
     };
     let x = area.x + (area.w - iw * scale) / 2.0;
     let y = area.y + (area.h - ih * scale) / 2.0;
-    ctx.set_transform(to_pixels * Affine::translate((x, y)) * Affine::scale(scale));
+    let image_to_pixels = to_pixels * Affine::translate((x, y)) * Affine::scale(scale);
     ctx.set_paint(Image {
         image: ImageSource::Pixmap(pixmap.clone()),
         sampler: ImageSampler::default(),
     });
-    ctx.fill_rect(&Rect::new(0.0, 0.0, iw, ih));
+    match fit {
+        ImageFit::Fit => {
+            ctx.set_transform(image_to_pixels);
+            ctx.fill_rect(&Rect::new(0.0, 0.0, iw, ih));
+        }
+        // A filling image covers the whole area, so the clip itself is filled: an edge of the
+        // image on a fractional pixel would otherwise blend with the white slide beneath.
+        ImageFit::Fill => {
+            ctx.set_transform(Affine::IDENTITY);
+            ctx.set_paint_transform(image_to_pixels);
+            ctx.fill_rect(&clip);
+            ctx.set_paint_transform(Affine::IDENTITY);
+        }
+    }
 }
