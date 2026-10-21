@@ -55,7 +55,8 @@ fn a_square_image_letterboxes_the_slide_in_black() {
     assert_eq!(pixel(&out.pixmap, 80, 150), [0, 0, 0, 255]);
 }
 
-/// The time of an empty 3840×2160 render, the baseline of AC2's 4K bound. Run with
+/// The time of an empty 3840×2160 render, the baseline of AC2's 4K bound, of the
+/// milestone `milestone@plans@first-prototype`. Run with
 /// `cargo test --release -p rootpoint-render --test empty -- --ignored --nocapture`.
 #[test]
 #[ignore]

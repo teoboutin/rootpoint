@@ -41,7 +41,7 @@ cites.
   established.
 - The duplicate `vello_cpu` versions: egui 0.37 depends, through epaint, on `vello_cpu` 0.2, while
   `path@rootpoint@crates/rootpoint-render/` uses 0.3, so the workspace builds both once the app
-  crate exists. The audit measures the build time and the binary size with both, and judges
+  crate exists (V, quoted in `argument@first-prototype@arg-26`). The audit measures the build time and the binary size with both, and judges
   whether that costs anything.
 
 The interaction design (how a split is started, how a subtree is selected for a spanning split, how

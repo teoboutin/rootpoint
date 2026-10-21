@@ -447,7 +447,9 @@ builds for the wasm target, a reason respected at each crate's dependencies, is 
 
 Proposed by the session in round 2, on the toolkit survey's finding that the browser has no system
 fonts (`argument@first-prototype@arg-49`). Closed in O11: "I agree on the new font-sources and
-asset-source too". Final state: approved; system fonts with fallback lost. Shape: built, and recorded in `design@rootpoint-render@font-sources`. Harvest: a design head of the render crate's Component;
+asset-source too". Final state: approved; system fonts with fallback lost. Shape: built, and
+recorded in `design@rootpoint-render@font-sources`. Harvest: a design head of the render crate's
+Component;
 T2 written in that Component's tripwires home.
 
 ### An asset entry is a path or embedded bytes, from version 1 of the format `##asset-source`

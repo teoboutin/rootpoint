@@ -61,7 +61,10 @@ fn the_line_breaks_are_the_same_at_every_size() {
         .lines
     };
     let small = lines(&mut fonts, 960, 540);
-    // The paragraph wraps over more than two lines, so the comparison sees its breaks.
+    // The paragraph wraps over more than two lines, so the comparison sees its breaks. The test
+    // catches a wrap width that depends on the pixel size; it cannot tell a layout made at the pixel
+    // size, font size and width both scaled, from one in slide units, since an unhinted layout
+    // scales linearly.
     assert!(small.iter().any(|(_, l)| l.len() > 2), "{small:?}");
     assert_eq!(lines(&mut fonts, 1920, 1080), small);
     assert_eq!(lines(&mut fonts, 3840, 2160), small);
@@ -105,7 +108,7 @@ fn a_font_no_font_of_the_set_has_falls_back_and_is_reported() {
     assert_eq!(render(&doc), vec![]);
 }
 
-/// AC2's 4K bound: 10 renders of the mixed slide at 3840×2160, each within 200 ms. Run in a
+/// AC2's 4K bound, of the milestone `milestone@plans@first-prototype`: 10 renders of the mixed slide at 3840×2160, each within 200 ms. Run in a
 /// release build with `cargo test --release -p rootpoint-render --test text -- --ignored
 /// --nocapture`.
 #[test]
