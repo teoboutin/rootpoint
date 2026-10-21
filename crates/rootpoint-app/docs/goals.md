@@ -9,8 +9,10 @@ rootpoint-app is built is in `register@rootpoint-app@design`.
 The window is where an author makes a presentation: they divide areas, resize them, set their
 content and reorder slides with the pointer and the keyboard on the slide itself, and see each
 change at once. It refines `goal@rootpoint@no-language-no-build` and
-`goal@rootpoint@free-slide-division`. It is met when every UI action of the first prototype's
-scope is reached in the window without typing a command, and its effect shows in the next frame.
+`goal@rootpoint@free-slide-division`. It is met when the author, in the window and without typing
+a command, divides areas and resizes them, selects any node, swaps and moves areas, sets each
+area's content and its style, adds, removes, duplicates and reorders slides, and undoes and redoes
+each of these, and each effect shows in the next frame.
 
 ## The window shows the slide as every other display does `##faithful-slide-view`
 
