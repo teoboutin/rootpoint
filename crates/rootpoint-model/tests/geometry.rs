@@ -79,12 +79,16 @@ fn a_vertical_split_lays_its_children_side_by_side() {
 }
 
 proptest! {
-    /// Over random trees built by random splits and removals, the rectangles tile every slide.
+    /// Over random aspect ratios and random trees built by random splits and removals, the
+    /// rectangles tile every slide.
     #[test]
     fn rectangles_tile_the_slide(
+        width in 1u32..40,
+        height in 1u32..40,
         steps in prop::collection::vec((any::<usize>(), any::<bool>(), 0.05f64..0.95, any::<bool>(), any::<bool>()), 1..40)
     ) {
         let mut doc = Document::default();
+        doc.aspect = AspectRatio { width, height };
         apply(&mut doc, Op::AddSlide { at: 0 }).unwrap();
         for (pick, vertical, at, after, remove) in steps {
             let ids: Vec<NodeId> = {

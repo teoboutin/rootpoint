@@ -78,7 +78,7 @@ by a path relative to the presentation file, so the text stays readable and the 
 ordinary files.
 
 On the owner's word: the owner chose this form for prototyping, and, as the owner thinks, it stays
-the preferred editing method in the long term; the final goal is packing, by commands that pack a
+the preferred editing method in the long term, and packing would be the final goal, by commands that pack a
 presentation and its assets into one file and unpack it again, so that one file can be carried and
 presented from any computer with a web browser and an internet connection, through the web app
 served from a static site. It serves `goal@rootpoint@readable-save-file` and
@@ -89,14 +89,15 @@ served from a static site. It serves `goal@rootpoint@readable-save-file` and
 `AssetSource` is `Path`, a path relative to the presentation file, or `Embedded`, the asset's
 bytes, which packing writes. Both are in the format from its first version, so the round-trip
 tests cover embedded assets before any code writes one, and packing adds no change of format.
-Adding the variant later would not have broken old files, which name no embedded asset; it would
-have left the format untested for it until packing.
+Adding the variant later would not have broken old files: the committed fixture,
+`path@rootpoint-model@tests/data/fixture.ron`, names no embedded asset and loads with the enum
+that has both. It would have left the format untested for embedded assets until packing.
 
 ### A text area has one style for all its text `##text-style-per-area`
 
 A text's font, size, weight, slant, colour and alignment are set for the whole area. Styled spans
 inside a text need an editor of rich text, the hardest part of a text editor to build, which this
-design avoids; the owner judged one style per area enough for the owner's needs. The style is part
+design avoids; the owner judged one style per area enough for the first prototype. The style is part
 of the file.
 
 ## Changes
