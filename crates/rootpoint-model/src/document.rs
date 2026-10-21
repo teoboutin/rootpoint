@@ -3,23 +3,28 @@
 
 use std::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
+
 /// The id of a slide, unique in its document and never reused.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct SlideId(pub u64);
 
 /// The id of a split or an area, unique in its document and never reused.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct NodeId(pub u64);
 
 /// The id of an asset, unique in its document and never reused.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct AssetId(pub u64);
 
 /// A presentation: its aspect ratio, its slides in order, and its assets.
 ///
 /// Every id of the document comes from one counter, which only grows, so a removed slide, node or
 /// asset never lends its id to another.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
     pub aspect: AspectRatio,
     pub slides: Vec<Slide>,
@@ -65,7 +70,7 @@ impl Document {
 
 /// The shape of every slide of a document, 16:9 by default. A slide is 1080 slide units high and
 /// `1080 * width / height` wide.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AspectRatio {
     pub width: u32,
     pub height: u32,
@@ -81,14 +86,14 @@ impl Default for AspectRatio {
 }
 
 /// One slide: its id and the root of its split tree.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Slide {
     pub id: SlideId,
     pub root: Node,
 }
 
 /// A node of a slide's tree: a split of its extent, or an area holding one content.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Node {
     Split(Split),
     Area(Area),
@@ -131,7 +136,7 @@ impl Node {
 /// The direction of a split's dividers. A `Vertical` split has vertical dividers and lays its
 /// children side by side, left to right; a `Horizontal` split has horizontal dividers and stacks
 /// its children top to bottom.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Axis {
     Horizontal,
     Vertical,
@@ -142,7 +147,7 @@ pub enum Axis {
 /// `dividers` holds the k−1 positions between consecutive children, as fractions of the split's
 /// extent, strictly increasing and strictly between 0 and 1. No child is a split of the same axis:
 /// such a child is merged into its parent, so each layout has one tree.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Split {
     pub id: NodeId,
     pub axis: Axis,
@@ -164,14 +169,14 @@ impl Split {
 }
 
 /// A leaf of a slide's tree, holding one content.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Area {
     pub id: NodeId,
     pub content: Content,
 }
 
 /// The content of an area.
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
 pub enum Content {
     #[default]
     Empty,
@@ -180,14 +185,14 @@ pub enum Content {
 }
 
 /// Wrapped text, with one style for the whole area.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextContent {
     pub text: String,
     pub style: TextStyle,
 }
 
 /// The style of a text area. Sizes are in slide units.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextStyle {
     pub font: FontRef,
     pub size: f64,
@@ -218,14 +223,14 @@ impl Default for TextStyle {
 }
 
 /// A font: one the binary carries, by name, or a font file of the asset table.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum FontRef {
     Builtin(String),
     Asset(AssetId),
 }
 
 /// A colour, 8 bits per channel, alpha last.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Rgba {
     pub r: u8,
     pub g: u8,
@@ -233,14 +238,14 @@ pub struct Rgba {
     pub a: u8,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum HAlign {
     Left,
     Center,
     Right,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum VAlign {
     Top,
     Middle,
@@ -248,7 +253,7 @@ pub enum VAlign {
 }
 
 /// An image area: the asset it shows and how the image is scaled into the area.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ImageContent {
     pub asset: AssetId,
     pub fit: ImageFit,
@@ -256,21 +261,21 @@ pub struct ImageContent {
 
 /// How an image is scaled into its area. `Fit` shows the whole image, scaled to fit inside the area
 /// and centred; `Fill` covers the whole area, scaled to cover it, centred and cropped.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ImageFit {
     Fit,
     Fill,
 }
 
 /// An entry of the asset table: heavy data that areas refer to by id.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Asset {
     pub source: AssetSource,
 }
 
 /// Where an asset's bytes are: a file beside the presentation, by a path relative to it, or the
 /// bytes themselves, as a packed presentation carries them.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum AssetSource {
     Path(String),
     Embedded(Vec<u8>),

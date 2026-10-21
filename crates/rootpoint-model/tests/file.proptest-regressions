@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc a9581d2fd2ef5deabe6b5d8795f7563c135f5c4c7ea93997dee0dceca6a486f9 # shrinks to steps = [(2, 0, 0.05, false, Text(TextContent { text: "", style: TextStyle { font: Builtin("sans"), size: 1.0, bold: false, italic: true, colour: Rgba { r: 0, g: 0, b: 0, a: 0 }, h_align: Left, v_align: Top } }), Path("/.png"))]
