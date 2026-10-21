@@ -87,6 +87,16 @@ fn every_command_prints_back_as_it_parses() {
         Command::RemoveAsset { asset: AssetId(5) },
         Command::Undo,
         Command::Redo,
+        Command::Select { node: NodeId(2) },
+        Command::Deselect,
+        Command::Present { slide: None },
+        Command::Present {
+            slide: Some(SlideId(4)),
+        },
+        Command::Next,
+        Command::Prev,
+        Command::Stop,
+        Command::View,
     ];
     for command in commands {
         let line = command.to_string();

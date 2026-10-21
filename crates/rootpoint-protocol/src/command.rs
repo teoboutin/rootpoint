@@ -71,6 +71,18 @@ pub enum Command {
     },
     Undo,
     Redo,
+    Select {
+        node: NodeId,
+    },
+    Deselect,
+    /// Enter presenter mode on a slide, the first when none is named.
+    Present {
+        slide: Option<SlideId>,
+    },
+    Next,
+    Prev,
+    Stop,
+    View,
 }
 
 /// One option of a text's style.
@@ -170,6 +182,17 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         },
         "undo" => Command::Undo,
         "redo" => Command::Redo,
+        "select" => Command::Select {
+            node: parse_node(&args.word("a node")?)?,
+        },
+        "deselect" => Command::Deselect,
+        "present" => Command::Present {
+            slide: args.optional(parse_slide)?,
+        },
+        "next" => Command::Next,
+        "prev" => Command::Prev,
+        "stop" => Command::Stop,
+        "view" => Command::View,
         other => return Err(ParseError(format!("unknown command `{other}`"))),
     };
     args.finish()?;
@@ -227,6 +250,14 @@ impl fmt::Display for Command {
             Command::RemoveAsset { asset } => write!(f, "remove-asset {asset}"),
             Command::Undo => f.write_str("undo"),
             Command::Redo => f.write_str("redo"),
+            Command::Select { node } => write!(f, "select {node}"),
+            Command::Deselect => f.write_str("deselect"),
+            Command::Present { slide: None } => f.write_str("present"),
+            Command::Present { slide: Some(s) } => write!(f, "present {s}"),
+            Command::Next => f.write_str("next"),
+            Command::Prev => f.write_str("prev"),
+            Command::Stop => f.write_str("stop"),
+            Command::View => f.write_str("view"),
         }
     }
 }

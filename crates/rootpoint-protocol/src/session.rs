@@ -146,6 +146,58 @@ impl Session {
                 self.undo.push(undo);
                 Ok(String::new())
             }
+            Command::Select { node } => {
+                self.doc.node(node).ok_or(format!("no node {node}"))?;
+                self.view.selected = Some(node);
+                Ok(String::new())
+            }
+            Command::Deselect => {
+                self.view.selected = None;
+                Ok(String::new())
+            }
+            Command::Present { slide } => {
+                let slide = match slide {
+                    Some(id) => self.doc.slide(id).ok_or(format!("no slide {id}"))?.id,
+                    None => self.doc.slides.first().ok_or("no slide to present")?.id,
+                };
+                self.view.presenting = Some(slide);
+                Ok(slide.to_string())
+            }
+            Command::Next | Command::Prev => {
+                let current = self.view.presenting.ok_or("not presenting")?;
+                let i = self
+                    .doc
+                    .slides
+                    .iter()
+                    .position(|s| s.id == current)
+                    .ok_or("not presenting")?;
+                let target = if matches!(command, Command::Next) {
+                    i.checked_add(1).filter(|&j| j < self.doc.slides.len())
+                } else {
+                    i.checked_sub(1)
+                };
+                let j = target.ok_or(if matches!(command, Command::Next) {
+                    "at the last slide"
+                } else {
+                    "at the first slide"
+                })?;
+                let slide = self.doc.slides[j].id;
+                self.view.presenting = Some(slide);
+                Ok(slide.to_string())
+            }
+            Command::Stop => {
+                self.view.presenting.ok_or("not presenting")?;
+                self.view.presenting = None;
+                Ok(String::new())
+            }
+            Command::View => {
+                let show = |id: Option<String>| id.unwrap_or_else(|| "-".to_owned());
+                Ok(format!(
+                    "selected={} presenting={}",
+                    show(self.view.selected.map(|n| n.to_string())),
+                    show(self.view.presenting.map(|s| s.to_string()))
+                ))
+            }
             editing => {
                 let op = self.operation(editing)?;
                 let before = ids(&self.doc);
@@ -217,8 +269,20 @@ impl Session {
         })
     }
 
+    /// Apply an operation, then drop from the view a node or a slide it removed.
     fn apply_op(&mut self, op: Op) -> Result<Op, String> {
-        apply(&mut self.doc, op).map_err(|e| format!("{e:?}"))
+        let inverse = apply(&mut self.doc, op).map_err(|e| format!("{e:?}"))?;
+        if let Some(node) = self.view.selected
+            && self.doc.node(node).is_none()
+        {
+            self.view.selected = None;
+        }
+        if let Some(slide) = self.view.presenting
+            && self.doc.slide(slide).is_none()
+        {
+            self.view.presenting = None;
+        }
+        Ok(inverse)
     }
 
     /// The ids an operation created, as its reply states them: a new slide and its root; or the
