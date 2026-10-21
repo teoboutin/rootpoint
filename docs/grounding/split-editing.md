@@ -1,7 +1,7 @@
 <!-- The report of the prior-art survey run on 2026-10-21 for the design session held at the audit
 of the slice that builds the native GUI, in the milestone of the first prototype, on how shipped
 tools edit a split layout and group undo steps. It is the message the subagent returned, verbatim,
-since it could not write a file; the slice's arguments quote it. Its scratchpad paths no longer
+since it could not write a file; the arguments of that slice's spec, since deleted, quoted it. Its scratchpad paths no longer
 exist. -->
 
 I could not write report.md: the harness refuses report files from a subagent ("Subagents should return findings as text"). The report is below instead. The source copies the survey read are kept in /tmp/claude-266682/-home-catA-tb266682-Documents-code-rootpoint/3aa7f0e1-0c36-4134-9ed6-7435d1cdd42e/scratchpad/survey/ under a/src, b/src and c/dl.

@@ -24,8 +24,9 @@ needs only panels, a list, a texture view, input forwarding, a browser build, wh
 the web, so `Context::request_repaint` called from another thread wakes the window. Its rivals
 lost on the toolkit survey of the first prototype, `rejected@rootpoint-app@other-gui-hosts`; if
 the renderer decision is reopened toward the toolkit's own painter, iced is the host to weigh
-again. The texture path is fast enough for a drag: a divider drag in a 1600×900 view takes at most
-5.9 ms a frame, release build, on the owner's Intel Core Ultra 7 165H, the frame timed around
+again. The texture path is fast enough for a drag: a divider drag in a 1600×900 view took at most
+5.9 ms a frame in one run and 6.05 ms in another, release build, on the owner's Intel Core Ultra 7
+165H, the frame timed around
 `Context::run_ui`, by `cargo test --release -p rootpoint-app --test presenter -- --ignored
 --nocapture`; the GPU's upload of the texture is not in it.
 

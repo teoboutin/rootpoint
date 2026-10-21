@@ -1218,7 +1218,8 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   the slice `editor-shell`: "ultimately (later than initial prototype), I'd like to
   allow the user to organize the assets in any way they want with subdirectories of any level, and
   for a "pack then unpack elsewhere" action to preserve the tree." The save rule of that slice keeps
-  every asset already inside the presentation's directory at its path, at any depth.
+  the file of every asset already inside the saved file's directory, at any depth, and writes its
+  path relative to that directory.
 - **More content kinds** (bullet lists, code, equations, video) each add a variant of `Content`, its
   options, its drawing and its editor, per `goal@rootpoint@minimal-content-set`.
 - **Templates and linked dividers** are re-entered at the first real talk, by T3 and T4.

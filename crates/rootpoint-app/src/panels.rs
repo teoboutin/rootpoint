@@ -11,12 +11,14 @@ use crate::App;
 use crate::hit::Edge;
 use crate::selection;
 
-/// The sizes of the size menu, in slide units.
+/// The sizes of the size menu, in slide units. A menu, not a drag field: each choice is one
+/// `text` command and one undo step, where a drag field would send one each frame of its drag.
 const SIZES: [f64; 10] = [
     24.0, 32.0, 40.0, 48.0, 64.0, 80.0, 96.0, 120.0, 160.0, 200.0,
 ];
 
-/// The colours of the colour row.
+/// The colours of the colour row: one click is one command and one undo step, where a colour
+/// picker sends one each frame of its drag.
 const COLOURS: [(u8, u8, u8); 8] = [
     (0, 0, 0),
     (255, 255, 255),
@@ -418,7 +420,8 @@ impl App {
             .collect()
     }
 
-    /// The assets whose file is a TrueType or OpenType font, by its name or its first bytes.
+    /// The assets whose file is a TrueType or OpenType font, by its name or its first bytes. Only
+    /// these are offered as fonts: any other asset chosen as a font would draw in the built-in sans.
     fn font_assets(&self) -> Vec<(AssetId, String)> {
         self.session
             .document()
