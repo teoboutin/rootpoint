@@ -8,5 +8,5 @@ it; `std::fs` compiles there and fails only at run time, so the gate does not ca
 
 ## The build is tied to its checkout
 
-`path@rootpoint-model@src/lib.rs` reads `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` says every
-library root must.
+`path@rootpoint-model@src/lib.rs` reads `ROOTPOINT_CHECKOUT`. So does every binary target and build
+script added to this crate, as `path@xtask@CLAUDE.md` says.
