@@ -9,14 +9,15 @@ cites.
 - Editing the text of an area in place, in the slide view: a caret, selection by drag and by
   shift+arrow, typing with IME and dead keys, copy and paste, driven by Parley's `PlainEditor` on
   the same layout `render_slide` draws. Each committed edit issues one `text` command.
-- The side panel's plain text field of the slice `spec@first-prototype@editor-shell` is removed.
+- The side panel's plain text field, which the GUI has before this slice, is removed.
 
 ## Claims
 
 1. **The caret is where the glyph is.** For a fixture text, the caret's x position after moving to
-   every offset equals the glyph boundary of the render's layout at that offset, within 0.5 pixel,
-   at three window sizes. Test: a unit test over the editor and the layout, with no window. Shown to
-   fail: positioning the caret from a layout made at the pixel size moves it.
+   every offset equals the glyph boundary of the render's layout at that offset, within 0.5 pixel
+   (a test tolerance for rounding, the session's choice), at three window sizes. Test: a unit test
+   over the editor and the layout, with no window. Shown to fail: positioning the caret from a
+   layout made at the pixel size moves it.
 2. **An edit is one undoable command.** Typing a word then pressing undo restores the text before
    the word. Test: the session's undo stack after a scripted edit.
 
@@ -33,8 +34,8 @@ cites.
 
 ## Premises that expire
 
-- Style stays per area. Rich text with spans, per "Later consequences" of the milestone document,
-  builds on this editor.
+- Style stays per area. Guard: rich text with spans, per "Later consequences" of the milestone
+  document, is designed in a session of its own before it builds on this editor.
 
 ## Implementation sequence
 
@@ -46,8 +47,8 @@ cites.
 
 The editor and the renderer share one Parley layout of the area, in slide units; the host forwards
 keys, text and IME events to it and draws nothing of the text itself
-(`thread@first-prototype@slide-renderer`). A toolkit text field over the slide is excluded, since
-its line breaks differ and the caret would drift (`argument@first-prototype@arg-35`).
+(`thread@first-prototype@slide-renderer`). A toolkit text field over the slide is excluded, since its
+line breaks differ and the caret would drift (`argument@first-prototype@arg-35`).
 
 ## Acceptance criteria
 

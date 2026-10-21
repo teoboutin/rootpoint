@@ -7,18 +7,19 @@ cites.
 ## Builds
 
 - The app crate built for the wasm target with eframe's web support, served as a static directory:
-  the same editing and presenter mode as native, opening a sample presentation built into the
-  binary.
+  the same editing and presenter mode as native, on a sample presentation built into the binary.
+  Opening, saving and adding an image wait on packing, per D3, which awaits the owner.
 - The app crate added to the `wasm` gate.
 - The command that builds the static directory, as a command of the maintenance tool, per
   `goal@xtask@repeated-tasks-are-automated`.
 
 ## Claims
 
-1. **The browser build has the same editing operations.** Every UI action of the slice
-   `spec@first-prototype@editor-shell` is available in the browser build. Test: the app's action
-   handlers are compiled for the wasm target and called by a `wasm-bindgen-test` test, or, if the
-   audit finds no runner for it, by a check listed in the slice's commits.
+1. **The browser build has the same editing operations.** Every UI action that "The UI actions" in
+   "The prototype's scope" of the milestone document lists is available in the browser build, open,
+   save and adding an image excepted per D3. Test: the app's action handlers are compiled for the
+   wasm target and called by a `wasm-bindgen-test` test. If the audit finds no runner for that test
+   on the owner's machine, the audit puts the replacement check to the owner as a scope change.
 2. **The same layout.** A slide rendered in the browser build and natively at the same size gives
    the same image. Test: the browser build's render of the sample's first slide is saved and
    compared to the native golden image.
@@ -37,8 +38,8 @@ cites.
 ## Premises that expire
 
 - The browser build opens only the built-in sample: with images as files beside the presentation,
-  a browser cannot resolve their paths. Packing ends this, per "Later consequences" of the milestone
-  document.
+  a browser cannot resolve their paths. Guard: packing, per "Later consequences" of the milestone
+  document, ends it, and `goal@rootpoint@runs-in-browser` is met only then.
 
 ## Implementation sequence
 
@@ -49,11 +50,10 @@ cites.
 ## Acceptance criteria
 
 This slice judges AC3, `acceptance@first-prototype@browser-build-holds`, after step 2. After the
-slice lands, the owner judges AC4, `acceptance@first-prototype@split-editing-convenient`.
+slice merges, the owner judges AC4, `acceptance@first-prototype@split-editing-convenient`.
 
 ## Harvest
 
-- `thread@first-prototype@crate-split`, into rootpoint's design home, judged by the entry tests of
-  `primer@design-heads`, the split being complete.
-- The milestone document leaves in the commit that completes this harvest, after the report on
-  every acceptance criterion, as its "Harvest" says.
+Nothing of its own beyond the app crate's web build, judged by the entry tests of
+`primer@design-heads` into the app crate's Component. The milestone's closing commit, which its
+"Harvest" describes, follows this slice.

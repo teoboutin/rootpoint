@@ -20,7 +20,7 @@ slice lands.
   and the owner's two first messages of that session, which open "Hey ! I just setup a blank
   project" and "Good, thanks for the analysis", carry proposals the discussion argued.
 
-**The owner's messages the items cite**, verbatim, in order. O1 to O9 come before round 1, O10
+**The owner's messages in the session**, verbatim, in order. O1 to O9 come before round 1, O10
 answers round 1, O11 round 2, O12 round 3.
 
 **O1**
@@ -115,16 +115,33 @@ answers round 1, O11 round 2, O12 round 3.
 Before each slice, read `skill@knowledge-architect-planning@working-a-slice` whole, and follow it.
 Each slice is one branch and one pull request, merged before the next slice begins.
 
-The project's gates run with `cargo x gates`; every slice keeps them passing. A slice that adds a
-crate adds that crate's WebAssembly build to the gates, as
-`thread@first-prototype@prototype-scope` requires.
+The project's gates run with `cargo x gates`; every slice keeps them passing. The project has no
+development procedure of its own: point 3 of that procedure is the claims, tests and steps of the
+slice's spec, with the gates run before each commit.
+
+- **The wasm gate.** `spec@first-prototype@model-core` creates one gate named `wasm`. Each crate
+  the browser build links joins it in the slice that creates it: the model, render and protocol
+  crates. The app crate is created native in `spec@first-prototype@editor-shell` and joins it in
+  `spec@first-prototype@browser-build`, the slice that builds its web target. This keeps
+  `thread@first-prototype@prototype-scope`'s wasm build checked from the first slice; the per-crate
+  cut is this milestone's.
+- **The checkout tie.** Every library root, binary target and build script a slice adds reads
+  `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires.
+- **Branches.** This milestone's branch merges into the main branch before
+  `spec@first-prototype@model-core` begins, and each slice branches from the main branch. The
+  branch also carries the commits that set up the workflow and state the goals; the owner exempted
+  those from review and ruled that they merge with the first branch whose work needs one, which is
+  this one.
 
 ## Names
 
 - **C1 to C10**: the criteria, the items of "Criteria" below, in the order they are listed.
 - **AC1 to AC5**: the acceptance criteria, labelled in their items. **T1 to T4**: the tripwires of
-  the premortem. **D1, D2**: the defaults put to the owner, both ruled. **Q1 to Q3**: the questions
-  put to the owner in rounds 1 to 3, whose answers are O10 to O12.
+  the premortem.  **Q1 to Q3**: the questions put to the owner in rounds 1 to 3, whose answers are
+  O10 to O12; **Q4**, put to the owner at the review of this document. The labels Q1 to Q7 inside
+  O5, O6 and O8 and in `argument@first-prototype@arg-20`, `argument@first-prototype@arg-21` and
+  `argument@first-prototype@arg-25` are those of the goal setting, A2 to A4, a separate numbering.
+  **D1 to D4**: the defaults put to the owner, listed in their own section.
 - **O1 to O12**: the owner's messages, quoted in "Status and audience".
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
@@ -142,6 +159,17 @@ crate adds that crate's WebAssembly build to the gates, as
 - **the wasm target**: the Rust target `wasm32-unknown-unknown`.
 - **(V), (A)**: a fact verified by reading a source, or assumed, in the surveys quoted by the
   arguments.
+- **the prior-art survey, the toolkit survey**: two subagent reports of the session, on slide tools
+  that use split trees, and on Rust GUI toolkits and renderers; their facts are quoted in
+  `argument@first-prototype@arg-19` and `argument@first-prototype@arg-26`. "The blitz wasm notes"
+  is the file `HOWTO_WASM.md` of the blitz repository, which the toolkit survey read.
+- **difficulty 1 to 5**: the items of A1's list of what is harder than it looks, each quoted in its
+  argument. **best combination 1**: the first of the toolkit survey's recommended stacks, eframe
+  hosting a separate renderer.
+- **shape 1, 2, 3** of image storage: 1, image files beside the presentation, referenced by relative
+  path; 2, images embedded in the text file as base64; 3, both, by commands that pack and unpack.
+- **the i3 claim**: round 1's statement that i3 uses n-ary containers, labelled as from memory and
+  not checked.
 
 ## What the work is
 
@@ -197,10 +225,12 @@ rootpoint and xtask hold no entry. The work reverses or rewrites no recorded dec
 
 ## Criteria
 
-### Every editing operation runs and is checkable with no window `##c1-headless-editing`
+### Every operation the GUI offers runs and is checkable with no window `##c1-headless-editing`
 
-Binding. Source: `goal@rootpoint@headless-core`. Met by `thread@first-prototype@edit-operation-core`
-and `thread@first-prototype@crate-split`: the model crate has no GUI dependency.
+Binding. Source: `goal@rootpoint@headless-core`, whose body reads every operation the GUI offers.
+Met by `thread@first-prototype@edit-operation-core` and `thread@first-prototype@crate-split`: the
+model crate has no GUI dependency; and by the view commands of
+`spec@first-prototype@command-protocol`, through which the GUI selects and presents.
 
 ### Text commands drive a live GUI and a headless session `##c2-command-driving`
 
@@ -220,7 +250,8 @@ Binding; the owner may abandon the goal it derives from. Source: `goal@rootpoint
 Met by `thread@first-prototype@gui-toolkit`, `thread@first-prototype@slide-renderer`,
 `thread@first-prototype@font-sources` and `thread@first-prototype@prototype-scope`, which gates the
 wasm build from the first slice. Partly assumed, so checked by
-`acceptance@first-prototype@browser-build-holds`.
+`acceptance@first-prototype@browser-build-holds`. Opening, saving and adding images in the browser
+wait on packing, per D3, which awaits the owner.
 
 ### Authoring needs no code or markup `##c5-no-markup`
 
@@ -231,12 +262,16 @@ protocol and the file are optional to an author.
 
 Binding. Source: `goal@rootpoint@free-slide-division`. Met by
 `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`; judged by the
-owner in `acceptance@first-prototype@split-editing-convenient`.
+owner in `acceptance@first-prototype@split-editing-convenient`, whose comparison D4 aligns with the
+goal's.
 
 ### Every feature serves a content kind or slide division `##c7-minimal-features`
 
 Binding. Source: `goal@rootpoint@minimal-content-set`. Met by
-`thread@first-prototype@prototype-scope` and `thread@first-prototype@inline-content-assets`.
+`thread@first-prototype@prototype-scope` and `thread@first-prototype@inline-content-assets`, on the
+reading that the goal's "every feature" means the features of slide content: read literally, it
+excludes presenter mode, saving and the protocol, which other goals require. Q4 puts a rewording of
+the goal to the owner.
 
 ### The editor and the presenter show the same slide at any window size `##c8-same-slide-everywhere`
 
@@ -268,18 +303,20 @@ design head of the model crate's Component, if the entry tests admit it.
 Proposed by the owner in O1 (`argument@first-prototype@arg-2`): "a crate exists when it has its own
 tests, its own public API, and a reason to change on its own". Before round 1 the session proposed
 recording it in the design home rather than as a goal (`argument@first-prototype@arg-21`), and the
-owner answered in O5: "I agree with your judgements for Q1,Q2,Q3." Final state: approved. Shape:
-"Decided design" below. Harvest: a design head of rootpoint, attributed to the owner, at the
-harvest of `spec@first-prototype@model-core`.
+owner answered in O5: "I agree with your judgements for Q1,Q2,Q3." The owner's O1 states the rule as
+"something along the line of" that sentence, and the attribution keeps that hedge. Final state:
+approved. Shape: "The crate rule" in "Decided design" below. Harvest: a design head of rootpoint,
+attributed to the owner with that hedge, at the harvest of `spec@first-prototype@model-core`.
 
 ### Splits are n-ary, and a split along its parent's axis merges into the parent `##split-tree-arity`
 
-Proposed by the owner in O1 as binary splits (`argument@first-prototype@arg-1`); the session
-proposed the n-ary rival in round 1 (`argument@first-prototype@arg-10`,
-`argument@first-prototype@arg-27`). Closed in O10: "n-ary split is better as you pointed out."
-Final state: approved; the binary shape lost (see "Losing alternatives"). Shape: the decided design
-of `spec@first-prototype@model-core`. Harvest: a design head of the model crate's Component, citing
-the rejected binary shape; T1 is written in that Component's tripwires home.
+Proposed by the owner in O1 as binary splits (`argument@first-prototype@arg-1`); the session raised
+the limit of binary splits before round 1 and proposed the n-ary rival in round 1
+(`argument@first-prototype@arg-10`, `argument@first-prototype@arg-27`). Closed in O10: "n-ary split
+is better as you pointed out." Final state: approved; the binary shape lost (see "Losing
+alternatives"). Shape: the decided design of `spec@first-prototype@model-core`. Harvest: a design
+head of the model crate's Component, citing the rejected binary shape; T1 is written in that
+Component's tripwires home.
 
 ### Any node can be split, so an area can span several others `##split-any-node`
 
@@ -294,14 +331,17 @@ Proposed by the owner in O2 (`argument@first-prototype@arg-14`); the session pro
 while giving every node a stable id (`argument@first-prototype@arg-29`). Closed by O10's whole-table
 agreement, round 1's default being "parked". Final state: parked. Tripwire T3, recorded on the
 owner's word (see "Premortem"); re-entry point: the first real talk given with the prototype.
-Harvest: T3, while the thread stays parked.
+Harvest: T3 as the trigger of a `deferred` issue, since a parked thread records no decision for a
+tripwire to guard.
 
 ### A presentation has one aspect ratio, sizes are in slide units, and every display scales uniformly `##slide-coordinate-space`
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-11`,
 `argument@first-prototype@arg-30`), "closes on its argument" unless contested. Closed by O10's
-whole-table agreement. Final state: approved. Shape: "Decided design" below. Harvest: a design head
-of the model crate's Component.
+whole-table agreement. Final state: approved. Shape: "Decided design" below. Harvest: the slide
+units and the area geometry in the model crate's Component, at `spec@first-prototype@model-core`;
+the uniform scaling of every display in rootpoint's design home, since the render and app crates
+both respect it, at `spec@first-prototype@editor-shell`.
 
 ### Content stored apart, with areas holding references to it `##content-by-reference`
 
@@ -322,9 +362,9 @@ rejected shape of `thread@first-prototype@content-by-reference` if it earns an e
 ### Background, footer and reusable layouts come from templates, left out of the prototype `##slide-templates`
 
 Proposed by the owner in O2 (`argument@first-prototype@arg-15`) and shaped by the session in round 1
-(`argument@first-prototype@arg-33`). Parked by the owner in O10: "slide-templates parked for
-later." Final state: parked. Tripwire T4, recorded on the owner's word; re-entry point: the first
-real talk given with the prototype. Harvest: T4, while the thread stays parked.
+(`argument@first-prototype@arg-33`). Parked by the owner in O10: "slide-templates parked for later."
+Final state: parked. Tripwire T4, recorded on the owner's word; re-entry point: the first real talk
+given with the prototype. Harvest: T4 as the trigger of a `deferred` issue, as T3.
 
 ### Every change is an operation value, and applying it returns its inverse `##edit-operation-core`
 
@@ -345,7 +385,10 @@ stated reason.
 ### The GUI host is eframe `##gui-toolkit`
 
 Proposed by the session in round 1, conditional on `thread@first-prototype@slide-renderer`
-(`argument@first-prototype@arg-36`). Closed by O10's whole-table agreement. Final state: approved.
+(`argument@first-prototype@arg-36`): "eframe, if #slide-renderer closes on (b). If (a) wins
+instead, iced." Closed by O10's whole-table agreement, with the renderer on (b). Final state:
+approved. If `thread@first-prototype@slide-renderer` is reopened toward (a), iced is the host the
+discussion named.
 Shape: the decided design of `spec@first-prototype@editor-shell`. Harvest: a design head of the app
 crate's Component.
 
@@ -354,14 +397,17 @@ crate's Component.
 Proposed by the session in round 1 (`argument@first-prototype@arg-37`). Closed by O10's
 whole-table agreement. Final state: approved. Shape: the decided designs of
 `spec@first-prototype@model-core` (ids in the document) and `spec@first-prototype@command-protocol`.
-Harvest: a design head of the protocol crate's Component.
+Harvest: the rule that ids are stored and never reused, in the model crate's Component; addressing
+by id in the protocol, in the protocol crate's Component, citing the first.
 
 ### Commands are text lines, read from stdin headless and from a local socket by the live GUI `##protocol-transport`
 
-Proposed by the session in round 1 (`argument@first-prototype@arg-8`,
+Proposed by the session before round 1 and in round 1 (`argument@first-prototype@arg-8`,
 `argument@first-prototype@arg-38`). Closed by O10's whole-table agreement. Final state: approved;
 JSON-RPC lost. Shape: the decided designs of `spec@first-prototype@command-protocol` and
-`spec@first-prototype@live-control`. Harvest: a design head of the protocol crate's Component.
+`spec@first-prototype@live-control`. Harvest: the line grammar and the stdin binary in the protocol
+crate's Component, at `spec@first-prototype@command-protocol`; the socket listener and its threads
+in the app crate's Component, at `spec@first-prototype@live-control`.
 
 ### The save file is RON, with a version field `##save-format`
 
@@ -372,27 +418,32 @@ agreement. Final state: approved; JSON lost. Shape: the decided design of
 
 ### Images are files beside the presentation now; packing into one file comes later `##image-storage`
 
-Proposed by the session in round 1 as a question to the owner (`argument@first-prototype@arg-40`).
+Proposed by the session in round 1 as a question to the owner, among three shapes (see "Names"),
+with shape 1 as its default (`argument@first-prototype@arg-40`).
 The owner answered Q1 in O10: "for prototyping, shape 1 is fine. I think that shape 1 would stay the
 preferred editing method long term, while shape 3 would be the final goal, so it is possible to pack
 your presentation, carry just the file with you, and present it from any computer with a web browser
 and internet connection using the webapp hosted from a static site." The session confirmed it in
 round 2 (`argument@first-prototype@arg-47`), and the two goals it bears on were reworded on the
 owner's word in O11 (`argument@first-prototype@arg-48`). Final state: approved. Shape: the decided
-design of `spec@first-prototype@model-core`. Harvest: a design head of the model crate's Component.
+design of `spec@first-prototype@model-core`. Harvest: a design head of the model crate's Component,
+attributed to the owner with the scope and the hedge of the answer, in the present tense.
 
 ### The first crates are model, render, protocol and app `##crate-split`
 
-Proposed by the session in round 1 (`argument@first-prototype@arg-41`), by C10. Closed by O10's
-whole-table agreement. Final state: approved. Shape: "Decided design" below. Harvest: a design head
-of rootpoint, at the harvest of `spec@first-prototype@browser-build`, the slice that completes the
-split.
+Proposed by the session in round 1 (`argument@first-prototype@arg-41`), by
+`criterion@first-prototype@c10-crate-rule`. Closed by O10's whole-table agreement. Final state:
+approved. Shape: "Decided design" below. Harvest: a design head of rootpoint, at the harvest of
+`spec@first-prototype@browser-build`, the slice that completes the split.
 
 ### The prototype holds the scope of round 1, and its wasm build is gated from the first slice `##prototype-scope`
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-42`); packing left out in round 2.
 Closed by O10's whole-table agreement. Final state: approved. Shape: "Decided design" below.
-Harvest: none; the scope leaves with this document.
+Harvest: the scope leaves with this document; the rule that every crate the browser build links
+builds for the wasm target, a reason respected at each crate's dependencies, is harvested with
+`thread@first-prototype@crate-split` into rootpoint's design home at the milestone's closing commit
+(see "Harvest").
 
 ### Fonts come only from the binary or the asset table, never from the system `##font-sources`
 
@@ -440,7 +491,7 @@ Bears on `thread@first-prototype@protocol-addressing`, `thread@first-prototype@p
 
 Round: before round 1. Owner, O1. No markup: tools "often based on code languages (usually markup
 kind, which is the worst kind of language)"; save "in a text file for saving (probably json or
-ron)". Bears on `thread@first-prototype@save-format`, C5.
+ron)". Bears on `thread@first-prototype@save-format`, `criterion@first-prototype@c5-no-markup`.
 
 ### The split tree is a known layout model and every layout it holds is valid `##arg-6`
 
@@ -548,7 +599,8 @@ Round: before round 1. Owner, O5. "I kinda needs math in the long term"; "animat
 video content piece probably"; "PDF exports are not fully ruled out (but it can be restricted to an
 image export ...)"; "the main way to present is using the tool itself"; "Maybe having the project
 build to webasm could be a plus"; "collaborative editing is not in scope." Bears on
-`thread@first-prototype@prototype-scope`, `thread@first-prototype@slide-renderer` (export path), C4.
+`thread@first-prototype@prototype-scope`, `thread@first-prototype@slide-renderer` (export path),
+`criterion@first-prototype@c4-browser-parity`.
 
 ### WebAssembly is a constraint to weigh in the design `##arg-23`
 
@@ -559,14 +611,17 @@ core free of anything that cannot compile to wasm." Bears on `thread@first-proto
 ### The browser build is a goal the owner may abandon `##arg-24`
 
 Round: before round 1. Owner, O6. "webasm should be a goal too, at least initially. One that could
-be abandonned later it if imposes too much constraints." Bears on C4,
-`thread@first-prototype@gui-toolkit`, `thread@first-prototype@prototype-scope`.
+be abandonned later it if imposes too much constraints." Bears on
+`criterion@first-prototype@c4-browser-parity`, `thread@first-prototype@gui-toolkit`,
+`thread@first-prototype@prototype-scope`.
 
 ### The strict browser goal constrains the GUI more than a weaker one `##arg-25`
 
 Round: before round 1. Assistant, A4, Q7. "\"the same editing operations … as in the native build\"
-is strict. A weaker form ... constrains the GUI less." Owner approved the strict form (O8, A4
-follow-up L443). Bears on C4, `thread@first-prototype@protocol-transport`.
+is strict. A weaker form ... constrains the GUI less." The owner approved the strict form in O8, and
+the session confirmed in A4's follow-up: "word for word as you approved it, including the strict
+form". Bears on `criterion@first-prototype@c4-browser-parity`,
+`thread@first-prototype@protocol-transport`.
 
 ### A separate slide renderer shares one layout between editor, presenter and export `##arg-26`
 
@@ -578,6 +633,11 @@ Parley's `PlainEditor` drives caret, selection and IME"; risks "Two text engines
 tests should use the CPU backend only", "vello on the web needs WebGPU", "Version churn ... Pin
 versions"; best combination 1 "eframe as host, plus a separate slide renderer: Parley with vello_cpu
 or vello_hybrid"; "Masonry/xilem and gpui fail the browser requirement today, or need nightly Rust."
+Facts of the survey, verbatim: "egui / eframe 0.37.0 (2026-10-15)"; "`request_repaint()` from any
+thread (A)"; "parley | 0.12.0 (2026-10-09)", with "rich spans, `PlainEditor` with editable styles
+(V)"; "vello_cpu | 0.3.0 (2026-10-02)"; "egui pins vello_cpu 0.2 while 0.3 is current (V), so the
+tree will hold duplicate versions"; "Headless output is only as good as the toolkit's offscreen
+path".
 Bears on `thread@first-prototype@slide-renderer`, `thread@first-prototype@gui-toolkit`,
 `thread@first-prototype@font-sources`, `thread@first-prototype@crate-split`.
 
@@ -595,9 +655,10 @@ guillotine layout"; "What it rules out: ... a pinwheel of 4 rectangles around a 
 
 ### Linked dividers need stable ids, which can be given now `##arg-29`
 
-Round: round 1. Assistant, A5, `thread@first-prototype@linked-dividers`. "It needs stable divider
-ids, and a rule for what dragging one does to the other"; "Give every node a stable id from the
-start ... so a link can be added later without changing the file format." Also bears on
+Round: round 1. Assistant, A5, `thread@first-prototype@linked-dividers`. "A link is a constraint
+"divider X = divider Y", stated in slide coordinates. It needs stable divider ids, and a rule for
+what dragging one does to the other"; "Give every node a stable id from the start ... so a link can
+be added later without changing the file format." Also bears on
 `thread@first-prototype@protocol-addressing`.
 
 ### Pixel units and free aspect ratio both fail C8 `##arg-30`
@@ -609,10 +670,11 @@ aspect ratio with reflow ... also fails C8."
 ### Content by reference costs deletion, editing, readability and protocol complexity `##arg-31`
 
 Round: round 1. Assistant, A5, `thread@first-prototype@content-by-reference`. Costs: "Deletion:
-removing an area leaves its content orphaned"; "Editing: changing a shared text changes every slide
-that uses it"; "File readability ... works against C3"; "Protocol: content ids exist next to area
-ids." "This is a fork ... choosing between them weighs cost against reuse, which no goal ranks."
-Bears on `thread@first-prototype@inline-content-assets`.
+removing an area leaves its content orphaned. You need garbage collection, or a library panel to
+manage the orphans"; "Editing: changing a shared text changes every slide that uses it. The GUI must
+mark shared content and offer "make unique""; "File readability ... works against C3"; "Protocol:
+content ids exist next to area ids." "This is a fork ... choosing between them weighs cost against
+reuse, which no goal ranks." Bears on `thread@first-prototype@inline-content-assets`.
 
 ### Inline content with a shared asset table covers reuse of heavy data `##arg-32`
 
@@ -635,18 +697,21 @@ and drift apart."
 ### The toolkit painter breaks scale invariance; our own renderer keeps it `##arg-35`
 
 Round: round 1. Assistant, A5, `thread@first-prototype@slide-renderer`. "(a) ... line breaks can
-move between window sizes (A)"; (b) "share one layout by construction, so C8 holds by design"; "The
-headless PNG lets an agent see what it built, which serves C2"; "Rival trap: a toolkit text field
-laid over a Parley-drawn area breaks lines differently ... the caret drifts off the text";
-"Unmeasured risk: the CPU cost of drawing a 4K presenter frame (A)".
+move between window sizes (A). Headless output is only as good as the toolkit's offscreen path"; (b)
+"share one layout by construction, so C8 holds by design"; "The headless PNG lets an agent see what
+it built, which serves C2"; "Rival trap: a toolkit text field laid over a Parley-drawn area breaks
+lines differently ... the caret drifts off the text"; "Unmeasured risk: the CPU cost of drawing a 4K
+presenter frame (A)".
 
 ### Under our own renderer the host needs little, and eframe provides it `##arg-36`
 
 Round: round 1. Assistant, A5, `thread@first-prototype@gui-toolkit`. "Given (b), the host needs:
 panels, a slide list, a texture view, input forwarding, a browser build, and a way for another
 thread to wake it"; iced "Under (b), its `pane_grid` does not help, because the dividers are inside
-our slide image"; "xilem and gpui: fail C4 today." Depends on
-`thread@first-prototype@slide-renderer`.
+our slide image. Its releases are slow: 0.13 came out in 2024-09 and 0.14 in 2025-12"; iced "a
+strong option under (a), with one text engine and screenshots in `iced_test` (V)"; "Slint: building
+a free-form canvas from declarative items is the friction (A)"; "xilem and gpui: fail C4 today."
+Depends on `thread@first-prototype@slide-renderer`.
 
 ### Paths shift after edits; stable ids do not `##arg-37`
 
@@ -663,8 +728,9 @@ does not require one there, and C4 covers editing and presenter mode only."
 ### RON reads enums naturally and allows comments; held weakly `##arg-39`
 
 Round: round 1. Assistant, A5, `thread@first-prototype@save-format`. RON "Enum variants read
-naturally"; "allows trailing commas and comments, which helps hand editing (C3)"; JSON "Universal";
-"The file carries a `version` field from the start"; "I hold it weakly".
+naturally"; "allows trailing commas and comments, which helps hand editing (C3)"; RON: "Agents read
+it fine"; JSON "Universal, and slightly better for tools other than ours"; "The file carries a
+`version` field from the start"; "I hold it weakly".
 
 ### Which image storage the goal means is the owner's intent `##arg-40`
 
@@ -673,15 +739,15 @@ your goal means is your intent, so I ask". Default shape 1 "the simplest to buil
 
 ### Serialization stays in the model crate until it needs migrations `##arg-41`
 
-Round: round 1. Assistant, A5, `thread@first-prototype@crate-split`. Table by C10; "Serialization
-stays inside `model` until it needs migrations of its own. That is the moment it gains its own
-reason to change."
+Round: round 1. Assistant, A5, `thread@first-prototype@crate-split`. Table by
+`criterion@first-prototype@c10-crate-rule`; "Serialization stays inside `model` until it needs
+migrations of its own. That is the moment it gains its own reason to change."
 
 ### The prototype scope, with a wasm build checked from the first slice `##arg-42`
 
 Round: round 1. Assistant, A5, `thread@first-prototype@prototype-scope`. In/out lists; "a wasm build
 checked by the gates from the first slice, so C4's cost shows up early and not at the end". Serves
-C9.
+`criterion@first-prototype@c9-early-judgement`.
 
 ### Text files for editing, a packed file to carry and present from a static site `##arg-43`
 
@@ -755,15 +821,21 @@ before the slice's code is written. Every one is new: no name of the editor exis
 
 ```text
 crates/rootpoint-model/   (crate rootpoint-model)
-  Document, Slide, SlideId, Node, NodeId, Split, Axis { Horizontal, Vertical }, Area,
+  Document, Slide, SlideId, Node, NodeId, Split, Axis { Horizontal, Vertical },
+  Side { Before, After }, Area,
   Content { Empty, Text(TextContent), Image(ImageContent) }, TextContent, TextStyle,
-  HAlign, VAlign, ImageContent, ImageFit { Fit, Fill }, AssetId, Asset,
-  AssetSource { Path(String), Embedded(Vec<u8>) }, AspectRatio, Rect,
-  Op, OpError, apply, area_rects, FORMAT_VERSION, save_ron, load_ron
+  FontRef { Builtin(String), Asset(AssetId) }, Rgba, HAlign { Left, Center, Right },
+  VAlign { Top, Middle, Bottom }, ImageContent, ImageFit { Fit, Fill }, AssetId, Asset,
+  AssetSource { Path(String), Embedded(Vec<u8>) }, AspectRatio { width, height },
+  Rect { x, y, w, h }, area_rects, FORMAT_VERSION, save_ron, load_ron, LoadError,
+  Op { AddSlide, RemoveSlide, RestoreSlide, MoveSlide, DuplicateSlide, Split, Remove,
+       SetTree, MoveDivider, Swap, SetContent, AddAsset, RemoveAsset, RestoreAsset },
+  OpError, apply
+  (fields and shapes: "Decided design" and "Mapping tables" of its slice's spec)
 crates/rootpoint-render/  (crate rootpoint-render)
   FontSet, RenderError, render_slide
 crates/rootpoint-protocol/ (crate rootpoint-protocol)
-  Command, ParseError, parse_command, Session, Reply
+  Command, ParseError, parse_command, Session, Reply, the view state
   binaries: rootpoint-headless, rootpoint-ctl
 crates/rootpoint-app/     (crate rootpoint-app)
   binary: rootpoint
@@ -784,8 +856,9 @@ is a fraction of its parent split. Every display, the editor, the presenter and 
 scales the whole slide uniformly and letterboxes it. The model crate owns the units and the area
 geometry; the render crate draws in them.
 
-Nearest rival: pixel units. Defeated by C8: a 1080p laptop and a 4K projector would wrap the same
-text differently. A free aspect ratio with reflow fails C8 the same way.
+Nearest rival: pixel units. Defeated by `criterion@first-prototype@c8-same-slide-everywhere`: a
+1080p laptop and a 4K projector would wrap the same text differently. A free aspect ratio with
+reflow fails `criterion@first-prototype@c8-same-slide-everywhere` the same way.
 
 ### The crate split
 
@@ -798,10 +871,20 @@ text differently. A free aspect ratio with reflow fails C8 the same way.
 
 Serialization stays inside the model crate until it needs migrations of its own, the moment it gains
 its own reason to change. The model crate holds no dependency that fails to build for the wasm
-target, and neither does the render crate; the gates check both from the slice that creates them.
+target, and neither do the render and protocol crates, which the browser build links; the gates
+check each from the slice that creates it, and the app crate from
+`spec@first-prototype@browser-build`.
 
-Nearest rival: one crate. Defeated by C1 and C10: the headless core would share a crate with the GUI
-toolkit, so a test of the model would build eframe.
+No rival to this split was argued in the discussion; the owner's rule,
+`thread@first-prototype@crate-existence-rule`, is what each row is judged by.
+
+### The crate rule
+
+A crate exists when it has its own tests, its own public API and its own reason to change. This is
+the owner's rule, stated in O1 as "something along the line of" those words, and recorded on the
+owner's word (`thread@first-prototype@crate-existence-rule`). A part of a crate that gains all
+three, such as serialization once it needs migrations, becomes a crate of its own; a crate that
+loses one is merged.
 
 ### The prototype's scope
 
@@ -809,6 +892,21 @@ toolkit, so a test of the model would build eframe.
 divider, swapping two areas; text with style per area; images with the fit and fill modes; undo;
 save and load; presenter mode, full screen, with previous and next; the protocol, headless and
 live; a headless PNG render; a wasm build checked by the gates from the first slice.
+
+**The UI actions** of the native GUI, which `spec@first-prototype@editor-shell` builds and
+`spec@first-prototype@browser-build` checks in the browser:
+
+- in the slide list: add, remove, reorder by drag, and duplicate a slide;
+- in the slide view: select an area or a split, drag a divider, split the selected node along
+  either axis, remove it, swap two areas;
+- in the side panel: set an area's content (empty, text, image) and its style or fit; add an image
+  asset;
+- in the menus: undo, redo, open, save, enter and leave presenter mode;
+- in presenter mode: previous and next slide.
+
+Each action issues a command of the protocol's `Session`: an editing command or a view command
+(selection, presenter mode, current slide), so that every operation the GUI offers runs headless
+too, per `goal@rootpoint@headless-core`.
 
 **Out**: bullet lists, code, equations, video, templates, content sharing, linked dividers, export,
 packing.
@@ -827,24 +925,29 @@ The mapping tables are in the slice specs that build their functions:
   chose; with merging, the n-ary tree is unique per layout (`argument@first-prototype@arg-27`).
 - **Content stored apart and referenced by areas**, `thread@first-prototype@content-by-reference`,
   withdrawn by the owner; lost to `thread@first-prototype@inline-content-assets`. The fact: its
-  costs in deletion, editing, file readability and protocol ids, and the owner's weighing "more
-  trouble ... than convenience" (`argument@first-prototype@arg-31`,
+  costs in deletion (garbage collection, or a library panel for orphans), editing (marking shared
+  content, and a "make unique" action), file readability and protocol ids, and the owner's weighing
+  "more trouble ... than convenience" (`argument@first-prototype@arg-31`,
   `argument@first-prototype@arg-46`).
 - **Pixel units, and a free aspect ratio with reflow**, lost to
-  `thread@first-prototype@slide-coordinate-space`. The fact: both fail C8
-  (`argument@first-prototype@arg-30`).
+  `thread@first-prototype@slide-coordinate-space`. The fact: both fail
+  `criterion@first-prototype@c8-same-slide-everywhere` (`argument@first-prototype@arg-30`).
 - **Mutation of the document by the GUI**, lost to `thread@first-prototype@edit-operation-core`. The
-  fact: the protocol would re-implement every edit, so C1 and C2 would cost twice the code and drift
-  apart (`argument@first-prototype@arg-34`).
+  fact: the protocol would re-implement every edit, so
+  `criterion@first-prototype@c1-headless-editing` and `criterion@first-prototype@c2-command-driving`
+  would cost twice the code and drift apart (`argument@first-prototype@arg-34`).
 - **Drawing slides with the toolkit's own painter and text engine** (shape (a)), lost to
   `thread@first-prototype@slide-renderer`. The fact: the toolkit lays text out in pixels, so line
-  breaks can move between window sizes (A), and a toolkit text field over a Parley-drawn area breaks
-  lines differently, so the caret drifts (`argument@first-prototype@arg-35`); and the owner's reason
-  in O10.
+  breaks can move between window sizes (A); headless output is only as good as the toolkit's
+  offscreen path, which weighs on `criterion@first-prototype@c2-command-driving`; and a toolkit text
+  field over a Parley-drawn area breaks lines differently, so the caret drifts
+  (`argument@first-prototype@arg-35`); and the owner's reason in O10.
 - **iced, Slint, xilem and gpui as the host**, lost to `thread@first-prototype@gui-toolkit`. The
   facts: under our own renderer, iced's `pane_grid` does not help and its releases are slow (0.13 in
-  2024-09, 0.14 in 2025-12); Slint makes a free-form canvas from declarative items (A); xilem and
-  gpui fail C4 today (`argument@first-prototype@arg-36`).
+  2024-09, 0.14 in 2025-12); iced stays the host the discussion named if the renderer decision is
+  reopened toward the toolkit's own painter, where its one text engine and its `iced_test`
+  screenshots count; Slint makes a free-form canvas from declarative items (A); xilem and gpui fail
+  `criterion@first-prototype@c4-browser-parity` today (`argument@first-prototype@arg-36`).
 - **Addressing by paths**, lost to `thread@first-prototype@protocol-addressing`. The fact: a path
   shifts after a split or a removal, so a later command addresses the wrong area
   (`argument@first-prototype@arg-37`).
@@ -852,16 +955,22 @@ The mapping tables are in the slice specs that build their functions:
   hand for the owner or an agent (`argument@first-prototype@arg-38`).
 - **JSON as the save format**, lost to `thread@first-prototype@save-format`, held weakly. The fact:
   RON writes enum variants as they read and allows comments and trailing commas, which helps hand
-  editing (`argument@first-prototype@arg-39`).
+  editing. JSON's merit, kept for a later reversal of a decision held weakly: it is universal, and
+  slightly better for tools other than ours (`argument@first-prototype@arg-39`).
 - **System fonts with a fallback**, lost to `thread@first-prototype@font-sources`. The fact: they
   differ between machines and do not exist in the browser, so a slide lays out differently on
-  another computer, which fails C8 (`argument@first-prototype@arg-49`).
+  another computer, which fails `criterion@first-prototype@c8-same-slide-everywhere`
+  (`argument@first-prototype@arg-49`).
 
 ## Readings
 
-The work implements no external specification. The facts it reads from outside tools are in the
-arguments that cite the surveys, `argument@first-prototype@arg-19` and
-`argument@first-prototype@arg-26`, each marked (V) or (A).
+The work implements no external specification. The facts it reads from outside tools are quoted from
+the surveys in `argument@first-prototype@arg-19` and `argument@first-prototype@arg-26`, and from
+round 1 in `argument@first-prototype@arg-35`, `argument@first-prototype@arg-36` and
+`argument@first-prototype@arg-49`; the survey marks each (V) or (A) where it did. The versions the
+slices name (parley 0.12.0, vello_cpu 0.3.0, eframe 0.37.0) were the latest releases on crates.io at
+the review of this document, and the duplicate `vello_cpu` 0.2 comes through epaint, a dependency of
+egui, not eframe's own manifest.
 
 ## Premortem
 
@@ -897,11 +1006,13 @@ message after the milestone was written, "D2 accepted; T3 and T4 too", for T3 an
 - **T3. Rows must align across two columns.** Stresses the parked
   `thread@first-prototype@linked-dividers`. Fires when: a real slide needs rows aligned across two
   columns. Response: reopen linked dividers in a design session. Re-entry: the first real talk given
-  with the prototype.
+  with the prototype. Recorded as the trigger of a `deferred` issue, since a parked thread records
+  no decision for a tripwire to guard.
 - **T4. Repeated slide furniture costs too much by hand.** Stresses the parked
   `thread@first-prototype@slide-templates`. Fires when: preparing a real talk needs the same
   background, footer or layout on several slides beyond what "duplicate slide" gives. Response:
   reopen templates in a design session. Re-entry: the first real talk given with the prototype.
+  Recorded as T3 is.
 
 ## Acceptance criteria
 
@@ -915,10 +1026,10 @@ character such as "é" cannot be typed. Response: reopen `thread@first-prototype
 ### AC2. Divider drags and 4K slides render within their bounds `##render-fast-enough`
 
 Guards `thread@first-prototype@slide-renderer`. Judged in two parts: the 4K bound by
-`spec@first-prototype@slide-rendering`, the drag bound by `spec@first-prototype@editor-shell`.
-Fires when, in a release build on the owner's machine, dragging a divider redraws a 1600×900 editor
-view in more than 33 ms per frame, or one 3840×2160 presenter slide with text and an image takes
-more than 200 ms to render. The owner kept these bounds in O12. Response: reopen
+`spec@first-prototype@slide-rendering`, the drag bound by `spec@first-prototype@editor-shell`. Fires
+when, in a release build on the owner's machine, any frame of a divider drag in a 1600×900 editor
+view takes more than 33 ms to redraw, or any render of one 3840×2160 presenter slide with text and
+an image takes more than 200 ms. The owner kept these bounds in O12. Response: reopen
 `thread@first-prototype@slide-renderer`, with GPU vello or vello_hybrid as the candidate.
 
 ### AC3. The browser build edits and presents a sample presentation as natively `##browser-build-holds`
@@ -927,15 +1038,19 @@ Guards `thread@first-prototype@gui-toolkit`, `thread@first-prototype@slide-rende
 `thread@first-prototype@font-sources`. Judged by `spec@first-prototype@browser-build`. Fires when
 the wasm build, served from a static directory, cannot open a sample presentation built into the
 binary, run the editing operations, or show presenter mode, or lays text out differently from a
-native PNG of the same slide. Response: reopen `thread@first-prototype@gui-toolkit`, or bring
-`goal@rootpoint@runs-in-browser` to the owner.
+native PNG of the same slide. Response: where the failure is in eframe's web support, reopen
+`thread@first-prototype@gui-toolkit`; where it is the cost of parity itself, bring
+`goal@rootpoint@runs-in-browser` to the owner. The session that judges it states which, with the
+evidence.
 
 ### AC4. Rebuilding three real slides is faster than with the owner's tikz macros `##split-editing-convenient`
 
 Guards `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`.
 Judged after `spec@first-prototype@browser-build` lands, by the owner. Fires when the owner,
 rebuilding 3 slides of a past presentation in the prototype, judges it not faster than with the
-owner's tikz macros, per `goal@rootpoint@real-presentations`. Response: reopen both decisions.
+owner's tikz macros, per `goal@rootpoint@real-presentations`; per D4, awaiting the owner, also not
+faster than with a general-purpose slide editor the owner uses, the comparison
+`goal@rootpoint@free-slide-division` states. Response: reopen both decisions.
 
 ### AC5. An agent edits a saved file by hand and it loads back `##file-editable-by-agent`
 
@@ -957,7 +1072,8 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
    drag bound.
 5. `spec@first-prototype@text-editing`: editing text in place. Judges AC1.
 6. `spec@first-prototype@live-control`: the control socket and its client.
-7. `spec@first-prototype@browser-build`: the browser build. Judges AC3; AC4 follows it.
+7. `spec@first-prototype@browser-build`: the browser build. Judges AC3. The owner then judges AC4,
+   and the closing commit of "Harvest" follows.
 
 | slice spec |
 | --- |
@@ -995,15 +1111,33 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   `thread@first-prototype@crate-split`. The harvest rows of the slice specs name those Components'
   homes. The owner ruled: "D2 accepted".
 - **T3 and T4, ruled**, in "Premortem": recorded. The owner ruled: "T3 and T4 too".
+- **D3, awaiting the owner.** In the prototype's browser build, opening and saving a presentation
+  and adding an image wait on packing: with images as files beside the presentation, the browser
+  cannot read them. The browser build edits and presents the built-in sample. So
+  `criterion@first-prototype@c4-browser-parity` is met by this milestone for every other UI action,
+  and fully by the packing work. Bears on `thread@first-prototype@prototype-scope` and
+  `thread@first-prototype@image-storage`. The rival: open a presentation and its images through the
+  browser's file picker, keep the images as `Embedded` assets in memory, and save by download,
+  which brings part of packing into the prototype.
+- **D4, awaiting the owner.** AC4 also compares with a general-purpose slide editor the owner uses,
+  the comparison `goal@rootpoint@free-slide-division` states, beside the owner's tikz macros. Bears
+  on `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`.
+- **Q4, awaiting the owner.** A rewording of `goal@rootpoint@minimal-content-set`, whose "every
+  feature the editor has" excludes, read literally, presenter mode, saving and the protocol, which
+  other goals require. Its outcome is the goal's, under `skill@knowledge-architect-goal-setting`.
 
 ## Harvest
 
-- **This document** leaves in the commit that completes the harvest of
-  `spec@first-prototype@browser-build`, after AC4 has been reported on.
+- **This document** leaves in a closing commit of its own, on a branch after
+  `spec@first-prototype@browser-build` has merged and the owner has judged AC4. That commit
+  reports on AC4, harvests `thread@first-prototype@crate-split` and the wasm rule of
+  `thread@first-prototype@prototype-scope` into rootpoint's design home, and deletes this
+  directory.
 - **Each slice** harvests by the row of its spec.
 - **T3 and T4**, recorded on the owner's word, are written at the harvest of
-  `spec@first-prototype@model-core`, in rootpoint's tripwires home, each naming in words the parked
-  thread it watches, since a parked thread earns no head.
+  `spec@first-prototype@model-core` as the triggers of two `deferred` issue entries in the model
+  crate's Component, as `skill@knowledge-architect-decision-recording@ruled-tripwires` says of a
+  parked thread's tripwire, each naming in words the parked thread it watches.
 
 ## Later consequences
 
@@ -1015,6 +1149,6 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 - **Rich text with per-span styles** replaces `TextStyle` per area with styled spans, on the
   in-place editor of the slice `spec@first-prototype@text-editing`.
 - **An image export** reuses `render_slide`.
-- **Publishing to crates.io**, which `goal@rootpoint@real-presentations` names as possible, gives
-  each published crate a `CRATES-IO.md` page, as `skill@knowledge-architect-setup@rust-project`
-  proposes.
+- **Publishing to crates.io**, which the owner named in O5 and `goal@rootpoint@real-presentations`
+  admits as "may be published later", gives each published crate a `CRATES-IO.md` page, as
+  `skill@knowledge-architect-setup@rust-project` proposes.

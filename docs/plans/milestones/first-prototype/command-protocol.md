@@ -7,11 +7,13 @@ cites.
 ## Builds
 
 - The crate `rootpoint-protocol` at `planned@rootpoint@crates/rootpoint-protocol/`: `Command`,
-  `parse_command`, `ParseError`, `Session`, which holds one document and its undo stack and executes
-  commands, and `Reply`.
+  `parse_command`, `ParseError`, `Session`, which holds one document, its undo stack and a view
+  state, and executes commands, and `Reply`.
 - The binary `rootpoint-headless`: reads one command per line from stdin, writes one reply per
   command to stdout, and exits at the end of its input.
-- The crate's wasm build, added to the `wasm` gate. The binary is not built for the wasm target.
+- The library root and the binary read `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires.
+- The library added to the `wasm` gate: the browser build links `Session`. The binary is not built
+  for the wasm target.
 - Per D2, the crate's Component.
 
 ## Claims
@@ -26,19 +28,21 @@ cites.
    areas by the ids printed before the save succeeds. Shown to fail: allocating fresh ids at load
    fails the script.
 4. **A failed command changes nothing.** A command that fails replies `err <reason>`, and the
-   document equals the document before it. Test: one failing case per command.
+   document and the view equal those before it. Test: one failing case per command.
 5. **A headless script renders.** A script piped into `rootpoint-headless` builds the fixture
    presentation and renders a slide to a PNG equal to the render crate's golden image of it.
+6. **The view commands run headless.** A script selects a node, enters presenter mode, moves to the
+   next and previous slide and leaves it, and `view` reports each state.
 
 ## Fixtures
 
 Scripts in the protocol's own grammar, under the crate's test directory, one per claim. They use
-only the commands of the mapping table.
+only the commands of the mapping table and of the view commands.
 
 ## Audit subjects
 
 - `thread@first-prototype@protocol-addressing`, `thread@first-prototype@protocol-transport`,
-  `thread@first-prototype@edit-operation-core`.
+  `thread@first-prototype@edit-operation-core`, `goal@rootpoint@headless-core`.
 - The model crate's `Op` and `apply`, and the render crate's `render_slide`, as landed.
 
 ## Fails alone on
@@ -48,15 +52,16 @@ only the commands of the mapping table.
 
 ## Premises that expire
 
-- The session is driven only from stdin in this slice. The slice `spec@first-prototype@live-control`
-  adds the socket; the grammar does not change.
+- The session is driven only from stdin in this slice. Guard: `spec@first-prototype@live-control`
+  adds the socket and runs the same scripts through it; the grammar does not change.
 
 ## Implementation sequence
 
 1. **An empty session.** `Session` with the commands `new`, `save`, `load`, `tree` only, and the
    headless binary reading stdin. Fails alone on: the line handling and the reply format.
 2. **The editing commands.** The rows of the mapping table, with `undo` and `redo`. Claims 1, 2, 4.
-3. **Ids across files, and render.** Claim 3; the `render` command, claim 5.
+3. **The view commands.** Claim 6.
+4. **Ids across files, and render.** Claim 3; the `render` command, claim 5.
 
 ## Decided design
 
@@ -65,22 +70,35 @@ only the commands of the mapping table.
 One command per line: a verb, then arguments separated by spaces; a text argument is a
 double-quoted string with `\"` and `\\` escapes; a named option is `key=value`. Every reply is one
 line that starts with `ok` or `err`, followed by the result or the reason; `tree` replies with the
-tree on one line, every node with its id (`thread@first-prototype@protocol-transport`). An
-illustration of the shape, not a test:
+slide's tree on one line, every split and area with its id
+(`thread@first-prototype@protocol-transport`). An illustration of the shape, not a test:
 
 ```text
-> add-slide            ok s1 root=n1
-> split n1 v 0.5       ok n2 n3
+> add-slide                ok s1 root=n2
+> split n2 v 0.5 after     ok split=n3 new=n4
 > text n2 "Hello" size=64 bold
-> image n3 @cat fit
-> tree s1              s1 V[n2 text "Hello" | n3 image @cat fit]
-> render s1 out.png    ok
+                           ok
+> asset cat.png            ok a5
+> image n4 a5 fit          ok
+> tree s1                  ok s1 n3:V[n2 text "Hello" | n4 image a5 fit]
+> render s1 out.png        ok
 ```
+
+Nearest rival: JSON-RPC; see "Losing alternatives" of the milestone document.
 
 ### Addressing
 
-Commands address slides and nodes by the ids the model stores, never by position
+Commands address slides, nodes and assets by the ids the model stores, never by position
 (`thread@first-prototype@protocol-addressing`).
+
+Nearest rival: addressing by paths; see "Losing alternatives" of the milestone document.
+
+### The view state
+
+The session holds, besides the document, a view state: the selected node, if any, and whether
+presenter mode is on, with its current slide. The view commands change it and apply no operation,
+so they are not undone. The GUI shows this state and changes it only through these commands, so
+every operation the GUI offers runs headless, per `goal@rootpoint@headless-core`.
 
 ## Mapping tables
 
@@ -101,15 +119,18 @@ audit may refine them in place.
 | `image <area> <asset> [fit\|fill]` | `SetContent { area, content: Image(..) }` |
 | `clear <area>` | `SetContent { area, content: Empty }` |
 | `asset <path>` | `AddAsset { asset }`, replying with the new asset id |
+| `remove-asset <asset>` | `RemoveAsset { id }` |
 | `undo`, `redo` | the inverse on the undo stack, and its inverse |
 
 The commands `new`, `save <path>`, `load <path>`, `tree [slide]` and `render <slide> <path> [w h]`
-apply no operation.
+apply no operation. The view commands apply none either: `select <node>`, `deselect`,
+`present [slide]`, `next`, `prev`, `stop`, and `view`, which replies with the view state.
 
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`, into the design home of the protocol crate's
-Component:
-`thread@first-prototype@protocol-addressing` and `thread@first-prototype@protocol-transport`, the
-grammar being an interface others consume; the losing alternatives, paths and JSON-RPC, judged for a
+Component: addressing by id, citing the model crate's head on ids, from
+`thread@first-prototype@protocol-addressing`; the line grammar, the stdin binary and the view state,
+from `thread@first-prototype@protocol-transport` and `goal@rootpoint@headless-core`, the grammar
+being an interface others consume; the losing alternatives, paths and JSON-RPC, judged for a
 `rejected` entry.
