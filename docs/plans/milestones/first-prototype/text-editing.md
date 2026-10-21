@@ -4,8 +4,8 @@ This slice's spec leaves the repository when the slice lands. The milestone docu
 `milestone@plans@first-prototype`, holds the names, the criteria, the threads and the arguments it
 cites. Its design audit, recorded in the commit "Apply the design audit of the fifth slice, editing
 text in place", rewrote the sections below against the editor the slice `editor-shell` built, and
-left one thread open for the owner, `thread@first-prototype@edit-entry`; the slice's code waits for
-its ruling.
+left one thread open for the owner, `thread@first-prototype@edit-entry`, which the owner closed on
+shape (a).
 
 ## Builds
 
@@ -65,7 +65,9 @@ this spec. What it read:
 
 ### How an area's text is entered for editing, and what the node keys do on a text area `##edit-entry`
 
-Open at the audit, put to the owner as Q28 with a default. Proposed by the session at the audit:
+Open at the audit, put to the owner as Q28 with a default, shape (a). Closed by the owner: "Q28:
+(a) is good, I think it's quite intuitive to use." Final state: approved, shape (a). Proposed by
+the session at the audit:
 the slice's entry said only "Entering an area shows the caret at the clicked offset". A click on an
 area selects it, and while a text is edited the keys go to the text, so Shift with an arrow, Delete
 and Alt with an arrow, which act on the selected node, cannot also act while editing. The
