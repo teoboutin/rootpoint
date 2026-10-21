@@ -1,0 +1,277 @@
+//! The types of a presentation: slides, their split trees, the content of their areas, and the
+//! asset table.
+
+use std::collections::BTreeMap;
+
+/// The id of a slide, unique in its document and never reused.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SlideId(pub u64);
+
+/// The id of a split or an area, unique in its document and never reused.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct NodeId(pub u64);
+
+/// The id of an asset, unique in its document and never reused.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct AssetId(pub u64);
+
+/// A presentation: its aspect ratio, its slides in order, and its assets.
+///
+/// Every id of the document comes from one counter, which only grows, so a removed slide, node or
+/// asset never lends its id to another.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Document {
+    pub aspect: AspectRatio,
+    pub slides: Vec<Slide>,
+    pub assets: BTreeMap<AssetId, Asset>,
+    pub(crate) next_id: u64,
+}
+
+impl Default for Document {
+    fn default() -> Self {
+        Document {
+            aspect: AspectRatio::default(),
+            slides: Vec::new(),
+            assets: BTreeMap::new(),
+            next_id: 1,
+        }
+    }
+}
+
+impl Document {
+    /// Whether two documents are equal in everything but their id counter. An operation followed
+    /// by its inverse gives a document equal to the original in this sense: the counter has grown,
+    /// so that no id is reused.
+    pub fn same_content(&self, other: &Document) -> bool {
+        self.aspect == other.aspect && self.slides == other.slides && self.assets == other.assets
+    }
+
+    pub(crate) fn alloc(&mut self) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        id
+    }
+
+    /// The slide with this id, if any.
+    pub fn slide(&self, id: SlideId) -> Option<&Slide> {
+        self.slides.iter().find(|s| s.id == id)
+    }
+
+    /// The node with this id, in any slide, if any.
+    pub fn node(&self, id: NodeId) -> Option<&Node> {
+        self.slides.iter().find_map(|s| s.root.find(id))
+    }
+}
+
+/// The shape of every slide of a document, 16:9 by default. A slide is 1080 slide units high and
+/// `1080 * width / height` wide.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct AspectRatio {
+    pub width: u32,
+    pub height: u32,
+}
+
+impl Default for AspectRatio {
+    fn default() -> Self {
+        AspectRatio {
+            width: 16,
+            height: 9,
+        }
+    }
+}
+
+/// One slide: its id and the root of its split tree.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Slide {
+    pub id: SlideId,
+    pub root: Node,
+}
+
+/// A node of a slide's tree: a split of its extent, or an area holding one content.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Node {
+    Split(Split),
+    Area(Area),
+}
+
+impl Node {
+    pub fn id(&self) -> NodeId {
+        match self {
+            Node::Split(s) => s.id,
+            Node::Area(a) => a.id,
+        }
+    }
+
+    /// The node with this id in this subtree, if any.
+    pub fn find(&self, id: NodeId) -> Option<&Node> {
+        if self.id() == id {
+            return Some(self);
+        }
+        match self {
+            Node::Split(s) => s.children.iter().find_map(|c| c.find(id)),
+            Node::Area(_) => None,
+        }
+    }
+
+    /// Every area of this subtree, in tree order.
+    pub fn areas(&self) -> Vec<&Area> {
+        let mut out = Vec::new();
+        self.collect_areas(&mut out);
+        out
+    }
+
+    fn collect_areas<'a>(&'a self, out: &mut Vec<&'a Area>) {
+        match self {
+            Node::Split(s) => s.children.iter().for_each(|c| c.collect_areas(out)),
+            Node::Area(a) => out.push(a),
+        }
+    }
+}
+
+/// The direction of a split's dividers. A `Vertical` split has vertical dividers and lays its
+/// children side by side, left to right; a `Horizontal` split has horizontal dividers and stacks
+/// its children top to bottom.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Axis {
+    Horizontal,
+    Vertical,
+}
+
+/// A split of its extent along one axis into k ≥ 2 children.
+///
+/// `dividers` holds the k−1 positions between consecutive children, as fractions of the split's
+/// extent, strictly increasing and strictly between 0 and 1. No child is a split of the same axis:
+/// such a child is merged into its parent, so each layout has one tree.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Split {
+    pub id: NodeId,
+    pub axis: Axis,
+    pub children: Vec<Node>,
+    pub dividers: Vec<f64>,
+}
+
+impl Split {
+    /// The extent of child `i`, as fractions of the split's extent.
+    pub fn child_extent(&self, i: usize) -> (f64, f64) {
+        let start = if i == 0 { 0.0 } else { self.dividers[i - 1] };
+        let end = if i + 1 == self.children.len() {
+            1.0
+        } else {
+            self.dividers[i]
+        };
+        (start, end)
+    }
+}
+
+/// A leaf of a slide's tree, holding one content.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Area {
+    pub id: NodeId,
+    pub content: Content,
+}
+
+/// The content of an area.
+#[derive(Clone, Debug, PartialEq, Default)]
+pub enum Content {
+    #[default]
+    Empty,
+    Text(TextContent),
+    Image(ImageContent),
+}
+
+/// Wrapped text, with one style for the whole area.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextContent {
+    pub text: String,
+    pub style: TextStyle,
+}
+
+/// The style of a text area. Sizes are in slide units.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TextStyle {
+    pub font: FontRef,
+    pub size: f64,
+    pub bold: bool,
+    pub italic: bool,
+    pub colour: Rgba,
+    pub h_align: HAlign,
+    pub v_align: VAlign,
+}
+
+impl Default for TextStyle {
+    fn default() -> Self {
+        TextStyle {
+            font: FontRef::Builtin("sans".to_owned()),
+            size: 48.0,
+            bold: false,
+            italic: false,
+            colour: Rgba {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            },
+            h_align: HAlign::Left,
+            v_align: VAlign::Top,
+        }
+    }
+}
+
+/// A font: one the binary carries, by name, or a font file of the asset table.
+#[derive(Clone, Debug, PartialEq)]
+pub enum FontRef {
+    Builtin(String),
+    Asset(AssetId),
+}
+
+/// A colour, 8 bits per channel, alpha last.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Rgba {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HAlign {
+    Left,
+    Center,
+    Right,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VAlign {
+    Top,
+    Middle,
+    Bottom,
+}
+
+/// An image area: the asset it shows and how the image is scaled into the area.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ImageContent {
+    pub asset: AssetId,
+    pub fit: ImageFit,
+}
+
+/// How an image is scaled into its area. `Fit` shows the whole image, scaled to fit inside the area
+/// and centred; `Fill` covers the whole area, scaled to cover it, centred and cropped.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ImageFit {
+    Fit,
+    Fill,
+}
+
+/// An entry of the asset table: heavy data that areas refer to by id.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Asset {
+    pub source: AssetSource,
+}
+
+/// Where an asset's bytes are: a file beside the presentation, by a path relative to it, or the
+/// bytes themselves, as a packed presentation carries them.
+#[derive(Clone, Debug, PartialEq)]
+pub enum AssetSource {
+    Path(String),
+    Embedded(Vec<u8>),
+}
