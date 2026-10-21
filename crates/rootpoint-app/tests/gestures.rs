@@ -414,29 +414,34 @@ fn the_keys_split_remove_undo_and_redo() {
     assert!(d.doc().node(n3).is_none());
 }
 
+/// Enter editing the selected text area n3 by a second click on it, the caret at its text's end.
+fn edit_n3(d: &mut Driver) {
+    let n3 = NodeId(3);
+    d.select(n3);
+    let p = d.app.layout().unwrap().rect(n3).unwrap().center();
+    d.click(p);
+    assert_eq!(d.app.editing(), Some(n3));
+}
+
 #[test]
-fn the_edits_of_one_focus_of_the_text_field_are_one_undo_step() {
+fn the_edits_of_one_stay_in_editing_are_one_undo_step() {
     let mut d = Driver::new();
     let n3 = NodeId(3);
     let before = text(&d, n3);
-    d.select(n3);
-    let field = d
-        .app
-        .text_field_rect()
-        .expect("a text area shows the text field");
-    d.click(field.center());
+    edit_n3(&mut d);
     for word in ["X", "Y"] {
         d.frame(vec![Event::Text(word.to_owned())], Modifiers::NONE);
     }
     let typed = text(&d, n3);
-    assert_eq!(typed.len(), before.len() + 2);
-    assert!(typed.contains("XY"), "{typed}");
-    // While the field has focus, Delete edits the text and removes no area.
+    assert_eq!(typed, format!("{before}XY"));
+    // While editing, Backspace edits the text and Delete removes no area.
+    d.key(Key::Backspace, Modifiers::NONE);
     d.key(Key::Delete, Modifiers::NONE);
-    assert!(d.doc().node(n3).is_some());
-    // A click on the slide takes the focus, and the group closes: one undo reverts every edit.
+    assert_eq!(text(&d, n3), format!("{before}X"));
+    // A click on another area leaves editing, and the group closes: one undo reverts every edit.
     let elsewhere = d.app.layout().unwrap().rect(NodeId(5)).unwrap().center();
     d.click(elsewhere);
+    assert_eq!(d.app.editing(), None);
     assert_eq!(d.selected(), Some(NodeId(5)));
     assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
     assert_eq!(text(&d, n3), before);
@@ -544,13 +549,11 @@ fn before_position(doc: &Document, split: NodeId, index: usize) -> f64 {
 }
 
 #[test]
-fn a_slide_list_button_pressed_while_the_text_field_has_focus_is_a_step_of_its_own() {
+fn a_slide_list_button_pressed_while_a_text_is_edited_is_a_step_of_its_own() {
     let mut d = Driver::new();
     let n3 = NodeId(3);
     let before = text(&d, n3);
-    d.select(n3);
-    let field = d.app.text_field_rect().unwrap();
-    d.click(field.center());
+    edit_n3(&mut d);
     d.frame(vec![Event::Text("X".to_owned())], Modifiers::NONE);
     let typed = text(&d, n3);
     assert_ne!(typed, before);

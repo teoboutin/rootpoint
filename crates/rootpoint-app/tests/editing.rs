@@ -3,7 +3,10 @@
 //! boundary of the layout the render draws, within half a pixel. Claim 1 of the slice that edits
 //! text in place, `spec@first-prototype@text-editing`.
 
-use eframe::egui::{Context, Event, Key, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
+use eframe::egui::{
+    Context, Event, ImeEvent, Key, Modifiers, OutputCommand, PointerButton, Pos2, RawInput, Rect,
+    Vec2,
+};
 use parley::PositionedLayoutItem;
 use rootpoint_app::App;
 use rootpoint_app::editing::CaretMove;
@@ -52,9 +55,14 @@ impl Driver {
         d
     }
 
-    fn frame(&mut self, mut events: Vec<Event>) {
+    fn frame(&mut self, events: Vec<Event>) {
+        self.frame_with(events, Modifiers::NONE);
+    }
+
+    /// One frame, and what it put on the clipboard and whether it allowed IME input.
+    fn frame_with(&mut self, mut events: Vec<Event>, modifiers: Modifiers) -> (Vec<String>, bool) {
         self.time += 1.0 / 60.0;
-        events.insert(0, Event::ModifiersChanged(Modifiers::NONE));
+        events.insert(0, Event::ModifiersChanged(modifiers));
         let mut input = RawInput {
             screen_rect: Some(Rect::from_min_size(Pos2::ZERO, self.size)),
             max_texture_side: Some(8192),
@@ -68,11 +76,86 @@ impl Driver {
             .or_default()
             .native_pixels_per_point = Some(self.ppp);
         let app = &mut self.app;
+        let mut out = self.ctx.run_ui(input, |ui| app.frame(ui));
         // No painter applies the texture deltas, and egui refuses to drop them unapplied.
-        self.ctx
-            .run_ui(input, |ui| app.frame(ui))
-            .textures_delta
-            .clear();
+        out.textures_delta.clear();
+        let copied = out
+            .platform_output
+            .commands
+            .iter()
+            .filter_map(|c| match c {
+                OutputCommand::CopyText(t) => Some(t.clone()),
+                _ => None,
+            })
+            .collect();
+        (copied, out.platform_output.ime.is_some())
+    }
+
+    fn key_with(&mut self, key: Key, modifiers: Modifiers) {
+        for pressed in [true, false] {
+            self.frame_with(
+                vec![Event::Key {
+                    key,
+                    physical_key: None,
+                    pressed,
+                    repeat: false,
+                    modifiers,
+                }],
+                modifiers,
+            );
+        }
+    }
+
+    fn button(&mut self, pos: Pos2, pressed: bool, modifiers: Modifiers) {
+        self.frame_with(
+            vec![
+                Event::PointerMoved(pos),
+                Event::PointerButton {
+                    pos,
+                    button: PointerButton::Primary,
+                    pressed,
+                    modifiers,
+                },
+            ],
+            modifiers,
+        );
+    }
+
+    fn text_of(&self, area: NodeId) -> String {
+        match self.app.session().document().node(area) {
+            Some(rootpoint_model::Node::Area(a)) => match &a.content {
+                rootpoint_model::Content::Text(t) => t.text.clone(),
+                _ => String::new(),
+            },
+            _ => panic!("{area} is no area"),
+        }
+    }
+
+    /// The point of the view where the text of `area` has the slide point `(u, v)` of its layout.
+    fn text_point(&self, area: NodeId, u: f64, v: f64) -> Pos2 {
+        let doc = self.app.session().document();
+        let text = area_text(
+            doc,
+            self.app.shown_slide().unwrap(),
+            area,
+            &mut FontSet::new(),
+        )
+        .unwrap();
+        self.app
+            .layout()
+            .unwrap()
+            .to_points(text.origin.0 + u, text.origin.1 + v)
+    }
+
+    /// Select n3, then click its first character to edit it with the caret at offset 0.
+    fn edit_n3(&mut self) {
+        let n3 = NodeId(3);
+        self.app.select_node(n3);
+        self.settle();
+        let p = self.text_point(n3, 2.0, 10.0);
+        self.click(p);
+        assert_eq!(self.app.editing(), Some(n3));
+        assert_eq!(self.app.caret_index(), Some(0));
     }
 
     /// egui sizes its panels again on the next frames after a change of the side panel.
@@ -211,9 +294,135 @@ fn the_caret_stands_on_the_drawn_glyph_boundary_at_three_window_sizes() {
         }
         // The arrows move the caret by one character.
         d.app.set_caret(10);
-        d.app.move_caret(CaretMove::Right);
+        d.app.move_caret(CaretMove::Right, false);
         assert_eq!(d.app.caret_index(), Some(11));
-        d.app.move_caret(CaretMove::Left);
+        d.app.move_caret(CaretMove::Left, false);
         assert_eq!(d.app.caret_index(), Some(10));
     }
+}
+
+#[test]
+fn a_typed_word_is_undone_by_one_undo() {
+    let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
+    let n3 = NodeId(3);
+    let before = d.text_of(n3);
+    d.edit_n3();
+    for c in ["w", "o", "r", "d", " "] {
+        d.frame(vec![Event::Text(c.to_owned())]);
+    }
+    assert_eq!(d.text_of(n3), format!("word {before}"));
+    // Ctrl+Z ends the stay in editing and undoes it whole.
+    d.key_with(Key::Z, Modifiers::COMMAND);
+    assert_eq!(d.app.editing(), None);
+    assert_eq!(d.text_of(n3), before);
+    // And Ctrl+Shift+Z brings the word back, in one step.
+    d.key_with(Key::Z, Modifiers::COMMAND | Modifiers::SHIFT);
+    assert_eq!(d.text_of(n3), format!("word {before}"));
+}
+
+#[test]
+fn shift_and_an_arrow_select_and_typing_replaces_the_selection() {
+    let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
+    let n3 = NodeId(3);
+    let before = d.text_of(n3);
+    d.edit_n3();
+    for _ in 0..5 {
+        d.key_with(Key::ArrowRight, Modifiers::SHIFT);
+    }
+    assert_eq!(d.app.selected_text().unwrap(), before[..5]);
+    // The selection draws.
+    let layout = d.app.layout().unwrap().clone();
+    assert_eq!(d.app.selection_rects(&layout).len(), 1);
+    d.frame(vec![Event::Text("Z".to_owned())]);
+    assert_eq!(d.text_of(n3), format!("Z{}", &before[5..]));
+    assert_eq!(d.app.caret_index(), Some(1));
+}
+
+#[test]
+fn a_drag_inside_the_text_selects_and_a_shift_click_extends() {
+    let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
+    let n3 = NodeId(3);
+    let before = d.text_of(n3);
+    d.edit_n3();
+    // Drag from the start of the first line to about 200 slide units along it.
+    let from = d.text_point(n3, 2.0, 10.0);
+    let to = d.text_point(n3, 200.0, 10.0);
+    d.button(from, true, Modifiers::NONE);
+    for i in 1..=4 {
+        d.frame(vec![Event::PointerMoved(
+            from + (to - from) * (i as f32 / 4.0),
+        )]);
+    }
+    d.button(to, false, Modifiers::NONE);
+    let dragged = d.app.selected_text().unwrap();
+    assert!(
+        dragged.len() > 3 && before.starts_with(&dragged),
+        "{dragged:?}"
+    );
+    assert_eq!(d.app.editing(), Some(n3), "the drag stays in editing");
+    // A Shift+click farther along extends the selection from the same anchor.
+    let farther = d.text_point(n3, 400.0, 10.0);
+    d.button(farther, true, Modifiers::SHIFT);
+    d.button(farther, false, Modifiers::SHIFT);
+    let extended = d.app.selected_text().unwrap();
+    assert!(
+        extended.len() > dragged.len() && before.starts_with(&extended),
+        "{extended:?}"
+    );
+}
+
+#[test]
+fn copy_cut_and_paste_go_through_the_clipboard_events() {
+    let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
+    let n3 = NodeId(3);
+    let before = d.text_of(n3);
+    d.edit_n3();
+    for _ in 0..2 {
+        d.key_with(Key::ArrowRight, Modifiers::SHIFT);
+    }
+    let (copied, _) = d.frame_with(vec![Event::Copy], Modifiers::NONE);
+    assert_eq!(copied, [before[..2].to_owned()]);
+    let (cut, _) = d.frame_with(vec![Event::Cut], Modifiers::NONE);
+    assert_eq!(cut, [before[..2].to_owned()]);
+    assert_eq!(d.text_of(n3), before[2..]);
+    d.frame(vec![Event::Paste("pasted ".to_owned())]);
+    assert_eq!(d.text_of(n3), format!("pasted {}", &before[2..]));
+}
+
+#[test]
+fn an_ime_composition_stands_in_the_text_until_it_is_committed() {
+    let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
+    let n3 = NodeId(3);
+    let before = d.text_of(n3);
+    d.edit_n3();
+    // While editing, every frame allows IME input.
+    let (_, ime) = d.frame_with(vec![], Modifiers::NONE);
+    assert!(ime);
+    // A dead key's composition: the accent, then the composed letter.
+    let preedit = |t: &str| {
+        Event::Ime(ImeEvent::Preedit {
+            text: t.to_owned(),
+            active_range_chars: None,
+        })
+    };
+    d.frame(vec![preedit("´")]);
+    assert_eq!(d.text_of(n3), format!("´{before}"));
+    assert_eq!(d.app.preedit_range(), Some(0.."´".len()));
+    d.frame(vec![preedit("é")]);
+    assert_eq!(d.text_of(n3), format!("é{before}"));
+    d.frame(vec![Event::Ime(ImeEvent::Commit("é".to_owned()))]);
+    assert_eq!(d.text_of(n3), format!("é{before}"));
+    assert_eq!(d.app.preedit_range(), None);
+    assert_eq!(d.app.caret_index(), Some("é".len()));
+    // An abandoned composition leaves the text as it was.
+    d.frame(vec![preedit("あ")]);
+    d.frame(vec![preedit("")]);
+    assert_eq!(d.text_of(n3), format!("é{before}"));
+    // A dead key that arrives as typed text is typed.
+    d.frame(vec![Event::Text("è".to_owned())]);
+    assert_eq!(d.text_of(n3), format!("éè{before}"));
+    // Leaving editing allows no IME input any more.
+    d.key(Key::Escape);
+    let (_, ime) = d.frame_with(vec![], Modifiers::NONE);
+    assert!(!ime);
 }

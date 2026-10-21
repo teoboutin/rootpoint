@@ -1,7 +1,7 @@
 //! The panels around the slide view: the toolbar, the slide list, and the side panel with the
 //! breadcrumb, the actions on the selection, and the selected area's content and style.
 
-use eframe::egui::{self, Align2, Color32, FontId, Sense, Stroke, TextEdit, Ui, Vec2};
+use eframe::egui::{self, Align2, Color32, FontId, Sense, Stroke, Ui, Vec2};
 use rootpoint_model::{
     AssetId, AssetSource, Axis, Content, FontRef, HAlign, ImageFit, Node, Rgba, SlideId, VAlign,
 };
@@ -216,8 +216,8 @@ impl App {
         }
     }
 
-    /// The selected area's content: its kind, then the text field and its style, or the image
-    /// and its fit.
+    /// The selected area's content: its kind, then the text's style, or the image and its fit; the
+    /// text itself is edited in place, on the slide.
     fn content(&mut self, ui: &mut Ui, content: &Content) {
         ui.horizontal(|ui| {
             ui.label("Content:");
@@ -253,37 +253,9 @@ impl App {
         match content {
             Content::Empty => {}
             Content::Text(t) => {
-                self.text_field(ui, &t.text);
                 self.style(ui, &t.style);
             }
             Content::Image(i) => self.image(ui, i.asset, i.fit),
-        }
-    }
-
-    /// The plain text field: its focus opens a group, each change sends the whole text, and the
-    /// loss of its focus closes the group.
-    fn text_field(&mut self, ui: &mut Ui, text: &str) {
-        let Some(area) = self.selected_area() else {
-            return;
-        };
-        let mut buffer = match &self.editing {
-            Some((a, t)) if *a == area => t.clone(),
-            _ => text.to_owned(),
-        };
-        let response = ui.add(
-            TextEdit::multiline(&mut buffer)
-                .desired_rows(4)
-                .desired_width(f32::INFINITY),
-        );
-        self.view.text_field = Some(response.rect);
-        if response.gained_focus() {
-            self.focus_text();
-        }
-        if response.changed() && self.editing.is_some() {
-            self.type_text(buffer);
-        }
-        if response.lost_focus() {
-            self.blur_text();
         }
     }
 

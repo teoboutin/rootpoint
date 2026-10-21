@@ -35,9 +35,9 @@ open, a save or presenting does, closes any group still open before it acts.
 
 ## The tests find widgets by the places the last frame recorded
 
-`App::layout`, `App::slide_rows` and `App::text_field_rect` return where the last frame put the
-slide, the list's rows and the text field, so a test of `App::frame` places its synthetic
-pointer on them. A selection changes the side panel, which egui sizes again on the next frame, so
+`App::layout` and `App::slide_rows` return where the last frame put the slide and the list's rows,
+so a test of `App::frame` places its synthetic pointer on them; `rootpoint_render::area_text`
+gives where a text's characters are. A selection changes the side panel, which egui sizes again on the next frame, so
 a test lets two frames pass before it reads a place.
 
 ## The build is tied to its checkout

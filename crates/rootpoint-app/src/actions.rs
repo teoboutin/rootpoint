@@ -132,17 +132,17 @@ impl App {
 
     /// Open an undo group for a gesture, after closing any group still open, so that within one
     /// frame a group closes before another opens. `false` when the session refuses it.
-    fn open_group(&mut self) -> bool {
+    pub(crate) fn open_group(&mut self) -> bool {
         self.end_gestures();
         matches!(self.run(Command::Begin), Reply::Ok(_))
     }
 
-    /// Before an edit that is no part of a gesture: close any group still open, a drag's or the
-    /// text field's, so the edit is a step of its own. A button of the slide list is handled
-    /// before the side panel sees its text field lose focus, so the field's group can be open.
+    /// Before an edit that is no part of a gesture: close any group still open, a drag's or a
+    /// text's edited in place, so the edit is a step of its own. A button of the slide list or of
+    /// the side panel can be pressed while a text is edited.
     fn end_gestures(&mut self) {
         self.release_drag();
-        self.blur_text();
+        self.stop_editing();
     }
 
     /// The press that grabs a divider opens an undo group, so the whole drag is one undo step.
@@ -280,39 +280,6 @@ impl App {
         }
     }
 
-    /// The text field gains focus: its edits until it loses focus are one undo step.
-    pub fn focus_text(&mut self) {
-        let Some(area) = self.selected_area() else {
-            return;
-        };
-        let text = match self.selected_content() {
-            Some(Content::Text(t)) => t.text.clone(),
-            _ => return,
-        };
-        if self.open_group() {
-            self.editing = Some((area, text));
-        }
-    }
-
-    /// A change of the text field: the area's whole text.
-    pub fn type_text(&mut self, text: String) {
-        if let Some((area, _)) = self.editing {
-            self.run(Command::Text {
-                area,
-                text: text.clone(),
-                style: Vec::new(),
-            });
-            self.editing = Some((area, text));
-        }
-    }
-
-    /// The text field loses focus, or the window does: the group closes.
-    pub fn blur_text(&mut self) {
-        if self.editing.take().is_some() {
-            self.run(Command::End);
-        }
-    }
-
     /// Set one option of the selected text's style.
     pub fn set_style(&mut self, option: StyleOption) {
         self.end_gestures();
@@ -342,7 +309,7 @@ impl App {
         self.run(Command::Asset { path });
     }
 
-    /// Undo the last step: a drag or a focus of the text field still open ends first, and is that
+    /// Undo the last step: a drag or a stay in editing still open ends first, and is that
     /// step.
     pub fn undo(&mut self) {
         self.end_gestures();
@@ -383,8 +350,7 @@ impl App {
 
     /// F5: present the shown slide, full screen.
     pub fn present(&mut self) {
-        self.blur_text();
-        self.release_drag();
+        self.end_gestures();
         self.run(Command::Present {
             slide: self.shown_slide(),
         });

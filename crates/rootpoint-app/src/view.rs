@@ -106,8 +106,13 @@ impl App {
             // leaves editing, then acts as it would.
             if let Some(editing) = self.editing() {
                 if press == Press::Area(editing) {
-                    self.place_caret(origin, layout);
+                    if ui.input(|i| i.modifiers.shift) {
+                        self.extend_to_point(origin, layout);
+                    } else {
+                        self.place_caret(origin, layout);
+                    }
                     self.press = None;
+                    self.text_drag = true;
                     return;
                 }
                 self.stop_editing();
@@ -131,6 +136,16 @@ impl App {
                 }
                 Press::Split(_) | Press::Area(_) | Press::Nothing => {}
             }
+        }
+        // A drag that began inside the edited text selects it.
+        if self.text_drag {
+            if down && let Some(pos) = pos {
+                self.extend_to_point(pos, layout);
+            }
+            if released || !down {
+                self.text_drag = false;
+            }
+            return;
         }
         match self.gesture {
             Gesture::Divider { .. } | Gesture::Grip { .. } if esc => self.cancel_drag(),
@@ -259,9 +274,30 @@ impl App {
                 painter.galley(back.min + Vec2::splat(4.0), galley, Color32::WHITE);
             }
         }
-        // The caret of a text edited in place, on the drawn glyphs.
-        if let Some(caret) = self.caret_rect(layout) {
-            ui.painter().rect_filled(caret, 0.0, accent);
+        // The selection, the composing text's underline and the caret of a text edited in place,
+        // on the drawn glyphs; and the caret's place for the IME, which egui allows only in a frame
+        // that sets it.
+        if self.edit.is_some() {
+            let tint = Color32::from_rgba_unmultiplied(accent.r(), accent.g(), accent.b(), 70);
+            for r in self.selection_rects(layout) {
+                ui.painter().rect_filled(r, 0.0, tint);
+            }
+            for r in self.preedit_rects(layout) {
+                ui.painter()
+                    .hline(r.x_range(), r.max.y, Stroke::new(1.5, accent));
+            }
+            if let Some(caret) = self.caret_rect(layout) {
+                ui.painter().rect_filled(caret, 0.0, accent);
+                let area = self.editing().and_then(|a| layout.rect(a)).unwrap_or(caret);
+                ui.ctx().output_mut(|o| {
+                    o.ime = Some(egui::output::IMEOutput {
+                        purpose: egui::IMEPurpose::Normal,
+                        rect: area,
+                        cursor_rect: caret,
+                        should_interrupt_composition: false,
+                    });
+                });
+            }
         }
     }
 }

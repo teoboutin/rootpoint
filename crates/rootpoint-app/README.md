@@ -24,8 +24,12 @@ characters no font has, and text not drawn.
   area it swaps the two; dragged onto the rest it moves the area to the nearest edge of the
   target. A tint and a label show what the drop will do; the drop is one undo step.
 - The side panel sets the selected area's content, empty, text or an image, the text's size,
-  weight, slant, colour, alignment and font, and the image's fit, and adds an image asset. The
-  text is edited in a plain text field; the edits made while it has focus are one undo step.
+  weight, slant, colour, alignment and font, and the image's fit, and adds an image asset.
+- A text is edited in place, on the slide: a click on the selected text area, or a double-click on
+  any text area, puts the caret where it clicked. Typing, Backspace and Delete, the arrows with
+  Ctrl for words and with Shift to select, Home and End, a drag or a Shift+click to select, Ctrl+A,
+  copy, cut and paste, and IME composition and dead keys edit the text; Esc, or a click elsewhere,
+  leaves editing, the area still selected. The edits of one stay in editing are one undo step.
 - Present (F5) shows the shown slide full screen, alone, as the editor's slide view renders it
   with no mark over it. →, Space and Page Down show the next slide, ← and Page Up the previous,
   and Esc returns to the editor.

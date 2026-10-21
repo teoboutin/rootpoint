@@ -7,8 +7,9 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
+use eframe::egui::{Pos2, Rect, Vec2};
 use rootpoint_app::App;
-use rootpoint_app::hit::{Edge, Preview, Zone};
+use rootpoint_app::hit::{Edge, Layout, Preview, Zone};
 use rootpoint_app::selection::Move;
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, Side, SlideId};
 use rootpoint_protocol::{Command, Files, Reply, Session, parse_command};
@@ -282,19 +283,63 @@ fn the_content_actions_issue_their_commands() {
         |_| vec![c("text n3 \"\"")],
     );
     check(
-        "type in the field",
+        "type in place",
         &["select n3"],
         |a| {
-            a.focus_text();
-            a.type_text("A".to_owned());
-            a.type_text("Ab".to_owned());
-            a.blur_text();
+            let doc = a.session().document();
+            let view = Rect::from_min_size(Pos2::ZERO, Vec2::new(960.0, 540.0));
+            let layout = Layout::new(doc, SlideId(1), view, [960, 540]).unwrap();
+            let p = layout.rect(NodeId(3)).unwrap().center();
+            a.edit_at(NodeId(3), p, &layout);
+            a.set_caret(0);
+            a.type_str("A");
+            a.type_str("b");
+            a.delete_backward();
+            a.stop_editing();
         },
-        |_| {
+        |s| {
+            let t = text_of(s, NodeId(3));
+            let text = |prefix: &str| Command::Text {
+                area: NodeId(3),
+                text: format!("{prefix}{t}"),
+                style: Vec::new(),
+            };
+            vec![c("begin"), text("A"), text("Ab"), text("A"), c("end")]
+        },
+    );
+    check(
+        "cut, paste and an IME composition in place",
+        &["select n3"],
+        |a| {
+            let doc = a.session().document();
+            let view = Rect::from_min_size(Pos2::ZERO, Vec2::new(960.0, 540.0));
+            let layout = Layout::new(doc, SlideId(1), view, [960, 540]).unwrap();
+            let p = layout.rect(NodeId(3)).unwrap().center();
+            a.edit_at(NodeId(3), p, &layout);
+            a.set_caret(0);
+            a.move_caret(rootpoint_app::editing::CaretMove::Right, true);
+            a.cut();
+            a.type_str("xy");
+            a.set_preedit("´");
+            a.commit_ime("é");
+            a.delete_forward();
+            a.stop_editing();
+        },
+        |s| {
+            let t = text_of(s, NodeId(3));
+            let text = |s: String| Command::Text {
+                area: NodeId(3),
+                text: s,
+                style: Vec::new(),
+            };
+            let rest = &t[1..];
             vec![
                 c("begin"),
-                c("text n3 \"A\""),
-                c("text n3 \"Ab\""),
+                text(rest.to_owned()),
+                text(format!("xy{rest}")),
+                text(format!("xy´{rest}")),
+                text(format!("xyé{rest}")),
+                text(format!("xyé{}", &rest[1..])),
                 c("end"),
             ]
         },

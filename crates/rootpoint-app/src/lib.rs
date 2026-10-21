@@ -45,8 +45,6 @@ pub struct App {
     grab_offset: egui::Vec2,
     /// The file the presentation was last loaded from or saved to, which Save writes.
     path: Option<String>,
-    /// The text field's area and its text, while the field has focus; its group is open then.
-    editing: Option<(NodeId, String)>,
     /// Esc hides the preview line until Ctrl and Shift are both released.
     preview_hidden: bool,
     /// Whether the window was last asked to be full screen, as presenter mode is.
@@ -56,6 +54,8 @@ pub struct App {
     /// Where the current press was, when its release, if a click, enters editing: it was pressed on
     /// the selected text area. egui clears the press's origin by the release's frame.
     edit_on_click: Option<Pos2>,
+    /// Whether the primary button, pressed inside the edited text, drags a selection.
+    text_drag: bool,
 }
 
 /// A drag in progress in the slide view.
@@ -88,8 +88,6 @@ struct SlideView {
     layout: Option<Layout>,
     /// Where the last frame placed each row of the slide list, in points.
     rows: Vec<(SlideId, Rect)>,
-    /// Where the last frame placed the text field, if it showed one.
-    text_field: Option<Rect>,
 }
 
 impl App {
@@ -106,11 +104,11 @@ impl App {
             press: None,
             grab_offset: egui::Vec2::ZERO,
             path: None,
-            editing: None,
             preview_hidden: false,
             fullscreen: false,
             edit: None,
             edit_on_click: None,
+            text_drag: false,
         }
     }
 
@@ -126,11 +124,6 @@ impl App {
     /// Where the last frame placed each row of the slide list, in points.
     pub fn slide_rows(&self) -> &[(SlideId, Rect)] {
         &self.view.rows
-    }
-
-    /// Where the last frame placed the text field of the side panel, if it showed one.
-    pub fn text_field_rect(&self) -> Option<Rect> {
-        self.view.text_field
     }
 
     /// Run a command on the session. Every action of the editor goes through here, so the
@@ -213,7 +206,7 @@ impl App {
         // open.
         if !ui.input(|i| i.focused) {
             self.release_drag();
-            self.blur_text();
+            self.stop_editing();
         }
         if self.session.view().presenting.is_some() {
             self.presenter(ui);
@@ -231,19 +224,19 @@ impl App {
 
     /// The editor: the toolbar, the status, the slide list, the side panel and the slide view.
     fn editor(&mut self, ui: &mut Ui) {
-        // During a drag only Esc acts, which the slide view takes; a key whose edit joined the
-        // drag's group would make the drag's step hold another edit.
         // Editing in place ends when its area is no longer the selection, as after a click on
         // another node, an undo that removed it, or another slide shown.
         if self.edit.is_some() && self.editing() != self.selected_area() {
             self.stop_editing();
         }
+        // While a text is edited its keys go to it. During a drag only Esc acts, which the slide
+        // view takes; a key whose edit joined the drag's group would make the drag's step hold
+        // another edit.
         if self.edit.is_some() {
             self.editing_keys(ui);
         } else if !ui.ctx().egui_wants_keyboard_input() && self.gesture == Gesture::Idle {
             self.shortcuts(ui);
         }
-        self.view.text_field = None;
         Panel::top("toolbar").show(ui, |ui| self.toolbar(ui));
         Panel::bottom("status").show(ui, |ui| {
             for line in self.status() {
@@ -293,7 +286,7 @@ impl App {
             });
     }
 
-    /// The keys of the editor, while no text field has focus. `consume_shortcut` ignores extra
+    /// The keys of the editor, while no text is edited. `consume_shortcut` ignores extra
     /// Shift, so Ctrl+Shift+Z is tested before Ctrl+Z; `consume_key` ignores extra Shift and Alt,
     /// so Alt and the arrows are tested before Shift and the arrows.
     fn shortcuts(&mut self, ui: &mut Ui) {
@@ -334,25 +327,67 @@ impl App {
         }
     }
 
-    /// The keys while a text is edited in place: they move the caret, and Esc leaves editing. The
-    /// editor's other shortcuts do not act, so Delete and Shift with an arrow reach the text.
+    /// The input while a text is edited in place, taken in the order it came: typed text, the IME,
+    /// the clipboard, and the keys that move the caret, extend the selection with Shift, delete,
+    /// undo and redo, or leave with Esc. The editor's other shortcuts do not act, so Delete and
+    /// Shift with an arrow reach the text.
     fn editing_keys(&mut self, ui: &mut Ui) {
         use editing::CaretMove;
-        let key = |ui: &mut Ui, key| ui.input_mut(|i| i.consume_key(Modifiers::NONE, key));
-        if key(ui, Key::Escape) {
-            self.stop_editing();
-            return;
-        }
-        for (k, m) in [
-            (Key::ArrowLeft, CaretMove::Left),
-            (Key::ArrowRight, CaretMove::Right),
-            (Key::ArrowUp, CaretMove::Up),
-            (Key::ArrowDown, CaretMove::Down),
-            (Key::Home, CaretMove::LineStart),
-            (Key::End, CaretMove::LineEnd),
-        ] {
-            if key(ui, k) {
-                self.move_caret(m);
+        let events = ui.input(|i| i.events.clone());
+        for event in events {
+            if self.edit.is_none() {
+                return;
+            }
+            match event {
+                egui::Event::Text(t) => self.type_str(&t),
+                egui::Event::Ime(egui::ImeEvent::Preedit { text, .. }) => self.set_preedit(&text),
+                egui::Event::Ime(egui::ImeEvent::Commit(t)) => self.commit_ime(&t),
+                egui::Event::Copy => {
+                    if let Some(t) = self.selected_text().filter(|t| !t.is_empty()) {
+                        ui.ctx().copy_text(t);
+                    }
+                }
+                egui::Event::Cut => {
+                    if let Some(t) = self.cut() {
+                        ui.ctx().copy_text(t);
+                    }
+                }
+                egui::Event::Paste(t) => self.type_str(&t),
+                egui::Event::Key {
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } => {
+                    let shift = modifiers.shift;
+                    let word = modifiers.command;
+                    let moved = match key {
+                        Key::ArrowLeft if word => Some(CaretMove::WordLeft),
+                        Key::ArrowRight if word => Some(CaretMove::WordRight),
+                        Key::ArrowLeft => Some(CaretMove::Left),
+                        Key::ArrowRight => Some(CaretMove::Right),
+                        Key::ArrowUp => Some(CaretMove::Up),
+                        Key::ArrowDown => Some(CaretMove::Down),
+                        Key::Home if word => Some(CaretMove::TextStart),
+                        Key::End if word => Some(CaretMove::TextEnd),
+                        Key::Home => Some(CaretMove::LineStart),
+                        Key::End => Some(CaretMove::LineEnd),
+                        _ => None,
+                    };
+                    match (moved, key) {
+                        (Some(m), _) => self.move_caret(m, shift),
+                        (None, Key::Escape) => self.stop_editing(),
+                        (None, Key::Backspace) => self.delete_backward(),
+                        (None, Key::Delete) => self.delete_forward(),
+                        (None, Key::Enter) => self.type_str("\n"),
+                        (None, Key::A) if word => self.select_all(),
+                        (None, Key::Z) if word && shift => self.redo(),
+                        (None, Key::Z) if word => self.undo(),
+                        (None, Key::Y) if word => self.redo(),
+                        _ => {}
+                    }
+                }
+                _ => {}
             }
         }
     }
