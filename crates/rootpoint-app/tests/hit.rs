@@ -1,6 +1,8 @@
 //! Hit testing matches the drawing: through `slide_to_pixels`, at two view sizes, a point selects
 //! the area whose rectangle holds it, and a press within 4 points of a divider grabs it, the nearer
-//! of two. Claim 2 of `spec@first-prototype@editor-shell`, its first part.
+//! of two; a pointer over a drop target falls in the zone the hint names; and a snapped line lies
+//! on a twelfth of its node or on a divider within 8 points. Claim 2 of
+//! `spec@first-prototype@editor-shell`.
 
 use eframe::egui::{Pos2, Rect, Vec2};
 use rootpoint_app::hit::{Edge, Layout, MIN_PART, Press, Zone};
@@ -320,7 +322,7 @@ fn a_snapped_line_lies_on_a_twelfth_of_the_node_or_on_another_divider_within_8_p
 }
 
 #[test]
-fn a_snapped_divider_drag_lies_on_a_twelfth_of_its_split_or_on_another_divider() {
+fn a_snapped_divider_drag_with_no_divider_across_lies_on_a_twelfth_of_its_split_or_at_a_stop() {
     let doc = sample_off_twelfths();
     let slide = doc.slides[0].id;
     for (view, pixels) in views() {
@@ -398,5 +400,36 @@ fn a_press_on_the_grip_of_the_selected_area_takes_it() {
         );
         // Not selected, the grip is not there: the press selects.
         assert_eq!(layout.press(p, None, None), Press::Area(NodeId(3)));
+    }
+}
+
+#[test]
+fn a_move_zone_that_would_split_its_target_under_40_slide_units_takes_no_drop() {
+    let mut doc = sample_off_twelfths();
+    // n6 beside[n3 | n5] with its divider at 0.97: n5 is 28.8 slide units wide.
+    let Some(Node::Split(s)) = doc.slides[0].root.find(NodeId(6)).cloned() else {
+        panic!("n6 is a split");
+    };
+    apply(
+        &mut doc,
+        Op::MoveDivider {
+            split: s.id,
+            index: 0,
+            pos: 0.97,
+        },
+    )
+    .unwrap();
+    for (view, pixels) in views() {
+        let layout = Layout::new(&doc, doc.slides[0].id, view, pixels).unwrap();
+        let r = layout.rect(NodeId(5)).unwrap();
+        // Its left edge's move zone would split it beside; its top edge's, stacked, has room.
+        let left = Pos2::new(r.min.x + 0.5, r.center().y);
+        let top = Pos2::new(r.center().x, r.min.y + 2.0);
+        assert_eq!(layout.drop(left, NodeId(3)), None, "{view:?}");
+        assert_eq!(
+            layout.drop(top, NodeId(3)).map(|d| d.zone),
+            Some(Zone::Move(Edge::Up)),
+            "{view:?}"
+        );
     }
 }

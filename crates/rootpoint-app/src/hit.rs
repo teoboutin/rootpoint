@@ -345,7 +345,9 @@ impl Layout {
     /// Where a drop of `dragged` at `p` goes: the area under the pointer and its zone. The middle
     /// third of the area, by width and by height, swaps; the rest moves to the edge nearest the
     /// pointer, the distances taken as fractions of the area's width and height, left and right
-    /// winning a tie. `None` outside any area, and on `dragged` itself.
+    /// winning a tie. `None` outside any area, on `dragged` itself, and on a move zone whose split
+    /// of the target at its middle would leave a part under `MIN_PART` slide units, the bound a
+    /// split keeps.
     pub fn drop(&self, p: Pos2, dragged: NodeId) -> Option<Drop> {
         let target = self.area_at(p).filter(|a| *a != dragged)?;
         let r = self.rect(target)?;
@@ -370,6 +372,13 @@ impl Layout {
             } else {
                 Edge::Down
             };
+            let extent = match edge {
+                Edge::Left | Edge::Right => r.width(),
+                Edge::Up | Edge::Down => r.height(),
+            };
+            if f64::from(extent / self.scale) * 0.5 < MIN_PART {
+                return None;
+            }
             // The part of the area nearer this edge than any other, less the middle third.
             let shape = match edge {
                 Edge::Left => vec![at(0.0, 0.0), at(a, a), at(a, b), at(0.0, 1.0)],

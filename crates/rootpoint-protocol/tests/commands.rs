@@ -510,9 +510,29 @@ fn a_cancelled_group_restores_the_document_and_both_stacks() {
         ok(&mut s, &mut files, "tree s1"),
         "s1 n4:beside(0.4)[n2 text \"A\" | n3 empty]"
     );
-    // And the undo stack: two undos reach the empty slide, and a third has nothing.
+    // And the undo stack: two undos reach the empty slide, a third removes the slide, and a
+    // fourth has nothing, so the cancelled group left no step.
     run(&mut s, &mut files, "undo\nundo");
     assert_eq!(ok(&mut s, &mut files, "tree s1"), "s1 n2 empty");
+    ok(&mut s, &mut files, "undo");
+    assert!(s.document().slides.is_empty());
+    assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
+}
+
+#[test]
+fn a_load_inside_a_group_closes_it_and_leaves_no_history() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    run(
+        &mut s,
+        &mut files,
+        "add-slide\nsave d.ron\nbegin\ntext n2 \"x\"",
+    );
+    ok(&mut s, &mut files, "load d.ron");
+    assert_eq!(ok(&mut s, &mut files, "tree s1"), "s1 n2 empty");
+    // The group was closed by the load: `end` finds none open, and nothing is left to undo.
+    assert!(matches!(s.execute("end", &mut files), Some(Reply::Err(_))));
+    assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
 }
 
 #[test]

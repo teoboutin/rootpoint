@@ -320,12 +320,16 @@ impl App {
         self.run(Command::Asset { path });
     }
 
+    /// Undo the last step: a drag or a focus of the text field still open ends first, and is that
+    /// step.
     pub fn undo(&mut self) {
+        self.release_drag();
         self.blur_text();
         self.run(Command::Undo);
     }
 
     pub fn redo(&mut self) {
+        self.release_drag();
         self.blur_text();
         self.run(Command::Redo);
     }
@@ -383,7 +387,7 @@ impl App {
         let picked = rfd::FileDialog::new()
             .add_filter("rootpoint presentation", &["ron"])
             .pick_file();
-        if let Some(path) = picked.and_then(|p| self.utf8(&p)) {
+        if let Some(path) = picked.and_then(|p| self.path_from_working_directory(&p)) {
             self.open_file(path);
         }
     }
@@ -402,7 +406,7 @@ impl App {
             .add_filter("rootpoint presentation", &["ron"])
             .set_file_name("presentation.ron")
             .save_file();
-        if let Some(path) = picked.and_then(|p| self.utf8(&p)) {
+        if let Some(path) = picked.and_then(|p| self.path_from_working_directory(&p)) {
             self.save_to(path);
         }
     }
@@ -417,13 +421,13 @@ impl App {
             return;
         };
         let directory = match std::env::current_dir() {
-            Ok(cwd) => cwd.join(self.session.directory()),
+            Ok(cwd) => normalize(&cwd.join(self.session.directory())),
             Err(e) => {
                 self.error = Some(format!("the working directory: {e}"));
                 return;
             }
         };
-        match relative(&file, &directory).and_then(|p| self.utf8(&p)) {
+        match relative(&normalize(&file), &directory).and_then(|p| self.utf8(&p)) {
             Some(path) => self.add_asset(path),
             None if self.error.is_none() => {
                 self.error = Some(format!(
@@ -433,6 +437,20 @@ impl App {
             }
             None => {}
         }
+    }
+
+    /// A path a dialog returned, which is absolute, made relative to the working directory, as
+    /// the command line's is. The session compares its directory and a save's target by their
+    /// text, so a relative directory and an absolute target would never match, and a save would
+    /// copy an asset already inside the target's directory, as
+    /// `issue@rootpoint-protocol@save-mixes-relative-and-absolute` records. A path that has none
+    /// from the working directory stays absolute.
+    fn path_from_working_directory(&mut self, path: &Path) -> Option<String> {
+        let path = match std::env::current_dir() {
+            Ok(cwd) => relative(&normalize(path), &normalize(&cwd)).unwrap_or(path.to_path_buf()),
+            Err(_) => path.to_path_buf(),
+        };
+        self.utf8(&path)
     }
 
     /// A path as UTF-8, which the protocol's commands hold, or `None` with the status naming it.
@@ -470,14 +488,29 @@ fn new_area(reply: &Reply) -> Option<NodeId> {
         .map(NodeId)
 }
 
-/// The path of the absolute `file` from the absolute directory `dir`, with `..` where it lies
-/// outside; `None` where the two share no root, as on two drives.
+/// The path with its `.` components removed, and each `..` removed with the component before it.
+fn normalize(path: &Path) -> PathBuf {
+    let mut out: Vec<Component> = Vec::new();
+    for c in path.components() {
+        match c {
+            Component::CurDir => {}
+            Component::ParentDir if matches!(out.last(), Some(Component::Normal(_))) => {
+                out.pop();
+            }
+            // A `..` above the root is the root.
+            Component::ParentDir if matches!(out.last(), Some(Component::RootDir)) => {}
+            c => out.push(c),
+        }
+    }
+    out.iter().collect()
+}
+
+/// The path of the absolute `file` from the absolute directory `dir`, both normalized, with `..`
+/// where it lies outside; `None` where the two share no root, as on two drives. A `file` equal
+/// to `dir` gives the empty path.
 fn relative(file: &Path, dir: &Path) -> Option<PathBuf> {
     let file: Vec<Component> = file.components().collect();
-    let dir: Vec<Component> = dir
-        .components()
-        .filter(|c| !matches!(c, Component::CurDir))
-        .collect();
+    let dir: Vec<Component> = dir.components().collect();
     if file.first() != dir.first() {
         return None;
     }
@@ -503,6 +536,18 @@ mod tests {
         assert_eq!(rel("/a/b/img/cat.png", "/a/b"), Path::new("img/cat.png"));
         assert_eq!(rel("/a/cat.png", "/a/b/c"), Path::new("../../cat.png"));
         assert_eq!(rel("/a/b/cat.png", "/a/b/."), Path::new("cat.png"));
+    }
+
+    #[test]
+    fn a_directory_that_holds_dot_dot_is_normalized_first() {
+        // The working directory /a/b and the session's directory ../x: the presentation is in
+        // /a/x, so /a/x/cat.png is beside it.
+        let dir = normalize(&Path::new("/a/b").join("../x"));
+        assert_eq!(dir, Path::new("/a/x"));
+        assert_eq!(
+            relative(Path::new("/a/x/cat.png"), &dir).unwrap(),
+            Path::new("cat.png")
+        );
     }
 
     #[test]

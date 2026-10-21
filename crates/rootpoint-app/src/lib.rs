@@ -40,6 +40,8 @@ pub struct App {
     gesture: Gesture,
     /// What the press of the primary button in the slide view took, until its release.
     press: Option<Press>,
+    /// From the pointer to the grabbed divider's line, in points, during a divider drag.
+    grab_offset: egui::Vec2,
     /// The file the presentation was last loaded from or saved to, which Save writes.
     path: Option<String>,
     /// The text field's area and its text, while the field has focus; its group is open then.
@@ -96,6 +98,7 @@ impl App {
             memory: Memory::default(),
             gesture: Gesture::Idle,
             press: None,
+            grab_offset: egui::Vec2::ZERO,
             path: None,
             editing: None,
             preview_hidden: false,
@@ -217,7 +220,9 @@ impl App {
 
     /// The editor: the toolbar, the status, the slide list, the side panel and the slide view.
     fn editor(&mut self, ui: &mut Ui) {
-        if !ui.ctx().egui_wants_keyboard_input() {
+        // During a drag only Esc acts, which the slide view takes; a key whose edit joined the
+        // drag's group would make the drag's step hold another edit.
+        if !ui.ctx().egui_wants_keyboard_input() && self.gesture == Gesture::Idle {
             self.shortcuts(ui);
         }
         self.view.text_field = None;

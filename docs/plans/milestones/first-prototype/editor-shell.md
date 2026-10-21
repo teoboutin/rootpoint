@@ -269,7 +269,7 @@ the owner's batch confirmation of the checkpoint in O16. Its band of 6 pixels is
 the entry tests, into the app crate's design home, citing
 `rejected@rootpoint-render@toolkit-painter` if it earns a head.
 
-### A divider is grabbed within 4 pixels, keeps its areas at 40 slide units or more, and resets on a double-click `##divider-drag`
+### A divider is grabbed within 4 points, keeps its areas at 40 slide units or more, and resets on a double-click `##divider-drag`
 
 Proposed by the session in round 2, from the survey (`argument@first-prototype@arg-62`). Final
 state: approved, by the owner's batch confirmation of the checkpoint in O16. Shape: "Dividers" in "Decided design".

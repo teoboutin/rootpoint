@@ -32,8 +32,8 @@ the one with more.
 
 A divider drag, a grip drag and a focus of the text field each open a group with `begin`, through
 `App::open_group`, which first closes any group still open; a release, the loss of the field's
-focus and the loss of the window's focus close it. Undo, redo, open, save and the sample close the
-text field's group first.
+focus and the loss of the window's focus close it. An action that does not join the gesture, as
+undo, an open, a save or presenting does, closes any group still open before it acts.
 
 ## The tests find widgets by the places the last frame recorded
 

@@ -52,8 +52,8 @@ impl App {
         }
     }
 
-    /// The axis of the split at the pointer that the held keys ask for, Ctrl a line across the
-    /// width and Shift one across the height, and whether Alt snaps it; `None` with neither key
+    /// The axis of the split at the pointer that the held keys ask for, Ctrl a vertical line, which
+    /// splits beside, and Shift a horizontal one, which stacks, and whether Alt snaps it; `None` with neither key
     /// held, or after Esc until both are released.
     fn split_keys(&mut self, ui: &Ui) -> Option<(Axis, bool)> {
         let m = ui.input(|i| i.modifiers);
@@ -102,6 +102,12 @@ impl App {
                 Press::Grip(area) => self.grab_grip(area),
                 Press::Divider(i) => {
                     let d = &layout.dividers[i];
+                    // The press may be up to `GRAB` points off the line: the drag keeps that
+                    // offset, so the divider does not jump to the pointer.
+                    self.grab_offset = match d.axis {
+                        Axis::LeftToRight => Vec2::new(d.from.x - origin.x, 0.0),
+                        Axis::TopToBottom => Vec2::new(0.0, d.from.y - origin.y),
+                    };
                     self.grab_divider(d.split, d.index);
                 }
                 Press::Split(_) | Press::Area(_) | Press::Nothing => {}
@@ -110,13 +116,16 @@ impl App {
         match self.gesture {
             Gesture::Divider { .. } | Gesture::Grip { .. } if esc => self.cancel_drag(),
             Gesture::Divider { split, index, .. } => {
+                // Until the pointer leaves the press, nothing is sent, so a click or a
+                // double-click on a divider leaves no step of its own.
                 if down
                     && let Some(pos) = pos
+                    && Some(pos) != origin
                     && let Some(i) = layout
                         .dividers
                         .iter()
                         .position(|d| d.split == split && d.index == index)
-                    && let Some(at) = layout.drag_position(i, pos, alt)
+                    && let Some(at) = layout.drag_position(i, pos + self.grab_offset, alt)
                 {
                     self.drag_divider(at);
                 }
@@ -134,7 +143,12 @@ impl App {
             self.release_drag();
             match press {
                 Some(Press::Area(area)) if response.clicked() => self.select_node(area),
-                Some(Press::Split(preview)) if response.clicked() => self.split_at(preview),
+                // Releasing the key before the button removes the line and issues nothing.
+                Some(Press::Split(preview))
+                    if response.clicked() && split.map(|s| s.0) == Some(preview.axis) =>
+                {
+                    self.split_at(preview)
+                }
                 Some(Press::Divider(i)) if double => {
                     let d = &layout.dividers[i];
                     self.reset_divider(d.split, d.index);

@@ -221,7 +221,8 @@ fn time_a_divider_drag_in_a_1600_by_900_view() {
     d.frame(button(start, true), Modifiers::NONE);
     let mut times = Vec::new();
     for i in 1..=100 {
-        // A sawtooth over 98 points, 2 points a frame, so every frame moves the divider.
+        // A sawtooth over 98 points, 2 points a frame and a jump back of 98 points every 50
+        // frames, so every frame moves the divider.
         let offset = -50.0 + 2.0 * (i % 50) as f32;
         let pos = start + across * offset;
         let t = Instant::now();
@@ -241,7 +242,7 @@ fn time_a_divider_drag_in_a_1600_by_900_view() {
     );
     println!("largest {largest:?}");
     assert!(
-        largest.as_millis() <= 33,
+        largest.as_secs_f64() * 1000.0 <= 33.0,
         "the largest frame took {largest:?}"
     );
 }

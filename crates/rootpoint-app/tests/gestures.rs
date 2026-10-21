@@ -85,6 +85,12 @@ impl Driver {
         );
     }
 
+    /// Half a second with no input, longer than egui's 0.3 s between the clicks of a double-click.
+    fn pause(&mut self) {
+        self.time += 0.5;
+        self.frame(vec![], Modifiers::NONE);
+    }
+
     fn move_to(&mut self, pos: Pos2) {
         self.frame(vec![Event::PointerMoved(pos)], Modifiers::NONE);
     }
@@ -434,4 +440,105 @@ fn the_edits_of_one_focus_of_the_text_field_are_one_undo_step() {
     assert_eq!(d.selected(), Some(NodeId(5)));
     assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
     assert_eq!(text(&d, n3), before);
+}
+
+/// A point a quarter along the first divider, `off` points across its line: at its middle, the
+/// sample's first slide has another divider's end.
+fn beside_divider(d: &Driver, off: f32) -> Pos2 {
+    let layout = d.app.layout().unwrap();
+    let divider = &layout.dividers[0];
+    let across = match divider.axis {
+        rootpoint_model::Axis::LeftToRight => Vec2::new(off, 0.0),
+        rootpoint_model::Axis::TopToBottom => Vec2::new(0.0, off),
+    };
+    divider.from + (divider.to - divider.from) / 4.0 + across
+}
+
+#[test]
+fn a_click_near_a_divider_moves_nothing_and_a_double_click_off_its_line_is_one_step() {
+    let mut d = Driver::new();
+    let before = d.doc();
+    let near = beside_divider(&d, 3.0);
+    d.click(near);
+    assert_eq!(
+        d.doc(),
+        before,
+        "a click 3 points from a divider moves nothing"
+    );
+    assert!(
+        matches!(undo(&mut d.app), Reply::Err(_)),
+        "and leaves no step"
+    );
+    // Move the divider off its middle, then double-click 3 points beside it.
+    d.pause();
+    let (start, split, index) = d.divider();
+    d.button(start, true);
+    d.move_to(start + Vec2::new(0.0, 60.0));
+    d.move_to(start + Vec2::new(60.0, 60.0));
+    d.button(start + Vec2::new(60.0, 60.0), false);
+    let moved = d.position(split, index);
+    let near = beside_divider(&d, 3.0);
+    d.click(near);
+    d.click(near);
+    assert_ne!(d.position(split, index), moved);
+    assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
+    assert_eq!(d.position(split, index), moved, "the reset is one step");
+}
+
+#[test]
+fn a_divider_dragged_from_off_its_line_keeps_the_offset() {
+    let mut d = Driver::new();
+    let (_, split, index) = d.divider();
+    let pos = d.position(split, index);
+    let near = beside_divider(&d, 3.0);
+    d.button(near, true);
+    // A move along the line, not across it, leaves the divider where it was.
+    let along = {
+        let layout = d.app.layout().unwrap();
+        let divider = &layout.dividers[0];
+        (divider.to - divider.from).normalized() * 20.0
+    };
+    d.move_to(near + along);
+    d.button(near + along, false);
+    assert!((d.position(split, index) - pos).abs() < 1e-6);
+}
+
+#[test]
+fn releasing_ctrl_before_the_button_issues_no_split() {
+    let mut d = Driver::new();
+    let n2 = NodeId(2);
+    d.select(n2);
+    let before = d.doc();
+    let title = d.app.layout().unwrap().rect(n2).unwrap();
+    let p = Pos2::new(title.min.x + title.width() * 0.25, title.center().y);
+    d.button_with(p, true, Modifiers::COMMAND);
+    d.frame(vec![], Modifiers::NONE);
+    d.button_with(p, false, Modifiers::NONE);
+    assert_eq!(d.doc(), before);
+}
+
+#[test]
+fn ctrl_z_during_a_divider_drag_leaves_the_drag_one_step() {
+    let mut d = Driver::new();
+    let before = d.doc();
+    let (start, split, index) = d.divider();
+    d.button(start, true);
+    d.move_to(start + Vec2::new(20.0, 20.0));
+    d.key(Key::Z, Modifiers::COMMAND);
+    d.move_to(start + Vec2::new(40.0, 40.0));
+    d.button(start + Vec2::new(40.0, 40.0), false);
+    assert!(d.app.status().is_empty(), "{:?}", d.app.status());
+    assert_ne!(
+        d.position(split, index),
+        before_position(&before, split, index)
+    );
+    assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
+    assert_eq!(d.doc(), before);
+}
+
+fn before_position(doc: &Document, split: NodeId, index: usize) -> f64 {
+    match doc.node(split) {
+        Some(Node::Split(s)) => s.dividers[index],
+        _ => panic!("{split} is no split"),
+    }
 }

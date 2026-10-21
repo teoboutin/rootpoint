@@ -87,6 +87,7 @@ fn check(
         session.document(),
         "{name}: after undo"
     );
+    assert_eq!(app.session().view(), session.view(), "{name}: after undo");
 }
 
 #[test]
@@ -113,6 +114,19 @@ fn the_selection_actions_issue_their_commands() {
         "Alt+Right",
         &["select n3"],
         |a| a.move_selection(Move::Next),
+        |_| vec![c("select n5")],
+    );
+    check(
+        "Alt+Left",
+        &["select n5"],
+        |a| a.move_selection(Move::Previous),
+        |_| vec![c("select n3")],
+    );
+    // Alt+Down goes to the child selected last in the split, n5, not to its first.
+    check(
+        "Alt+Down",
+        &["select n5", "select n6"],
+        |a| a.move_selection(Move::Child),
         |_| vec![c("select n5")],
     );
 }
@@ -342,4 +356,20 @@ fn the_menu_actions_issue_their_commands() {
         App::open_sample,
         |_| vec![c("sample")],
     );
+}
+
+#[test]
+fn the_presenter_actions_issue_their_commands() {
+    check("present", &["select s7"], App::present, |_| {
+        vec![c("present s7")]
+    });
+    check("next", &["present s1"], App::next_slide, |_| {
+        vec![c("next")]
+    });
+    check("previous", &["present s7"], App::previous_slide, |_| {
+        vec![c("prev")]
+    });
+    check("leave", &["present s7"], App::stop_presenting, |_| {
+        vec![c("stop")]
+    });
 }
