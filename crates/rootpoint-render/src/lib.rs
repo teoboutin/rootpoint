@@ -111,6 +111,8 @@ pub fn render_slide(
         },
     );
     let mut report = Report::default();
+    // A new `Resources` for each render: keeping one across renders made a warm 4K render of the
+    // mixed slide slower, about 31-36 ms against 18-22 ms, release build, measured at review.
     let mut resources = Resources::new();
     ctx.set_paint(BLACK);
     ctx.fill_rect(&Rect::new(0.0, 0.0, f64::from(width), f64::from(height)));

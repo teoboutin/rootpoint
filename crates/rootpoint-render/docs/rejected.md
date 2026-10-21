@@ -10,7 +10,8 @@ describes a design that is not built.
 sizes, so uniform scaling lays it out again at each size and hinting and rounding can move line
 breaks between window sizes (assumed by the survey, not measured), and that a headless image is
 only as good as the toolkit's offscreen path. A toolkit text field over a slide drawn by another
-engine would break lines differently and let the caret drift. Kept open by the doubt that this renderer edits text in place with the caret on the drawn glyphs,
+engine would break lines differently and let the caret drift. Kept open by the doubt that this
+renderer edits text in place with the caret on the drawn glyphs,
 redraws a divider drag in 33 ms at 1600×900 and draws a 3840×2160 slide in 200 ms, which the
 milestone `milestone@plans@first-prototype` checks.
 
