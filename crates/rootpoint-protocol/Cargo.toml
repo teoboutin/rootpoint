@@ -11,3 +11,6 @@ rootpoint-render = { path = "../rootpoint-render" }
 [[bin]]
 name = "rootpoint-headless"
 path = "src/bin/rootpoint-headless.rs"
+
+[dev-dependencies]
+image = { version = "0.25", default-features = false, features = ["png"] }

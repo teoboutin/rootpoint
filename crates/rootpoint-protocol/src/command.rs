@@ -17,6 +17,12 @@ pub enum Command {
     Tree {
         slide: Option<SlideId>,
     },
+    /// Draw a slide to a PNG file, 1920×1080 unless a size is given.
+    Render {
+        slide: SlideId,
+        path: String,
+        size: Option<(u16, u16)>,
+    },
     AddSlide {
         at: Option<usize>,
     },
@@ -126,6 +132,15 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         "tree" => Command::Tree {
             slide: args.optional(parse_slide)?,
         },
+        "render" => {
+            let slide = parse_slide(&args.word("a slide")?)?;
+            let path = args.word("a path")?;
+            let size = match args.optional(parse_pixels)? {
+                None => None,
+                Some(w) => Some((w, parse_pixels(&args.word("a height")?)?)),
+            };
+            Command::Render { slide, path, size }
+        }
         "add-slide" => Command::AddSlide {
             at: args.optional(parse_index)?,
         },
@@ -207,6 +222,13 @@ impl fmt::Display for Command {
             Command::Load { path } => write!(f, "load {}", quote(path)),
             Command::Tree { slide: None } => f.write_str("tree"),
             Command::Tree { slide: Some(s) } => write!(f, "tree {s}"),
+            Command::Render { slide, path, size } => {
+                write!(f, "render {slide} {}", quote(path))?;
+                if let Some((w, h)) = size {
+                    write!(f, " {w} {h}")?;
+                }
+                Ok(())
+            }
             Command::AddSlide { at: None } => f.write_str("add-slide"),
             Command::AddSlide { at: Some(at) } => write!(f, "add-slide {at}"),
             Command::RemoveSlide { slide } => write!(f, "remove-slide {slide}"),
@@ -456,6 +478,11 @@ pub(crate) fn quote_always(text: &str) -> String {
 fn parse_index(text: &str) -> Result<usize, ParseError> {
     text.parse()
         .map_err(|_| ParseError(format!("`{text}` is not an index")))
+}
+
+fn parse_pixels(text: &str) -> Result<u16, ParseError> {
+    text.parse()
+        .map_err(|_| ParseError(format!("`{text}` is not a size in pixels")))
 }
 
 fn parse_number(text: &str) -> Result<f64, ParseError> {

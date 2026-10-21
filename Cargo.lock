@@ -1023,6 +1023,7 @@ dependencies = [
 name = "rootpoint-protocol"
 version = "0.0.0"
 dependencies = [
+ "image",
  "rootpoint-model",
  "rootpoint-render",
 ]

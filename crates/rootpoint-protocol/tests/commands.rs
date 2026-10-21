@@ -21,6 +21,16 @@ fn every_command_prints_back_as_it_parses() {
         Command::Tree {
             slide: Some(SlideId(3)),
         },
+        Command::Render {
+            slide: SlideId(1),
+            path: "out.png".into(),
+            size: None,
+        },
+        Command::Render {
+            slide: SlideId(1),
+            path: "slides/one.png".into(),
+            size: Some((384, 216)),
+        },
         Command::AddSlide { at: None },
         Command::AddSlide { at: Some(2) },
         Command::RemoveSlide { slide: SlideId(1) },

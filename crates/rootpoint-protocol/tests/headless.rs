@@ -1,33 +1,8 @@
 //! The headless binary reads commands from stdin and writes one reply per command to stdout.
 
-use std::io::Write;
-use std::process::{Command, Stdio};
+mod common;
 
-/// Pipe a script into `rootpoint-headless`, run in `dir`, and return its stdout.
-pub fn headless(script: &str, dir: &std::path::Path) -> String {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_rootpoint-headless"))
-        .current_dir(dir)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap();
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(script.as_bytes())
-        .unwrap();
-    let out = child.wait_with_output().unwrap();
-    assert!(out.status.success());
-    String::from_utf8(out.stdout).unwrap()
-}
-
-fn scratch(name: &str) -> std::path::PathBuf {
-    let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
-    let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(&dir).unwrap();
-    dir
-}
+use common::{headless, scratch};
 
 #[test]
 fn a_script_gets_one_reply_per_command() {

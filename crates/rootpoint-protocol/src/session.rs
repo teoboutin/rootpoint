@@ -6,9 +6,10 @@ use std::path::{Path, PathBuf};
 use std::collections::BTreeSet;
 
 use rootpoint_model::{
-    Asset, AssetSource, Content, Document, FontRef, ImageContent, Node, NodeId, Op, SlideId,
-    TextContent, TextStyle, apply, load_ron, save_ron,
+    Asset, AssetId, AssetSource, Content, Document, FontRef, ImageContent, Node, NodeId, Op,
+    SlideId, TextContent, TextStyle, apply, load_ron, save_ron,
 };
+use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
 
 use crate::command::{Command, StyleOption, parse_command};
 use crate::files::Files;
@@ -129,6 +130,45 @@ impl Session {
                     None => self.doc.slides.iter().map(slide_tree).collect(),
                 };
                 Ok(slides.join("; "))
+            }
+            Command::Render { slide, path, size } => {
+                let (w, h) = size.unwrap_or((1920, 1080));
+                let the_slide = self.doc.slide(slide).ok_or(format!("no slide {slide}"))?;
+                let (mut fonts, mut images) = (FontSet::new(), ImageSet::new());
+                for area in the_slide.root.areas() {
+                    match &area.content {
+                        Content::Image(i) => {
+                            // An image that cannot be read or decoded is drawn grey, and the
+                            // render's report names it.
+                            if let Ok(bytes) = self.asset_bytes(i.asset, files) {
+                                let _ = images.insert_bytes(i.asset, &bytes);
+                            }
+                        }
+                        Content::Text(t) => {
+                            if let FontRef::Asset(id) = t.style.font
+                                && let Ok(bytes) = self.asset_bytes(id, files)
+                            {
+                                let _ = fonts.insert_bytes(id, bytes);
+                            }
+                        }
+                        Content::Empty => {}
+                    }
+                }
+                // The portable precision, so that a headless image is the same on every
+                // machine.
+                let out = render_slide(
+                    &self.doc,
+                    slide,
+                    w,
+                    h,
+                    &mut fonts,
+                    &images,
+                    Precision::Portable,
+                )
+                .map_err(|e| format!("{e:?}"))?;
+                let report = report_words(&out.report);
+                files.write(&path, &out.png())?;
+                Ok(report)
             }
             Command::Undo => {
                 let inverse = self.undo.pop().ok_or("nothing to undo")?;
@@ -285,6 +325,19 @@ impl Session {
         Ok(inverse)
     }
 
+    /// An asset's bytes: embedded in the document, or read from its path, relative to the
+    /// presentation's directory.
+    fn asset_bytes(&self, id: AssetId, files: &mut dyn Files) -> Result<Vec<u8>, String> {
+        let asset = self.doc.assets.get(&id).ok_or(format!("no asset {id}"))?;
+        match &asset.source {
+            AssetSource::Embedded(bytes) => Ok(bytes.clone()),
+            AssetSource::Path(path) => {
+                let full = self.dir.join(path);
+                files.read(&full.to_string_lossy())
+            }
+        }
+    }
+
     /// The ids an operation created, as its reply states them: a new slide and its root; or the
     /// new area of a split, and the new split when the node was wrapped; or a new asset.
     fn created(&self, before: &BTreeSet<Id>, inverse: &Op) -> String {
@@ -336,6 +389,28 @@ fn ids(doc: &Document) -> BTreeSet<Id> {
         walk(&slide.root, &mut out);
     }
     out
+}
+
+/// A render's report, as its reply states it: the text areas whose font fell back, the image
+/// assets with no image, and the text areas with a character no font has.
+fn report_words(report: &Report) -> String {
+    fn list<T: fmt::Display>(items: &[T]) -> String {
+        if items.is_empty() {
+            "-".to_owned()
+        } else {
+            items
+                .iter()
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        }
+    }
+    format!(
+        "fallback={} missing={} glyphs={}",
+        list(&report.font_fallbacks),
+        list(&report.missing_images),
+        list(&report.missing_glyphs)
+    )
 }
 
 fn apply_style(style: &mut TextStyle, option: StyleOption) {

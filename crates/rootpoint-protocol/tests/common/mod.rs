@@ -3,6 +3,8 @@
 #![allow(dead_code)]
 
 use std::collections::BTreeMap;
+use std::io::Write;
+use std::process::{Command, Stdio};
 
 use rootpoint_protocol::{Files, Reply, Session};
 
@@ -40,4 +42,30 @@ pub fn ok(session: &mut Session, files: &mut MemoryFiles, line: &str) -> String 
         Some(Reply::Ok(text)) => text,
         other => panic!("`{line}` gave {other:?}"),
     }
+}
+
+/// Pipe a script into `rootpoint-headless`, run in `dir`, and return its stdout.
+pub fn headless(script: &str, dir: &std::path::Path) -> String {
+    let mut child = Command::new(env!("CARGO_BIN_EXE_rootpoint-headless"))
+        .current_dir(dir)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(script.as_bytes())
+        .unwrap();
+    let out = child.wait_with_output().unwrap();
+    assert!(out.status.success());
+    String::from_utf8(out.stdout).unwrap()
+}
+
+pub fn scratch(name: &str) -> std::path::PathBuf {
+    let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
 }
