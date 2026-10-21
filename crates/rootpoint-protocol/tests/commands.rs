@@ -249,8 +249,18 @@ fn the_replies_name_the_ids_a_command_created() {
         "new=n3 split=n4"
     );
     assert_eq!(ok(&mut s, &mut files, "split n3 beside 0.5"), "new=n5");
-    assert_eq!(ok(&mut s, &mut files, "asset cat.png"), "a7");
-    assert_eq!(ok(&mut s, &mut files, "duplicate-slide s1"), "s12 root=n8");
+    // A split of the other axis wraps an area that is not the root; `before` puts the new area
+    // first.
+    assert_eq!(
+        ok(&mut s, &mut files, "split n5 stacked 0.5 before"),
+        "new=n7 split=n8"
+    );
+    assert_eq!(
+        ok(&mut s, &mut files, "tree"),
+        "s1 n4:beside(0.5,0.75)[n2 empty | n3 empty | n8:stacked(0.5)[n7 empty | n5 empty]]"
+    );
+    assert_eq!(ok(&mut s, &mut files, "asset cat.png"), "a9");
+    assert_eq!(ok(&mut s, &mut files, "duplicate-slide s1"), "s16 root=n10");
 }
 
 #[test]
@@ -275,6 +285,19 @@ fn undo_and_redo_walk_the_history() {
         matches!(s.execute("redo", &mut files), Some(Reply::Err(_))),
         "a new edit clears redo"
     );
+    // `load` and `new` clear both stacks.
+    run(&mut s, &mut files, "save deck.ron\nundo\nload deck.ron");
+    assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
+    assert!(matches!(s.execute("redo", &mut files), Some(Reply::Err(_))));
+    // The model refuses an operation whose ids its document has not allocated, so the new
+    // document is given as many ids as the old one first: a kept `remove-slide` would then undo.
+    let mut s = Session::new();
+    run(
+        &mut s,
+        &mut files,
+        "add-slide\nremove-slide s1\nnew\nadd-slide\nundo",
+    );
+    assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
 }
 
 #[test]
@@ -284,8 +307,10 @@ fn a_refused_command_changes_nothing() {
     run(
         &mut s,
         &mut files,
-        "add-slide\nsplit n2 beside 0.5\nasset cat.png\nimage n3 a5 fit",
+        "add-slide\nsplit n2 beside 0.5\nasset cat.png\nimage n3 a5 fit\nselect n3\npresent s1",
     );
+    // Every write fails, so that `save` and `render` are refused.
+    files.read_only = true;
     let refused = [
         "nonsense",
         "split n2 diagonal 0.5",
@@ -304,11 +329,45 @@ fn a_refused_command_changes_nothing() {
         "tree s9",
         "load missing.ron",
         "text n2 \"unclosed",
+        "add-slide 5",
+        "duplicate-slide s9",
+        "clear n9",
+        "select n9",
+        "present s9",
+        "next",
+        "prev",
+        "render s9 out.png",
+        "render s1 out.png",
+        "save deck.ron",
+        // A quoted word is a text or a path, never an id, an option or a verb.
+        "text n2 \"x\" \"bold\"",
+        "select \"n2\"",
+        "\"view\"",
+        // Ids and indices are read only as the printer writes them.
+        "split n+2 beside 0.5",
+        "clear n02",
+        "add-slide +0",
+        // Words left over.
+        "new now",
+        "deselect n3",
+        "view all",
+        "asset",
     ];
-    for line in refused {
+    assert_refused(&mut s, &mut files, &refused);
+    // With no history and presenter mode off.
+    let mut fresh = Session::new();
+    assert_refused(
+        &mut fresh,
+        &mut files,
+        &["undo", "redo", "stop", "next", "prev"],
+    );
+}
+
+fn assert_refused(s: &mut Session, files: &mut MemoryFiles, refused: &[&str]) {
+    for &line in refused {
         let doc = s.document().clone();
         let view = s.view().clone();
-        let reply = s.execute(line, &mut files);
+        let reply = s.execute(line, files);
         assert!(
             matches!(reply, Some(Reply::Err(_))),
             "`{line}` gave {reply:?}"
@@ -345,4 +404,34 @@ fn save_load_and_tree() {
         ok(&mut t, &mut files, "tree s1"),
         "s1 n4:beside(0.5)[n2 text \"Hello\" | n3 empty]"
     );
+}
+
+#[test]
+fn every_reply_is_one_line() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    // Each error repeats a word or a path that holds a new line.
+    for line in ["add-slide \"a\\nb\"", "\"x\\ny\"", "load \"a\\nb\""] {
+        let reply = s.execute(line, &mut files).unwrap();
+        assert!(matches!(reply, Reply::Err(_)), "`{line}` gave {reply:?}");
+        assert!(!reply.to_string().contains('\n'), "`{line}` gave {reply}");
+    }
+}
+
+#[test]
+fn a_command_built_through_the_api_keeps_the_grammars_sizes() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    ok(&mut s, &mut files, "add-slide");
+    for size in [f64::NAN, f64::INFINITY, 0.0, -5.0] {
+        let reply = s.run(
+            Command::Text {
+                area: NodeId(2),
+                text: "x".into(),
+                style: vec![StyleOption::Size(size)],
+            },
+            &mut files,
+        );
+        assert!(matches!(reply, Reply::Err(_)), "size {size} gave {reply:?}");
+    }
 }

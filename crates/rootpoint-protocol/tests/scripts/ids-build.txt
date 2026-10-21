@@ -1,0 +1,5 @@
+# Claim 3, first half: build two splits and save.
+add-slide
+split n2 beside 0.5
+split n3 stacked 0.5
+save deck.ron

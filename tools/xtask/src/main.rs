@@ -74,6 +74,9 @@ const WASM_CRATES: &[&str] = &["rootpoint-model", "rootpoint-protocol", "rootpoi
 fn wasm_gate() -> Gate {
     let mut args = vec![
         "build".to_owned(),
+        // Libraries only: a crate's binaries, such as the headless runner of the protocol, are
+        // native programs, not part of the browser build.
+        "--lib".to_owned(),
         "--target".to_owned(),
         "wasm32-unknown-unknown".to_owned(),
     ];

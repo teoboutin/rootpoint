@@ -1,9 +1,11 @@
 //! Runs protocol commands with no window: one command per line from stdin, one reply per command
-//! to stdout, until the end of its input. Paths are relative to the working directory.
+//! to stdout, until the end of its input. The paths of `save`, `load` and `render` are relative to
+//! the working directory; an asset's path, to the directory of the presentation last saved or
+//! loaded, or to the working directory before either.
 
 use std::io::{BufRead, Write};
 
-use rootpoint_protocol::{Files, Session};
+use rootpoint_protocol::{Files, Reply, Session};
 
 // Ties this binary's build to its checkout.
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
@@ -26,9 +28,15 @@ fn main() {
     let mut files = NativeFiles;
     let stdout = std::io::stdout();
     let mut out = stdout.lock();
-    for line in std::io::stdin().lock().lines() {
-        let Ok(line) = line else { break };
-        if let Some(reply) = session.execute(&line, &mut files)
+    // Lines are read as bytes, so that a line that is not UTF-8 gets its own reply and the
+    // session goes on.
+    for line in std::io::stdin().lock().split(b'\n') {
+        let Ok(bytes) = line else { break };
+        let reply = match std::str::from_utf8(&bytes) {
+            Ok(line) => session.execute(line, &mut files),
+            Err(_) => Some(Reply::Err("the line is not UTF-8".to_owned())),
+        };
+        if let Some(reply) = reply
             && writeln!(out, "{reply}").is_err()
         {
             break;

@@ -1,0 +1,9 @@
+# Claim 5: the render crate's fixture "fit and fill", a side-by-side split with the image fitted on
+# the left and filling the right. The presentation is saved first, so the asset is read beside it.
+add-slide
+split n2 beside 0.5
+save talk/deck.ron
+asset two-colours.png
+image n2 a5 fit
+image n3 a5 fill
+render s1 out.png 384 216

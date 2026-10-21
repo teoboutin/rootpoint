@@ -9,5 +9,5 @@ The session reads and writes through the `Files` its host gives it; only the bin
 
 ## The build is tied to its checkout
 
-`path@rootpoint-protocol@src/lib.rs` and the headless binary read `ROOTPOINT_CHECKOUT`, as
-`path@xtask@CLAUDE.md` requires of every library root and binary target added to the workspace.
+`path@rootpoint-protocol@src/lib.rs` and the headless binary read `ROOTPOINT_CHECKOUT`. So does
+every binary target and build script added to this crate, as `path@xtask@CLAUDE.md` says.

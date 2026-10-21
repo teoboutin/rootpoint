@@ -1,0 +1,21 @@
+# Claim 6: selection and presenter mode run headless, and `view` reports each state.
+add-slide
+add-slide
+split n2 beside 0.5
+view
+select n5
+view
+present
+view
+next
+view
+# At the last slide, `next` is refused.
+next
+prev
+view
+# At the first slide, `prev` is refused.
+prev
+stop
+view
+deselect
+view

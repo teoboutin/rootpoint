@@ -15,7 +15,9 @@ use crate::command::{Command, StyleOption, parse_command};
 use crate::files::Files;
 use crate::tree::slide_tree;
 
-/// The reply to one command: `ok` with its result, or `err` with the reason.
+/// The reply to one command: `ok` with its result, or `err` with the reason. It prints as one
+/// line: a new line or a carriage return in its text, as a path or a word an error repeats can
+/// hold, prints as `\n` or `\r`.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Reply {
     Ok(String),
@@ -31,6 +33,7 @@ impl fmt::Display for Reply {
         if text.is_empty() {
             f.write_str(word)
         } else {
+            let text = text.replace('\n', "\\n").replace('\r', "\\r");
             write!(f, "{word} {text}")
         }
     }
@@ -273,6 +276,14 @@ impl Session {
             Command::Divider { split, index, pos } => Op::MoveDivider { split, index, pos },
             Command::Swap { a, b } => Op::Swap { a, b },
             Command::Text { area, text, style } => {
+                // The grammar refuses these sizes; a command built through the API is held to the
+                // same rule, so that it prints back as a line that parses.
+                if style
+                    .iter()
+                    .any(|o| matches!(o, StyleOption::Size(s) if !(s.is_finite() && *s > 0.0)))
+                {
+                    return Err("a text size is a number above 0".to_owned());
+                }
                 let mut current = match self.doc.node(area) {
                     Some(Node::Area(a)) => match &a.content {
                         Content::Text(t) => t.style.clone(),

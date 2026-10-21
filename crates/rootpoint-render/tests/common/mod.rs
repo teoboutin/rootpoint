@@ -100,7 +100,7 @@ pub fn text(text: &str, style: TextStyle) -> Content {
 }
 
 /// One slide of nine text areas, three columns by three rows: each column one horizontal
-/// alignment, left to right, each row one beside alignment, top to bottom.
+/// alignment, left to right, each row one vertical alignment, top to bottom.
 pub fn alignments() -> Document {
     let (mut doc, root) = one_slide();
     split(&mut doc, root, Axis::SideBySide, 1.0 / 3.0);

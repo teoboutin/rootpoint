@@ -18,7 +18,8 @@ cites.
   assets and rendered images. The session opens no file itself, since the browser build links it
   and `std::fs` fails there at run time, as `path@rootpoint-model@CLAUDE.md` says; the headless
   binary gives it a `Files` on the native file system. Asset paths are relative to the
-  presentation file's directory, or to the working directory of a presentation not yet saved.
+  presentation file's directory, or to the working directory of a presentation not yet saved. What
+  a save into another directory does to them is open: `issue@rootpoint-protocol@asset-paths-follow-save`.
 - The renaming of the model's axes to `Axis::SideBySide` and `Axis::Stacked`, built in this slice
   and recorded in `design@rootpoint-model@split-tree-arity`: a fresh agent read `Vertical` as
   stacked. The protocol's words are `beside` and `stacked`. A default awaiting the owner, Q11.
@@ -38,14 +39,17 @@ cites.
 4. **A failed command changes nothing.** A command that fails replies `err <reason>`, and the
    document and the view equal those before it. Test: one failing case per command.
 5. **A headless script renders.** A script piped into `rootpoint-headless` builds the fixture
-   presentation and renders a slide to a PNG equal to the render crate's golden image of it.
+   presentation, saves it into a subdirectory, reads its asset beside it, and renders a slide to a
+   PNG equal to the render crate's golden image of it.
 6. **The view commands run headless.** A script selects a node, enters presenter mode, moves to the
    next and previous slide and leaves it, and `view` reports each state.
 
 ## Fixtures
 
-Scripts in the protocol's own grammar, under the crate's test directory, one per claim. They use
-only the commands of the mapping table and of the view commands.
+Scripts in the protocol's own grammar, in `path@rootpoint-protocol@tests/scripts/`, for the
+claims a script states: 3, in two halves, 5 and 6, with the replies of claim 6 beside its script.
+They use only the commands of the mapping table and of the view commands. Claims 1, 2 and 4 are
+tables of lines and commands in the tests, since each row is one line and its expected outcome.
 
 ## Audit subjects
 
@@ -78,7 +82,8 @@ only the commands of the mapping table and of the view commands.
 
 - A command that creates ids replies with them: `add-slide` with `s<n> root=n<n>`, `split` with
   `new=n<n>`, and `split=n<n>` when it wrapped the node in a new split, `duplicate-slide` with the
-  copy's id, `asset` with `a<n>`.
+  copy's id and its root, `s<n> root=n<n>`, as `add-slide` does, `asset` with `a<n>`. `present`,
+  `next` and `prev` reply with the slide presented.
 - Each accepted editing command pushes its inverse on the undo stack and clears the redo stack;
   `undo` applies the top inverse and pushes its own inverse on the redo stack. `new` and `load`
   clear both. View commands are not undone.
@@ -87,19 +92,26 @@ only the commands of the mapping table and of the view commands.
   assets through `Files`, and its reply carries the renderer's report: `fallback=`, `missing=` and
   `glyphs=` lists, which the tripwire on missing glyphs reads.
 - Blank lines and lines starting with `#` give no reply, so a script can carry comments.
-- A text's style options: `size=<slide units>`, `bold`, `italic`, `colour=#rrggbb` or `#rrggbbaa`,
-  `align=left|center|right`, `valign=top|middle|bottom`, `font=sans|a<n>`.
+- A text's style options: `size=<slide units>`, above 0, `bold` or `bold=off`, `italic` or
+  `italic=off`, `colour=#rrggbb` or `#rrggbbaa`, `align=left|center|right`,
+  `valign=top|middle|bottom`, `font=sans|a<n>`. A text keeps its area's current style, so the `off`
+  forms are what undoes a `bold` by a later `text`.
 - `tree` writes a split as `n<n>:<axis>(<dividers>)[<child> | <child> ...]`, with `beside` or
   `stacked` and the dividers' positions, and an area as `n<n>` followed by `empty`,
-  `text "<text>"` or `image a<n> fit|fill`. `view` replies `selected=n<n>|- presenting=s<n>|-`.
+  `text "<text>"` or `image a<n> fit|fill`; `tree` with no slide joins every slide's tree with
+  `; `. `view` replies `selected=n<n>|- presenting=s<n>|-`.
 - `next` and `prev` at the last or the first slide reply `err` and change nothing.
 
 ### The grammar
 
 One command per line: a verb, then arguments separated by spaces; a text argument is a
-double-quoted string with `\"` and `\\` escapes; a named option is `key=value`. Every reply is one
-line that starts with `ok` or `err`, followed by the result or the reason; `tree` replies with the
-slide's tree on one line, every split and area with its id
+double-quoted string with `\"`, `\\` and `\n` escapes, the last so that a text holding a new line
+stays on one line; a path is bare or quoted; a quoted word is only ever a text or a path, never a
+verb, an id or an option; an id or a number of pixels is written as the printer writes it, with no
+sign and no leading zero; a named option is `key=value`. Every reply is one line that starts with
+`ok` or `err`, followed by the result or the reason, a new line or a carriage return in which
+prints as `\n` or `\r`; `tree` replies with the slide's tree on one line, every split and area with
+its id
 (`thread@first-prototype@protocol-transport`). An illustration of the shape, not a test:
 
 ```text
@@ -110,7 +122,7 @@ slide's tree on one line, every split and area with its id
 > asset cat.png            ok a5
 > image n3 a5 fit          ok
 > tree s1                  ok s1 n4:beside(0.5)[n2 text "Hello" | n3 image a5 fit]
-> render s1 out.png        ok
+> render s1 out.png        ok fallback=- missing=- glyphs=-
 ```
 
 Nearest rival: JSON-RPC; see "Losing alternatives" of the milestone document.

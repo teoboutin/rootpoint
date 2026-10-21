@@ -200,7 +200,8 @@ crate, and the prototype `thread@first-prototype@prototype-scope` lists, in the 
 - linked dividers: `thread@first-prototype@linked-dividers`, parked;
 - rich text with per-span styles: excluded by `thread@first-prototype@text-style-per-area`;
 - image and PDF export: secondary, per `goal@rootpoint@presenter-mode`;
-- the text protocol in the browser build: excluded by `thread@first-prototype@protocol-transport`;
+- the protocol's transports, stdin and the local socket, in the browser build: excluded by
+  `thread@first-prototype@protocol-transport`; the protocol's session is part of the browser build;
 - collaborative editing: out of scope, per `goal@rootpoint@minimal-content-set`.
 
 ## What is already decided
@@ -832,7 +833,7 @@ model crate now exist in the code.
 
 ```text
 crates/rootpoint-model/   (crate rootpoint-model)
-  Document, Slide, SlideId, Node, NodeId, Split, Axis { Horizontal, Vertical },
+  Document, Slide, SlideId, Node, NodeId, Split, Axis { SideBySide, Stacked },
   Side { Before, After }, Area,
   Content { Empty, Text(TextContent), Image(ImageContent) }, TextContent, TextStyle,
   FontRef { Builtin(String), Asset(AssetId) }, Rgba, HAlign { Left, Center, Right },

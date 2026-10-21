@@ -123,18 +123,14 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
     let verb = args.word("a verb")?;
     let command = match verb.as_str() {
         "new" => Command::New,
-        "save" => Command::Save {
-            path: args.word("a path")?,
-        },
-        "load" => Command::Load {
-            path: args.word("a path")?,
-        },
+        "save" => Command::Save { path: args.path()? },
+        "load" => Command::Load { path: args.path()? },
         "tree" => Command::Tree {
             slide: args.optional(parse_slide)?,
         },
         "render" => {
             let slide = parse_slide(&args.word("a slide")?)?;
-            let path = args.word("a path")?;
+            let path = args.path()?;
             let size = match args.optional(parse_pixels)? {
                 None => None,
                 Some(w) => Some((w, parse_pixels(&args.word("a height")?)?)),
@@ -189,9 +185,7 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         "clear" => Command::Clear {
             area: parse_node(&args.word("an area")?)?,
         },
-        "asset" => Command::Asset {
-            path: args.word("a path")?,
-        },
+        "asset" => Command::Asset { path: args.path()? },
         "remove-asset" => Command::RemoveAsset {
             asset: parse_asset(&args.word("an asset")?)?,
         },
@@ -403,27 +397,40 @@ impl<'a> Args<'a> {
         Args { words, next: 0 }
     }
 
-    /// The next word, which must exist.
+    /// The next word, which must be bare: a verb, an id, a number or a keyword.
     pub(crate) fn word(&mut self, what: &str) -> Result<String, ParseError> {
+        match self.words.get(self.next) {
+            Some(Word::Bare(text)) => {
+                self.next += 1;
+                Ok(text.clone())
+            }
+            Some(Word::Quoted(_)) => Err(ParseError(format!("a quoted word instead of {what}"))),
+            None => Err(ParseError(format!("missing {what}"))),
+        }
+    }
+
+    /// The next word, bare or quoted, as a path.
+    pub(crate) fn path(&mut self) -> Result<String, ParseError> {
         let word = self
             .words
             .get(self.next)
-            .ok_or_else(|| ParseError(format!("missing {what}")))?;
+            .ok_or_else(|| ParseError("missing a path".to_owned()))?;
         self.next += 1;
         Ok(word.text().to_owned())
     }
 
-    /// The next word parsed by `parse`, or `None` when the line has no more words.
+    /// The next word parsed by `parse`, or `None` when the line has no more bare words. A quoted
+    /// word is left for `finish` to refuse.
     pub(crate) fn optional<T>(
         &mut self,
         parse: impl Fn(&str) -> Result<T, ParseError>,
     ) -> Result<Option<T>, ParseError> {
         match self.words.get(self.next) {
-            None => Ok(None),
-            Some(word) => {
+            Some(Word::Bare(text)) => {
                 self.next += 1;
-                parse(word.text()).map(Some)
+                parse(text).map(Some)
             }
+            _ => Ok(None),
         }
     }
 
@@ -447,9 +454,17 @@ impl<'a> Args<'a> {
     }
 }
 
+/// A number written as the printer writes it: decimal digits, with no sign and no leading zero.
+fn parse_digits<T: std::str::FromStr>(text: &str) -> Option<T> {
+    let canonical = !text.is_empty()
+        && text.bytes().all(|b| b.is_ascii_digit())
+        && (text == "0" || !text.starts_with('0'));
+    canonical.then(|| text.parse().ok()).flatten()
+}
+
 fn parse_id(text: &str, prefix: char) -> Result<u64, ParseError> {
     text.strip_prefix(prefix)
-        .and_then(|n| n.parse().ok())
+        .and_then(parse_digits)
         .ok_or_else(|| ParseError(format!("`{text}` is not an id `{prefix}<n>`")))
 }
 
@@ -476,13 +491,11 @@ pub(crate) fn quote_always(text: &str) -> String {
 }
 
 fn parse_index(text: &str) -> Result<usize, ParseError> {
-    text.parse()
-        .map_err(|_| ParseError(format!("`{text}` is not an index")))
+    parse_digits(text).ok_or_else(|| ParseError(format!("`{text}` is not an index")))
 }
 
 fn parse_pixels(text: &str) -> Result<u16, ParseError> {
-    text.parse()
-        .map_err(|_| ParseError(format!("`{text}` is not a size in pixels")))
+    parse_digits(text).ok_or_else(|| ParseError(format!("`{text}` is not a size in pixels")))
 }
 
 fn parse_number(text: &str) -> Result<f64, ParseError> {

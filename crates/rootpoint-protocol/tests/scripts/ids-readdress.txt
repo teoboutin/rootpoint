@@ -1,0 +1,6 @@
+# Claim 3, second half: load, and address the areas by the ids printed before the save.
+load deck.ron
+text n5 "by id"
+divider n4 0 0.3
+remove n2
+tree

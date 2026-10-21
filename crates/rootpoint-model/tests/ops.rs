@@ -308,8 +308,8 @@ fn a_split_left_with_one_child_collapses() {
 
 #[test]
 fn a_collapse_into_a_split_of_the_parents_axis_merges() {
-    // Side-by-side root [a | H[b / V[c | d]]]: removing b leaves H with one child V[c | d], which
-    // merges into the side-by-side root.
+    // Side-by-side root [a | stacked[b / beside[c | d]]]: removing b leaves the stacked split with
+    // one child, beside[c | d], which merges into the side-by-side root.
     let (mut doc, [a, b, below]) = fixture();
     split(&mut doc, below, Axis::SideBySide, 0.5, Side::After);
     apply(&mut doc, Op::Remove { node: b }).unwrap();

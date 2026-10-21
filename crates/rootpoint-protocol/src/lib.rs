@@ -1,5 +1,6 @@
 //! The text protocol of rootpoint: commands, one per line, that drive a session holding one
-//! document, whether the session runs headless or inside the editor.
+//! document, its undo stack and its view state. The headless binary runs it today, and the editor
+//! will.
 
 // Ties this crate's build to its checkout.
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");

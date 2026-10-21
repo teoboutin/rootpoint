@@ -8,10 +8,11 @@ use std::process::{Command, Stdio};
 
 use rootpoint_protocol::{Files, Reply, Session};
 
-/// Files held in memory, by path.
+/// Files held in memory, by path. While `read_only` is set, every write fails.
 #[derive(Default)]
 pub struct MemoryFiles {
     pub files: BTreeMap<String, Vec<u8>>,
+    pub read_only: bool,
 }
 
 impl Files for MemoryFiles {
@@ -23,6 +24,9 @@ impl Files for MemoryFiles {
     }
 
     fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String> {
+        if self.read_only {
+            return Err(format!("{path}: read-only"));
+        }
         self.files.insert(path.to_owned(), bytes.to_vec());
         Ok(())
     }
@@ -44,20 +48,31 @@ pub fn ok(session: &mut Session, files: &mut MemoryFiles, line: &str) -> String 
     }
 }
 
+/// A script of `path@rootpoint-protocol@tests/scripts/`, which the slice
+/// `spec@first-prototype@live-control` runs again through the editor.
+pub fn script(name: &str) -> String {
+    std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/scripts")
+            .join(name),
+    )
+    .unwrap()
+}
+
 /// Pipe a script into `rootpoint-headless`, run in `dir`, and return its stdout.
 pub fn headless(script: &str, dir: &std::path::Path) -> String {
+    headless_bytes(script.as_bytes(), dir)
+}
+
+/// Pipe bytes, which need not be UTF-8, into `rootpoint-headless`, run in `dir`.
+pub fn headless_bytes(script: &[u8], dir: &std::path::Path) -> String {
     let mut child = Command::new(env!("CARGO_BIN_EXE_rootpoint-headless"))
         .current_dir(dir)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(script.as_bytes())
-        .unwrap();
+    child.stdin.take().unwrap().write_all(script).unwrap();
     let out = child.wait_with_output().unwrap();
     assert!(out.status.success());
     String::from_utf8(out.stdout).unwrap()

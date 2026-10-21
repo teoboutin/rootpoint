@@ -29,39 +29,29 @@ fn two_colour_png() -> Vec<u8> {
 fn ids_survive_save_and_load() {
     let mut files = MemoryFiles::default();
     let mut s = Session::new();
-    let replies = run(
-        &mut s,
-        &mut files,
-        "add-slide\nsplit n2 beside 0.5\nsplit n3 stacked 0.5\nsave deck.ron",
-    );
+    let replies = run(&mut s, &mut files, &script("ids-build.txt"));
     assert!(
         replies.iter().all(|r| matches!(r, Reply::Ok(_))),
         "{replies:?}"
     );
     let mut t = Session::new();
     // Addressed by the ids printed before the save.
-    let after = run(
-        &mut t,
-        &mut files,
-        "load deck.ron\ntext n5 \"by id\"\ndivider n4 0 0.3\nremove n2",
-    );
+    let after = run(&mut t, &mut files, &script("ids-readdress.txt"));
     assert!(after.iter().all(|r| matches!(r, Reply::Ok(_))), "{after:?}");
     assert_eq!(
-        ok(&mut t, &mut files, "tree"),
-        "s1 n6:stacked(0.5)[n3 empty | n5 text \"by id\"]"
+        after.last(),
+        Some(&Reply::Ok(
+            "s1 n6:stacked(0.5)[n3 empty | n5 text \"by id\"]".into()
+        ))
     );
 }
 
 #[test]
 fn a_headless_script_renders_the_renderers_golden_image() {
     let dir = scratch("golden");
-    std::fs::write(dir.join("two-colours.png"), two_colour_png()).unwrap();
-    // The renderer's fixture "fit and fill": a side-by-side split, the image fitted on the left
-    // and filling the right.
-    let out = headless(
-        "add-slide\nsplit n2 beside 0.5\nasset two-colours.png\nimage n2 a5 fit\nimage n3 a5 fill\nrender s1 out.png 384 216\n",
-        &dir,
-    );
+    std::fs::create_dir_all(dir.join("talk")).unwrap();
+    std::fs::write(dir.join("talk/two-colours.png"), two_colour_png()).unwrap();
+    let out = headless(&script("golden.txt"), &dir);
     assert!(out.ends_with("ok fallback=- missing=- glyphs=-\n"), "{out}");
     let golden = image::open(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -98,6 +88,8 @@ fn a_render_reports_what_it_could_not_draw() {
     assert!(files.files.contains_key("out.png"));
 }
 
+// The asset is added before the first save, and its file is found only because the save sets the
+// directory it is read against: `issue@rootpoint-protocol@asset-paths-follow-save`.
 #[test]
 fn assets_are_read_beside_the_presentation() {
     let mut files = MemoryFiles::default();
