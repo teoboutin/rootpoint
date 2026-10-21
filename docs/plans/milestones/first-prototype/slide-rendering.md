@@ -12,28 +12,42 @@ cites.
 - The dependency on parley with `default-features = false` and the feature `std`: parley's default
   feature `system` turns on system font discovery (read in parley 0.12.0's `Cargo.toml`), which
   `thread@first-prototype@font-sources` excludes.
-- The built-in fonts: one sans family under the SIL Open Font License, in regular, bold, italic and
-  bold italic, embedded in the binary. Which family is chosen at this slice's audit.
+- The built-in fonts: Noto Sans, under the SIL Open Font License 1.1, in regular, bold, italic and
+  bold italic, embedded in the binary, with its licence beside the files. `FontRef::Builtin("sans")`
+  names it. The files are those of the Debian package `fonts-noto-core` on the owner's machine,
+  about 0.5 MB each; Noto's wide glyph coverage serves T2.
+- `ImageSet`, the decoded images of a document's assets, which the caller builds from the bytes of
+  each asset: the renderer reads no file, since `std::fs` fails at run time in the browser, as
+  `path@rootpoint-model@CLAUDE.md` says. Images are decoded with the `image` crate, PNG and JPEG.
+- `render_slide` returns the image with a report: the fonts that fell back to the built-in sans,
+  and the assets that had no decoded image, drawn as an empty area.
 - The crate added to the `wasm` gate.
 - Per D2, the crate's Component.
 
 ## Claims
 
-1. **One layout at every size.** For a fixture slide, the line breaks of every text area, computed
-   in slide units, are the same at 960×540, 1920×1080 and 3840×2160 pixels. Test: compare the
-   break positions Parley reports at each size. Shown to fail: laying text out at the pixel size
-   in place of slide units moves a break, which the test reports.
+1. **One layout at every size.** For a fixture slide, the line breaks of every text area are the
+   same at 960×540, 1920×1080 and 3840×2160 pixels. Text is laid out by one function in slide
+   units, whatever the pixel size, and `render_slide` draws that layout through its scale. Test:
+   compare the break positions of the layouts `render_slide` uses at each size. Shown to fail:
+   laying text out at the pixel size in place of slide units moves a break, which the test
+   reports.
 2. **A slide renders the same twice.** Two renders of the same slide at the same size give
    identical bytes. Test: render twice, compare. Shown to fail: a render that depends on a
    hash-map iteration order differs.
-3. **Golden images.** Each fixture renders to a PNG equal to a committed golden image, on the CPU
-   backend. Shown to fail: changing a colour of the fixture breaks the comparison.
+3. **Golden images.** Each fixture renders to pixels equal to those of a committed golden PNG,
+   compared pixel by pixel, with vello_cpu's portable `Level::fallback`, since its SIMD levels may
+   differ by a pixel between machines. `ROOTPOINT_BLESS=1` rewrites the golden files after a
+   deliberate change, as the model's fixture does. Shown to fail: changing a colour of the fixture
+   breaks the comparison.
 4. **No system font is ever loaded.** `FontSet` is built from the embedded fonts and the document's
-   font assets only. Test: a text whose font names a font absent from both renders with the
-   default built-in font and the render reports it as a fallback. Shown to fail: restoring parley's
-   default features makes the test see a system font.
-5. **The render crate builds for the wasm target.** The `wasm` gate passes. Whether parley without
-   `system` builds for the wasm target is not established; this claim is where it is.
+   font assets only. Test: a text whose font names `DejaVu Sans`, a font installed on the owner's
+   machine and absent from both, renders with the built-in sans, and the report names it as a
+   fallback. Shown to fail: restoring parley's default features loads the system's fonts, and the
+   test sees `DejaVu Sans` resolve.
+5. **The render crate builds for the wasm target.** The `wasm` gate passes. Measured at the audit:
+   a crate depending on parley 0.12 without `system`, vello_cpu 0.3 and image 0.25 with PNG and
+   JPEG builds for the wasm target.
 
 ## Fixtures
 
@@ -71,6 +85,13 @@ committed PNG of the test directory.
 4. **The wasm gate and AC2's 4K bound.** Claim 5; the measurement of AC2.
 
 ## Decided design
+
+### What a slide's drawing holds
+
+The slide is filled white, then each area is drawn inside its rectangle, clipped to it. A text is
+laid out within its area less a padding of 24 slide units on every side, wrapped to that width,
+placed by its vertical alignment, and clipped where it overflows. An image is scaled into the area
+by its fit. The padding is the session's choice, which the owner may change.
 
 ### Our own renderer
 
