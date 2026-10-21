@@ -7,8 +7,12 @@ cites.
 ## Builds
 
 - The app crate built for the wasm target with eframe's web support, served as a static directory:
-  the same editing and presenter mode as native, on a sample presentation built into the binary.
-  Opening, saving and adding an image wait on packing, per D3, which awaits the owner.
+  the same editing and presenter mode as native. Per D3, ruled, it is load only: it opens the
+  built-in sample, and a presentation directory, the RON file and its images, that the user picks
+  with the browser's directory picker (an `<input type="file">` with the `webkitdirectory`
+  attribute; its support and eframe's access to it are assumed, checked at the audit); it edits
+  them in memory and does not save. Images loaded this way are held as `AssetSource::Embedded` in
+  memory.
 - The app crate added to the `wasm` gate.
 - The command that builds the static directory, as a command of the maintenance tool, per
   `goal@xtask@repeated-tasks-are-automated`.
@@ -17,9 +21,10 @@ cites.
 
 1. **The browser build has the same editing operations.** Every UI action that "The UI actions" in
    "The prototype's scope" of the milestone document lists is available in the browser build, open,
-   save and adding an image excepted per D3. Test: the app's action handlers are compiled for the
-   wasm target and called by a `wasm-bindgen-test` test. If the audit finds no runner for that test
-   on the owner's machine, the audit puts the replacement check to the owner as a scope change.
+   save excepted per D3; adding an image reads it through the browser's file picker. Test: the app's
+   action handlers are compiled for the wasm target and called by a `wasm-bindgen-test` test. If the
+   audit finds no runner for that test on the owner's machine, the audit puts the replacement check
+   to the owner as a scope change.
 2. **The same layout.** A slide rendered in the browser build and natively at the same size gives
    the same image. Test: the browser build's render of the sample's first slide is saved and
    compared to the native golden image.
@@ -37,9 +42,9 @@ cites.
 
 ## Premises that expire
 
-- The browser build opens only the built-in sample: with images as files beside the presentation,
-  a browser cannot resolve their paths. Guard: packing, per "Later consequences" of the milestone
-  document, ends it, and `goal@rootpoint@runs-in-browser` is met only then.
+- The browser build does not save: a browser cannot write the files beside a presentation. Guard:
+  packing, per "Later consequences" of the milestone document, ends it, and
+  `goal@rootpoint@runs-in-browser` is met only then.
 
 ## Implementation sequence
 

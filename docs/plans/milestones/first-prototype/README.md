@@ -250,8 +250,9 @@ Binding; the owner may abandon the goal it derives from. Source: `goal@rootpoint
 Met by `thread@first-prototype@gui-toolkit`, `thread@first-prototype@slide-renderer`,
 `thread@first-prototype@font-sources` and `thread@first-prototype@prototype-scope`, which gates the
 wasm build from the first slice. Partly assumed, so checked by
-`acceptance@first-prototype@browser-build-holds`. Opening, saving and adding images in the browser
-wait on packing, per D3, which awaits the owner.
+`acceptance@first-prototype@browser-build-holds`. Per D3, ruled, the prototype's browser build is
+load only: it opens a presentation directory and the built-in sample, edits them in memory, and does
+not save; saving in the browser comes with packing.
 
 ### Authoring needs no code or markup `##c5-no-markup`
 
@@ -262,8 +263,8 @@ protocol and the file are optional to an author.
 
 Binding. Source: `goal@rootpoint@free-slide-division`. Met by
 `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`; judged by the
-owner in `acceptance@first-prototype@split-editing-convenient`, whose comparison D4 aligns with the
-goal's.
+owner in `acceptance@first-prototype@split-editing-convenient`, which compares with a
+general-purpose slide editor, as the goal does, per D4.
 
 ### Every feature serves a content kind or slide division `##c7-minimal-features`
 
@@ -891,7 +892,8 @@ loses one is merged.
 **In**: slides (add, remove, reorder, duplicate); splitting any node, removing an area, moving a
 divider, swapping two areas; text with style per area; images with the fit and fill modes; undo;
 save and load; presenter mode, full screen, with previous and next; the protocol, headless and
-live; a headless PNG render; a wasm build checked by the gates from the first slice.
+live; a headless PNG render; a wasm build checked by the gates from the first slice; a built-in
+sample presentation, in every build, as a tutorial and demonstrator, per D3.
 
 **The UI actions** of the native GUI, which `spec@first-prototype@editor-shell` builds and
 `spec@first-prototype@browser-build` checks in the browser:
@@ -901,7 +903,7 @@ live; a headless PNG render; a wasm build checked by the gates from the first sl
   either axis, remove it, swap two areas;
 - in the side panel: set an area's content (empty, text, image) and its style or fit; add an image
   asset;
-- in the menus: undo, redo, open, save, enter and leave presenter mode;
+- in the menus: undo, redo, open, open the built-in sample, save, enter and leave presenter mode;
 - in presenter mode: previous and next slide.
 
 Each action issues a command of the protocol's `Session`: an editing command or a view command
@@ -1032,25 +1034,24 @@ view takes more than 33 ms to redraw, or any render of one 3840×2160 presenter 
 an image takes more than 200 ms. The owner kept these bounds in O12. Response: reopen
 `thread@first-prototype@slide-renderer`, with GPU vello or vello_hybrid as the candidate.
 
-### AC3. The browser build edits and presents a sample presentation as natively `##browser-build-holds`
+### AC3. The browser build loads, edits and presents presentations as natively `##browser-build-holds`
 
 Guards `thread@first-prototype@gui-toolkit`, `thread@first-prototype@slide-renderer` and
 `thread@first-prototype@font-sources`. Judged by `spec@first-prototype@browser-build`. Fires when
-the wasm build, served from a static directory, cannot open a sample presentation built into the
-binary, run the editing operations, or show presenter mode, or lays text out differently from a
-native PNG of the same slide. Response: where the failure is in eframe's web support, reopen
-`thread@first-prototype@gui-toolkit`; where it is the cost of parity itself, bring
+the wasm build, served from a static directory, cannot open the built-in sample and a presentation
+directory the user picks, run the editing operations, or show presenter mode, or lays text out
+differently from a native PNG of the same slide. Response: where the failure is in eframe's web
+support, reopen `thread@first-prototype@gui-toolkit`; where it is the cost of parity itself, bring
 `goal@rootpoint@runs-in-browser` to the owner. The session that judges it states which, with the
 evidence.
 
-### AC4. Rebuilding three real slides is faster than with the owner's tikz macros `##split-editing-convenient`
+### AC4. Rebuilding three real slides is faster than with a general-purpose slide editor `##split-editing-convenient`
 
-Guards `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`.
-Judged after `spec@first-prototype@browser-build` lands, by the owner. Fires when the owner,
-rebuilding 3 slides of a past presentation in the prototype, judges it not faster than with the
-owner's tikz macros, per `goal@rootpoint@real-presentations`; per D4, awaiting the owner, also not
-faster than with a general-purpose slide editor the owner uses, the comparison
-`goal@rootpoint@free-slide-division` states. Response: reopen both decisions.
+Guards `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`. Judged
+after `spec@first-prototype@browser-build` lands, by the owner. Fires when the owner, rebuilding 3
+slides of a past presentation in the prototype, judges it not faster than with a general-purpose
+slide editor, the comparison `goal@rootpoint@free-slide-division` states, per D4; the owner is the
+judge, per `goal@rootpoint@real-presentations`. Response: reopen both decisions.
 
 ### AC5. An agent edits a saved file by hand and it loads back `##file-editable-by-agent`
 
@@ -1111,16 +1112,23 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   `thread@first-prototype@crate-split`. The harvest rows of the slice specs name those Components'
   homes. The owner ruled: "D2 accepted".
 - **T3 and T4, ruled**, in "Premortem": recorded. The owner ruled: "T3 and T4 too".
-- **D3, awaiting the owner.** In the prototype's browser build, opening and saving a presentation
-  and adding an image wait on packing: with images as files beside the presentation, the browser
-  cannot read them. The browser build edits and presents the built-in sample. So
-  `criterion@first-prototype@c4-browser-parity` is met by this milestone for every other UI action,
-  and fully by the packing work. Bears on `thread@first-prototype@prototype-scope` and
-  `thread@first-prototype@image-storage`. The rival: open a presentation and its images through the
-  browser's file picker, keep the images as `Embedded` assets in memory, and save by download,
-  which brings part of packing into the prototype.
-- **D4, awaiting the owner.** AC4 also compares with a general-purpose slide editor the owner uses,
-  the comparison `goal@rootpoint@free-slide-division` states, beside the owner's tikz macros. Bears
+- **D3, ruled.** The default put to the owner: in the browser build, opening, saving and adding an
+  image wait on packing, and the build edits only a built-in sample. Its rival: open a presentation
+  and its images through the file picker and save by download. The owner ruled, in the owner's
+  words: "D3: a good rival would be to open a full directory, rather than just file by file, isn't
+  that possible ? TBH, I think that for the prototype, the web build can be "load only", without the
+  ability to save. That reduces the work without losing too much on the feature side. The idea of a
+  builtin sample presentation is good though. It can serve as a tutorial/demonstrator anywhere, not
+  just on the web build, so I'd keep the idea as a permanent thing." So: the prototype's browser
+  build opens a presentation directory, the RON file and its images, through the browser's directory
+  picker, and the built-in sample; it edits them in memory and presents them; it does not save.
+  Saving in the browser comes with packing. The built-in sample is a permanent feature of every
+  build, native and web, as a tutorial and demonstrator. Bears on
+  `thread@first-prototype@prototype-scope` and `thread@first-prototype@image-storage`.
+- **D4, ruled.** AC4 compares with a general-purpose slide editor, the comparison
+  `goal@rootpoint@free-slide-division` states. The owner ruled: "D4: against a general purpose
+  editor. Though I'd be the judge anyway. I'm not even sure where my tikz macros are, I have not
+  been using them for a while." The tikz comparison is dropped. Bears
   on `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`.
 - **Q4, awaiting the owner.** A rewording of `goal@rootpoint@minimal-content-set`, whose "every
   feature the editor has" excludes, read literally, presenter mode, saving and the protocol, which

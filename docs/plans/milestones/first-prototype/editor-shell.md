@@ -11,6 +11,8 @@ cites.
   scope" of the milestone document lists, the text of an area being edited in the side panel's
   plain text field, and presenter mode, full screen. The binary target reads `ROOTPOINT_CHECKOUT`,
   as `path@xtask@CLAUDE.md` requires.
+- The built-in sample presentation, embedded in the binary with its images as
+  `AssetSource::Embedded`, opened from a menu, as a tutorial and demonstrator, per D3.
 - The crate is not added to the `wasm` gate here: its web target is built by
   `spec@first-prototype@browser-build`, as "How the work is done" says.
 - Per D2, the crate's Component.
@@ -89,6 +91,7 @@ within it, and the largest is reported.
 
 Judged by the entry tests of `primer@design-heads`: `thread@first-prototype@gui-toolkit`, and each
 decision of the interaction design session that earns a head, into the design home of the app
-crate's Component; the uniform scaling of `thread@first-prototype@slide-coordinate-space`, which the
-render and app crates both respect, into rootpoint's design home; the losing hosts, judged for a
-`rejected` entry.
+crate's Component; the built-in sample as a permanent feature of every build, attributed to the
+owner, per D3, into the same home; the uniform scaling of
+`thread@first-prototype@slide-coordinate-space`, which the render and app crates both respect, into
+rootpoint's design home; the losing hosts, judged for a `rejected` entry.
