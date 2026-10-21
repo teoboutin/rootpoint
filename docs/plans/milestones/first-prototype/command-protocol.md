@@ -41,6 +41,7 @@ only the commands of the mapping table and of the view commands.
 
 ## Audit subjects
 
+- `issue@rootpoint-model@axis-names-need-inference`, on the names of the axes in `split`.
 - `thread@first-prototype@protocol-addressing`, `thread@first-prototype@protocol-transport`,
   `thread@first-prototype@edit-operation-core`, `goal@rootpoint@headless-core`.
 - The model crate's `Op` and `apply`, and the render crate's `render_slide`, as landed.
@@ -129,7 +130,7 @@ apply no operation. The view commands apply none either: `select <node>`, `desel
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`, into the design home of the protocol crate's
-Component: addressing by id, citing the model crate's head on ids, from
+Component: addressing by id, citing `design@rootpoint-model@stable-ids`, from
 `thread@first-prototype@protocol-addressing`; the line grammar, the stdin binary and the view state,
 from `thread@first-prototype@protocol-transport` and `goal@rootpoint@headless-core`, the grammar
 being an interface others consume; the losing alternatives, paths and JSON-RPC, judged for a

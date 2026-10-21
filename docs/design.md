@@ -14,7 +14,7 @@ not share; a crate that loses one of the three is merged back. Today the rule gi
 `path@rootpoint@crates/rootpoint-model/`, whose reason to change is the document model; its
 serialization stays inside it until it needs migrations of its own.
 
-On the owner's word: the owner set the rule for the project, stated as "something along the line
-of" these three conditions, and ruled that it is a decision of the design rather than a goal. The
-rule's wording is the owner's approximation, so a case it fits badly is put to the owner rather
-than settled by the letter of the rule.
+On the owner's word: the owner set the rule for the project, stated as an approximation of these
+three conditions, and ruled that it is a decision of the design rather than a goal. The rule's
+wording is the owner's approximation, so a case it fits badly is put to the owner rather than
+settled by the letter of the rule.

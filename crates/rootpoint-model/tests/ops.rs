@@ -415,6 +415,8 @@ struct Step {
     flag: bool,
 }
 
+// Every variant of `Op` and of `Content` is reached by a kind of step in `op_for`, or as an
+// inverse; a variant left out is silently untested.
 fn step() -> impl Strategy<Value = Step> {
     // Positions near 0 and 1 as well as ordinary ones, where rounding meets the dividers.
     let at = prop_oneof![0.05f64..0.95, 1e-12f64..1e-3, (1.0 - 1e-3)..(1.0 - 1e-12)];

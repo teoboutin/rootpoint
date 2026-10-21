@@ -27,9 +27,11 @@ names on a file where both readings fit the request is not established.
 
 ### Why it matters
 
-`goal@rootpoint@readable-save-file` asks that a person or an agent can read and edit the file. A
+`goal@rootpoint@readable-save-file` asks that a person or an agent can read and edit the file. The
+names are stated by `design@rootpoint-model@split-tree-arity` and written by
+`design@rootpoint-model@save-format`, both of which a renaming changes. A
 name whose meaning the reader must guess can lead to an edit of the wrong area, and the
-protocol's planned `split <node> <h|v>`, which serves `goal@rootpoint@text-command-protocol`,
+protocol's planned `split <node> <h|v>` of `spec@first-prototype@command-protocol`, which serves `goal@rootpoint@text-command-protocol`,
 carries the same ambiguity.
 
 ### What would close it

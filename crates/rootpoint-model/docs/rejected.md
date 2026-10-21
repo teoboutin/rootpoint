@@ -10,8 +10,8 @@ describes a design that is not built.
 columns are a third and a half-of-the-rest, or two thirds and a half, and dragging the first
 divider of the first tree shrinks both other columns. Removals and drags then behave differently on
 layouts that look the same, and the file shows a structure the author never chose. Kept open by the
-doubt that merging same-axis splits removes a grouping an author wants, which the tripwire on
-merging watches.
+doubt that merging same-axis splits removes a grouping an author wants, which
+`tripwire@rootpoint-model@grouping-lost-to-merge` watches.
 
 ### Content stored apart from the areas, each area holding a reference `##content-by-reference`
 
@@ -37,9 +37,9 @@ implementations would drift apart; undo would need a third.
 
 ### JSON as the save format `##json-save-format`
 
-`live`, held weakly. JSON is universal and slightly better for tools other than rootpoint; it was
-not kept because RON writes enum variants as they read and allows comments and trailing commas,
-which helps editing by hand.
+`live`, held weakly. JSON is universal and slightly better for tools other than rootpoint, but it
+writes an enum variant as an object keyed by its name and allows no comment, which makes editing
+the file by hand harder.
 
 ### Trusting loaded files and operation results without validation `##unvalidated-documents`
 
@@ -47,3 +47,8 @@ which helps editing by hand.
 and `area_rects` and `Remove` then panicked; a lowered id counter loaded, and the next operation
 reused ids; splits and merges at extreme positions made dividers equal, or equal to 0 or 1. They
 are kept as tests in `path@rootpoint-model@tests/invalid.rs`.
+
+### Naming a node by its position in the tree `##addressing-by-position`
+
+`live`. A position, such as the second child of the first child of a slide's root, shifts at every
+split or removal, so a command written after one edit names another node after the next.

@@ -1,4 +1,5 @@
-//! The invariants every document keeps, checked on every loaded file and after every operation.
+//! The invariants every document keeps, checked on every loaded file and after every operation, as
+//! `design@rootpoint-model@validated-documents` decides.
 //!
 //! A document comes from `apply` or from a file a person or an agent may have edited by hand, so
 //! the invariants the types' doc comments state are checked, not assumed: a file or an operation

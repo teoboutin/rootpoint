@@ -45,8 +45,9 @@ impl fmt::Display for AssetId {
 /// A presentation: its aspect ratio, its slides in order, and its assets.
 ///
 /// Every id of the document comes from one counter, which only grows, so a removed slide, node or
-/// asset never lends its id to another. Change a document only through [`crate::apply`], which
-/// keeps the invariants [`Document::validate`] checks; a loaded file is checked by it too.
+/// asset never lends its id to another (`design@rootpoint-model@stable-ids`). Change a document only
+/// through [`crate::apply`], which keeps the invariants [`Document::validate`] checks, per
+/// `design@rootpoint-model@edit-operation-core`; a loaded file is checked by it too.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
     pub aspect: AspectRatio,
@@ -169,7 +170,8 @@ pub enum Axis {
 ///
 /// `dividers` holds the k−1 positions between consecutive children, as fractions of the split's
 /// extent, strictly increasing and strictly between 0 and 1. No child is a split of the same axis:
-/// such a child is merged into its parent, so each layout has one tree.
+/// such a child is merged into its parent, so each layout has one tree
+/// (`design@rootpoint-model@split-tree-arity`).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Split {
     pub id: NodeId,

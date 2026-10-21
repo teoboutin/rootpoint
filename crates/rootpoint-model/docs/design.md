@@ -16,26 +16,26 @@ exactly one tree.
 
 The nearest rival, binary splits, `rejected@rootpoint-model@binary-splits`, gives one layout
 several trees, by the order the splits were made in: removing an area or dragging a divider then
-behaves differently on layouts that look the same, and the file and the protocol's listings show
-a structure the author never chose. With the merge, dragging a divider moves only its two
-neighbours. The tree is the file's structure, so it is an interface the renderer, the protocol and
-every saved file consume. It serves `goal@rootpoint@free-slide-division`. Whether merging removes a
-grouping an author wants is watched by `tripwire@rootpoint-model@grouping-lost-to-merge`.
+behaves differently on layouts that look the same, and the file shows a structure the author never
+chose. With the merge, dragging a divider moves only its two neighbours. The tree is the structure
+of every saved file and of the crate's public types. It serves `goal@rootpoint@free-slide-division`.
+Whether merging removes a grouping an author wants is watched by
+`tripwire@rootpoint-model@grouping-lost-to-merge`.
 
 ### Any node can be split, so an area can span the areas beside it `##split-any-node`
 
 `Split` applies to an area or to a split: a split along another axis than its parent's wraps the
 node in a new split, so a new area can span the areas the node holds, as a title spans two
 columns. This reaches every guillotine layout, a layout made by cuts that each run across the area
-being cut. It does not reach a layout no such cut makes, such as four rectangles around a fifth;
-only constraints between dividers, which no head records, would.
+being cut. It does not reach a layout no such cut makes, such as four rectangles around a fifth,
+nor rows aligned across two columns, which `issue@rootpoint-model@linked-dividers` keeps open.
 
 The rival, splitting leaves only, makes a spanning area impossible once the areas beside it exist:
 the author would have to rebuild the slide. It serves `goal@rootpoint@free-slide-division`.
 
 ## Coordinates
 
-### Sizes are in slide units of a slide 1080 units high, and divider positions are fractions of their split `##slide-units`
+### Sizes are in slide units of a slide 1080 units high `##slide-units`
 
 A document has one aspect ratio, 16:9 by default; a slide is 1080 slide units high and as wide as
 the ratio makes it, 1920 for 16:9, so a font size of 48 means what it would on a 1080p screen.
@@ -45,57 +45,74 @@ The rivals fail `goal@rootpoint@presenter-mode` with `goal@rootpoint@real-presen
 need the slide shown in the editor to be the slide shown in presenter mode at any window size:
 pixel units, `rejected@rootpoint-model@pixel-units`, wrap the same text differently on a 1080p
 laptop and a 4K projector, and a free aspect ratio that reflows text,
-`rejected@rootpoint-model@reflowing-slides`, shows another slide in each window. The renderer
-draws in these units, and the file stores them.
+`rejected@rootpoint-model@reflowing-slides`, shows another slide in each window. The file stores
+these units, and the crate's API gives them.
+
+### A divider's position is a fraction of the extent of its split `##divider-fractions`
+
+Each divider is stored as a fraction of its split's extent, strictly between 0 and 1, not as an
+absolute position on the slide. Moving a divider of a split then rescales every split nested in
+the parts it resizes, with no change to their own dividers, so a nested layout keeps its
+proportions; with absolute positions, one drag would rewrite every divider below it. The fractions
+are part of every saved file.
 
 ## Content and assets
 
 ### An area holds its content, and heavy data is an asset the content refers to by id `##inline-content-assets`
 
 An area holds one content: empty, a text with its style, or an image. Image data and font files
-live once in the document's asset table, keyed by asset id, so a slide's text is read where it is
-shown, and an image placed on many slides is stored once.
+live once in the document's asset table, keyed by asset id, so a slide's text is read in the file
+where it is shown, as `goal@rootpoint@readable-save-file` asks, and an image placed on many slides
+is stored once.
 
 The rival, every content stored apart and referenced by areas,
 `rejected@rootpoint-model@content-by-reference`, costs garbage collection or a library of orphans,
 editing that changes every slide sharing a content, a file read by following ids, and content ids
-in the protocol beside node ids; the owner weighed those costs above the reuse it gives. Reuse of
-text across slides is left to templates, which are not built.
+beside node ids; the owner weighed those costs above the reuse it gives. Reuse of text across
+slides is left to templates, which `issue@rootpoint-model@slide-templates` keeps open.
 
-### An asset is a file beside the presentation, or its bytes when the presentation is packed `##asset-source`
+### Images and other assets are files beside the presentation file `##image-storage`
 
-An asset's source is a path relative to the presentation file or the file's bytes embedded in the
-document, both in version 1 of the format. The editing form of a presentation is its text file
-with its assets as files beside it; packing a presentation into one file to carry it embeds them.
-The model writes paths only, since no packing is built yet.
+The editing form of a presentation is its text file with its assets as files beside it, each named
+by a path relative to the presentation file, so the text stays readable and the assets stay
+ordinary files.
 
-On the owner's word: the owner chose files beside the presentation for prototyping, and, as the
-owner thinks, that form stays the preferred editing method in the long term, while a packed single
-file, presented from a static web app on any computer, is the final goal. Both sources are in the
-format from its first version because adding the embedded one later would force a migration of
-every saved file. It serves `goal@rootpoint@readable-save-file` and
+On the owner's word: the owner chose this form for prototyping, and, as the owner thinks, it stays
+the preferred editing method in the long term; the final goal is packing, by commands that pack a
+presentation and its assets into one file and unpack it again, so that one file can be carried and
+presented from any computer with a web browser and an internet connection, through the web app
+served from a static site. It serves `goal@rootpoint@readable-save-file` and
 `goal@rootpoint@runs-in-browser`.
+
+### An asset's source is a path or embedded bytes, both in the format's first version `##asset-source`
+
+`AssetSource` is `Path`, a path relative to the presentation file, or `Embedded`, the asset's
+bytes, which packing writes. Both are in the format from its first version, so the round-trip
+tests cover embedded assets before any code writes one, and packing adds no change of format.
+Adding the variant later would not have broken old files, which name no embedded asset; it would
+have left the format untested for it until packing.
 
 ### A text area has one style for all its text `##text-style-per-area`
 
 A text's font, size, weight, slant, colour and alignment are set for the whole area. Styled spans
-inside a text need an editor of rich text, the hardest part of a text editor to build, which the
-first prototype leaves out; the owner judged one style per area enough for the owner's needs at
-first. The style is part of the file.
+inside a text need an editor of rich text, the hardest part of a text editor to build, which this
+design avoids; the owner judged one style per area enough for the owner's needs. The style is part
+of the file.
 
 ## Changes
 
 ### Every change of a document is an operation, applied by one function that returns its inverse `##edit-operation-core`
 
 `apply` takes an `Op`, changes the document, and returns the operation that undoes it; a
-structural edit of a slide's tree returns a snapshot of the slide's former tree. The GUI, the
-protocol and the tests change a document through nothing else, which gives undo to all of them.
+structural edit of a slide's tree returns a snapshot of the slide's former tree. Code outside the
+crate changes a document only through `apply`, which gives undo to every caller and keeps the
+invariants. The document's fields are public for reading, so this rule is delivered by the doc
+comment of `Document`, not enforced by the types.
 
-The rival, the GUI changing the document directly,
-`rejected@rootpoint-model@gui-mutation`, makes the protocol re-implement every edit, so
-`goal@rootpoint@headless-core` and `goal@rootpoint@text-command-protocol` would cost two
-implementations that drift apart. The operations are an interface the protocol and the app crate
-consume.
+The rival, a GUI changing the document directly, `rejected@rootpoint-model@gui-mutation`, makes a
+text protocol re-implement every edit, so `goal@rootpoint-model@headless-changes` would cost two
+implementations that drift apart. The operations are the crate's public interface for changing a
+document.
 
 ### A document is validated when it is loaded and after every operation, and a breach is refused `##validated-documents`
 
@@ -109,15 +126,18 @@ The rival, trusting a loaded file and the result of every operation,
 `rejected@rootpoint-model@unvalidated-documents`, was refuted by counterexamples built at review: a
 hand-edited file with a missing divider made `area_rects` and `apply` panic, a lowered id counter
 made a later operation reuse ids, and rounding in a split or a merge made dividers equal, 0 or 1.
-A file edited by hand is a purpose, `goal@rootpoint@readable-save-file`, so a breach is reachable.
+A file edited by hand is a purpose, `goal@rootpoint-model@faithful-readable-file`, so a breach is
+reachable.
 
 ### Ids are stored in the file, come from one counter, and are never reused `##stable-ids`
 
 Every slide, node and asset has an id from one counter the document stores and only grows; ids are
-written in the file and printed `s<n>`, `n<n>` and `a<n>`. A duplicated slide's nodes get new ids.
-A command, a script or a link between dividers can then name a node across edits, saves and loads,
-where a position in the tree shifts at every split or removal. The protocol addresses by these
-ids, so they are an interface it consumes.
+written in the file and print as `s<n>`, `n<n>` and `a<n>`. A duplicated slide's nodes get new
+ids. A command or a script can then name a node across edits, saves and loads, as
+`goal@rootpoint@text-command-protocol` needs, and so could a link between dividers,
+`issue@rootpoint-model@linked-dividers`. The rival, naming a node by its position in the tree,
+`rejected@rootpoint-model@addressing-by-position`, shifts at every split or removal. Ids are part
+of every saved file and of the crate's public types.
 
 ## The file
 

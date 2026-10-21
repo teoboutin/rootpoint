@@ -179,7 +179,9 @@ slice's spec, with the gates run before each commit.
   `path@rootpoint@tools/xtask/`. Its `main` builds the gate list with
   `rust_project(checker, "origin/main")` from the library `knowledge-architect-gates` 0.8.0, whose
   `Gate` struct is public and whose list a project may extend by pushing a `Gate`.
-- No editor code exists. The design and rejected homes of rootpoint hold no entry.
+- No editor code existed when this document was written; the slice `model-core` has since built
+  `path@rootpoint@crates/rootpoint-model/` and harvested its decisions into its design homes and
+  rootpoint's.
 - The Rust targets installed on the owner's machine are `x86_64-unknown-linux-gnu` only, measured
   with `rustup target list --installed`; the wasm target is not installed.
 
@@ -204,7 +206,8 @@ crate, and the prototype `thread@first-prototype@prototype-scope` lists, in the 
 ## What is already decided
 
 **Recorded decisions the design rests on**: none. The design homes and the rejected homes of
-rootpoint and xtask hold no entry. The work reverses or rewrites no recorded decision.
+rootpoint and xtask held no entry when this document was written. The work reverses or rewrites no
+recorded decision.
 
 **The goals it serves**, all of `register@rootpoint@goal`, each the source of a criterion below:
 `goal@rootpoint@real-presentations`, `goal@rootpoint@no-language-no-build`,
@@ -421,7 +424,7 @@ preferred editing method long term, while shape 3 would be the final goal, so it
 your presentation, carry just the file with you, and present it from any computer with a web browser
 and internet connection using the webapp hosted from a static site." The session confirmed it in
 round 2 (`argument@first-prototype@arg-47`), and the two goals it bears on were reworded on the
-owner's word in O11 (`argument@first-prototype@arg-48`). Final state: approved. Shape: built, and recorded in `design@rootpoint-model@asset-source`, attributed to the owner with
+owner's word in O11 (`argument@first-prototype@arg-48`). Final state: approved. Shape: built, and recorded in `design@rootpoint-model@image-storage`, attributed to the owner with
 the scope and the hedge of the answer.
 
 ### The first crates are model, render, protocol and app `##crate-split`
@@ -812,7 +815,7 @@ own"; one spec "would be one PR of perhaps several thousand lines ... which is w
 ## New names, in one place
 
 The names below are the shapes the design needs. A slice's design audit may rename one, in place,
-before the slice's code is written. Every one is new: no name of the editor exists in the code.
+before the slice's code is written. Every one was new when this document was written; those of the model crate now exist in the code.
 
 ```text
 crates/rootpoint-model/   (crate rootpoint-model)
@@ -910,7 +913,8 @@ packing.
 ## Mapping tables
 
 The mapping tables are in the slice specs that build their functions:
-the slice `model-core`, now landed (each operation to its inverse), and
+`path@rootpoint-model@src/ops.rs`, built by the slice `model-core` (each operation to its
+inverse, in the doc comments of `Op`), and
 `spec@first-prototype@command-protocol` (each command to its operation).
 
 ## Losing alternatives

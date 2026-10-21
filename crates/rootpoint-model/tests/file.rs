@@ -131,6 +131,9 @@ fn text_that_is_not_a_document_is_a_parse_error() {
     ));
 }
 
+// Every variant of `Content` has an arm here and in `op_for` of the operations' tests:
+// `prop_oneof!` does not check that a match is exhaustive, so a variant left out is silently
+// untested.
 fn content() -> impl Strategy<Value = Content> {
     prop_oneof![
         Just(Content::Empty),

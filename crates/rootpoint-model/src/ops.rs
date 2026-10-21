@@ -48,7 +48,9 @@ pub enum Op {
     Remove {
         node: NodeId,
     },
-    /// Replace a slide's whole tree. The inverse of the structural edits.
+    /// Replace a slide's whole tree. The inverse of the structural edits: a snapshot of the former
+    /// tree restores merges, collapses and divider positions exactly, which an inverse per node
+    /// would have to reconstruct, and slides are small.
     SetTree {
         slide: SlideId,
         root: Node,
@@ -110,7 +112,8 @@ pub fn apply(doc: &mut Document, op: Op) -> Result<Op, OpError> {
     // Work on a copy, so that a refusal found halfway leaves `doc` as it was. Documents are small.
     let mut work = doc.clone();
     let inverse = apply_in(&mut work, op)?;
-    // An operation whose result breaks an invariant is refused: a restored slide or asset whose
+    // An operation whose result breaks an invariant is refused, per
+    // `design@rootpoint-model@validated-documents`: a restored slide or asset whose
     // ids collide, a tree given whole, or a split whose divider positions rounding has made equal
     // or has pushed to 0 or 1.
     work.validate()
