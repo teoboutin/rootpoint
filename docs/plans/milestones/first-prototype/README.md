@@ -379,7 +379,7 @@ design head of the model crate's Component.
 Proposed by the session in round 1 as shape (b), on the toolkit survey
 (`argument@first-prototype@arg-26`, `argument@first-prototype@arg-35`). Closed in O10: "b for the
 renderer, I think that precise control of the renderer is important for the project." Final state:
-approved; shape (a) lost. Shape: the decided design of `spec@first-prototype@slide-rendering`.
+approved; shape (a) lost. Shape: built, and recorded in `design@rootpoint-render@slide-renderer`.
 Harvest: a design head of the render crate's Component, standing on its argument and on the owner's
 stated reason.
 
@@ -447,8 +447,7 @@ builds for the wasm target, a reason respected at each crate's dependencies, is 
 
 Proposed by the session in round 2, on the toolkit survey's finding that the browser has no system
 fonts (`argument@first-prototype@arg-49`). Closed in O11: "I agree on the new font-sources and
-asset-source too". Final state: approved; system fonts with fallback lost. Shape: the decided design
-of `spec@first-prototype@slide-rendering`. Harvest: a design head of the render crate's Component;
+asset-source too". Final state: approved; system fonts with fallback lost. Shape: built, and recorded in `design@rootpoint-render@font-sources`. Harvest: a design head of the render crate's Component;
 T2 written in that Component's tripwires home.
 
 ### An asset entry is a path or embedded bytes, from version 1 of the format `##asset-source`
@@ -999,7 +998,7 @@ message after the milestone was written, "D2 accepted; T3 and T4 too", for T3 an
   explicit group node. Re-entry: the first real talk given with the prototype.
 - **T2. A needed glyph is missing from every available font.** Stresses
   `thread@first-prototype@font-sources`. Recorded on the owner's word, at the harvest of
-  `spec@first-prototype@slide-rendering`, in the render crate's Component's tripwires home. Fires
+  the slice `slide-rendering`, in the render crate's Component's tripwires home. Fires
   when: a real slide needs a glyph that no built-in font covers, and adding a font file to the
   presentation is not an acceptable fix for the owner. Response: reopen
   `thread@first-prototype@font-sources`. Re-entry: the first real talk given with the prototype.
@@ -1026,7 +1025,7 @@ character such as "é" cannot be typed. Response: reopen `thread@first-prototype
 ### AC2. Divider drags and 4K slides render within their bounds `##render-fast-enough`
 
 Guards `thread@first-prototype@slide-renderer`. Judged in two parts: the 4K bound by
-`spec@first-prototype@slide-rendering`, the drag bound by `spec@first-prototype@editor-shell`. Fires
+the slice `slide-rendering`, where it did not fire, the drag bound by `spec@first-prototype@editor-shell`. Fires
 when, in a release build on the owner's machine, any frame of a divider drag in a 1600×900 editor
 view takes more than 33 ms to redraw, or any render of one 3840×2160 presenter slide with text and
 an image takes more than 200 ms. The owner kept these bounds in O12. Response: reopen
@@ -1064,7 +1063,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 
 1. the slice `model-core`: the model crate, its operations, its geometry and its RON
    format; the wasm gate. Judges AC5.
-2. `spec@first-prototype@slide-rendering`: the render crate and a headless PNG. Judges AC2's 4K
+2. the slice `slide-rendering`: the render crate and a headless PNG. Judges AC2's 4K
    bound.
 3. `spec@first-prototype@command-protocol`: the protocol crate and the headless binary.
 4. `spec@first-prototype@editor-shell`: the app crate, native, with presenter mode. Judges AC2's
@@ -1076,7 +1075,6 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 
 | slice spec |
 | --- |
-| [The slide renderer and a headless PNG](slide-rendering.md) |
 | [The text protocol and the headless binary](command-protocol.md) |
 | [The native GUI and presenter mode](editor-shell.md) |
 | [Editing text in place](text-editing.md) |
@@ -1085,9 +1083,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 
 ## Order rationale
 
-- the slice `model-core` before `spec@first-prototype@slide-rendering`: the renderer
+- the slice `model-core` before the slice `slide-rendering`: the renderer
   draws the rectangles and contents that the model defines.
-- `spec@first-prototype@slide-rendering` before `spec@first-prototype@command-protocol`: the
+- the slice `slide-rendering` before `spec@first-prototype@command-protocol`: the
   protocol's `render` command calls the renderer.
 - `spec@first-prototype@command-protocol` before `spec@first-prototype@editor-shell`: the GUI
   applies the same operations, and its tests drive it through the protocol's session.

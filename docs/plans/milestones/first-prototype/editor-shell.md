@@ -39,7 +39,10 @@ cites.
 - The native libraries eframe's windowing needs on the owner's machine, which the existing `clippy`
   and `test` gates build from this slice on, since they run over the whole workspace; not yet
   established.
-- The duplicate `vello_cpu` versions of the premise of `spec@first-prototype@slide-rendering`.
+- The duplicate `vello_cpu` versions: egui 0.37 depends, through epaint, on `vello_cpu` 0.2, while
+  `path@rootpoint@crates/rootpoint-render/` uses 0.3, so the workspace builds both once the app
+  crate exists. The audit measures the build time and the binary size with both, and judges
+  whether that costs anything.
 
 The interaction design (how a split is started, how a subtree is selected for a spanning split, how
 a divider is shown) is not decided by the milestone. The audit of this slice opens a design session
