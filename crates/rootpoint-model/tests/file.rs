@@ -197,3 +197,46 @@ proptest! {
         prop_assert_eq!(load_ron(&text), Ok(doc));
     }
 }
+
+/// AC5 of the milestone of the first prototype: an agent given only the saved fixture, and asked to
+/// change the text of the top-right area to `Edited` and move the divider of the vertical split to
+/// 0.4, edited the file by hand; the edited file loads with those two changes and no other.
+#[test]
+fn a_file_edited_by_an_agent_loads_with_its_edits() {
+    let text = std::fs::read_to_string(data("fixture-edited-by-agent.ron")).unwrap();
+    let edited = load_ron(&text).expect("the edited file loads");
+    let mut expected = fixture();
+    let top_right = expected.slides[0].root.areas()[1].id;
+    let Content::Text(old) = expected
+        .node(top_right)
+        .and_then(|n| match n {
+            Node::Area(a) => Some(a.content.clone()),
+            Node::Split(_) => None,
+        })
+        .unwrap()
+    else {
+        panic!("the top-right area holds no text");
+    };
+    let vertical = expected.slides[0].root.id();
+    apply(
+        &mut expected,
+        Op::SetContent {
+            area: top_right,
+            content: Content::Text(TextContent {
+                text: "Edited".to_owned(),
+                ..old
+            }),
+        },
+    )
+    .unwrap();
+    apply(
+        &mut expected,
+        Op::MoveDivider {
+            split: vertical,
+            index: 0,
+            pos: 0.4,
+        },
+    )
+    .unwrap();
+    assert!(edited.same_content(&expected));
+}

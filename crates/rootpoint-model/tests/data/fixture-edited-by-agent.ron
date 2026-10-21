@@ -1,0 +1,84 @@
+#![enable(unwrap_variant_newtypes)]
+(
+    version: 1,
+    aspect: (
+        width: 16,
+        height: 9,
+    ),
+    next_id: 8,
+    assets: {
+        7: (
+            source: Path("images/cat.png"),
+        ),
+    },
+    slides: [
+        (
+            id: 1,
+            root: Split(
+                id: 4,
+                axis: Vertical,
+                children: [
+                    Area(
+                        id: 2,
+                        content: Image(
+                            asset: 7,
+                            fit: Fit,
+                        ),
+                    ),
+                    Split(
+                        id: 6,
+                        axis: Horizontal,
+                        children: [
+                            Area(
+                                id: 3,
+                                content: Text(
+                                    text: "Edited",
+                                    style: (
+                                        font: Builtin("sans"),
+                                        size: 72.0,
+                                        bold: true,
+                                        italic: false,
+                                        colour: (
+                                            r: 0,
+                                            g: 0,
+                                            b: 0,
+                                            a: 255,
+                                        ),
+                                        h_align: Center,
+                                        v_align: Top,
+                                    ),
+                                ),
+                            ),
+                            Area(
+                                id: 5,
+                                content: Text(
+                                    text: "Some wrapped text below the title.",
+                                    style: (
+                                        font: Builtin("sans"),
+                                        size: 48.0,
+                                        bold: false,
+                                        italic: false,
+                                        colour: (
+                                            r: 0,
+                                            g: 0,
+                                            b: 0,
+                                            a: 255,
+                                        ),
+                                        h_align: Left,
+                                        v_align: Top,
+                                    ),
+                                ),
+                            ),
+                        ],
+                        dividers: [
+                            0.5,
+                        ],
+                    ),
+                ],
+                dividers: [
+                    0.4,
+                ],
+            ),
+        ),
+    ],
+)
