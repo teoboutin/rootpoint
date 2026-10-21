@@ -12,8 +12,8 @@ pub mod selection;
 mod view;
 
 use eframe::egui::{
-    self, CentralPanel, ColorImage, Context, Key, KeyboardShortcut, Modifiers, Panel, Rect,
-    TextureHandle, TextureOptions, Ui,
+    self, CentralPanel, Color32, ColorImage, Context, Frame, Key, KeyboardShortcut, Modifiers,
+    Panel, Pos2, Rect, TextureHandle, TextureOptions, Ui, ViewportCommand,
 };
 use rootpoint_model::{NodeId, SlideId};
 use rootpoint_protocol::{Command, Files, Reply, Session};
@@ -46,6 +46,8 @@ pub struct App {
     editing: Option<(NodeId, String)>,
     /// Esc hides the preview line until Ctrl and Shift are both released.
     preview_hidden: bool,
+    /// Whether the window was last asked to be full screen, as presenter mode is.
+    fullscreen: bool,
 }
 
 /// A drag in progress in the slide view.
@@ -97,6 +99,7 @@ impl App {
             path: None,
             editing: None,
             preview_hidden: false,
+            fullscreen: false,
         }
     }
 
@@ -198,6 +201,22 @@ impl App {
             self.release_drag();
             self.blur_text();
         }
+        if self.session.view().presenting.is_some() {
+            self.presenter(ui);
+        } else {
+            self.editor(ui);
+        }
+        // Presenter mode is full screen, and the editor is not.
+        let presenting = self.session.view().presenting.is_some();
+        if presenting != self.fullscreen {
+            ui.ctx()
+                .send_viewport_cmd(ViewportCommand::Fullscreen(presenting));
+            self.fullscreen = presenting;
+        }
+    }
+
+    /// The editor: the toolbar, the status, the slide list, the side panel and the slide view.
+    fn editor(&mut self, ui: &mut Ui) {
         if !ui.ctx().egui_wants_keyboard_input() {
             self.shortcuts(ui);
         }
@@ -213,6 +232,41 @@ impl App {
             .default_size(260.0)
             .show(ui, |ui| self.side_panel(ui));
         CentralPanel::no_frame().show(ui, |ui| self.slide_view(ui));
+    }
+
+    /// Presenter mode: the presented slide alone, scaled uniformly to the largest size that fits
+    /// the window and letterboxed, rendered as the editor's slide view renders, with no mark over
+    /// it. →, Space and Page Down show the next slide, ← and Page Up the previous, and Esc leaves.
+    fn presenter(&mut self, ui: &mut Ui) {
+        let key = |ui: &mut Ui, key| ui.input_mut(|i| i.consume_key(Modifiers::NONE, key));
+        if key(ui, Key::Escape) {
+            self.stop_presenting();
+        } else if key(ui, Key::ArrowRight) || key(ui, Key::Space) || key(ui, Key::PageDown) {
+            self.next_slide();
+        } else if key(ui, Key::ArrowLeft) || key(ui, Key::PageUp) {
+            self.previous_slide();
+        }
+        // A key may have left presenter mode, which the next frame shows, or moved to another slide.
+        let Some(slide) = self.session.view().presenting else {
+            return;
+        };
+        CentralPanel::no_frame()
+            .frame(Frame::NONE.fill(Color32::BLACK))
+            .show(ui, |ui| {
+                let rect = ui.max_rect();
+                let size = texture_size(ui.ctx(), rect);
+                if size[0] == 0 || size[1] == 0 || self.session.document().slide(slide).is_none() {
+                    return;
+                }
+                if self.view.drawn != Some((slide, size)) {
+                    let ctx = ui.ctx().clone();
+                    self.draw(&ctx, slide, size);
+                }
+                if let Some(texture) = &self.view.texture {
+                    let uv = Rect::from_min_max(Pos2::ZERO, Pos2::new(1.0, 1.0));
+                    ui.painter().image(texture.id(), rect, uv, Color32::WHITE);
+                }
+            });
     }
 
     /// The keys of the editor, while no text field has focus. `consume_shortcut` ignores extra
@@ -235,6 +289,9 @@ impl App {
         }
         if shortcut(ui, Modifiers::COMMAND, Key::S) {
             self.save();
+        }
+        if shortcut(ui, Modifiers::NONE, Key::F5) {
+            self.present();
         }
         for (key, m, edge) in [
             (Key::ArrowUp, Move::Parent, Edge::Up),

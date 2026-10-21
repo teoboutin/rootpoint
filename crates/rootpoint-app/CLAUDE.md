@@ -12,6 +12,14 @@ changed nowhere else.
 the view's size in pixels changed. egui sizes its panels again on the second frame, so the view's
 size can change once after the first.
 
+## Presenter mode draws the slide as the editor does
+
+`App::presenter` renders through `App::draw` into the same texture as the slide view, and draws
+nothing over it, so at one pixel size its image is the editor's: the test of claim 3 in
+`path@rootpoint-app@tests/presenter.rs` compares the two. Every editor mark is drawn by
+`App::overlay`, never into the image `draw` uploads. `App::frame` asks the window for full screen
+whenever presenter mode starts, and to leave it when it ends.
+
 ## The slide view's marks and hits come from one layout
 
 `hit::Layout` places the shown slide's nodes and dividers in points through `slide_to_pixels`, so

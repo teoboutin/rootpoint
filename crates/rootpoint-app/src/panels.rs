@@ -45,6 +45,13 @@ impl App {
                 self.open_sample();
             }
             ui.separator();
+            if ui
+                .add_enabled(self.shown_slide().is_some(), egui::Button::new("Present"))
+                .clicked()
+            {
+                self.present();
+            }
+            ui.separator();
             if ui.button("Undo").clicked() {
                 self.undo();
             }

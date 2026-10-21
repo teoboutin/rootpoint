@@ -2,7 +2,7 @@
 
 The editor of rootpoint, in a window: the binary `rootpoint`. `rootpoint [presentation.ron]` opens
 the presentation given, or an empty one. The toolbar opens a presentation (Ctrl+O), saves it to its
-file (Ctrl+S) or to another, opens the built-in sample, and undoes (Ctrl+Z) and redoes
+file (Ctrl+S) or to another, opens the built-in sample, presents, and undoes (Ctrl+Z) and redoes
 (Ctrl+Shift+Z or Ctrl+Y). A save copies beside the saved file every asset outside its directory,
 and every embedded one, as the protocol's `save` does. The window shows the
 shown slide, scaled uniformly to the largest size that fits and letterboxed, and, under it, what
@@ -26,6 +26,9 @@ characters no font has, and text not drawn.
 - The side panel sets the selected area's content, empty, text or an image, the text's size,
   weight, slant, colour, alignment and font, and the image's fit, and adds an image asset. The
   text is edited in a plain text field; the edits made while it has focus are one undo step.
+- Present (F5) shows the shown slide full screen, alone, as the editor's slide view renders it
+  with no mark over it. →, Space and Page Down show the next slide, ← and Page Up the previous,
+  and Esc returns to the editor.
 - The slide list shows each slide: a click shows it, a drag onto another row moves it there, and
   its buttons add a slide after the shown one, and remove or duplicate the shown one.
 

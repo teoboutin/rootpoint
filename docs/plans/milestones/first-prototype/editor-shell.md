@@ -837,7 +837,7 @@ This slice judges, at step 5, the drag bound of AC2, `acceptance@first-prototype
 and AC6, `acceptance@first-prototype@modifiers-reach-app`, whose item is in the milestone document.
 
 AC2's drag bound is measured on the owner's machine, release build, in a 1600×900 editor view: a
-drag of one divider of the fixture `planned@rootpoint-app@tests/data/mixed.ron`, a
+drag of one divider of the fixture `path@rootpoint-app@tests/data/mixed.ron`, a
 slide of five areas mixing text and an image, saved with its image beside it from the render
 crate's `mixed` test slide. A frame's time runs from the start of the app's `ui` call to the end of
 its `TextureHandle::set`, taken with `std::time::Instant` and logged for each of 100 frames; the

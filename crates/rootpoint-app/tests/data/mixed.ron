@@ -1,0 +1,118 @@
+#![enable(unwrap_variant_newtypes)]
+(
+    version: 1,
+    aspect: (
+        width: 16,
+        height: 9,
+    ),
+    next_id: 12,
+    assets: {
+        11: (
+            source: Path("two-colours.png"),
+        ),
+    },
+    slides: [
+        (
+            id: 1,
+            root: Split(
+                id: 4,
+                axis: TopToBottom,
+                children: [
+                    Area(
+                        id: 2,
+                        content: Text(
+                            text: "A title in the built-in sans",
+                            style: (
+                                font: Builtin("sans"),
+                                size: 72.0,
+                                bold: true,
+                                italic: false,
+                                colour: (
+                                    r: 0,
+                                    g: 0,
+                                    b: 0,
+                                    a: 255,
+                                ),
+                                h_align: Center,
+                                v_align: Middle,
+                            ),
+                        ),
+                    ),
+                    Split(
+                        id: 6,
+                        axis: LeftToRight,
+                        children: [
+                            Area(
+                                id: 3,
+                                content: Image(
+                                    asset: 11,
+                                    fit: Fit,
+                                ),
+                            ),
+                            Split(
+                                id: 8,
+                                axis: TopToBottom,
+                                children: [
+                                    Area(
+                                        id: 5,
+                                        content: Text(
+                                            text: "A paragraph long enough to wrap over several lines of its area, so that the line breaks of the layout are visible in the image.",
+                                            style: (
+                                                font: Builtin("sans"),
+                                                size: 48.0,
+                                                bold: true,
+                                                italic: false,
+                                                colour: (
+                                                    r: 0,
+                                                    g: 0,
+                                                    b: 0,
+                                                    a: 255,
+                                                ),
+                                                h_align: Left,
+                                                v_align: Top,
+                                            ),
+                                        ),
+                                    ),
+                                    Area(
+                                        id: 7,
+                                        content: Text(
+                                            text: "An italic line in blue",
+                                            style: (
+                                                font: Builtin("sans"),
+                                                size: 48.0,
+                                                bold: false,
+                                                italic: true,
+                                                colour: (
+                                                    r: 30,
+                                                    g: 60,
+                                                    b: 200,
+                                                    a: 255,
+                                                ),
+                                                h_align: Left,
+                                                v_align: Top,
+                                            ),
+                                        ),
+                                    ),
+                                    Area(
+                                        id: 9,
+                                        content: Empty,
+                                    ),
+                                ],
+                                dividers: [
+                                    0.6,
+                                    0.8,
+                                ],
+                            ),
+                        ],
+                        dividers: [
+                            0.4,
+                        ],
+                    ),
+                ],
+                dividers: [
+                    0.2,
+                ],
+            ),
+        ),
+    ],
+)

@@ -354,6 +354,30 @@ impl App {
         }
     }
 
+    /// F5: present the shown slide, full screen.
+    pub fn present(&mut self) {
+        self.blur_text();
+        self.release_drag();
+        self.run(Command::Present {
+            slide: self.shown_slide(),
+        });
+    }
+
+    /// →, Space or Page Down in presenter mode. At the last slide it stays there.
+    pub fn next_slide(&mut self) {
+        self.run(Command::Next);
+    }
+
+    /// ← or Page Up in presenter mode. At the first slide it stays there.
+    pub fn previous_slide(&mut self) {
+        self.run(Command::Prev);
+    }
+
+    /// Esc in presenter mode: back to the editor.
+    pub fn stop_presenting(&mut self) {
+        self.run(Command::Stop);
+    }
+
     /// Ctrl+O: ask for a presentation file, and load it.
     pub(crate) fn open_dialog(&mut self) {
         let picked = rfd::FileDialog::new()
