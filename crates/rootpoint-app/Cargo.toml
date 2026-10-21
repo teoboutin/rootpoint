@@ -1,0 +1,33 @@
+[package]
+name = "rootpoint-app"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+# eframe's default features but `system_fonts`: the editor's own text needs only egui's built-in
+# fonts, the browser has no system fonts, and the feature links a second fontique beside parley's.
+eframe = { version = "0.37.0", default-features = false, features = [
+    "accesskit",
+    "clipboard",
+    "default_fonts",
+    "links",
+    "wayland",
+    "web_screen_reader",
+    "wgpu",
+    "x11",
+] }
+rfd = "0.17.2"
+rootpoint-model = { path = "../rootpoint-model" }
+rootpoint-protocol = { path = "../rootpoint-protocol" }
+rootpoint-render = { path = "../rootpoint-render" }
+
+# eframe's default feature `winit/default`, which a dependent cannot name, is restored by depending on
+# winit with its default features: among them, Wayland's libraries are loaded at run time, and its
+# windows get client-side decorations.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+winit = "0.30.13"
+
+[[bin]]
+name = "rootpoint"
+path = "src/main.rs"

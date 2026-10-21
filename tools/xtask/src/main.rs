@@ -66,9 +66,10 @@ fn main() -> ExitCode {
     }
 }
 
-/// The crates the browser build links, each built for the wasm target. A crate the browser build
-/// links is listed here when it is created, so a dependency that cannot build for the browser fails
-/// the gates at once rather than at the browser build.
+/// The crates the browser build links, each built for the wasm target. A crate is listed here once
+/// its web target is built, so a dependency that cannot build for the browser fails the gates at
+/// once rather than at the browser build. The app crate is listed by the slice that builds its web
+/// target, `spec@first-prototype@browser-build`.
 const WASM_CRATES: &[&str] = &["rootpoint-model", "rootpoint-protocol", "rootpoint-render"];
 
 fn wasm_gate() -> Gate {

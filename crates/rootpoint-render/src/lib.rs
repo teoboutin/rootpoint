@@ -175,15 +175,33 @@ pub fn render_slide(
     Ok(Rendered { pixmap, report })
 }
 
-/// The transform from slide units to pixels: one uniform scale, and a translation that centres
-/// the slide.
-fn slide_transform(doc: &Document, width: u16, height: u16) -> Affine {
+/// How slide units are carried to the pixels of an image: a point `(u, v)` of the slide is at the
+/// pixel `(x + scale * u, y + scale * v)`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ToPixels {
+    pub scale: f64,
+    pub x: f64,
+    pub y: f64,
+}
+
+/// Where `render_slide` draws the slides of `doc` in a `width`×`height` image: scaled uniformly to
+/// the largest size that fits, and centred. A caller that places marks over the image, or tests a
+/// pointer against the slide, uses it to agree with the drawing.
+pub fn slide_to_pixels(doc: &Document, width: u16, height: u16) -> ToPixels {
     let whole = doc.aspect.slide_rect();
     let (w, h) = (f64::from(width), f64::from(height));
     let scale = (w / whole.w).min(h / whole.h);
-    let x = (w - whole.w * scale) / 2.0;
-    let y = (h - whole.h * scale) / 2.0;
-    Affine::translate((x, y)) * Affine::scale(scale)
+    ToPixels {
+        scale,
+        x: (w - whole.w * scale) / 2.0,
+        y: (h - whole.h * scale) / 2.0,
+    }
+}
+
+/// The transform of [`slide_to_pixels`], as the rasterizer takes it.
+fn slide_transform(doc: &Document, width: u16, height: u16) -> Affine {
+    let t = slide_to_pixels(doc, width, height);
+    Affine::translate((t.x, t.y)) * Affine::scale(t.scale)
 }
 
 /// A rectangle in slide units, carried to pixels and rounded to whole pixels.

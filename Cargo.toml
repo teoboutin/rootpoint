@@ -1,3 +1,9 @@
 [workspace]
 resolver = "3"
-members = ["crates/rootpoint-model", "crates/rootpoint-protocol", "crates/rootpoint-render", "tools/xtask"]
+members = [
+    "crates/rootpoint-app",
+    "crates/rootpoint-model",
+    "crates/rootpoint-protocol",
+    "crates/rootpoint-render",
+    "tools/xtask",
+]

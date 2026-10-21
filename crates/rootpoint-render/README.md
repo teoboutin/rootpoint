@@ -8,4 +8,7 @@ Its public API: `render_slide` takes a document, a slide, a pixel size, a `FontS
 and a `Precision`, and returns a `Rendered`, the image with a `Report` of what it could not draw as
 asked; `Rendered::png` encodes the image as PNG bytes. `FontSet` holds the built-in Noto Sans and
 the fonts the caller registers from a document's font assets; `ImageSet` holds the images the
-caller decodes from the image assets' bytes.
+caller decodes from the image assets' bytes. `slide_to_pixels` gives the scale and the offset that
+carry slide units to the pixels of an image of a given size, where `render_slide` draws, so a
+caller places its own marks over the image, or tests a pointer against the slide, at the drawn
+place.
