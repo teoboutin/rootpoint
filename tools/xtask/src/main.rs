@@ -37,7 +37,7 @@ fn main() -> ExitCode {
                 package: "xtask",
                 prefix: &["klarch"],
             };
-            knowledge_architect_gates::run(&root, &rust_project(checker, "main"), &args)
+            knowledge_architect_gates::run(&root, &rust_project(checker, "origin/main"), &args)
         }
         Command::Klarch { command } => {
             let own = Path::new(env!("CARGO_MANIFEST_DIR"));

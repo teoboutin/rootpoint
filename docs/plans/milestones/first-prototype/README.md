@@ -177,7 +177,7 @@ slice's spec, with the gates run before each commit.
 
 - The workspace, `path@rootpoint@Cargo.toml`, has one member, the maintenance crate at
   `path@rootpoint@tools/xtask/`. Its `main` builds the gate list with
-  `rust_project(checker, "main")` from the library `knowledge-architect-gates` 0.8.0, whose
+  `rust_project(checker, "origin/main")` from the library `knowledge-architect-gates` 0.8.0, whose
   `Gate` struct is public and whose list a project may extend by pushing a `Gate`.
 - No editor code exists. The design and rejected homes of rootpoint hold no entry.
 - The Rust targets installed on the owner's machine are `x86_64-unknown-linux-gnu` only, measured
