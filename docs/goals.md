@@ -39,10 +39,12 @@ The main way to give a talk is the tool itself: it displays the presentation ful
 slide, with no export step. An export, such as images of the slides or a PDF, may come later and
 stays secondary. It is met when the author can give a talk from the tool alone.
 
-## A presentation is saved as a text file that a person or an agent can read `##readable-save-file`
+## A presentation is saved as readable text, and packs into one file `##readable-save-file`
 
-A saved presentation is one human-readable text file. It is met when a saved file can be read and
-edited by hand or by an agent, and loads back to the same presentation.
+A saved presentation is a human-readable text file, with its images and other binary assets as
+files beside it. It can also be packed into one file that carries its assets, and unpacked back. It
+is met when the text file can be read and edited by hand or by an agent and loads back to the same
+presentation, and when a packed file opens to the same presentation as its unpacked form.
 
 ## Every editing operation works without a display `##headless-core`
 
@@ -59,7 +61,9 @@ session in tests.
 
 ## The editor and presenter mode run in a web browser `##runs-in-browser`
 
-The tool also builds to WebAssembly, so a presentation can be edited and shown in a browser with no
-install. It is met when the same editing operations and presenter mode work in a browser build as
-in the native build. The owner may abandon this goal if it constrains the design more than its use
+The tool also builds to WebAssembly, served as a static website, so a presentation can be edited
+and shown in a browser with no install. A packed presentation, carried as one file, can be opened
+and presented from any computer with a web browser. It is met when the same editing operations and
+presenter mode work in a browser build as in the native build, and when a packed file opens in
+that build. The owner may abandon this goal if it constrains the design more than its use
 justifies.
