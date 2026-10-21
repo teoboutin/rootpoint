@@ -5,7 +5,9 @@
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod document;
+mod geometry;
 mod ops;
 
 pub use document::*;
+pub use geometry::{Rect, SLIDE_HEIGHT, area_rects};
 pub use ops::{Op, OpError, Side, apply};
