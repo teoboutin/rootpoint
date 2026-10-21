@@ -109,7 +109,7 @@ apply no operation.
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`, into the design home of the protocol crate's
-Component (rootpoint's, if the owner rules D2 otherwise):
+Component:
 `thread@first-prototype@protocol-addressing` and `thread@first-prototype@protocol-transport`, the
 grammar being an interface others consume; the losing alternatives, paths and JSON-RPC, judged for a
 `rejected` entry.

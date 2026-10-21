@@ -123,8 +123,8 @@ crate adds that crate's WebAssembly build to the gates, as
 
 - **C1 to C10**: the criteria, the items of "Criteria" below, in the order they are listed.
 - **AC1 to AC5**: the acceptance criteria, labelled in their items. **T1 to T4**: the tripwires of
-  the premortem. **D1, D2**: the defaults awaiting the owner. **Q1 to Q3**: the questions put to
-  the owner in rounds 1 to 3, whose answers are O10 to O12.
+  the premortem. **D1, D2**: the defaults put to the owner, both ruled. **Q1 to Q3**: the questions
+  put to the owner in rounds 1 to 3, whose answers are O10 to O12.
 - **O1 to O12**: the owner's messages, quoted in "Status and audience".
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
@@ -290,11 +290,11 @@ with your positions over this whole table." Final state: approved. Shape: the de
 
 ### Linked dividers are left out of the prototype `##linked-dividers`
 
-Proposed by the owner in O2 (`argument@first-prototype@arg-14`); the session proposed leaving it
-out while giving every node a stable id (`argument@first-prototype@arg-29`). Closed by O10's
-whole-table agreement, round 1's default being "parked". Final state: parked. Tripwire T3, awaiting
-the owner's ruling (see "Premortem"); re-entry point: the first real talk given with the prototype.
-Harvest: none while parked; T3 if the owner rules it recorded.
+Proposed by the owner in O2 (`argument@first-prototype@arg-14`); the session proposed leaving it out
+while giving every node a stable id (`argument@first-prototype@arg-29`). Closed by O10's whole-table
+agreement, round 1's default being "parked". Final state: parked. Tripwire T3, recorded on the
+owner's word (see "Premortem"); re-entry point: the first real talk given with the prototype.
+Harvest: T3, while the thread stays parked.
 
 ### A presentation has one aspect ratio, sizes are in slide units, and every display scales uniformly `##slide-coordinate-space`
 
@@ -323,8 +323,8 @@ rejected shape of `thread@first-prototype@content-by-reference` if it earns an e
 
 Proposed by the owner in O2 (`argument@first-prototype@arg-15`) and shaped by the session in round 1
 (`argument@first-prototype@arg-33`). Parked by the owner in O10: "slide-templates parked for
-later." Final state: parked. Tripwire T4, awaiting the owner's ruling; re-entry point: the first
-real talk given with the prototype. Harvest: none while parked; T4 if the owner rules it recorded.
+later." Final state: parked. Tripwire T4, recorded on the owner's word; re-entry point: the first
+real talk given with the prototype. Harvest: T4, while the thread stays parked.
 
 ### Every change is an operation value, and applying it returns its inverse `##edit-operation-core`
 
@@ -866,8 +866,8 @@ arguments that cite the surveys, `argument@first-prototype@arg-19` and
 ## Premortem
 
 Each cause assumes the prototype was built and failed. Each verdict below is the owner's ruling in
-O12, "All tripwires and AC can be kept, proceed", for AC1 to AC5 and T1 and T2. T3 and T4 await
-the owner.
+O12, "All tripwires and AC can be kept, proceed", for AC1 to AC5 and T1 and T2, and in the owner's
+message after the milestone was written, "D2 accepted; T3 and T4 too", for T3 and T4.
 
 - **In-place text editing on Parley is poor.** Stresses `thread@first-prototype@slide-renderer` and
   `thread@first-prototype@gui-toolkit`. Becomes AC1, `acceptance@first-prototype@caret-on-glyph`.
@@ -894,11 +894,11 @@ the owner.
   when: a real slide needs a glyph that no built-in font covers, and adding a font file to the
   presentation is not an acceptable fix for the owner. Response: reopen
   `thread@first-prototype@font-sources`. Re-entry: the first real talk given with the prototype.
-- **T3, awaiting the owner. Rows must align across two columns.** Stresses the parked
+- **T3. Rows must align across two columns.** Stresses the parked
   `thread@first-prototype@linked-dividers`. Fires when: a real slide needs rows aligned across two
   columns. Response: reopen linked dividers in a design session. Re-entry: the first real talk given
   with the prototype.
-- **T4, awaiting the owner. Repeated slide furniture costs too much by hand.** Stresses the parked
+- **T4. Repeated slide furniture costs too much by hand.** Stresses the parked
   `thread@first-prototype@slide-templates`. Fires when: preparing a real talk needs the same
   background, footer or layout on several slides beyond what "duplicate slide" gives. Response:
   reopen templates in a design session. Re-entry: the first real talk given with the prototype.
@@ -986,22 +986,22 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 
 ## Defaults awaiting the owner
 
-- **D1.** The work is a milestone of seven slices, not one spec. Bears on
-  `thread@first-prototype@prototype-scope`. Built as written until the owner rules.
-- **D2.** Each crate is declared a Component of the manifest in the slice that creates it, at
+- **D1, ruled.** The work is a milestone of seven slices, not one spec. Bears on
+  `thread@first-prototype@prototype-scope`. The owner ruled: "A milestone was the right call
+  here."
+- **D2, ruled.** Each crate is declared a Component of the manifest in the slice that creates it, at
   `planned@rootpoint@crates/` under the crate's own name, and its goals are drafted under
   `skill@knowledge-architect-goal-setting` for the owner's ruling before that slice merges. Bears on
   `thread@first-prototype@crate-split`. The harvest rows of the slice specs name those Components'
-  homes; if the owner rules that the crates are not Components, those rows move to rootpoint's
-  homes.
-- **T3 and T4**, in "Premortem": recorded or not.
+  homes. The owner ruled: "D2 accepted".
+- **T3 and T4, ruled**, in "Premortem": recorded. The owner ruled: "T3 and T4 too".
 
 ## Harvest
 
 - **This document** leaves in the commit that completes the harvest of
   `spec@first-prototype@browser-build`, after AC4 has been reported on.
 - **Each slice** harvests by the row of its spec.
-- **T3 and T4**, if the owner rules them recorded, are written at the harvest of
+- **T3 and T4**, recorded on the owner's word, are written at the harvest of
   `spec@first-prototype@model-core`, in rootpoint's tripwires home, each naming in words the parked
   thread it watches, since a parked thread earns no head.
 

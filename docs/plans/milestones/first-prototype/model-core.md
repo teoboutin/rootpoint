@@ -151,8 +151,7 @@ editing the file, and the test loads it back with those changes.
 ## Harvest
 
 At this slice's landing, under `skill@knowledge-architect-decision-recording`, judged by the entry
-tests of `primer@design-heads`, into the design home of the model crate's Component (rootpoint's, if
-the owner rules D2 otherwise):
+tests of `primer@design-heads`, into the design home of the model crate's Component:
 
 - the threads `thread@first-prototype@split-tree-arity`, `thread@first-prototype@split-any-node`,
   `thread@first-prototype@slide-coordinate-space`, `thread@first-prototype@inline-content-assets`
@@ -165,5 +164,4 @@ the owner rules D2 otherwise):
 - the losing alternatives of these threads, judged under
   `skill@knowledge-architect-decision-recording` for a `rejected` entry: binary splits, content by
   reference, pixel units, JSON;
-- T1 into that Component's tripwires home, and T3 and T4 into rootpoint's, if the owner rules them
-  recorded.
+- T1 into that Component's tripwires home, and T3 and T4 into rootpoint's, on the owner's word.

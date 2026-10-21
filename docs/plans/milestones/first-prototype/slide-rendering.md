@@ -93,7 +93,7 @@ time taken with `std::time::Instant` over 10 renders, the median reported.
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`, into the design home of the render crate's
-Component (rootpoint's, if the owner rules D2 otherwise): `thread@first-prototype@slide-renderer`,
+Component: `thread@first-prototype@slide-renderer`,
 with the owner's stated reason attributed to the owner, and `thread@first-prototype@font-sources`;
 the losing alternatives, shape (a) and system fonts, judged for a `rejected` entry; T2 into that
 Component's tripwires home.

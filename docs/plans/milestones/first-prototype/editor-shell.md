@@ -74,6 +74,6 @@ the owner's machine, with frame times taken over 100 frames and the 95th percent
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`, into the design home of the app crate's
-Component (rootpoint's, if the owner rules D2 otherwise): `thread@first-prototype@gui-toolkit`, and
+Component: `thread@first-prototype@gui-toolkit`, and
 each decision of the interaction design session that earns a head; the losing hosts, judged for a
 `rejected` entry.
