@@ -14,6 +14,14 @@ cites.
 - The library root and the binary read `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires.
 - The library added to the `wasm` gate: the browser build links `Session`. The binary is not built
   for the wasm target.
+- `Files`, the trait through which the session reads and writes files: the presentation, its
+  assets and rendered images. The session opens no file itself, since the browser build links it
+  and `std::fs` fails there at run time, as `path@rootpoint-model@CLAUDE.md` says; the headless
+  binary gives it a `Files` on the native file system. Asset paths are relative to the
+  presentation file's directory, or to the working directory of a presentation not yet saved.
+- The renaming of the model's axes to `Axis::SideBySide` and `Axis::Stacked`, which
+  `issue@rootpoint-model@axis-names-need-inference` asks: a fresh agent read `Vertical` as stacked.
+  The protocol's words are `beside` and `stacked`. A default awaiting the owner, Q11.
 - Per D2, the crate's Component.
 
 ## Claims
@@ -66,6 +74,26 @@ only the commands of the mapping table and of the view commands.
 
 ## Decided design
 
+### Replies, undo and rendering
+
+- A command that creates ids replies with them: `add-slide` with `s<n> root=n<n>`, `split` with
+  `new=n<n>`, and `split=n<n>` when it wrapped the node in a new split, `duplicate-slide` with the
+  copy's id, `asset` with `a<n>`.
+- Each accepted editing command pushes its inverse on the undo stack and clears the redo stack;
+  `undo` applies the top inverse and pushes its own inverse on the redo stack. `new` and `load`
+  clear both. View commands are not undone.
+- `render <slide> <path> [w h]` draws with the renderer's portable precision, 1920×1080 by
+  default, so a headless image is the same on every machine; it decodes the slide's image and font
+  assets through `Files`, and its reply carries the renderer's report: `fallback=`, `missing=` and
+  `glyphs=` lists, which the tripwire on missing glyphs reads.
+- Blank lines and lines starting with `#` give no reply, so a script can carry comments.
+- A text's style options: `size=<slide units>`, `bold`, `italic`, `colour=#rrggbb` or `#rrggbbaa`,
+  `align=left|center|right`, `valign=top|middle|bottom`, `font=sans|a<n>`.
+- `tree` writes a split as `n<n>:<axis>(<dividers>)[<child> | <child> ...]`, with `beside` or
+  `stacked` and the dividers' positions, and an area as `n<n>` followed by `empty`,
+  `text "<text>"` or `image a<n> fit|fill`. `view` replies `selected=n<n>|- presenting=s<n>|-`.
+- `next` and `prev` at the last or the first slide reply `err` and change nothing.
+
 ### The grammar
 
 One command per line: a verb, then arguments separated by spaces; a text argument is a
@@ -76,12 +104,12 @@ slide's tree on one line, every split and area with its id
 
 ```text
 > add-slide                ok s1 root=n2
-> split n2 v 0.5 after     ok split=n3 new=n4
+> split n2 beside 0.5 after  ok new=n3 split=n4
 > text n2 "Hello" size=64 bold
                            ok
 > asset cat.png            ok a5
-> image n4 a5 fit          ok
-> tree s1                  ok s1 n3:V[n2 text "Hello" | n4 image a5 fit]
+> image n3 a5 fit          ok
+> tree s1                  ok s1 n4:beside(0.5)[n2 text "Hello" | n3 image a5 fit]
 > render s1 out.png        ok
 ```
 
@@ -112,7 +140,7 @@ audit may refine them in place.
 | `remove-slide <slide>` | `RemoveSlide { slide }` |
 | `move-slide <slide> <to>` | `MoveSlide { slide, to }` |
 | `duplicate-slide <slide>` | `DuplicateSlide { slide }` |
-| `split <node> <h\|v> <at> [before\|after]` | `Split { node, axis, at, side }` |
+| `split <node> <beside\|stacked> <at> [before\|after]` | `Split { node, axis, at, side }` |
 | `remove <node>` | `Remove { node }` |
 | `divider <split> <index> <pos>` | `MoveDivider { split, index, pos }` |
 | `swap <a> <b>` | `Swap { a, b }` |

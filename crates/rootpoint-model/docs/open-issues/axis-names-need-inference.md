@@ -1,5 +1,5 @@
 ---
-kind: observation
+kind: defect
 ---
 # A reader of a saved file infers what `Vertical` and `Horizontal` mean
 
@@ -22,8 +22,18 @@ divider line, and that the first child is the left or top one. It ruled out the 
 because that reading left no top-right text to change. The edited file is
 `path@rootpoint-model@tests/data/fixture-edited-by-agent.ron`.
 
-The observation was made once, on one file with one split per axis. Whether a reader misreads the
-names on a file where both readings fit the request is not established.
+The observation was made first on one file with one split per axis. The experiment below then
+reproduced a misreading.
+
+### Reproduction
+
+A slide whose root is a `Vertical` split of two `Horizontal` splits, each of two text areas, in
+the order the model writes them: Kiwi and Plum in the first child, Fig and Lime in the second. In
+the code, the first child is the left column, so the bottom-left area is Plum. A fresh agent, given
+only the saved file and asked to change the bottom-left area's text, changed Fig: it read
+`axis` as the direction the children are stacked in, and named the other reading, a vertical
+divider line as with vim's `:vsplit`, as equally common. The file was generated with the model's
+own `save_ron`; nothing else was given to the agent.
 
 ### Why it matters
 
