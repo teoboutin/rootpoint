@@ -142,7 +142,10 @@ slice's spec, with the gates run before each commit.
   O5, O6 and O8 and in `argument@first-prototype@arg-20`, `argument@first-prototype@arg-21` and
   `argument@first-prototype@arg-25` are those of the goal setting, A2 to A4, a separate numbering.
   **D1 to D4**: the defaults put to the owner, listed in their own section.
-- **O1 to O12**: the owner's messages, quoted in "Status and audience".
+- **O1 to O12**: the owner's messages, quoted in "Status and audience". **O13 to O16**: the
+  owner's messages in the design session held at the audit of `spec@first-prototype@editor-shell`,
+  quoted in that slice's spec, with its questions **Q15 to Q21**, its acceptance criterion **AC6**
+  and its tripwire **T5**.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
@@ -1029,6 +1032,15 @@ message after the milestone was written, "D2 accepted; T3 and T4 too", for T3 an
   background, footer or layout on several slides beyond what "duplicate slide" gives. Response:
   reopen templates in a design session. Re-entry: the first real talk given with the prototype.
   Recorded as T3 is.
+- **T5. A command of another client joins the GUI's undo group.** Stresses #gesture-undo of
+  `spec@first-prototype@editor-shell`, in the design session held at its audit. Fires when: in
+  `spec@first-prototype@live-control`, a command from the socket arrives while a group the GUI
+  opened with `begin` is open, and joins it, so one `undo` reverts the agent's edit with the
+  GUI's gesture. Response: reopen that decision, for example with one group per client. Re-entry:
+  the audit of `spec@first-prototype@live-control`. Recorded on the owner's word in O16, at the
+  harvest of `spec@first-prototype@editor-shell`, in the protocol crate's Component's tripwires
+  home, guarding the head that harvest writes for that decision. AC6, ruled with it, is that
+  slice's.
 
 ## Acceptance criteria
 
@@ -1086,7 +1098,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
    bound.
 3. the slice `command-protocol`: the protocol crate and the headless binary.
 4. `spec@first-prototype@editor-shell`: the app crate, native, with presenter mode. Judges AC2's
-   drag bound.
+   drag bound and AC6.
 5. `spec@first-prototype@text-editing`: editing text in place. Judges AC1.
 6. `spec@first-prototype@live-control`: the control socket and its client.
 7. `spec@first-prototype@browser-build`: the browser build. Judges AC3. The owner then judges AC4,
@@ -1171,7 +1183,13 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 ## Later consequences
 
 - **Packing and unpacking** add `AssetSource::Embedded` writers and the browser's open of a packed
-  file, completing `goal@rootpoint@readable-save-file` and `goal@rootpoint@runs-in-browser`.
+  file, completing `goal@rootpoint@readable-save-file` and `goal@rootpoint@runs-in-browser`. The
+  owner wants, later than the prototype, assets organised by the author in subdirectories of any
+  depth, and a pack then an unpack elsewhere to keep that tree, in the owner's words in O14 of
+  `spec@first-prototype@editor-shell`: "ultimately (later than initial prototype), I'd like to
+  allow the user to organize the assets in any way they want with subdirectories of any level, and
+  for a "pack then unpack elsewhere" action to preserve the tree." The save rule of that slice keeps
+  every asset already inside the presentation's directory at its path, at any depth.
 - **More content kinds** (bullet lists, code, equations, video) each add a variant of `Content`, its
   options, its drawing and its editor, per `goal@rootpoint@minimal-content-set`.
 - **Templates and linked dividers** are re-entered at the first real talk, by T3 and T4.

@@ -31,6 +31,8 @@ cites.
 - `thread@first-prototype@protocol-transport`.
 - egui's `Context::request_repaint`, callable from any thread (quoted in
   `argument@first-prototype@arg-26`).
+- T5 of the milestone document's premortem: a command from the socket arriving while a group of the
+  GUI is open, `begin` without its `end`, joins that group.
 
 ## Fails alone on
 
