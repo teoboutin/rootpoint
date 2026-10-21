@@ -3143,6 +3143,7 @@ name = "rootpoint-app"
 version = "0.0.0"
 dependencies = [
  "eframe",
+ "parley",
  "rfd",
  "rootpoint-model",
  "rootpoint-protocol",

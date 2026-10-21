@@ -11,9 +11,10 @@ use std::ops::Range;
 use std::sync::Arc;
 
 pub use images::{DecodeError, ImageSet};
+use parley::Layout;
 use rootpoint_model::{
-    AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, VAlign,
-    area_rects,
+    AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, TextContent,
+    VAlign, area_rects,
 };
 pub use text::{FontError, FontSet};
 use vello_cpu::color::AlphaColor;
@@ -133,21 +134,13 @@ pub fn render_slide(
         match &a.content {
             Content::Empty => {}
             Content::Text(content) => {
-                let inner = (area.w - 2.0 * TEXT_PADDING).max(0.0);
-                let laid = text::layout_text(fonts, content, inner as f32);
+                let (laid, origin) = lay_out_area(fonts, content, area);
                 if laid.fell_back {
                     report.font_fallbacks.push(id);
                 }
                 if laid.missing_glyph {
                     report.missing_glyphs.push(id);
                 }
-                let free = area.h - 2.0 * TEXT_PADDING - f64::from(laid.layout.height());
-                let dy = match content.style.v_align {
-                    VAlign::Top => 0.0,
-                    VAlign::Middle => free / 2.0,
-                    VAlign::Bottom => free,
-                };
-                let origin = (area.x + TEXT_PADDING, area.y + TEXT_PADDING + dy);
                 ctx.set_transform(to_pixels * Affine::translate(origin));
                 let c = content.style.colour;
                 ctx.set_paint(AlphaColor::<vello_cpu::color::Srgb>::from_rgba8(
@@ -173,6 +166,59 @@ pub fn render_slide(
     let mut pixmap = Pixmap::new(width, height);
     ctx.render_with(&mut pixmap, &mut resources, RasterizerSettings::default());
     Ok(Rendered { pixmap, report })
+}
+
+/// The text of one area as `render_slide` draws it: its layout, in slide units, and the point of the
+/// slide, in slide units, where the layout's origin is drawn. An editor that places a caret or a
+/// selection on this layout, with Parley's `Selection` and `Cursor`, places it on the drawn glyphs.
+pub struct AreaText {
+    pub layout: Layout<()>,
+    pub origin: (f64, f64),
+}
+
+/// The text of the area `area` of the slide `slide`, laid out as `render_slide` lays it out; `None`
+/// when the slide or the area is not there, or the area holds no text.
+pub fn area_text(
+    doc: &Document,
+    slide: SlideId,
+    area: NodeId,
+    fonts: &mut FontSet,
+) -> Option<AreaText> {
+    let the_slide = doc.slide(slide)?;
+    let rect = area_rects(the_slide, doc.aspect)
+        .into_iter()
+        .find(|(id, _)| *id == area)?
+        .1;
+    let Some(Node::Area(a)) = the_slide.root.find(area) else {
+        return None;
+    };
+    let Content::Text(content) = &a.content else {
+        return None;
+    };
+    let (laid, origin) = lay_out_area(fonts, content, rect);
+    Some(AreaText {
+        layout: laid.layout,
+        origin,
+    })
+}
+
+/// A text area's layout, wrapped to the area's width less its padding, and the point its origin is
+/// drawn at: inset by the padding, and moved down by the vertical alignment's share of the room
+/// left. `render_slide` and `area_text` both lay a text out here, so they give one layout.
+fn lay_out_area(
+    fonts: &mut FontSet,
+    content: &TextContent,
+    area: SlideRect,
+) -> (text::TextLayout, (f64, f64)) {
+    let inner = (area.w - 2.0 * TEXT_PADDING).max(0.0);
+    let laid = text::layout_text(fonts, content, inner as f32);
+    let free = area.h - 2.0 * TEXT_PADDING - f64::from(laid.layout.height());
+    let dy = match content.style.v_align {
+        VAlign::Top => 0.0,
+        VAlign::Middle => free / 2.0,
+        VAlign::Bottom => free,
+    };
+    (laid, (area.x + TEXT_PADDING, area.y + TEXT_PADDING + dy))
 }
 
 /// How slide units are carried to the pixels of an image: a point `(u, v)` of the slide is at the

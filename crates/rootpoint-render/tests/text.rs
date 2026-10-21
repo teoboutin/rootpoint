@@ -5,7 +5,7 @@ mod common;
 
 use common::*;
 use rootpoint_model::*;
-use rootpoint_render::{FontSet, ImageSet, Precision, render_slide};
+use rootpoint_render::{FontSet, ImageSet, Precision, area_text, render_slide};
 
 #[test]
 fn the_alignments_match_their_golden_image() {
@@ -139,4 +139,35 @@ fn time_the_mixed_slide_at_4k() {
         max.as_millis() <= 200,
         "a render took {max:?}, over AC2's 200 ms"
     );
+}
+
+#[test]
+fn area_text_gives_the_layout_render_slide_draws() {
+    let (doc, _) = mixed();
+    let slide = doc.slides[0].id;
+    let mut fonts = FontSet::new();
+    let out = render_slide(
+        &doc,
+        slide,
+        960,
+        540,
+        &mut fonts,
+        &ImageSet::new(),
+        Precision::Portable,
+    )
+    .unwrap();
+    let rects = area_rects(&doc.slides[0], doc.aspect);
+    for (area, lines) in &out.report.lines {
+        let text = area_text(&doc, slide, *area, &mut fonts).unwrap();
+        // The same lines as the render laid out.
+        let got: Vec<_> = text.layout.lines().map(|l| l.text_range()).collect();
+        assert_eq!(&got, lines, "{area}");
+        // Its origin is inside the area, inset by the padding on the left.
+        let r = rects.iter().find(|(id, _)| id == area).unwrap().1;
+        assert_eq!(text.origin.0, r.x + 24.0);
+        assert!(text.origin.1 >= r.y + 24.0 && text.origin.1 < r.y + r.h);
+    }
+    // An area with no text has none.
+    let image = doc.slides[0].root.areas()[1].id;
+    assert!(area_text(&doc, slide, image, &mut fonts).is_none());
 }

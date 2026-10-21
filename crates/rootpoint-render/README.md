@@ -11,4 +11,6 @@ the fonts the caller registers from a document's font assets; `ImageSet` holds t
 caller decodes from the image assets' bytes. `slide_to_pixels` gives the scale and the offset that
 carry slide units to the pixels of an image of a given size, where `render_slide` draws, so a
 caller places its own marks over the image, or tests a pointer against the slide, at the drawn
-place.
+place. `area_text` gives the text of one area as `render_slide` lays it out, a Parley `Layout`
+in slide units and the point it is drawn at, so an editor places a caret or a selection on the
+drawn glyphs with Parley's `Selection` and `Cursor`.

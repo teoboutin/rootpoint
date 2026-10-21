@@ -6,6 +6,7 @@ const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod actions;
 mod assets;
+pub mod editing;
 pub mod hit;
 mod panels;
 pub mod selection;
@@ -50,6 +51,11 @@ pub struct App {
     preview_hidden: bool,
     /// Whether the window was last asked to be full screen, as presenter mode is.
     fullscreen: bool,
+    /// The text being edited in place, if any.
+    edit: Option<editing::Editing>,
+    /// Where the current press was, when its release, if a click, enters editing: it was pressed on
+    /// the selected text area. egui clears the press's origin by the release's frame.
+    edit_on_click: Option<Pos2>,
 }
 
 /// A drag in progress in the slide view.
@@ -103,6 +109,8 @@ impl App {
             editing: None,
             preview_hidden: false,
             fullscreen: false,
+            edit: None,
+            edit_on_click: None,
         }
     }
 
@@ -225,7 +233,14 @@ impl App {
     fn editor(&mut self, ui: &mut Ui) {
         // During a drag only Esc acts, which the slide view takes; a key whose edit joined the
         // drag's group would make the drag's step hold another edit.
-        if !ui.ctx().egui_wants_keyboard_input() && self.gesture == Gesture::Idle {
+        // Editing in place ends when its area is no longer the selection, as after a click on
+        // another node, an undo that removed it, or another slide shown.
+        if self.edit.is_some() && self.editing() != self.selected_area() {
+            self.stop_editing();
+        }
+        if self.edit.is_some() {
+            self.editing_keys(ui);
+        } else if !ui.ctx().egui_wants_keyboard_input() && self.gesture == Gesture::Idle {
             self.shortcuts(ui);
         }
         self.view.text_field = None;
@@ -316,6 +331,29 @@ impl App {
         }
         if ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Delete)) {
             self.remove_selection();
+        }
+    }
+
+    /// The keys while a text is edited in place: they move the caret, and Esc leaves editing. The
+    /// editor's other shortcuts do not act, so Delete and Shift with an arrow reach the text.
+    fn editing_keys(&mut self, ui: &mut Ui) {
+        use editing::CaretMove;
+        let key = |ui: &mut Ui, key| ui.input_mut(|i| i.consume_key(Modifiers::NONE, key));
+        if key(ui, Key::Escape) {
+            self.stop_editing();
+            return;
+        }
+        for (k, m) in [
+            (Key::ArrowLeft, CaretMove::Left),
+            (Key::ArrowRight, CaretMove::Right),
+            (Key::ArrowUp, CaretMove::Up),
+            (Key::ArrowDown, CaretMove::Down),
+            (Key::Home, CaretMove::LineStart),
+            (Key::End, CaretMove::LineEnd),
+        ] {
+            if key(ui, k) {
+                self.move_caret(m);
+            }
         }
     }
 

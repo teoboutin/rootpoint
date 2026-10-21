@@ -202,6 +202,22 @@ impl Layout {
         })
     }
 
+    /// The point of the view where the slide's point `(u, v)`, in slide units, is drawn.
+    pub fn to_points(&self, u: f64, v: f64) -> Pos2 {
+        self.origin + Vec2::new(u as f32, v as f32) * self.scale
+    }
+
+    /// The point of the slide, in slide units, drawn at the view's point `p`.
+    pub fn to_units(&self, p: Pos2) -> (f64, f64) {
+        let d = (p - self.origin) / self.scale;
+        (f64::from(d.x), f64::from(d.y))
+    }
+
+    /// How many points one slide unit is.
+    pub fn points_per_unit(&self) -> f32 {
+        self.scale
+    }
+
     /// The rectangle of a node, in points.
     pub fn rect(&self, node: NodeId) -> Option<Rect> {
         self.nodes.iter().find(|(id, _)| *id == node).map(|n| n.1)

@@ -54,7 +54,7 @@ impl App {
 
     /// The axis of the split at the pointer that the held keys ask for, Ctrl a vertical line, which
     /// splits beside, and Shift a horizontal one, which stacks, and whether Alt snaps it; `None`
-    /// with neither key held, or after Esc until both are released.
+    /// with neither key held, after Esc until both are released, or while a text is edited.
     fn split_keys(&mut self, ui: &Ui) -> Option<(Axis, bool)> {
         let m = ui.input(|i| i.modifiers);
         let axis = if m.command {
@@ -66,6 +66,10 @@ impl App {
         };
         if axis.is_none() {
             self.preview_hidden = false;
+        }
+        // While a text is edited, Shift extends its selection and splits nothing.
+        if self.edit.is_some() {
+            return None;
         }
         axis.filter(|_| !self.preview_hidden).map(|a| (a, m.alt))
     }
@@ -98,6 +102,21 @@ impl App {
         {
             let press = layout.press(origin, selected, split);
             self.press = Some(press);
+            // While a text is edited, a press inside its area moves the caret; any other press
+            // leaves editing, then acts as it would.
+            if let Some(editing) = self.editing() {
+                if press == Press::Area(editing) {
+                    self.place_caret(origin, layout);
+                    self.press = None;
+                    return;
+                }
+                self.stop_editing();
+            }
+            // A click on the selected text area enters editing at the click; a first click on an
+            // area only selects it, so a double-click on a text area does both.
+            self.edit_on_click =
+                matches!(press, Press::Area(a) if Some(a) == selected && self.is_text_area(a))
+                    .then_some(origin);
             match press {
                 Press::Grip(area) => self.grab_grip(area),
                 Press::Divider(i) => {
@@ -142,6 +161,11 @@ impl App {
             let press = self.press.take();
             self.release_drag();
             match press {
+                Some(Press::Area(area)) if response.clicked() && self.edit_on_click.is_some() => {
+                    if let Some(at) = self.edit_on_click.take() {
+                        self.edit_at(area, at, layout);
+                    }
+                }
                 Some(Press::Area(area)) if response.clicked() => self.select_node(area),
                 // Releasing the key before the button removes the line and issues nothing.
                 Some(Press::Split(preview))
@@ -234,6 +258,10 @@ impl App {
                 painter.rect_filled(back, 3.0, Color32::from_black_alpha(200));
                 painter.galley(back.min + Vec2::splat(4.0), galley, Color32::WHITE);
             }
+        }
+        // The caret of a text edited in place, on the drawn glyphs.
+        if let Some(caret) = self.caret_rect(layout) {
+            ui.painter().rect_filled(caret, 0.0, accent);
         }
     }
 }
