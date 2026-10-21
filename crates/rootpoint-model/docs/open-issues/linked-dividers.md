@@ -14,11 +14,15 @@ owner's word, watches for the need.
 ### What
 
 A slide of two columns, each split into rows, has two independent sets of row dividers,
-`design@rootpoint-model@split-tree-arity`. To keep the rows aligned, the author moves both
-dividers to the same position. The owner proposed linking two dividers so each follows the other,
-a constraint "divider X = divider Y" in slide coordinates, with a rule for what dragging one does
-to the other. Every node carries a stable id, `design@rootpoint-model@stable-ids`, so a link can
-name its dividers without a change of the file format.
+`design@rootpoint-model@split-tree-arity`. To keep the rows aligned, the author moves both dividers
+to the same position. The editor helps today: with Alt held, a divider drag and a split at the
+pointer snap to a divider across the same axis within 8 points,
+`design@rootpoint-app@split-preview`, so one divider is placed on the other's line in one gesture;
+the two stay independent, and moving one later leaves the other where it was. The owner proposed
+linking two dividers so each follows the other, a constraint "divider X = divider Y" in slide
+coordinates, with a rule for what dragging one does to the other. Every node carries a stable id,
+`design@rootpoint-model@stable-ids`, so a link can name its dividers without a change of the file
+format.
 
 ### Why it matters
 
@@ -27,6 +31,7 @@ conveniently; aligning them by hand defeats it if real slides need it often.
 
 ### Trigger
 
-A real slide the owner prepares with the prototype needs rows aligned across two columns. The
-owner's work on that slide meets the need, and the response is a design session on linked
+A real slide the owner prepares with the prototype needs rows aligned across two columns beyond what
+snapping one divider to the other gives, as rows that must stay aligned while one of them is moved
+again. The owner's work on that slide meets the need, and the response is a design session on linked
 dividers, which this entry opens with the shape above.
