@@ -119,7 +119,7 @@ The project's gates run with `cargo x gates`; every slice keeps them passing. Th
 development procedure of its own: point 3 of that procedure is the claims, tests and steps of the
 slice's spec, with the gates run before each commit.
 
-- **The wasm gate.** `spec@first-prototype@model-core` creates one gate named `wasm`. Each crate
+- **The wasm gate.** The slice `model-core` created one gate named `wasm`. Each crate
   the browser build links joins it in the slice that creates it: the model, render and protocol
   crates. The app crate is created native in `spec@first-prototype@editor-shell` and joins it in
   `spec@first-prototype@browser-build`, the slice that builds its web target. This keeps
@@ -128,7 +128,7 @@ slice's spec, with the gates run before each commit.
 - **The checkout tie.** Every library root, binary target and build script a slice adds reads
   `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires.
 - **Branches.** This milestone's branch merges into the main branch before
-  `spec@first-prototype@model-core` begins, and each slice branches from the main branch. The
+  the slice `model-core` begins, and each slice branches from the main branch. The
   branch also carries the commits that set up the workflow and state the goals; the owner exempted
   those from review and ruled that they merge with the first branch whose work needs one, which is
   this one.
@@ -295,7 +295,7 @@ Binding, on the owner's word in O1. Met by `thread@first-prototype@crate-split` 
 
 Proposed by the session before round 1 (`argument@first-prototype@arg-9`), adopted by the owner in
 O2: "first prototype can go with style per text area as you say, this is more than enough for me."
-Final state: approved. Shape: the decided design of `spec@first-prototype@model-core`. Harvest: a
+Final state: approved. Shape: built, and recorded in `design@rootpoint-model@text-style-per-area`. Harvest: a
 design head of the model crate's Component, if the entry tests admit it.
 
 ### A crate exists when it has its own tests, its own public API and its own reason to change `##crate-existence-rule`
@@ -306,7 +306,7 @@ recording it in the design home rather than as a goal (`argument@first-prototype
 owner answered in O5: "I agree with your judgements for Q1,Q2,Q3." The owner's O1 states the rule as
 "something along the line of" that sentence, and the attribution keeps that hedge. Final state:
 approved. Shape: "The crate rule" in "Decided design" below. Harvest: a design head of rootpoint,
-attributed to the owner with that hedge, at the harvest of `spec@first-prototype@model-core`.
+attributed to the owner with that hedge, at the harvest of the slice `model-core`.
 
 ### Splits are n-ary, and a split along its parent's axis merges into the parent `##split-tree-arity`
 
@@ -314,7 +314,7 @@ Proposed by the owner in O1 as binary splits (`argument@first-prototype@arg-1`);
 the limit of binary splits before round 1 and proposed the n-ary rival in round 1
 (`argument@first-prototype@arg-10`, `argument@first-prototype@arg-27`). Closed in O10: "n-ary split
 is better as you pointed out." Final state: approved; the binary shape lost (see "Losing
-alternatives"). Shape: the decided design of `spec@first-prototype@model-core`. Harvest: a design
+alternatives"). Shape: built, and recorded in `design@rootpoint-model@split-tree-arity`. Harvest: a design
 head of the model crate's Component, citing the rejected binary shape; T1 is written in that
 Component's tripwires home.
 
@@ -322,8 +322,7 @@ Component's tripwires home.
 
 Proposed by the session in round 1 from the owner's spanning remark in O2
 (`argument@first-prototype@arg-14`, `argument@first-prototype@arg-28`). Closed by O10: "I agree
-with your positions over this whole table." Final state: approved. Shape: the decided design of
-`spec@first-prototype@model-core`. Harvest: a design head of the model crate's Component.
+with your positions over this whole table." Final state: approved. Shape: built, and recorded in `design@rootpoint-model@split-any-node`. Harvest: a design head of the model crate's Component.
 
 ### Linked dividers are left out of the prototype `##linked-dividers`
 
@@ -339,7 +338,7 @@ tripwire to guard.
 Proposed by the session in round 1 (`argument@first-prototype@arg-11`,
 `argument@first-prototype@arg-30`), "closes on its argument" unless contested. Closed by O10's
 whole-table agreement. Final state: approved. Shape: "Decided design" below. Harvest: the slide
-units and the area geometry in the model crate's Component, at `spec@first-prototype@model-core`;
+units and the area geometry in the model crate's Component, at the slice `model-core`;
 the uniform scaling of every display in rootpoint's design home, since the render and app crates
 both respect it, at `spec@first-prototype@editor-shell`.
 
@@ -349,14 +348,13 @@ Proposed by the owner in O2 (`argument@first-prototype@arg-16`); the session lis
 round 1 (`argument@first-prototype@arg-31`). Withdrawn by the owner in O10: "I agree with your
 inline-content-assets, the reference thing I proposed brings more trouble (especially ui side, for
 both dev and usage) than convenience." Final state: withdrawn, with that defeating reason. Harvest:
-judged as a rejected design at the harvest of `spec@first-prototype@model-core`.
+judged as a rejected design at the harvest of the slice `model-core`.
 
 ### Content lives in its area, and heavy data in a presentation-level asset table `##inline-content-assets`
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-32`), as the rival of
 `thread@first-prototype@content-by-reference` at a fork. Closed in O10: "I agree with your
-inline-content-assets". Final state: approved. Shape: the decided design of
-`spec@first-prototype@model-core`. Harvest: a design head of the model crate's Component, citing the
+inline-content-assets". Final state: approved. Shape: built, and recorded in `design@rootpoint-model@inline-content-assets`. Harvest: a design head of the model crate's Component, citing the
 rejected shape of `thread@first-prototype@content-by-reference` if it earns an entry.
 
 ### Background, footer and reusable layouts come from templates, left out of the prototype `##slide-templates`
@@ -370,7 +368,7 @@ given with the prototype. Harvest: T4 as the trigger of a `deferred` issue, as T
 
 Proposed by the session before round 1 and in round 1 (`argument@first-prototype@arg-7`,
 `argument@first-prototype@arg-34`). Closed by O10's whole-table agreement. Final state: approved.
-Shape: the decided design and the mapping table of `spec@first-prototype@model-core`. Harvest: a
+Shape: built, and recorded in `design@rootpoint-model@edit-operation-core`. Harvest: a
 design head of the model crate's Component.
 
 ### Slides are drawn by the project's own renderer, which the GUI hosts `##slide-renderer`
@@ -395,8 +393,7 @@ crate's Component.
 ### Slides and nodes are addressed by stable ids `##protocol-addressing`
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-37`). Closed by O10's
-whole-table agreement. Final state: approved. Shape: the decided designs of
-`spec@first-prototype@model-core` (ids in the document) and `spec@first-prototype@command-protocol`.
+whole-table agreement. Final state: approved. Shape: built, for the ids, in `design@rootpoint-model@stable-ids`, and `spec@first-prototype@command-protocol`.
 Harvest: the rule that ids are stored and never reused, in the model crate's Component; addressing
 by id in the protocol, in the protocol crate's Component, citing the first.
 
@@ -413,8 +410,7 @@ in the app crate's Component, at `spec@first-prototype@live-control`.
 
 Proposed by the owner in O1 as "probably json or ron" (`argument@first-prototype@arg-5`); the
 session proposed RON, "held weakly" (`argument@first-prototype@arg-39`). Closed by O10's whole-table
-agreement. Final state: approved; JSON lost. Shape: the decided design of
-`spec@first-prototype@model-core`. Harvest: a design head of the model crate's Component.
+agreement. Final state: approved; JSON lost. Shape: built, and recorded in `design@rootpoint-model@save-format`. Harvest: a design head of the model crate's Component.
 
 ### Images are files beside the presentation now; packing into one file comes later `##image-storage`
 
@@ -425,9 +421,8 @@ preferred editing method long term, while shape 3 would be the final goal, so it
 your presentation, carry just the file with you, and present it from any computer with a web browser
 and internet connection using the webapp hosted from a static site." The session confirmed it in
 round 2 (`argument@first-prototype@arg-47`), and the two goals it bears on were reworded on the
-owner's word in O11 (`argument@first-prototype@arg-48`). Final state: approved. Shape: the decided
-design of `spec@first-prototype@model-core`. Harvest: a design head of the model crate's Component,
-attributed to the owner with the scope and the hedge of the answer, in the present tense.
+owner's word in O11 (`argument@first-prototype@arg-48`). Final state: approved. Shape: built, and recorded in `design@rootpoint-model@asset-source`, attributed to the owner with
+the scope and the hedge of the answer.
 
 ### The first crates are model, render, protocol and app `##crate-split`
 
@@ -456,7 +451,7 @@ T2 written in that Component's tripwires home.
 ### An asset entry is a path or embedded bytes, from version 1 of the format `##asset-source`
 
 Proposed by the session in round 2 (`argument@first-prototype@arg-50`). Closed in O11, by the same
-words. Final state: approved. Shape: the decided design of `spec@first-prototype@model-core`.
+words. Final state: approved. Shape: built, and recorded in `design@rootpoint-model@asset-source`.
 Harvest: part of the head that `thread@first-prototype@inline-content-assets` gives, if the rules on
 one decision per head join them; a head of its own otherwise.
 
@@ -915,7 +910,7 @@ packing.
 ## Mapping tables
 
 The mapping tables are in the slice specs that build their functions:
-`spec@first-prototype@model-core` (each operation to its inverse) and
+the slice `model-core`, now landed (each operation to its inverse), and
 `spec@first-prototype@command-protocol` (each command to its operation).
 
 ## Losing alternatives
@@ -994,7 +989,7 @@ message after the milestone was written, "D2 accepted; T3 and T4 too", for T3 an
   `acceptance@first-prototype@file-editable-by-agent`.
 - **T1. Merging same-axis splits removes a grouping the owner wants.** Stresses
   `thread@first-prototype@split-tree-arity`. Recorded on the owner's word, at the harvest of
-  `spec@first-prototype@model-core`, in the model crate's Component's tripwires home. Fires when: in
+  the slice `model-core`, in the model crate's Component's tripwires home. Fires when: in
   real use, the owner wants to move or resize a group of same-axis areas as one unit, and the merge
   has made that group impossible. Response: reopen the n-ary split decision, for example with an
   explicit group node. Re-entry: the first real talk given with the prototype.
@@ -1055,7 +1050,7 @@ judge, per `goal@rootpoint@real-presentations`. Response: reopen both decisions.
 ### AC5. An agent edits a saved file by hand and it loads back `##file-editable-by-agent`
 
 Guards `thread@first-prototype@save-format` and `thread@first-prototype@protocol-addressing`.
-Judged by `spec@first-prototype@model-core`. Fires when an agent session, given only a saved file,
+Judged by the slice `model-core`, where it did not fire. Fires when an agent session, given only a saved file,
 cannot change one text and one divider position by editing the file so that it loads back with
 those changes. Response: reopen `thread@first-prototype@save-format`.
 
@@ -1063,7 +1058,7 @@ those changes. Response: reopen `thread@first-prototype@save-format`.
 
 Each slice's steps are in its spec, linked from this directory's `README.md` rows below.
 
-1. `spec@first-prototype@model-core`: the model crate, its operations, its geometry and its RON
+1. the slice `model-core`: the model crate, its operations, its geometry and its RON
    format; the wasm gate. Judges AC5.
 2. `spec@first-prototype@slide-rendering`: the render crate and a headless PNG. Judges AC2's 4K
    bound.
@@ -1077,7 +1072,6 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 
 | slice spec |
 | --- |
-| [The document model, its operations and its file](model-core.md) |
 | [The slide renderer and a headless PNG](slide-rendering.md) |
 | [The text protocol and the headless binary](command-protocol.md) |
 | [The native GUI and presenter mode](editor-shell.md) |
@@ -1087,7 +1081,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 
 ## Order rationale
 
-- `spec@first-prototype@model-core` before `spec@first-prototype@slide-rendering`: the renderer
+- the slice `model-core` before `spec@first-prototype@slide-rendering`: the renderer
   draws the rectangles and contents that the model defines.
 - `spec@first-prototype@slide-rendering` before `spec@first-prototype@command-protocol`: the
   protocol's `render` command calls the renderer.
@@ -1146,7 +1140,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   directory.
 - **Each slice** harvests by the row of its spec.
 - **T3 and T4**, recorded on the owner's word, are written at the harvest of
-  `spec@first-prototype@model-core` as the triggers of two `deferred` issue entries in the model
+  the slice `model-core` as the triggers of two `deferred` issue entries in the model
   crate's Component, as `skill@knowledge-architect-decision-recording@ruled-tripwires` says of a
   parked thread's tripwire, each naming in words the parked thread it watches.
 
