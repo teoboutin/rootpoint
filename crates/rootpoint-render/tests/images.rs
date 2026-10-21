@@ -5,7 +5,7 @@ mod common;
 
 use common::*;
 use rootpoint_model::*;
-use rootpoint_render::{ImageSet, Precision, render_slide};
+use rootpoint_render::{FontSet, ImageSet, Precision, render_slide};
 
 /// One slide, a vertical split: the image fitted in the left half, filling the right half.
 fn fit_and_fill() -> (Document, ImageSet, AssetId) {
@@ -36,6 +36,7 @@ fn fit_shows_the_whole_image_and_fill_covers_the_area() {
         doc.slides[0].id,
         384,
         216,
+        &mut FontSet::new(),
         &images,
         Precision::Portable,
     )
@@ -69,6 +70,7 @@ fn an_image_with_no_decoded_bytes_is_drawn_grey_and_reported() {
         doc.slides[0].id,
         384,
         216,
+        &mut FontSet::new(),
         &ImageSet::new(),
         Precision::Portable,
     )
@@ -81,11 +83,19 @@ fn an_image_with_no_decoded_bytes_is_drawn_grey_and_reported() {
 fn a_slide_renders_the_same_twice() {
     let (doc, images, _) = fit_and_fill();
     let render = || {
-        render_slide(&doc, doc.slides[0].id, 384, 216, &images, Precision::Native)
-            .unwrap()
-            .pixmap
-            .data_as_u8_slice()
-            .to_vec()
+        render_slide(
+            &doc,
+            doc.slides[0].id,
+            384,
+            216,
+            &mut FontSet::new(),
+            &images,
+            Precision::Native,
+        )
+        .unwrap()
+        .pixmap
+        .data_as_u8_slice()
+        .to_vec()
     };
     assert_eq!(render(), render());
 }
@@ -98,6 +108,7 @@ fn fit_and_fill_match_their_golden_image() {
         doc.slides[0].id,
         384,
         216,
+        &mut FontSet::new(),
         &images,
         Precision::Portable,
     )

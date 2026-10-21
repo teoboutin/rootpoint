@@ -1,7 +1,7 @@
 //! An empty slide is white, scaled uniformly into the image and centred on black.
 
 use rootpoint_model::{Document, Op, apply};
-use rootpoint_render::{ImageSet, Precision, render_slide};
+use rootpoint_render::{FontSet, ImageSet, Precision, render_slide};
 
 fn one_slide() -> Document {
     let mut doc = Document::default();
@@ -22,6 +22,7 @@ fn an_empty_slide_fills_a_16_9_image_with_white() {
         doc.slides[0].id,
         192,
         108,
+        &mut FontSet::new(),
         &ImageSet::new(),
         Precision::Portable,
     )
@@ -44,6 +45,7 @@ fn a_square_image_letterboxes_the_slide_in_black() {
         doc.slides[0].id,
         160,
         160,
+        &mut FontSet::new(),
         &ImageSet::new(),
         Precision::Portable,
     )
@@ -67,6 +69,7 @@ fn time_an_empty_4k_render() {
             doc.slides[0].id,
             3840,
             2160,
+            &mut FontSet::new(),
             &ImageSet::new(),
             Precision::Native,
         )

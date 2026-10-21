@@ -91,3 +91,117 @@ pub fn assert_golden(pixmap: Pixmap, name: &str) {
         "{name}: {differ} pixels differ from the golden image"
     );
 }
+
+pub fn text(text: &str, style: TextStyle) -> Content {
+    Content::Text(TextContent {
+        text: text.to_owned(),
+        style,
+    })
+}
+
+/// One slide of nine text areas, three columns by three rows: each column one horizontal
+/// alignment, left to right, each row one vertical alignment, top to bottom.
+pub fn alignments() -> Document {
+    let (mut doc, root) = one_slide();
+    split(&mut doc, root, Axis::Vertical, 1.0 / 3.0);
+    let second = doc.slides[0].root.areas()[1].id;
+    split(&mut doc, second, Axis::Vertical, 0.5);
+    let columns: Vec<NodeId> = doc.slides[0].root.areas().iter().map(|a| a.id).collect();
+    for column in &columns {
+        split(&mut doc, *column, Axis::Horizontal, 1.0 / 3.0);
+        let rest = match doc.node(*column) {
+            Some(_) => {
+                let rect_areas = doc.slides[0].root.areas();
+                let i = rect_areas.iter().position(|a| a.id == *column).unwrap();
+                rect_areas[i + 1].id
+            }
+            None => unreachable!(),
+        };
+        split(&mut doc, rest, Axis::Horizontal, 0.5);
+    }
+    let areas: Vec<NodeId> = doc.slides[0].root.areas().iter().map(|a| a.id).collect();
+    let h = [HAlign::Left, HAlign::Center, HAlign::Right];
+    let v = [VAlign::Top, VAlign::Middle, VAlign::Bottom];
+    for (i, area) in areas.into_iter().enumerate() {
+        let style = TextStyle {
+            size: 40.0,
+            h_align: h[i / 3],
+            v_align: v[i % 3],
+            ..TextStyle::default()
+        };
+        set(
+            &mut doc,
+            area,
+            text(&format!("{:?} {:?}", h[i / 3], v[i % 3]), style),
+        );
+    }
+    doc
+}
+
+/// One slide of five areas mixing both axes: a title across the top, and below it an image beside
+/// a column of a bold paragraph, an italic coloured line and an empty area.
+pub fn mixed() -> (Document, AssetId) {
+    let (mut doc, title) = one_slide();
+    split(&mut doc, title, Axis::Horizontal, 0.2);
+    let body = doc.slides[0].root.areas()[1].id;
+    split(&mut doc, body, Axis::Vertical, 0.4);
+    let column = doc.slides[0].root.areas()[2].id;
+    split(&mut doc, column, Axis::Horizontal, 0.6);
+    let last = doc.slides[0].root.areas()[3].id;
+    split(&mut doc, last, Axis::Horizontal, 0.5);
+    let areas: Vec<NodeId> = doc.slides[0].root.areas().iter().map(|a| a.id).collect();
+    assert_eq!(areas.len(), 5);
+    let asset = add_asset(&mut doc, "two-colours.png");
+    set(
+        &mut doc,
+        areas[0],
+        text(
+            "A title in the built-in sans",
+            TextStyle {
+                size: 72.0,
+                bold: true,
+                h_align: HAlign::Center,
+                v_align: VAlign::Middle,
+                ..TextStyle::default()
+            },
+        ),
+    );
+    set(
+        &mut doc,
+        areas[1],
+        Content::Image(ImageContent {
+            asset,
+            fit: ImageFit::Fit,
+        }),
+    );
+    set(
+        &mut doc,
+        areas[2],
+        text(
+            "A paragraph long enough to wrap over several lines of its area, so that the \
+             line breaks of the layout are visible in the image.",
+            TextStyle {
+                bold: true,
+                ..TextStyle::default()
+            },
+        ),
+    );
+    set(
+        &mut doc,
+        areas[3],
+        text(
+            "An italic line in blue",
+            TextStyle {
+                italic: true,
+                colour: Rgba {
+                    r: 30,
+                    g: 60,
+                    b: 200,
+                    a: 255,
+                },
+                ..TextStyle::default()
+            },
+        ),
+    );
+    (doc, asset)
+}

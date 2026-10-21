@@ -5,12 +5,17 @@
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod images;
+mod text;
 
+use std::ops::Range;
 use std::sync::Arc;
 
 pub use images::{DecodeError, ImageSet};
-use rootpoint_model::area_rects;
-use rootpoint_model::{AssetId, Content, Document, ImageFit, Node, Rect as SlideRect, SlideId};
+use rootpoint_model::{
+    AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, VAlign,
+    area_rects,
+};
+pub use text::{FontError, FontSet};
 use vello_cpu::color::AlphaColor;
 use vello_cpu::color::palette::css::{BLACK, WHITE};
 use vello_cpu::kurbo::{Affine, Rect, Shape};
@@ -40,6 +45,12 @@ pub enum RenderError {
 pub struct Report {
     /// The image assets with no decoded image in the `ImageSet`; their areas are drawn empty.
     pub missing_images: Vec<AssetId>,
+    /// The text areas whose font no font of the `FontSet` has; the built-in sans stands in.
+    pub font_fallbacks: Vec<NodeId>,
+    /// The text areas whose glyphs could not all be drawn, as from a damaged font file.
+    pub undrawn_text: Vec<NodeId>,
+    /// For each text area, the byte range of its text on each line, as laid out.
+    pub lines: Vec<(NodeId, Vec<Range<usize>>)>,
 }
 
 /// A drawn slide: premultiplied RGBA pixels, row by row, and what the render could not draw.
@@ -57,6 +68,9 @@ impl Rendered {
     }
 }
 
+/// The space between a text and the edges of its area, in slide units.
+const TEXT_PADDING: f64 = 24.0;
+
 /// The grey of an image area whose image is missing.
 const MISSING: AlphaColor<vello_cpu::color::Srgb> = AlphaColor::from_rgba8(224, 224, 224, 255);
 
@@ -67,6 +81,7 @@ pub fn render_slide(
     slide: SlideId,
     width: u16,
     height: u16,
+    fonts: &mut FontSet,
     images: &ImageSet,
     precision: Precision,
 ) -> Result<Rendered, RenderError> {
@@ -87,6 +102,7 @@ pub fn render_slide(
         },
     );
     let mut report = Report::default();
+    let mut resources = Resources::new();
     ctx.set_paint(BLACK);
     ctx.fill_rect(&Rect::new(0.0, 0.0, f64::from(width), f64::from(height)));
     let to_pixels = slide_transform(doc, width, height);
@@ -102,7 +118,30 @@ pub fn render_slide(
         ctx.set_transform(to_pixels);
         ctx.push_clip_layer(&bounds.to_path(0.1));
         match &a.content {
-            Content::Empty | Content::Text(_) => {}
+            Content::Empty => {}
+            Content::Text(content) => {
+                let inner = (area.w - 2.0 * TEXT_PADDING).max(0.0);
+                let laid = text::layout_text(fonts, content, inner as f32);
+                if laid.fell_back {
+                    report.font_fallbacks.push(id);
+                }
+                let free = area.h - 2.0 * TEXT_PADDING - f64::from(laid.layout.height());
+                let dy = match content.style.v_align {
+                    VAlign::Top => 0.0,
+                    VAlign::Middle => free / 2.0,
+                    VAlign::Bottom => free,
+                };
+                let origin = (area.x + TEXT_PADDING, area.y + TEXT_PADDING + dy);
+                ctx.set_transform(to_pixels * Affine::translate(origin));
+                let c = content.style.colour;
+                ctx.set_paint(AlphaColor::<vello_cpu::color::Srgb>::from_rgba8(
+                    c.r, c.g, c.b, c.a,
+                ));
+                if !text::draw_text(&mut ctx, &mut resources, &laid) {
+                    report.undrawn_text.push(id);
+                }
+                report.lines.push((id, laid.lines));
+            }
             Content::Image(image) => match images.get(image.asset) {
                 Some(pixmap) => draw_image(&mut ctx, to_pixels, area, pixmap, image.fit),
                 None => {
@@ -116,11 +155,7 @@ pub fn render_slide(
     }
     ctx.flush();
     let mut pixmap = Pixmap::new(width, height);
-    ctx.render_with(
-        &mut pixmap,
-        &mut Resources::new(),
-        RasterizerSettings::default(),
-    );
+    ctx.render_with(&mut pixmap, &mut resources, RasterizerSettings::default());
     Ok(Rendered { pixmap, report })
 }
 
