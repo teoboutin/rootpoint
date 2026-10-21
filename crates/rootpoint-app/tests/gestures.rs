@@ -1,7 +1,8 @@
 //! The slide view's gestures, driven by synthetic input through `Context::run_ui`, with no window:
 //! a click selects an area, a divider drag is one undo step that Esc cancels, a double-click
-//! resets a divider, Alt and the arrows move the selection, and a row of the slide list is shown
-//! by a click and moved by a drag.
+//! resets a divider, Alt and the arrows move the selection, a row of the slide list is shown by a
+//! click and moved by a drag, a grip drag swaps or moves an area, a click with Ctrl splits at the
+//! pointer, and the keys undo, redo, split and remove.
 
 use eframe::egui::{Context, Event, Key, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
 use rootpoint_app::App;
@@ -66,6 +67,10 @@ impl Driver {
     }
 
     fn button(&mut self, pos: Pos2, pressed: bool) {
+        self.button_with(pos, pressed, Modifiers::NONE);
+    }
+
+    fn button_with(&mut self, pos: Pos2, pressed: bool, modifiers: Modifiers) {
         self.frame(
             vec![
                 Event::PointerMoved(pos),
@@ -73,10 +78,10 @@ impl Driver {
                     pos,
                     button: PointerButton::Primary,
                     pressed,
-                    modifiers: Modifiers::NONE,
+                    modifiers,
                 },
             ],
-            Modifiers::NONE,
+            modifiers,
         );
     }
 
@@ -99,6 +104,13 @@ impl Driver {
         };
         self.frame(vec![event(true)], modifiers);
         self.frame(vec![event(false)], modifiers);
+    }
+
+    /// Select a node, and let the side panel, which then shows the selection's actions, settle.
+    fn select(&mut self, node: NodeId) {
+        self.app.select_node(node);
+        self.frame(vec![], Modifiers::NONE);
+        self.frame(vec![], Modifiers::NONE);
     }
 
     fn doc(&self) -> Document {
@@ -138,7 +150,7 @@ fn a_click_on_an_area_selects_it() {
         .nodes
         .iter()
         .rev()
-        .find(|(id, r)| layout.press(r.center()) == Press::Area(*id))
+        .find(|(id, r)| layout.press(r.center(), None, None) == Press::Area(*id))
         .copied()
         .unwrap();
     d.click(rect.center());
@@ -271,4 +283,155 @@ fn a_click_on_a_row_shows_its_slide_and_a_drag_moves_it() {
     assert_eq!(after, [ids[1], ids[2], ids[0]]);
     // The drag showed no slide of its own.
     assert_eq!(d.app.shown_slide(), Some(ids[1]));
+}
+
+/// The text of an area of the shown slide.
+fn text(d: &Driver, area: NodeId) -> String {
+    match d.doc().node(area) {
+        Some(Node::Area(a)) => match &a.content {
+            rootpoint_model::Content::Text(t) => t.text.clone(),
+            _ => String::new(),
+        },
+        _ => panic!("{area} is no area"),
+    }
+}
+
+#[test]
+fn a_grip_dropped_on_the_middle_of_another_area_swaps_them() {
+    let mut d = Driver::new();
+    // The sample's first slide: n4 stacked[n2 | n6 beside[n3 | n5]].
+    let (n3, n5) = (NodeId(3), NodeId(5));
+    let (t3, t5) = (text(&d, n3), text(&d, n5));
+    let before = d.doc();
+    d.select(n3);
+    let layout = d.app.layout().unwrap().clone();
+    let grip = layout.grip(n3).unwrap().center();
+    let target = layout.rect(n5).unwrap().center();
+    d.button(grip, true);
+    for i in 1..=5 {
+        d.move_to(grip + (target - grip) * (i as f32 / 5.0));
+    }
+    d.button(target, false);
+    assert_eq!((text(&d, n3), text(&d, n5)), (t5, t3));
+    assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
+    assert_eq!(d.doc(), before);
+}
+
+#[test]
+fn a_grip_dropped_near_an_edge_moves_the_area_there_and_esc_cancels() {
+    let mut d = Driver::new();
+    let (n2, n3) = (NodeId(2), NodeId(3));
+    let t3 = text(&d, n3);
+    let before = d.doc();
+    d.select(n3);
+    let layout = d.app.layout().unwrap().clone();
+    let grip = layout.grip(n3).unwrap().center();
+    let title = layout.rect(n2).unwrap();
+    // Near the title's right edge, at its middle height: its move zone for the right edge.
+    let target = Pos2::new(title.max.x - 5.0, title.center().y);
+    d.button(grip, true);
+    d.move_to(target);
+    d.button(target, false);
+    // n3 is gone, and its text is in a new area right of the title.
+    let doc = d.doc();
+    assert!(doc.node(n3).is_none());
+    let slide = &doc.slides[0];
+    let Node::Split(top) = &slide.root else {
+        panic!("the root is a split");
+    };
+    let Node::Split(row) = &top.children[0] else {
+        panic!("the title was split beside");
+    };
+    assert_eq!(row.children[0].id(), n2);
+    let moved = row.children[1].id();
+    assert_eq!(text(&d, moved), t3);
+    assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
+    // Undo leaves the id counter where it is, so the documents are compared by their slides.
+    assert_eq!(d.doc().slides, before.slides);
+    // Esc during a grip drag sends nothing more, and leaves no step.
+    d.select(n3);
+    let after_select = d.doc();
+    d.button(grip, true);
+    d.move_to(target);
+    d.key(Key::Escape, Modifiers::NONE);
+    d.button(target, false);
+    assert_eq!(d.doc(), after_select);
+}
+
+#[test]
+fn a_click_with_ctrl_held_splits_the_selection_at_the_pointer() {
+    let mut d = Driver::new();
+    let n2 = NodeId(2);
+    d.select(n2);
+    let title = d.app.layout().unwrap().rect(n2).unwrap();
+    let p = Pos2::new(title.min.x + title.width() * 0.25, title.center().y);
+    let ctrl = Modifiers::COMMAND;
+    d.button_with(p, true, ctrl);
+    d.button_with(p, false, ctrl);
+    let doc = d.doc();
+    let Node::Split(top) = &doc.slides[0].root else {
+        panic!("the root is a split");
+    };
+    let Node::Split(row) = &top.children[0] else {
+        panic!("the title was split beside");
+    };
+    assert_eq!(row.axis, rootpoint_model::Axis::LeftToRight);
+    assert!((row.dividers[0] - 0.25).abs() < 1e-3, "{:?}", row.dividers);
+    // The new empty area is the smaller part, before the line.
+    assert_eq!(row.children[1].id(), n2);
+}
+
+#[test]
+fn the_keys_split_remove_undo_and_redo() {
+    let mut d = Driver::new();
+    let n3 = NodeId(3);
+    // Undo leaves the id counter where it is, so the documents are compared by their slides.
+    let slides = |d: &Driver| d.doc().slides;
+    let before = slides(&d);
+    d.app.select_node(n3);
+    d.key(Key::ArrowRight, Modifiers::SHIFT);
+    let split = slides(&d);
+    assert_ne!(split, before);
+    let Some(Node::Split(s)) = d.doc().node(NodeId(6)).cloned() else {
+        panic!("n6 is a split");
+    };
+    assert_eq!(s.children.len(), 3, "n3 split beside, merged into n6");
+    d.key(Key::Delete, Modifiers::NONE);
+    assert!(d.doc().node(n3).is_none());
+    d.key(Key::Z, Modifiers::COMMAND);
+    assert_eq!(slides(&d), split);
+    d.key(Key::Z, Modifiers::COMMAND);
+    assert_eq!(slides(&d), before);
+    d.key(Key::Z, Modifiers::COMMAND | Modifiers::SHIFT);
+    assert_eq!(slides(&d), split);
+    d.key(Key::Y, Modifiers::COMMAND);
+    assert!(d.doc().node(n3).is_none());
+}
+
+#[test]
+fn the_edits_of_one_focus_of_the_text_field_are_one_undo_step() {
+    let mut d = Driver::new();
+    let n3 = NodeId(3);
+    let before = text(&d, n3);
+    d.select(n3);
+    let field = d
+        .app
+        .text_field_rect()
+        .expect("a text area shows the text field");
+    d.click(field.center());
+    for word in ["X", "Y"] {
+        d.frame(vec![Event::Text(word.to_owned())], Modifiers::NONE);
+    }
+    let typed = text(&d, n3);
+    assert_eq!(typed.len(), before.len() + 2);
+    assert!(typed.contains("XY"), "{typed}");
+    // While the field has focus, Delete edits the text and removes no area.
+    d.key(Key::Delete, Modifiers::NONE);
+    assert!(d.doc().node(n3).is_some());
+    // A click on the slide takes the focus, and the group closes: one undo reverts every edit.
+    let elsewhere = d.app.layout().unwrap().rect(NodeId(5)).unwrap().center();
+    d.click(elsewhere);
+    assert_eq!(d.selected(), Some(NodeId(5)));
+    assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
+    assert_eq!(text(&d, n3), before);
 }

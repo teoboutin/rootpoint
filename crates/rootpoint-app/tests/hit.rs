@@ -3,7 +3,7 @@
 //! of two. Claim 2 of `spec@first-prototype@editor-shell`, its first part.
 
 use eframe::egui::{Pos2, Rect, Vec2};
-use rootpoint_app::hit::{Layout, MIN_PART, Press};
+use rootpoint_app::hit::{Edge, Layout, MIN_PART, Press, Zone};
 use rootpoint_model::{Axis, Document, Node, NodeId, Op, Side, apply, area_rects};
 use rootpoint_render::slide_to_pixels;
 
@@ -107,8 +107,16 @@ fn a_press_within_4_points_of_a_divider_grabs_it_at_every_view_size() {
         let line = at(&doc, view, pixels, 960.0, 540.0);
         let near = line + Vec2::new(3.9, 0.0);
         let far = line + Vec2::new(4.1, 0.0);
-        assert_eq!(layout.press(near), Press::Divider(root_divider), "{view:?}");
-        assert_eq!(layout.press(far), Press::Area(right), "{view:?}");
+        assert_eq!(
+            layout.press(near, None, None),
+            Press::Divider(root_divider),
+            "{view:?}"
+        );
+        assert_eq!(
+            layout.press(far, None, None),
+            Press::Area(right),
+            "{view:?}"
+        );
     }
 }
 
@@ -131,11 +139,11 @@ fn the_nearer_of_two_dividers_is_grabbed() {
     let left = at(&doc, view, pixels, 950.4, 540.0);
     let right = at(&doc, view, pixels, 960.0, 540.0);
     assert_eq!(
-        layout.press(left + Vec2::new(1.5, 0.0)),
+        layout.press(left + Vec2::new(1.5, 0.0), None, None),
         Press::Divider(index(0))
     );
     assert_eq!(
-        layout.press(right - Vec2::new(1.5, 0.0)),
+        layout.press(right - Vec2::new(1.5, 0.0), None, None),
         Press::Divider(index(1))
     );
 }
@@ -146,10 +154,16 @@ fn a_press_in_the_letterbox_takes_nothing() {
     let (view, pixels) = views()[1];
     let layout = Layout::new(&doc, doc.slides[0].id, view, pixels).unwrap();
     // The 16:9 slide in a 400×400 view starts 87.5 points down.
-    assert_eq!(layout.press(Pos2::new(200.0, 80.0)), Press::Nothing);
-    assert_eq!(layout.press(Pos2::new(200.0, 320.0)), Press::Nothing);
+    assert_eq!(
+        layout.press(Pos2::new(200.0, 80.0), None, None),
+        Press::Nothing
+    );
+    assert_eq!(
+        layout.press(Pos2::new(200.0, 320.0), None, None),
+        Press::Nothing
+    );
     assert!(matches!(
-        layout.press(Pos2::new(300.0, 200.0)),
+        layout.press(Pos2::new(300.0, 200.0), None, None),
         Press::Area(_)
     ));
 }
@@ -174,20 +188,215 @@ fn a_divider_drag_stops_where_a_child_would_be_less_than_40_slide_units() {
         // The divider at 0.5 lies between the one at 0.495 and the split's right edge.
         let d = index(1);
         assert!(close(
-            layout.drag_position(d, far_left).unwrap(),
+            layout.drag_position(d, far_left, false).unwrap(),
             0.495 + margin
         ));
         assert!(close(
-            layout.drag_position(d, far_right).unwrap(),
+            layout.drag_position(d, far_right, false).unwrap(),
             1.0 - margin
         ));
-        assert!(close(layout.drag_position(d, middle).unwrap(), 0.75));
+        assert!(close(layout.drag_position(d, middle, false).unwrap(), 0.75));
         // The divider at 0.495 lies between the split's left edge and the one at 0.5.
         let d = index(0);
-        assert!(close(layout.drag_position(d, far_left).unwrap(), margin));
         assert!(close(
-            layout.drag_position(d, far_right).unwrap(),
+            layout.drag_position(d, far_left, false).unwrap(),
+            margin
+        ));
+        assert!(close(
+            layout.drag_position(d, far_right, false).unwrap(),
             0.5 - margin
         ));
+    }
+}
+
+/// The sample, its first slide's lower divider moved to 0.37, 710.4 slide units from the left,
+/// which is on no twelfth of the slide's width: n4 stacked(0.3)[n2 | n6 beside(0.37)[n3 | n5]].
+fn sample_off_twelfths() -> Document {
+    struct NoFiles;
+    impl rootpoint_protocol::Files for NoFiles {
+        fn read(&mut self, path: &str) -> Result<Vec<u8>, String> {
+            Err(format!("{path}: no file"))
+        }
+        fn write(&mut self, path: &str, _: &[u8]) -> Result<(), String> {
+            Err(format!("{path}: no file"))
+        }
+        fn exists(&mut self, _: &str) -> Result<bool, String> {
+            Ok(false)
+        }
+    }
+    let mut session = rootpoint_protocol::Session::new();
+    for line in ["sample", "divider n6 0 0.37"] {
+        let command = rootpoint_protocol::parse_command(line).unwrap();
+        assert!(matches!(
+            session.run(command, &mut NoFiles),
+            rootpoint_protocol::Reply::Ok(_)
+        ));
+    }
+    session.document().clone()
+}
+
+/// Whether `p` lies in the convex polygon `shape`, its edges included.
+fn inside(shape: &[Pos2], p: Pos2) -> bool {
+    let sides: Vec<f32> = (0..shape.len())
+        .map(|i| {
+            let (a, b) = (shape[i], shape[(i + 1) % shape.len()]);
+            (b - a).x * (p - a).y - (b - a).y * (p - a).x
+        })
+        .collect();
+    sides.iter().all(|s| *s >= -1e-3) || sides.iter().all(|s| *s <= 1e-3)
+}
+
+#[test]
+fn a_pointer_over_a_drop_target_falls_in_the_zone_the_hint_names() {
+    let doc = sample_off_twelfths();
+    let slide = doc.slides[0].id;
+    let (dragged, target) = (NodeId(3), NodeId(2));
+    for (view, pixels) in views() {
+        let layout = Layout::new(&doc, slide, view, pixels).unwrap();
+        let r = layout.rect(target).unwrap();
+        for i in 0..40 {
+            for j in 0..20 {
+                let (fx, fy) = ((i as f32 + 0.5) / 40.0, (j as f32 + 0.5) / 20.0);
+                let p = Pos2::new(r.min.x + fx * r.width(), r.min.y + fy * r.height());
+                let drop = layout.drop(p, dragged).unwrap();
+                assert_eq!(drop.target, target);
+                assert!(inside(&drop.shape, p), "{p:?} outside {:?}", drop.zone);
+                let third = 1.0 / 3.0;
+                let middle = |f: f32| (third..=2.0 * third).contains(&f);
+                let want = if middle(fx) && middle(fy) {
+                    Zone::Swap
+                } else if fx.min(1.0 - fx) <= fy.min(1.0 - fy) {
+                    Zone::Move(if fx <= 0.5 { Edge::Left } else { Edge::Right })
+                } else {
+                    Zone::Move(if fy <= 0.5 { Edge::Up } else { Edge::Down })
+                };
+                assert_eq!(drop.zone, want, "({fx}, {fy}) in {view:?}");
+            }
+        }
+        // A drop on the dragged area itself, or in the letterbox, has no target.
+        let own = layout.rect(dragged).unwrap().center();
+        assert_eq!(layout.drop(own, dragged), None);
+        assert_eq!(layout.drop(view.min - Vec2::splat(5.0), dragged), None);
+    }
+}
+
+#[test]
+fn a_snapped_line_lies_on_a_twelfth_of_the_node_or_on_another_divider_within_8_points() {
+    let doc = sample_off_twelfths();
+    let slide = doc.slides[0].id;
+    let title = NodeId(2);
+    for (view, pixels) in views() {
+        let layout = Layout::new(&doc, slide, view, pixels).unwrap();
+        let r = layout.rect(title).unwrap();
+        let divider = at(&doc, view, pixels, 710.4, 0.0).x;
+        let y = r.center().y;
+        for i in 1..200 {
+            let x = r.min.x + r.width() * i as f32 / 200.0;
+            let Some(p) = layout.preview(title, Axis::LeftToRight, Pos2::new(x, y), true) else {
+                continue;
+            };
+            let twelfths = p.at * 12.0;
+            let on_twelfth = (twelfths - twelfths.round()).abs() < 1e-3;
+            let on_divider = (p.from.x - divider).abs() < 1e-3 && (x - divider).abs() <= 8.0 + 1e-3;
+            assert!(
+                on_twelfth || on_divider,
+                "{x} snapped to {} in {view:?}",
+                p.from.x
+            );
+            if (x - divider).abs() <= 3.0 {
+                assert!(
+                    on_divider,
+                    "{x}, 3 points or less from the divider, in {view:?}"
+                );
+            }
+        }
+        // Unsnapped, the line follows the pointer.
+        let x = divider + 3.0;
+        let p = layout
+            .preview(title, Axis::LeftToRight, Pos2::new(x, y), false)
+            .unwrap();
+        assert_eq!(p.from.x, x);
+    }
+}
+
+#[test]
+fn a_snapped_divider_drag_lies_on_a_twelfth_of_its_split_or_on_another_divider() {
+    let doc = sample_off_twelfths();
+    let slide = doc.slides[0].id;
+    for (view, pixels) in views() {
+        let layout = Layout::new(&doc, slide, view, pixels).unwrap();
+        // The slide's stacked divider, at 0.3 of the height.
+        let i = layout
+            .dividers
+            .iter()
+            .position(|d| d.split == NodeId(4))
+            .unwrap();
+        let r = layout.rect(NodeId(4)).unwrap();
+        for j in 1..100 {
+            let p = Pos2::new(r.center().x, r.min.y + r.height() * j as f32 / 100.0);
+            let Some(pos) = layout.drag_position(i, p, true) else {
+                continue;
+            };
+            // The stops at 40 slide units of 1080 lie between twelfths; every other position is
+            // on one, since no other divider runs across the height.
+            let stop = MIN_PART / 1080.0;
+            let on_twelfth = (pos * 12.0 - (pos * 12.0).round()).abs() < 1e-3;
+            assert!(
+                on_twelfth || (pos - stop).abs() < 1e-6 || (pos - (1.0 - stop)).abs() < 1e-6,
+                "{pos} in {view:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn a_split_at_the_pointer_gives_the_new_area_the_smaller_part_and_keeps_40_slide_units() {
+    let doc = sample_off_twelfths();
+    let slide = doc.slides[0].id;
+    let title = NodeId(2);
+    for (view, pixels) in views() {
+        let layout = Layout::new(&doc, slide, view, pixels).unwrap();
+        let point = |u: f64| at(&doc, view, pixels, u, 100.0);
+        let preview = |u| layout.preview(title, Axis::LeftToRight, point(u), false);
+        assert_eq!(preview(480.0).unwrap().side, Side::Before);
+        assert_eq!(preview(1440.0).unwrap().side, Side::After);
+        assert!(preview(30.0).is_none(), "a part of 30 slide units");
+        assert!(preview(1900.0).is_none(), "a part of 20 slide units");
+        // Ctrl or Shift held over the selection: a press there is a split; elsewhere, a select.
+        let split = Some((Axis::LeftToRight, false));
+        assert!(matches!(
+            layout.press(point(480.0), Some(title), split),
+            Press::Split(_)
+        ));
+        assert_eq!(
+            layout.press(point(30.0), Some(title), split),
+            Press::Nothing,
+            "a refused split's click is ignored"
+        );
+        let below = at(&doc, view, pixels, 480.0, 700.0);
+        assert_eq!(
+            layout.press(below, Some(title), split),
+            Press::Area(NodeId(3))
+        );
+    }
+}
+
+#[test]
+fn a_press_on_the_grip_of_the_selected_area_takes_it() {
+    let doc = sample_off_twelfths();
+    let slide = doc.slides[0].id;
+    for (view, pixels) in views() {
+        let layout = Layout::new(&doc, slide, view, pixels).unwrap();
+        let grip = layout.grip(NodeId(3)).unwrap();
+        let r = layout.rect(NodeId(3)).unwrap();
+        assert_eq!(grip.min, r.min + Vec2::splat(8.0));
+        assert_eq!(grip.size(), Vec2::splat(12.0));
+        let p = grip.center();
+        assert_eq!(
+            layout.press(p, Some(NodeId(3)), None),
+            Press::Grip(NodeId(3))
+        );
+        // Not selected, the grip is not there: the press selects.
+        assert_eq!(layout.press(p, None, None), Press::Area(NodeId(3)));
     }
 }

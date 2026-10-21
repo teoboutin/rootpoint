@@ -3,7 +3,7 @@
 //! are.
 
 use rootpoint_app::App;
-use rootpoint_protocol::{Command, Files};
+use rootpoint_protocol::Files;
 
 // Ties this binary's build to its checkout.
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
@@ -29,8 +29,8 @@ fn main() -> eframe::Result {
     let mut app = App::new(Box::new(NativeFiles));
     if let Some(path) = std::env::args().nth(1) {
         // A file that cannot be loaded leaves the empty presentation, and the status line says
-        // why.
-        app.run(Command::Load { path });
+        // why. One that loads is the file Save writes.
+        app.open_file(path);
     }
     eframe::run_native(
         "rootpoint",

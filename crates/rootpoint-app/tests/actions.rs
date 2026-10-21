@@ -1,0 +1,345 @@
+//! Every UI action goes through the session: each action of the app, called with no window, leaves
+//! the document and the view that its commands, run on a second session, leave; and one `undo`
+//! after it leaves them equal too, so the action groups its commands as they do. Claim 1 of
+//! `spec@first-prototype@editor-shell`.
+
+use std::cell::RefCell;
+use std::collections::BTreeMap;
+use std::rc::Rc;
+
+use rootpoint_app::App;
+use rootpoint_app::hit::{Edge, Preview, Zone};
+use rootpoint_app::selection::Move;
+use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, Side, SlideId};
+use rootpoint_protocol::{Command, Files, Reply, Session, parse_command};
+
+/// Files held in memory, by path, shared so that the test reads what a save wrote.
+#[derive(Clone, Default)]
+struct MemoryFiles(Rc<RefCell<BTreeMap<String, Vec<u8>>>>);
+
+impl Files for MemoryFiles {
+    fn read(&mut self, path: &str) -> Result<Vec<u8>, String> {
+        self.0
+            .borrow()
+            .get(path)
+            .cloned()
+            .ok_or(format!("{path}: no such file"))
+    }
+
+    fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String> {
+        self.0.borrow_mut().insert(path.to_owned(), bytes.to_vec());
+        Ok(())
+    }
+
+    fn exists(&mut self, path: &str) -> Result<bool, String> {
+        Ok(self.0.borrow().contains_key(path))
+    }
+}
+
+fn c(line: &str) -> Command {
+    parse_command(line).unwrap_or_else(|e| panic!("{line}: {e}"))
+}
+
+/// The text of an area of the sample, as a command must repeat it.
+fn text_of(session: &Session, area: NodeId) -> String {
+    match session.document().node(area) {
+        Some(Node::Area(a)) => match &a.content {
+            Content::Text(t) => t.text.clone(),
+            _ => panic!("{area} holds no text"),
+        },
+        _ => panic!("{area} is no area"),
+    }
+}
+
+/// Run `setup` on an app and on a session, both on the sample; then the action on the app and
+/// `expected` on the session, and compare; then one `undo` on each, and compare again.
+fn check(
+    name: &str,
+    setup: &[&str],
+    action: impl FnOnce(&mut App),
+    expected: impl FnOnce(&Session) -> Vec<Command>,
+) {
+    let (files_a, mut files_b) = (MemoryFiles::default(), MemoryFiles::default());
+    let mut app = App::new(Box::new(files_a.clone()));
+    let mut session = Session::new();
+    for line in ["sample"].iter().chain(setup) {
+        assert!(matches!(app.run(c(line)), Reply::Ok(_)), "{name}: {line}");
+        assert!(matches!(session.run(c(line), &mut files_b), Reply::Ok(_)));
+    }
+    action(&mut app);
+    for command in expected(&session) {
+        let line = command.to_string();
+        let reply = session.run(command, &mut files_b);
+        assert!(matches!(reply, Reply::Ok(_)), "{name}: {line}: {reply}");
+    }
+    assert_eq!(app.session().document(), session.document(), "{name}");
+    assert_eq!(app.session().view(), session.view(), "{name}");
+    assert_eq!(
+        *files_a.0.borrow(),
+        *files_b.0.borrow(),
+        "{name}: the files"
+    );
+    let a = app.run(Command::Undo);
+    let b = session.run(Command::Undo, &mut files_b);
+    assert_eq!(a, b, "{name}: undo");
+    assert_eq!(
+        app.session().document(),
+        session.document(),
+        "{name}: after undo"
+    );
+}
+
+#[test]
+fn the_selection_actions_issue_their_commands() {
+    check(
+        "click an area",
+        &[],
+        |a| a.select_node(NodeId(3)),
+        |_| vec![c("select n3")],
+    );
+    check(
+        "click a slide",
+        &["select n3"],
+        |a| a.show_slide(SlideId(7)),
+        |_| vec![c("select s7")],
+    );
+    check(
+        "Alt+Up",
+        &["select n3"],
+        |a| a.move_selection(Move::Parent),
+        |_| vec![c("select n6")],
+    );
+    check(
+        "Alt+Right",
+        &["select n3"],
+        |a| a.move_selection(Move::Next),
+        |_| vec![c("select n5")],
+    );
+}
+
+#[test]
+fn the_slide_list_actions_issue_their_commands() {
+    check("add slide", &["select s7"], App::add_slide, |_| {
+        vec![c("add-slide 2")]
+    });
+    check("remove slide", &["select s7"], App::remove_slide, |_| {
+        vec![c("remove-slide s7")]
+    });
+    check(
+        "duplicate slide",
+        &["select s7"],
+        App::duplicate_slide,
+        |_| vec![c("duplicate-slide s7")],
+    );
+    check(
+        "drag a slide",
+        &[],
+        |a| a.move_slide(SlideId(1), 2),
+        |_| vec![c("move-slide s1 2")],
+    );
+}
+
+#[test]
+fn the_split_actions_issue_their_commands() {
+    for (edge, line) in [
+        (Edge::Left, "split n3 beside 0.5 before"),
+        (Edge::Right, "split n3 beside 0.5 after"),
+        (Edge::Up, "split n3 stacked 0.5 before"),
+        (Edge::Down, "split n3 stacked 0.5 after"),
+    ] {
+        check(
+            line,
+            &["select n3"],
+            |a| a.split_middle(edge),
+            |_| vec![c(line)],
+        );
+    }
+    check(
+        "Ctrl click",
+        &["select n3"],
+        |a| {
+            a.split_at(Preview {
+                node: NodeId(3),
+                axis: Axis::LeftToRight,
+                at: 0.25,
+                side: Side::Before,
+                from: Default::default(),
+                to: Default::default(),
+            })
+        },
+        |_| vec![c("split n3 beside 0.25 before")],
+    );
+    check("Delete", &["select n3"], App::remove_selection, |_| {
+        vec![c("remove n3")]
+    });
+}
+
+#[test]
+fn the_divider_actions_issue_their_commands() {
+    check(
+        "drag a divider",
+        &[],
+        |a| {
+            a.grab_divider(NodeId(6), 0);
+            a.drag_divider(0.4);
+            a.drag_divider(0.45);
+            a.release_drag();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c("divider n6 0 0.4"),
+                c("divider n6 0 0.45"),
+                c("end"),
+            ]
+        },
+    );
+    check(
+        "Esc during a divider drag",
+        &[],
+        |a| {
+            a.grab_divider(NodeId(6), 0);
+            a.drag_divider(0.4);
+            a.cancel_drag();
+            a.release_drag();
+        },
+        |_| vec![c("begin"), c("divider n6 0 0.4"), c("cancel")],
+    );
+    check(
+        "double-click a divider",
+        &["divider n6 0 0.3"],
+        |a| a.reset_divider(NodeId(6), 0),
+        |_| vec![c("divider n6 0 0.5")],
+    );
+}
+
+#[test]
+fn the_grip_actions_issue_their_commands() {
+    check(
+        "drop on a swap zone",
+        &["select n3"],
+        |a| {
+            a.grab_grip(NodeId(3));
+            a.drop_grip(Some((NodeId(5), Zone::Swap)));
+        },
+        |_| vec![c("begin"), c("swap n3 n5"), c("end")],
+    );
+    check(
+        "drop on a move zone",
+        &["select n3"],
+        |a| {
+            a.grab_grip(NodeId(3));
+            a.drop_grip(Some((NodeId(2), Zone::Move(Edge::Down))));
+        },
+        // The sample's next id is 20, so the split's new area is n20.
+        |_| {
+            vec![
+                c("begin"),
+                c("split n2 stacked 0.5 after"),
+                c("swap n3 n20"),
+                c("remove n3"),
+                c("end"),
+            ]
+        },
+    );
+    check(
+        "drop outside any area",
+        &["select n3"],
+        |a| {
+            a.grab_grip(NodeId(3));
+            a.drop_grip(None);
+        },
+        |_| vec![c("begin"), c("cancel")],
+    );
+}
+
+#[test]
+fn the_content_actions_issue_their_commands() {
+    check(
+        "set the content to empty",
+        &["select n3"],
+        App::clear_content,
+        |_| vec![c("clear n3")],
+    );
+    check(
+        "set the content to text",
+        &["select n3", "clear n3"],
+        App::set_text_content,
+        |_| vec![c("text n3 \"\"")],
+    );
+    check(
+        "type in the field",
+        &["select n3"],
+        |a| {
+            a.focus_text();
+            a.type_text("A".to_owned());
+            a.type_text("Ab".to_owned());
+            a.blur_text();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c("text n3 \"A\""),
+                c("text n3 \"Ab\""),
+                c("end"),
+            ]
+        },
+    );
+    // A style option repeats the area's whole text: `text n3 "<its text>" bold`.
+    for word in ["bold", "size=80", "align=right"] {
+        check(
+            word,
+            &["select n3"],
+            |a| {
+                let Command::Text { mut style, .. } = c(&format!("text n3 \"\" {word}")) else {
+                    panic!("a text command");
+                };
+                a.set_style(style.remove(0));
+            },
+            |s| vec![c(&format!("text n3 {:?} {word}", text_of(s, NodeId(3))))],
+        );
+    }
+    check(
+        "set the content to an image",
+        &["select n3"],
+        |a| a.set_image(AssetId(19), ImageFit::Fill),
+        |_| vec![c("image n3 a19 fill")],
+    );
+    check(
+        "add an image asset",
+        &[],
+        |a| a.add_asset("cat.png".to_owned()),
+        |_| vec![c("asset cat.png")],
+    );
+}
+
+#[test]
+fn the_menu_actions_issue_their_commands() {
+    check("undo", &["select n3", "clear n3"], App::undo, |_| {
+        vec![c("undo")]
+    });
+    check(
+        "redo",
+        &["select n3", "clear n3", "undo"],
+        App::redo,
+        |_| vec![c("redo")],
+    );
+    check(
+        "save",
+        &[],
+        |a| a.save_to("out/deck.ron".to_owned()),
+        |_| vec![c("save out/deck.ron")],
+    );
+    check(
+        "open",
+        &["save out/deck.ron", "clear n3"],
+        |a| a.open_file("out/deck.ron".to_owned()),
+        |_| vec![c("load out/deck.ron")],
+    );
+    check(
+        "open the built-in sample",
+        &["clear n3"],
+        App::open_sample,
+        |_| vec![c("sample")],
+    );
+}

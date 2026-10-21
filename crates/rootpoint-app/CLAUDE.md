@@ -20,6 +20,20 @@ the overlay, the hit testing and `render_slide` agree. A press is read from
 `consume_key` ignores extra Shift and Alt, so a key tested with fewer modifiers is tested after
 the one with more.
 
+## A gesture's undo group closes before another opens
+
+A divider drag, a grip drag and a focus of the text field each open a group with `begin`, through
+`App::open_group`, which first closes any group still open; a release, the loss of the field's
+focus and the loss of the window's focus close it. Undo, redo, open, save and the sample close the
+text field's group first.
+
+## The tests find widgets by the places the last frame recorded
+
+`App::layout`, `App::slide_rows` and `App::text_field_rect` return where the last frame put the
+slide, the list's rows and the text field, so a test of `App::frame` places its synthetic
+pointer on them. A selection changes the side panel, which egui sizes again on the next frame, so
+a test lets two frames pass before it reads a place.
+
 ## The build is tied to its checkout
 
 `path@rootpoint-app@src/lib.rs` and `path@rootpoint-app@src/main.rs` read `ROOTPOINT_CHECKOUT`. So
