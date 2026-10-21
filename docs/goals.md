@@ -30,8 +30,9 @@ hand.
 The editor offers a short list of content kinds: wrapped text, bullet list, image, equation, code
 snippet, and a few more, such as video. Each kind is edited in the ways that make sense for it,
 with the options that belong to it, such as bold and colour for text or the scaling method for an
-image. It is met while every feature the editor has serves one of these kinds or the division of a
-slide. Collaborative editing is not in scope.
+image. It is met while every feature of slide content the editor has serves one of these kinds or
+the division of a slide; the features other goals require, such as presenter mode, saving and the
+text protocol, are not counted against it. Collaborative editing is not in scope.
 
 ## A presentation is shown from the tool in presenter mode `##presenter-mode`
 

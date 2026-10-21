@@ -269,10 +269,9 @@ general-purpose slide editor, as the goal does, per D4.
 ### Every feature serves a content kind or slide division `##c7-minimal-features`
 
 Binding. Source: `goal@rootpoint@minimal-content-set`. Met by
-`thread@first-prototype@prototype-scope` and `thread@first-prototype@inline-content-assets`, on the
-reading that the goal's "every feature" means the features of slide content: read literally, it
-excludes presenter mode, saving and the protocol, which other goals require. Q4 puts a rewording of
-the goal to the owner.
+`thread@first-prototype@prototype-scope` and `thread@first-prototype@inline-content-assets`, as the
+goal reads since the owner approved its rewording at Q4: every feature of slide content serves a
+kind or the division, and the features other goals require are not counted against it.
 
 ### The editor and the presenter show the same slide at any window size `##c8-same-slide-everywhere`
 
@@ -1130,9 +1129,10 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   editor. Though I'd be the judge anyway. I'm not even sure where my tikz macros are, I have not
   been using them for a while." The tikz comparison is dropped. Bears
   on `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`.
-- **Q4, awaiting the owner.** A rewording of `goal@rootpoint@minimal-content-set`, whose "every
-  feature the editor has" excludes, read literally, presenter mode, saving and the protocol, which
-  other goals require. Its outcome is the goal's, under `skill@knowledge-architect-goal-setting`.
+- **Q4, ruled.** A rewording of `goal@rootpoint@minimal-content-set`, whose "every feature the
+  editor has" excluded, read literally, presenter mode, saving and the protocol, which other goals
+  require. The owner ruled: "Q4 accepted, go ahead". The goal is reworded under
+  `skill@knowledge-architect-goal-setting`.
 
 ## Harvest
 
