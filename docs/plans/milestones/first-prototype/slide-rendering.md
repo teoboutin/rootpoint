@@ -6,7 +6,7 @@ cites.
 
 ## Builds
 
-- The crate `rootpoint-render` at `planned@rootpoint@crates/rootpoint-render/`: `FontSet`,
+- The crate `rootpoint-render` at `path@rootpoint@crates/rootpoint-render/`: `FontSet`,
   `render_slide`, which draws one slide of a document at a given pixel size into an RGBA image, and
   `RenderError`. Its library root reads `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires.
 - The dependency on parley with `default-features = false` and the feature `std`: parley's default
@@ -36,7 +36,7 @@ cites.
    identical bytes. Test: render twice, compare. Shown to fail: a render that depends on a
    hash-map iteration order differs.
 3. **Golden images.** Each fixture renders to pixels equal to those of a committed golden PNG,
-   compared pixel by pixel, with vello_cpu's portable `Level::fallback`, since its SIMD levels may
+   compared pixel by pixel, with vello_cpu's portable `Level::baseline()`, since its SIMD levels may
    differ by a pixel between machines. `ROOTPOINT_BLESS=1` rewrites the golden files after a
    deliberate change, as the model's fixture does. Shown to fail: changing a colour of the fixture
    breaks the comparison.

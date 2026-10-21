@@ -1,0 +1,12 @@
+[package]
+name = "rootpoint-render"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+# Without parley's default feature `system`, no font of the system is ever discovered.
+parley = { version = "0.12", default-features = false, features = ["std"] }
+rootpoint-model = { path = "../rootpoint-model" }
+vello_cpu = "0.3"
