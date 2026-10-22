@@ -1,12 +1,14 @@
 # rootpoint
 
-A minimal presentation editor with an interactive GUI, written in Rust. Its document model, its slide
-renderer and its text protocol are built; the GUI is not yet.
+A minimal presentation editor with an interactive GUI, written in Rust: a document model, a slide
+renderer, a text protocol, and the editor, in a window and in a web browser.
 
 ## Layout of the repository
 
 - `path@rootpoint@docs/`: the goals, the design and the open issues of the project, and
   `path@rootpoint@docs/plans/` for work that is designed and not built.
+- `path@rootpoint@crates/rootpoint-app/`: the editor, the binary `rootpoint`, natively and in a
+  web browser.
 - `path@rootpoint@crates/rootpoint-model/`: the document model, which runs headless and in the
   browser.
 - `path@rootpoint@crates/rootpoint-protocol/`: the text protocol, and the headless binary that
