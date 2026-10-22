@@ -6,7 +6,7 @@
 
 use std::io::{BufRead, Write};
 
-use rootpoint_protocol::{Files, Reply, Session};
+use rootpoint_protocol::{Files, Session, read_line};
 
 // Ties this binary's build to its checkout.
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
@@ -37,10 +37,10 @@ fn main() {
     // session goes on.
     for line in std::io::stdin().lock().split(b'\n') {
         let Ok(bytes) = line else { break };
-        let reply = match std::str::from_utf8(&bytes) {
-            Ok(line) => session.execute(line, &mut files),
-            Err(_) => Some(Reply::Err("the line is not UTF-8".to_owned())),
-        };
+        let reply = read_line(&bytes).map(|command| match command {
+            Ok(command) => session.run(command, &mut files),
+            Err(reply) => reply,
+        });
         if let Some(reply) = reply
             && writeln!(out, "{reply}").is_err()
         {

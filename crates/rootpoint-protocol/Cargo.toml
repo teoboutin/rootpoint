@@ -12,5 +12,9 @@ rootpoint-render = { path = "../rootpoint-render" }
 name = "rootpoint-headless"
 path = "src/bin/rootpoint-headless.rs"
 
+[[bin]]
+name = "rootpoint-ctl"
+path = "src/bin/rootpoint-ctl.rs"
+
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["png"] }

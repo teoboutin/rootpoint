@@ -17,6 +17,14 @@ ok new=n3 split=n4
 ok s1 n4:beside(0.5)[n2 empty | n3 empty]
 ```
 
+The binary `rootpoint-ctl <socket> <words>…`, on Unix, sends one command to a running editor's
+control socket and prints its reply; it exits 0 on `ok` and on a line with no reply, 1 on `err`,
+and 2 when the socket cannot be reached. The words are joined with single spaces into one line, so
+a line holding a quoted text is given as one word: `rootpoint-ctl /tmp/rp 'text n3 "two words"'`.
+`control` asks for the authority to edit a running editor, and `release` gives it back, refused
+while a group is open; headless, `control` replies `ok`, since a headless session has one
+controller.
+
 The paths of `save`, `load` and `render` are relative to the working directory. An asset's path is
 relative to the directory of the presentation last saved or loaded, or to the working directory
 before either.

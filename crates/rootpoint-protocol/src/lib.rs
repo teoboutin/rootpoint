@@ -16,4 +16,4 @@ mod tree;
 
 pub use command::{Command, ParseError, StyleOption, parse_command};
 pub use files::Files;
-pub use session::{Reply, Session, View};
+pub use session::{Reply, Session, View, read_line};

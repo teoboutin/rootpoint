@@ -34,3 +34,18 @@ fn a_line_that_is_not_utf8_is_refused_and_the_session_goes_on() {
         "ok s1 root=n2\nerr the line is not UTF-8\nok s1 n2 empty\n"
     );
 }
+
+#[test]
+fn control_and_release_reply_ok_headless_and_change_nothing() {
+    let dir = scratch("control-release");
+    let with = headless(
+        "control\nadd-slide\nbegin\nsplit n2 beside 0.5\nrelease\nend\nrelease\ncontrol\ntree\n",
+        &dir,
+    );
+    assert_eq!(
+        with,
+        "ok\nok s1 root=n2\nok\nok new=n3 split=n4\nerr a group is open\nok\nok\nok\nok s1 n4:beside(0.5)[n2 empty | n3 empty]\n"
+    );
+    let without = headless("add-slide\nbegin\nsplit n2 beside 0.5\nend\ntree\n", &dir);
+    assert_eq!(with.lines().last(), without.lines().last());
+}

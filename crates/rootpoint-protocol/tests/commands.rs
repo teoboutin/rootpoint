@@ -101,6 +101,8 @@ fn every_command_prints_back_as_it_parses() {
         Command::Begin,
         Command::End,
         Command::Cancel,
+        Command::Control,
+        Command::Release,
         Command::Select { node: NodeId(2) },
         Command::SelectSlide { slide: SlideId(3) },
         Command::Deselect,

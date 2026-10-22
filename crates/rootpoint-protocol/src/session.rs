@@ -50,6 +50,20 @@ pub struct View {
     pub presenting: Option<SlideId>,
 }
 
+/// The rule for one line of commands, as bytes, shared by every host that reads lines:
+/// `None` for a blank line or a comment, which starts with `#`; an `err` reply for a line that is
+/// not UTF-8 or does not parse; the command otherwise.
+pub fn read_line(line: &[u8]) -> Option<Result<Command, Reply>> {
+    let Ok(line) = std::str::from_utf8(line) else {
+        return Some(Err(Reply::Err("the line is not UTF-8".to_owned())));
+    };
+    let line = line.trim();
+    if line.is_empty() || line.starts_with('#') {
+        return None;
+    }
+    Some(parse_command(line).map_err(|e| Reply::Err(e.0)))
+}
+
 /// One undo step: the operations that revert one command, or every command of one group, applied
 /// in order.
 type Step = Vec<Op>;
@@ -106,16 +120,17 @@ impl Session {
     }
 
     /// Run one line: a command's reply, or `None` for a blank line or a comment, which starts
-    /// with `#`.
+    /// with `#`, by the rule of `read_line`.
     pub fn execute(&mut self, line: &str, files: &mut dyn Files) -> Option<Reply> {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            return None;
-        }
-        Some(match parse_command(line) {
+        Some(match read_line(line.as_bytes())? {
             Ok(command) => self.run(command, files),
-            Err(e) => Reply::Err(e.0),
+            Err(reply) => reply,
         })
+    }
+
+    /// Whether a group opened by `begin` is open.
+    pub fn group_open(&self) -> bool {
+        self.group.is_some()
     }
 
     /// Run one command. A command that fails changes neither the document nor the view.
@@ -232,6 +247,15 @@ impl Session {
                 self.end_group();
                 Ok(String::new())
             }
+            // A session run headless has one controller, which holds the authority to edit; an
+            // editor's host decides who holds it before the command reaches the session.
+            Command::Control => Ok(String::new()),
+            // Refused in every host while a group is open, so that a script's replies are the same
+            // in a window and headless.
+            Command::Release => match self.group {
+                Some(_) => Err("a group is open".to_owned()),
+                None => Ok(String::new()),
+            },
             Command::Cancel => {
                 let group = self.group.as_ref().ok_or("no group is open")?;
                 let step: Step = group.inverses.iter().rev().cloned().collect();

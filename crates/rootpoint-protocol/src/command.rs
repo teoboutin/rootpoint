@@ -84,6 +84,11 @@ pub enum Command {
     End,
     /// Revert the edits of the open group, and close it with no step.
     Cancel,
+    /// Ask for the authority to edit a running editor, which its window or its control socket
+    /// holds; a headless session has one controller, which always holds it.
+    Control,
+    /// Give the authority to edit back to the window; refused while a group is open.
+    Release,
     /// Select a node, and show its slide.
     Select {
         node: NodeId,
@@ -207,6 +212,8 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         "begin" => Command::Begin,
         "end" => Command::End,
         "cancel" => Command::Cancel,
+        "control" => Command::Control,
+        "release" => Command::Release,
         "select" => {
             let target = args.word("a node or a slide")?;
             if target.starts_with('s') {
@@ -295,6 +302,8 @@ impl fmt::Display for Command {
             Command::Begin => f.write_str("begin"),
             Command::End => f.write_str("end"),
             Command::Cancel => f.write_str("cancel"),
+            Command::Control => f.write_str("control"),
+            Command::Release => f.write_str("release"),
             Command::Select { node } => write!(f, "select {node}"),
             Command::SelectSlide { slide } => write!(f, "select {slide}"),
             Command::Deselect => f.write_str("deselect"),
