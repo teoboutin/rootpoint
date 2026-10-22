@@ -385,3 +385,53 @@ The rival, one connection per command, `rejected@rootpoint-app@connection-per-co
 agent a round trip for each edit and answers a take-over with as many refusals as the agent's
 script has lines left. On the owner's word: the owner judged that restricting an agent to one edit
 at a time seems a less efficient method.
+
+## The browser build
+
+### The browser build opens a directory the author picks and the built-in sample, and saves nothing `##browser-load-only`
+
+Built for the wasm target, the editor opens the built-in sample at start, and Open asks for a
+directory with the browser's directory picker and loads the one `.ron` file directly in it. Its
+edits stay in memory: it shows no Save button, Ctrl+S says that it saves nothing, and its files,
+`MemoryFiles`, refuse every write. Saving in the browser comes with packing, which writes a
+presentation into one file, `design@rootpoint-model@image-storage`; until then
+`goal@rootpoint@runs-in-browser` is met but for its packed file.
+
+On the owner's word: for the prototype, the owner chose a browser build that loads only over one
+that opens a presentation through the file picker and saves it by a download, judging that it
+reduces the work without losing much of the features; and proposed opening a whole directory
+rather than file by file. The owner confirmed both when the milestone was reviewed.
+
+### A picked directory's files are held in memory by their paths, and the document keeps its `Path` assets `##picked-files-by-path`
+
+`App::open_directory` holds the picked files in `MemoryFiles`, the session's `Files`, under their
+paths below the picked directory, and loads the presentation at the root of those paths;
+`App::add_picked_image` holds an image under its name in the presentation's directory. The session
+reads each `Path` asset from memory as it reads one from disk, per
+`design@rootpoint-protocol@session-files`, so the document is the one its file holds and a script
+of the same commands reproduces it. Every picked presentation has the same directory, so a new
+directory's assets are decoded again rather than taken from the cache, which is keyed on the
+directory and the assets' paths; and a directory that loads no presentation leaves the open one and
+its files as they were. The rival, each picked image converted to `AssetSource::Embedded`, would
+apply an operation per asset at every open, an undo step the author never made, and the document
+would no longer be its file.
+
+### In the browser, presenter mode asks the page for full screen, and ends when the page leaves it `##page-full-screen`
+
+eframe 0.37.0's web backend handles no `ViewportCommand::Fullscreen`: `handle_viewport_commands`
+of `path@elsewhere@src/web/app_runner.rs` logs it as not implemented. So, on the wasm target,
+`App::frame` asks the page's document for full screen when presenter mode starts, and leaves it
+when it ends. The browser takes Esc to leave full screen, and the page may not receive the key, so
+presenter mode ends when the page leaves full screen while presenting, as Esc ends it natively;
+`goal@rootpoint-app@presents-full-screen` asks presenter mode to be full screen.
+
+### In the browser, F5 is kept from reloading the page by a listener of the window in the capture phase `##f5-kept-from-browser`
+
+F5 starts presenter mode, and a reload of the page loses every edit held in memory,
+`design@rootpoint-app@browser-load-only`. eframe 0.37.0 never prevents F5's default action, in
+`should_prevent_default_for_key` of `path@elsewhere@src/web/events.rs`, and its listener on the
+canvas stops the propagation of every key, `WebOptions::should_stop_propagation` being true by
+default. So a listener of the window in the capture phase prevents F5's default before the canvas
+has the key, and the canvas still receives it. A listener in the bubble phase never sees the key
+while the canvas has focus, measured in Firefox at the review of the browser build;
+`path@rootpoint-app@tests/web.rs` checks the capture in a headless browser.

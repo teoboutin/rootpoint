@@ -122,7 +122,7 @@ slice's spec, with the gates run before each commit.
 - **The wasm gate.** The slice `model-core` created one gate named `wasm`. Each crate
   the browser build links joins it in the slice that creates it: the model, render and protocol
   crates. The app crate is created native in the slice `editor-shell` and joins it in
-  `spec@first-prototype@browser-build`, the slice that builds its web target. This keeps
+  the slice `browser-build`, the slice that builds its web target. This keeps
   `thread@first-prototype@prototype-scope`'s wasm build checked from the first slice; the per-crate
   cut is this milestone's.
 - **The checkout tie.** Every library root, binary target and build script a slice adds reads
@@ -474,7 +474,7 @@ the scope and the hedge of the answer.
 Proposed by the session in round 1 (`argument@first-prototype@arg-41`), by
 `criterion@first-prototype@c10-crate-rule`. Closed by O10's whole-table agreement. Final state:
 approved. Shape: "Decided design" below. Harvest: a design head of rootpoint, at the harvest of
-`spec@first-prototype@browser-build`, the slice that completes the split.
+the slice `browser-build`, the slice that completes the split.
 
 ### The prototype holds the scope of round 1, and its wasm build is gated from the first slice `##prototype-scope`
 
@@ -923,7 +923,7 @@ Serialization stays inside the model crate until it needs migrations of its own,
 its own reason to change. The model crate holds no dependency that fails to build for the wasm
 target, and neither do the render and protocol crates, which the browser build links; the gates
 check each from the slice that creates it, and the app crate from
-`spec@first-prototype@browser-build`.
+the slice `browser-build`.
 
 No rival to this split was argued in the discussion; the owner's rule,
 `thread@first-prototype@crate-existence-rule`, is what each row is judged by.
@@ -945,7 +945,7 @@ live; a headless PNG render; a wasm build checked by the gates from the first sl
 sample presentation, in every build, as a tutorial and demonstrator, per D3.
 
 **The UI actions** of the native GUI, which the slice `editor-shell` built and
-`spec@first-prototype@browser-build` checks in the browser:
+the slice `browser-build` checks in the browser:
 
 - in the slide list: add, remove, reorder by drag, and duplicate a slide;
 - in the slide view: select an area or a split, drag a divider, split the selected node along
@@ -1118,7 +1118,13 @@ an image takes more than 200 ms. The owner kept these bounds in O12. Response: r
 ### AC3. The browser build loads, edits and presents presentations as natively `##browser-build-holds`
 
 Guards `thread@first-prototype@gui-toolkit`, `thread@first-prototype@slide-renderer` and
-`thread@first-prototype@font-sources`. Judged by `spec@first-prototype@browser-build`. Fires when
+`thread@first-prototype@font-sources`. Judged by the slice `browser-build`, where it did not
+fire: in a headless Firefox, the app's image of the sample's first slide equals the native golden
+image pixel for pixel, and the app's actions give the native commands; in a headless Chrome driven
+through its DevTools protocol, the build served from a static directory opened the sample, opened
+a directory through the browser's directory picker with its image drawn, split an area, undid it,
+added an image through the file picker, and presented full screen, F5 to enter and Esc to leave.
+Chrome found no WebGPU adapter and drew through WebGL. Fires when
 the wasm build, served from a static directory, cannot open the built-in sample and a presentation
 directory the user picks, run the editing operations, or show presenter mode, or lays text out
 differently from a native PNG of the same slide. Response: where the failure is in eframe's web
@@ -1129,7 +1135,7 @@ evidence.
 ### AC4. Rebuilding three real slides is faster than with a general-purpose slide editor `##split-editing-convenient`
 
 Guards `thread@first-prototype@split-tree-arity` and `thread@first-prototype@split-any-node`. Judged
-after `spec@first-prototype@browser-build` lands, by the owner. Fires when the owner, rebuilding 3
+after the slice `browser-build` lands, by the owner. Fires when the owner, rebuilding 3
 slides of a past presentation in the prototype, judges it not faster than with a general-purpose
 slide editor, the comparison `goal@rootpoint@free-slide-division` states, per D4; the owner is the
 judge, per `goal@rootpoint@real-presentations`. Response: reopen both decisions.
@@ -1155,7 +1161,7 @@ that holds it is reopened for its keys. Kept on the owner's word in O16 of that 
 
 ## Implementation sequence
 
-Each slice's steps are in its spec, linked from this directory's `README.md` rows below.
+Each slice's steps were in its spec, deleted when the slice landed.
 
 1. the slice `model-core`: the model crate, its operations, its geometry and its RON
    format; the wasm gate. Judges AC5.
@@ -1167,12 +1173,10 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 5. the slice `text-editing`: editing text in place. Judges AC1.
 6. the slice `live-control`: the control socket, its client, and control passed between the
    window and the socket. Judged AC7, which did not fire.
-7. `spec@first-prototype@browser-build`: the browser build. Judges AC3. The owner then judges AC4,
-   and the closing commit of "Harvest" follows.
+7. the slice `browser-build`: the browser build. Judged AC3, which did not fire. The owner then
+   judges AC4, and the closing commit of "Harvest" follows.
 
-| slice spec |
-| --- |
-| [The editor and presenter in a web browser](browser-build.md) |
+Every slice has landed, so no slice spec remains in this directory.
 
 ## Order rationale
 
@@ -1186,7 +1190,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   needs a hosted slide view and input forwarding.
 - the slice `text-editing` before the slice `live-control`: the control socket
   drives a GUI whose editing is complete, so a failure of the socket is not one of editing.
-- the slice `live-control` before `spec@first-prototype@browser-build`: the browser build
+- the slice `live-control` before the slice `browser-build`: the browser build
   has no transport for the protocol, stdin or socket, though it links the session, so it comes
   last, on a GUI whose native features are all built.
 
@@ -1258,7 +1262,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 ## Harvest
 
 - **This document** leaves in a closing commit of its own, on a branch after
-  `spec@first-prototype@browser-build` has merged and the owner has judged AC4. That commit
+  the slice `browser-build` has merged and the owner has judged AC4. That commit
   reports on AC4, harvests `thread@first-prototype@crate-split` and the wasm rule of
   `thread@first-prototype@prototype-scope` into rootpoint's design home, and deletes this
   directory.

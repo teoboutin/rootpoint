@@ -139,7 +139,7 @@ write nothing; an asset that keeps its file is not read. A saved file therefore 
 `design@rootpoint-model@asset-source`.
 
 It applies `design@rootpoint-model@image-storage`: assets are files beside the presentation, and
-the browser build of `spec@first-prototype@browser-build` opens one presentation directory, so it
+the browser build opens one presentation directory, `design@rootpoint-app@browser-load-only`, so it
 cannot read a file outside it, which rules out rewriting paths in place with `..`. Refusing a save
 into another directory would refuse the first save of every presentation built in the GUI with an
 image, against `goal@rootpoint@no-language-no-build`. On the owner's word: the owner chose copies
