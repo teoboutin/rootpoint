@@ -184,6 +184,21 @@ fn a_divider_drag_is_one_undo_step() {
 }
 
 #[test]
+fn a_divider_dragged_back_to_the_press_returns_to_where_it_was() {
+    let mut d = Driver::new();
+    let (start, split, index) = d.divider();
+    let pos = d.position(split, index);
+    d.button(start, true);
+    d.move_to(start + Vec2::new(30.0, 30.0));
+    assert_ne!(d.position(split, index), pos, "the divider moved");
+    // Back at the press, within the rounding of points in f32.
+    d.move_to(start);
+    assert!((d.position(split, index) - pos).abs() < 1e-6);
+    d.button(start, false);
+    assert!((d.position(split, index) - pos).abs() < 1e-6);
+}
+
+#[test]
 fn esc_cancels_a_divider_drag() {
     let mut d = Driver::new();
     let before = d.doc();

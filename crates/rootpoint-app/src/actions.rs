@@ -151,7 +151,12 @@ impl App {
             return;
         };
         if self.open_group() {
-            self.gesture = Gesture::Divider { split, index, pos };
+            self.gesture = Gesture::Divider {
+                split,
+                index,
+                pos,
+                left: false,
+            };
         }
     }
 
@@ -161,11 +166,17 @@ impl App {
             split,
             index,
             pos: last,
+            ..
         } = self.gesture
             && pos != last
         {
             self.run(Command::Divider { split, index, pos });
-            self.gesture = Gesture::Divider { split, index, pos };
+            self.gesture = Gesture::Divider {
+                split,
+                index,
+                pos,
+                left: true,
+            };
         }
     }
 

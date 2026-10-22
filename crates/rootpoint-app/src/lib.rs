@@ -67,6 +67,9 @@ enum Gesture {
         split: NodeId,
         index: usize,
         pos: f64,
+        /// Whether the pointer has left the press: from then on every frame sends, the press's
+        /// own place included.
+        left: bool,
     },
     /// A drag of the grip of an area, inside an undo group, which sends its commands at the drop.
     Grip {

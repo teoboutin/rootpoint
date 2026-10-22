@@ -154,12 +154,21 @@ impl App {
         }
         match self.gesture {
             Gesture::Divider { .. } | Gesture::Grip { .. } if esc => self.cancel_drag(),
-            Gesture::Divider { split, index, .. } => {
+            Gesture::Divider {
+                split, index, left, ..
+            } => {
                 // Until the pointer leaves the press, nothing is sent, so a click or a
-                // double-click on a divider leaves no step of its own.
+                // double-click on a divider leaves no step of its own. Once it has left, a return
+                // to the press's place sends too, and puts the divider back.
+                if let Gesture::Divider { left, .. } = &mut self.gesture
+                    && pos.is_some()
+                    && pos != origin
+                {
+                    *left = true;
+                }
                 if down
                     && let Some(pos) = pos
-                    && Some(pos) != origin
+                    && (left || Some(pos) != origin)
                     && let Some(i) = layout
                         .dividers
                         .iter()
