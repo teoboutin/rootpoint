@@ -30,4 +30,5 @@ browser build. Without it, a talk cannot be carried as one file and presented fr
 ### What would close it
 
 A design session on packing, then its work built: commands that pack and unpack, by the protocol,
-with round-trip tests, and the browser build opening a packed file.
+with round-trip tests, a pack then an unpack elsewhere keeping the tree of assets, and the browser
+build opening a packed file.

@@ -23,7 +23,7 @@ editor view takes more than 33 ms, by
 `cargo test --release -p rootpoint-app --test presenter -- --ignored --nocapture`, or any render of
 one 3840×2160 slide with text and an image takes more than 200 ms, by
 `cargo test --release -p rootpoint-render --test text -- --ignored --nocapture`. The bounds are
-defaults the session proposed and the owner kept, the owner's to reset.
+defaults the session proposed and the owner kept.
 **Response:** reopen `design@rootpoint-render@slide-renderer`, with GPU vello or vello_hybrid as the
 candidate.
 **Re-entry:** the design audit of any work that adds a content kind or changes the renderer; and
