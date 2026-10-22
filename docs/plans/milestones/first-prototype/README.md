@@ -1078,7 +1078,7 @@ trial also found that a resize ended editing; the cause, a loss of the window's 
 resize, is read from winit's source, not measured on the owner's desktop, and the commits "Keep
 editing in place when the window loses focus, for the text editing slice" and "Repair the text
 editing slice after the review of its work" repair it, with a test of synthetic unfocused frames;
-the repair has not been tried on the owner's desktop. Fires when, in a text area at three window
+the owner then tried a resize while editing and reported it works. Fires when, in a text area at three window
 sizes, the caret
 does not sit on the drawn glyph boundary, selection by drag or by shift+arrow fails, or a dead-key
 character such as "é" cannot be typed. Response: reopen `thread@first-prototype@slide-renderer`.
