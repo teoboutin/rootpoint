@@ -165,7 +165,8 @@ slice's spec, with the gates run before each commit.
   **T6** and the acceptance criterion **AC7**, all quoted in that slice's spec. **Q36** and
   **Q37**: the questions put to the owner after the reviews of that slice's plan, on two
   attributions of the owner's words and on the re-entry of
-  `issue@rootpoint-app@alt-arrows-follow-the-tree`, ruled in the messages of its repair commits.
+  `issue@rootpoint-app@alt-arrows-follow-the-tree`; with **D6**, they are answered by **O27**, which
+  also proposes the tripwire **T7**, both quoted in that slice's spec.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
@@ -1076,7 +1077,8 @@ the slice `editor-shell`, and the owner's ruling on them is O16 of that slice's 
   harvest of the slice `editor-shell`, as `tripwire@rootpoint-protocol@client-joins-gui-group`.
 - **T6 and AC7**, from the premortem of the design session held at the audit of
   `spec@first-prototype@live-control`, are in that slice's spec, with the owner's ruling on them,
-  O25, "Keep T6 and AC7."
+  O25, "Keep T6 and AC7."; and **T7**, which the owner proposed and ruled in O27, the answer to
+  D6.
 - **AC6. The desktop takes the editor's modifier keys.** Stresses
   `design@rootpoint-app@split-preview` and `design@rootpoint-app@node-selection`. Becomes AC6,
   `acceptance@first-prototype@modifiers-reach-app`.
@@ -1224,16 +1226,22 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   editor has" excluded, read literally, presenter mode, saving and the protocol, which other goals
   require. The owner ruled: "Q4 accepted, go ahead". The goal is reworded under
   `skill@knowledge-architect-goal-setting`.
-- **D6, awaiting the owner.** After the window takes control with its button, the socket's `control`
-  replies `err the author took control` until the author gives control back with a button "Give
-  control" of the banner; at start and after the socket's `release`, `control` is granted at once,
-  as the owner chose in O23. Bears on `thread@first-prototype@control-passing`, of
+- **D6, ruled.** The default put to the owner: after the window takes control with its button,
+  the socket's `control` replies `err the author took control` until the author gives control back
+  with a button "Give control" of the banner. Bears on `thread@first-prototype@control-passing`, of
   `spec@first-prototype@live-control`, where `argument@first-prototype@arg-107` argues it: under
-  the rule as ruled, an agent that answers its refused edit with `control` takes control back at
-  once, so the author's take-over holds only while the agent does not ask, and
-  `goal@rootpoint-app@live-agent-edits` asks that the author takes the work over. A premise of the
-  owner's ruling on Q34 proved false, so the case it covers, a `control` after a take-over, waits
-  for the owner's word, per `primer@owner-word-premise`; the rest of the slice goes on.
+  the rule ruled for Q34, an agent that answers its refused edit with `control` takes control back
+  at once, and `goal@rootpoint-app@live-agent-edits` asks that the author takes the work over. The
+  owner ruled, in O27: "D6: IMO, when I take control from an agent, the agent is supposed to
+  receive the message that I took it (via replies to edit tentatives), and the message should
+  carry an instruction for the agent to stop and wait for further instructions. In principle this
+  should be enough, agents rarely misbehave like that nowadays. I think we can try out this shape
+  first, with a tripwire if agents misbehave too often, that would reopen the "Give control" button
+  proposal." So: `control` stays granted at once after a take-over; the socket's refused edits
+  then reply `err the author took control: stop, and wait for the author's instructions`; and T7,
+  in that slice's premortem, reopens the button.
+- **Q36 and Q37, ruled** in O27: the two attributions stand as the review's repairs wrote them, and
+  the slice does not meet the re-entry of `issue@rootpoint-app@alt-arrows-follow-the-tree`.
 
 ## Harvest
 

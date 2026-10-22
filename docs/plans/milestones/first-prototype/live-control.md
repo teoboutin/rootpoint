@@ -10,9 +10,10 @@ The slice's design audit is done: its record is the message of the commit "Apply
 of the sixth slice, driving the running GUI" (`git log --grep='design audit'`). Its load-bearing
 gap opened a design session, held at the audit, which converged; the plan reviews of the converged
 design read its shapes against the code, and their repairs are in this spec. The slice resumes at
-point 3 of `skill@knowledge-architect-planning@working-a-slice`; the case D6 of the milestone
-document covers waits for the owner's word, and the rest does not. The session was assembled from the transcript of the
-session that ran the audit, where the discussion begins at the owner's answer to Q33. Its threads,
+point 3 of `skill@knowledge-architect-planning@working-a-slice`; D6 of the milestone document,
+put to the owner after the reviews, is ruled in O27. The session was assembled from the transcript
+of the session that ran the audit, where the discussion begins at the owner's answer to Q33. Its
+threads,
 arguments, criteria, premortem and acceptance criterion are below, and the owner's messages in it,
 O20 to O26, are quoted verbatim in their own section.
 
@@ -58,8 +59,9 @@ O20 to O26, are quoted verbatim in their own section.
   1 on `err`, and 2 when it cannot connect. A line holding a quoted text is given as one word, as
   `rootpoint-ctl /tmp/rp 'text n3 "two words"'`, and its doc comment says so. Its target reads
   `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires. It is a thin `main` over a function of
-  the protocol crate's library, `rootpoint_protocol::control::send(path: &Path, line: &str) ->
-  io::Result<Option<String>>`: `Ok(Some(reply))`, `Ok(None)` when the listener closed the
+  the protocol crate's library,
+  `rootpoint_protocol::control::send(path: &Path, line: &str) -> io::Result<Option<String>>`:
+  `Ok(Some(reply))`, `Ok(None)` when the listener closed the
   connection with no reply, `Err` when it could not connect. It is built on Unix only, so the wasm
   gate never sees it. The app's tests drive the listener through that function, since cargo sets
   `CARGO_BIN_EXE_<name>` for a test only for a binary of the test's own package: measured at the
@@ -101,12 +103,15 @@ O20 to O26, are quoted verbatim in their own section.
     completes nothing at its release: a stay in editing ends with its edits one undo step, a
     divider drag ends as at its release, and a grip drag is cancelled, as at a loss of the window's
     focus, since its edits are made only at its drop (`thread@first-prototype@control-passing`).
-    a `control` sent after the window took control with its button is the case of D6 of the
-    milestone document, which waits for the owner's word; its default replies
-    `err the author took control` until the author gives control back;
+    A `control` after a take-over by the button is granted at once too, by D6 of the milestone
+    document, ruled in O27;
   - `release` replies as `Session::run` does, and on `ok` gives control to the window;
   - every other command, the view commands included, runs while the socket holds control, and
-    otherwise replies `err the window has control`.
+    otherwise replies `err the window has control` while the window holds control from the start
+    or from a `release`, and
+    `err the author took control: stop, and wait for the author's instructions` after a take-over
+    by the button, until the socket's next `control`. The app keeps which of the two holds, in
+    `Controller`.
 - The window under the socket's control (`thread@first-prototype@window-under-protocol-control`).
   It shows each change as it is made. Every action of `path@rootpoint-app@src/actions.rs` that
   changes the document returns at once, changing nothing, while the socket holds control; every
@@ -116,9 +121,7 @@ O20 to O26, are quoted verbatim in their own section.
   protocol has control" beside a button "Take control"; in presenter mode the same button sits in
   a corner, over the slide's texture and never in its image. The button closes with `end` a group
   the socket left open, when `Session::group_open` says one is, and gives control to the window
-  (`thread@first-prototype@interrupted-client-group`). By D6, after a take-over the banner reads
-  "You took control from the text protocol" beside a button "Give control", which lets the socket's
-  next `control` be granted.
+  (`thread@first-prototype@interrupted-client-group`).
 
 | input of the window | while the socket holds control |
 | --- | --- |
@@ -167,7 +170,9 @@ Each claim's test is shown to fail against a wrong implementation as its last se
    binary against a listener the test holds, which answers `ok`, `err` and nothing, and once with no
    listener. Fails when the exit codes are swapped: the assertion on each code fails.
 5. **Control passes as "Builds" says.** The window holds control at start; a socket edit without
-   control replies `err the window has control` and changes nothing; `tree`, `view` and `render`
+   control replies `err the window has control` and changes nothing, and after a take-over by the
+   button `err the author took control: stop, and wait for the author's instructions`, until the
+   socket's next `control`, which is granted; `tree`, `view` and `render`
    are answered without control; `control` during a stay in editing ends the stay, its edits one
    undo step, during a divider drag ends the drag as at its release, and during a grip drag cancels
    it; `release` with a group open replies `err a group is open`; the button closes the socket's
@@ -201,8 +206,8 @@ Each claim's test is shown to fail against a wrong implementation as its last se
 9. **An idle listener costs a divider drag no time beyond its recorded bound.** With a `Listener`
    given to the app and no line sent, the largest frame of the divider drag of
    `design@rootpoint-app@gui-toolkit` stays within 33 ms, AC2's bound, the recorded runs being 5.9
-   ms and 6.05 ms. Instrument: `cargo test --release -p rootpoint-app --test presenter -- --ignored
-   --nocapture`, run with and without the listener; both times are reported in the step's commit.
+   ms and 6.05 ms. Instrument:
+   `cargo test --release -p rootpoint-app --test presenter -- --ignored --nocapture`, run with and without the listener; both times are reported in the step's commit.
 
 ## Audit subjects
 
@@ -221,8 +226,8 @@ Each claim's test is shown to fail against a wrong implementation as its last se
   open.
 - `issue@rootpoint-app@alt-arrows-follow-the-tree`, whose re-entry is the design audit of the next
   slice that touches the app's keys: this slice decides which keys act while the socket holds
-  control, and changes what none of them does; Q37 of the milestone document asks the owner whether
-  that meets the re-entry.
+  control, and changes what none of them does; on Q37 the owner ruled in O27 that this does not
+  meet the re-entry.
 - `design@rootpoint-app@gesture-groups`, `design@rootpoint-protocol@view-state`,
   `design@rootpoint-app@editor-overlay`, `design@rootpoint-app@edit-entry`,
   `design@rootpoint-app@selection-actions`, `design@rootpoint-app@divider-drag` and
@@ -376,10 +381,17 @@ is open, and the window's take-over immediate (`argument@first-prototype@arg-86`
 a task and control was handed back to me with `release`, before giving further instructions. I
 think (i) fits this workflow best." (`argument@first-prototype@arg-94`). Final state: approved, on
 (i), by those words and the whole-table agreement of O23. A refused edit replies
-`err the window has control` (`argument@first-prototype@arg-98`). Shape: "Decided design". Harvest:
-judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does. Its rule (i) is the owner's choice in O23, on the owner's workflow; the take-over's
-immediacy stands on `argument@first-prototype@arg-86`. T6 guards it. D6 of the milestone
-document, awaiting the owner, adds a case to it (`argument@first-prototype@arg-107`).
+`err the window has control` (`argument@first-prototype@arg-98`). Shape: "Decided design". After the
+reviews, the
+case of an agent asking again right after a take-over (`argument@first-prototype@arg-107`) was put
+to the owner as D6; the owner chose in O27 to keep (i) in that case too, with a refusal that
+tells the agent the author took control and to stop and wait for the author's instructions, over a
+"Give control" button the author would click to hand back, and to record T7, which reopens that
+button if agents misbehave too often. Harvest: judged on its own by the entry tests of
+`primer@design-heads`, a head of its own where one passes, a comment at its code where none does.
+Its rule (i) is the owner's choice in O23, on the owner's workflow, and its case after a take-over
+the owner's choice in O27; the take-over's immediacy stands on `argument@first-prototype@arg-86`.
+T6 and T7 guard it.
 
 ### The protocol asks for control with the verbs `control` and `release`, which run headless `##control-commands`
 
@@ -401,7 +413,8 @@ Proposed by the session in round 1, for the protocol's queries (`argument@first-
 reshaped in round 4 with the window's view inputs and the asymmetry
 (`argument@first-prototype@arg-105`). Final state: approved, by the whole-table agreement of O23
 and, reshaped, by O26: "I agree with the reshaped thread, proceed". Shape: "Decided design".
-Harvest: judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does; its ground is its argument.
+Harvest: judged on its own by the entry tests of `primer@design-heads`, a head of its own where one
+passes, a comment at its code where none does; its ground is its argument.
 
 ### While the protocol holds control, the window takes only the inputs that change the view, and a button takes control back `##window-under-protocol-control`
 
@@ -418,7 +431,9 @@ discrete overlay in a corner is not a problem." (`argument@first-prototype@arg-1
 window input ? ... any input that only changes the view but not the content/layout of the
 presentation can stay useable." (`argument@first-prototype@arg-103`), and the session reshaped it
 (`argument@first-prototype@arg-104`, `argument@first-prototype@arg-105`). Final state: approved, by
-O26: "I agree with the reshaped thread, proceed". Shape: "Decided design". Harvest: judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does; the
+O26: "I agree with the reshaped thread, proceed". Shape: "Decided design". Harvest: judged on its
+own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at
+its code where none does; the
 corner button and the inspection of the slides are the owner's proposals in O24 and O25, and Esc
 taking no control in presenter mode is the owner's word in O24; the rest stands on its argument.
 With the rewrites "What changes in the record" lists.
@@ -426,14 +441,17 @@ With the rewrites "What changes in the record" lists.
 ### The window holds control when it starts `##control-at-start`
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-92`). Final state: approved, by
-the whole-table agreement of O23. Harvest: judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does.
+the whole-table agreement of O23. Harvest: judged on its own by the entry tests of
+`primer@design-heads`, a head of its own where one passes, a comment at its code where none does.
 
 ### Taking control closes the group the protocol left open with `end` `##interrupted-client-group`
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-93`), for the take-over by the
 window. Final state: approved, by the whole-table agreement of O23. At the assembly the session
 applied the same rule to `release`; at the plan's review it replaced that clause by a `release`
-refused while a group is open (`argument@first-prototype@arg-106`), argued. Harvest: judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does.
+refused while a group is open (`argument@first-prototype@arg-106`), argued. Harvest: judged on its
+own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at
+its code where none does.
 
 ## Arguments
 
@@ -530,7 +548,8 @@ you just opened." Bears on `thread@first-prototype@control-at-start`.
 
 ### `end` keeps what the author watched, `cancel` erases it `##arg-93`
 
-Round: round 1. Assistant. "closes that group with `end`, not `cancel`. Its edits stay visible as one
+Round: round 1. Assistant. "closes that group with `end`, not `cancel`. Its edits stay visible as
+one
 undo step, so one Ctrl+Z reverts them, while `cancel` would erase what you just watched happen."
 Bears on `thread@first-prototype@interrupted-client-group`.
 
@@ -540,7 +559,8 @@ Round: round 1, the owner's answer. Owner, O23, Q34. "I expect taking control be
 interrupt the agent to ask a question or add/change instructions I gave, or correct a mistake early
 before it propagates. Manual adjustement (layout, wording...) is something that I would do when the
 agent has finished a task and control was handed back to me with `release`, before giving further
-instructions. I think (i) fits this workflow best." Bears on `thread@first-prototype@control-passing`.
+instructions. I think (i) fits this workflow best." Bears on
+`thread@first-prototype@control-passing`.
 
 ### In the owner's view, no similar use case exists; a survey would be worth it for a wider lock `##arg-95`
 
@@ -633,11 +653,13 @@ nothing." "View commands join no group, per `design@rootpoint-protocol@gesture-u
 
 ### One shared view, and the asymmetry of view commands `##arg-105`
 
-Round: round 4. Assistant. "When the agent sends `select` or `present`, your window follows it, which
+Round: round 4. Assistant. "When the agent sends `select` or `present`, your window follows it,
+which
 is what a demo needs. When you click, the agent's `view` reply changes, which costs it nothing,
 since its edits name ids." The rival "brings back the rival `design@rootpoint-protocol@view-state`
 argued against, a view the GUI alone holds, which no headless test reaches. It also adds a second
-view to reconcile at every hand-over." "An agent's `select` while you hold control would move what you are looking at. Worse, a
+view to reconcile at every hand-over." "An agent's `select` while you hold control would move what
+you are looking at. Worse, a
 `select` of another node ends your stay in editing, since editing ends when its area is no longer
 the selection (`App::editor` in `path@rootpoint-app@src/lib.rs`). That closes your group, an
 effect on your edits. The window's view inputs act on nothing of the agent's." Bears on
@@ -668,6 +690,15 @@ interrupt was not put to the owner. Default, D6: after a take-over by the button
 control"; at start and after `release`, `control` is granted at once, as (i). Its cost: one click
 to hand back after an interrupt. Bears on `thread@first-prototype@control-passing`.
 
+### The refusal tells the agent to stop and wait; a tripwire watches misbehaving agents `##arg-108`
+
+Round: the owner's answer after the reviews. Owner, O27, D6. "when I take control from an agent,
+the agent is supposed to receive the message that I took it (via replies to edit tentatives), and
+the message should carry an instruction for the agent to stop and wait for further instructions.
+In principle this should be enough, agents rarely misbehave like that nowadays." "I think we can
+try out this shape first, with a tripwire if agents misbehave too often, that would reopen the
+"Give control" button proposal." Bears on `thread@first-prototype@control-passing`.
+
 ## New names
 
 ```text
@@ -692,7 +723,8 @@ channel, then waits for the reply; the GUI drains the channel at the start of ea
 session is only touched by the GUI's thread (`thread@first-prototype@protocol-transport`).
 Nearest rival: JSON-RPC; see "Losing alternatives" of the milestone document.
 
-**One controller at a time** (`thread@first-prototype@one-controller-at-a-time`). The app holds which
+**One controller at a time** (`thread@first-prototype@one-controller-at-a-time`). The app holds
+which
 of two controllers, the window or the socket, has the authority to edit; the socket counts as one,
 every connection together. When control passes, the side that loses it has its gestures or its
 group closed, so no group is ever shared, which meets
@@ -714,9 +746,11 @@ release, a grip drag cancelled, as at a loss of the window's focus. `release` gi
 and is refused while a group is open. An edit refused for want of control replies
 `err the window has control`. Nearest rival for the request: (ii), refused until the author gives
 control back; defeated by the owner's workflow in O23, where the author adjusts by hand after
-`release` and so is rarely in a gesture when the agent asks. D6, awaiting the owner, refuses the
-request after a take-over by the button until the author gives control back
-(`argument@first-prototype@arg-107`).
+`release` and so is rarely in a gesture when the agent asks. After a take-over by the button,
+the socket's refused edits reply
+`err the author took control: stop, and wait for the author's instructions`, so a well-behaved agent stops before it asks for control again; on the owner's
+word in O27, that refusal over a "Give control" button the author clicks to hand back, which T7
+reopens (`argument@first-prototype@arg-107`).
 
 **The verbs** (`thread@first-prototype@control-commands`). `control` and `release` are verbs of the
 protocol's grammar. Headless, `control` replies `ok`, since a headless session has one controller,
@@ -753,7 +787,8 @@ harvest rewrites each, unless a step's commit says otherwise:
   `design@rootpoint-app@divider-drag` and `design@rootpoint-app@swap-gesture`: a click on the
   selected text area enters editing, Delete removes, the cursor is a resize cursor over a divider,
   and the selected area shows a grip, only while the window holds control. The owner approved the
-  window under the socket's control in O26, which includes these limits; `design@rootpoint-app@edit-entry` rests on the
+  window under the socket's control in O26, which includes these limits;
+  `design@rootpoint-app@edit-entry` rests on the
   owner's word, and the limit is within that approval.
 - `design@rootpoint-app@editor-overlay`: its list of marks gains the banner and the button, and its
   marks of a gesture are not drawn while the socket holds control.
@@ -798,7 +833,11 @@ harvest rewrites each, unless a step's commit says otherwise:
   when no gesture is open**, (iii), lost to (i) of `thread@first-prototype@control-passing`: a click
   before each task, or refusals for no visible reason (`argument@first-prototype@arg-87`,
   `argument@first-prototype@arg-94`). T6 brings (iii) back if (i) ends the owner's gestures in real
-  use; D6 takes from (ii) the case after a take-over.
+  use.
+- **A "Give control" button, the author's, after a take-over**, D6's default, the socket's
+  `control` refused until the author clicks it, lost to the refusal that tells the agent to stop
+  and wait, on the owner's word in O27 (`argument@first-prototype@arg-107`). T7 brings it back if
+  agents misbehave too often.
 - **Implicit control, and verbs the listener intercepts**, lost to
   `thread@first-prototype@control-commands` (`argument@first-prototype@arg-89`).
 - **Control held by one connection**, lost to `thread@first-prototype@one-controller-at-a-time`:
@@ -825,7 +864,7 @@ harvest rewrites each, unless a step's commit says otherwise:
 ## Premortem
 
 Each cause assumes the slice shipped and the feature failed. The owner ruled on T6 and AC7 in O25:
-"Keep T6 and AC7."
+"Keep T6 and AC7." T7 is the owner's, proposed and ruled in O27, the answer to D6.
 
 - **`rootpoint-ctl` opens one connection per command.** Stresses
   `thread@first-prototype@control-commands`. Converted into a clause of it: control belongs to the
@@ -845,6 +884,14 @@ Each cause assumes the slice shipped and the feature failed. The owner ruled on 
   `control` ended a stay in editing or a drag the owner had not finished, more than once in real
   use. Response: reopen the rule of the protocol's request toward (iii), granted only when no
   gesture of the window is open. Re-entry: the first real talk prepared with an agent.
+- **T7. An agent takes control back after the author took it, without the author's word.**
+  Stresses `thread@first-prototype@control-passing`, its case after a take-over, ruled in O27.
+  Recorded on the owner's word in O27, at this slice's harvest, in the app crate's Component's
+  tripwires home, guarding the same head as T6. Fires when: in real use, an agent answers a
+  refusal that says the author took control with `control`, before the author gave it new
+  instructions, more than once; the count is a default, the owner's to reset. Response: reopen the
+  case after a take-over, toward a "Give control" button the author clicks to hand back. Re-entry:
+  the first real talk prepared with an agent.
 - **AC7. The hand-over is in the way of the workflow.** Stresses
   `thread@first-prototype@one-controller-at-a-time` and `thread@first-prototype@control-passing`.
   Becomes `acceptance@first-prototype@hand-over-convenient`.
@@ -863,7 +910,7 @@ in the way of that workflow. Response: reopen both decisions. Kept on the owner'
 ## The owner's messages in the design session
 
 Verbatim, in order. O20 answers Q33; O23 answers Q34, Q35 and round 1; O24 answers round 2; O25
-round 3; O26 round 4.
+round 3; O26 round 4; O27 answers D6, Q36 and Q37, put after the reviews.
 
 **O20**
 
@@ -907,6 +954,14 @@ round 3; O26 round 4.
 
 > I agree with the reshaped thread, proceed
 
+**O27**, the owner's answer to D6, Q36 and Q37, put after the reviews of the plan.
+
+> D6: IMO, when I take control from an agent, the agent is supposed to receive the message that I took it (via replies to edit tentatives), and the message should carry an instruction for the agent to stop and wait for further instructions. In principle this should be enough, agents rarely misbehave like that nowadays.
+> I think we can try out this shape first, with a tripwire if agents misbehave too often, that would reopen the "Give control" button proposal.
+>
+> Q36: There is nothing asked of me here, right ?  Your defaults look right.
+> Q37: no reentry here.
+
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`, under
@@ -932,7 +987,7 @@ same nearest rival, and each part states its own ground, the owner's where the i
   control and verbs the listener intercepts, which would change the grammar; control held by one
   connection, which would change the socket's contract.
 - Every text "What changes in the record" lists, under "Decided design".
-- T6, in the tripwires home of the app crate's Component, on the owner's word, as
+- T6 and T7, in the tripwires home of the app crate's Component, on the owner's word, as
   `skill@knowledge-architect-decision-recording@ruled-tripwires` says.
 - T5, `tripwire@rootpoint-protocol@client-joins-gui-group`, put to the owner: its condition is
   prevented by the app.
