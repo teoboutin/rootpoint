@@ -1,7 +1,7 @@
 //! Presenter mode, with no window: at the same pixel size its image equals the image the editor
 //! hands to its texture for the same slide, so no editor mark is in the slide's image, per
 //! `design@rootpoint-app@editor-overlay`; its keys move through the slides and leave it; it asks
-//! for full screen. And the timing of AC2's divider drag, run by hand in a release build.
+//! for full screen. And the timing of a divider drag, run by hand in a release build.
 
 use std::time::Instant;
 
@@ -173,9 +173,9 @@ fn the_presenter_keys_move_through_the_slides_and_esc_leaves_full_screen() {
     assert_eq!(d.presenting(), Some(SlideId(7)));
 }
 
-/// The drag bound of `tripwire@rootpoint-render@render-within-bounds`: 100 frames of a drag of one divider of
-/// the fixture `path@rootpoint-app@tests/data/mixed.ron` in a 1600×900 editor view, each timed
-/// with `Instant` around the whole `Context::run_ui`, which holds the app's `ui` call and its
+/// The drag bound of `tripwire@rootpoint-render@render-within-bounds`: 100 frames of a drag of one
+/// divider of the fixture `path@rootpoint-app@tests/data/mixed.ron` in a 1600×900 editor view, each
+/// timed with `Instant` around the whole `Context::run_ui`, which holds the app's `ui` call and its
 /// `TextureHandle::set`, and egui's own work around them. The bound holds when every frame is
 /// within 33 ms. Run with
 /// `cargo test --release -p rootpoint-app --test presenter -- --ignored --nocapture`.

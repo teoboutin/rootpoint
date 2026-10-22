@@ -137,7 +137,7 @@ fn time_the_mixed_slide_at_4k() {
     println!("mixed 3840x2160 renders: {times:?}; largest {max:?}");
     assert!(
         max.as_millis() <= 200,
-        "a render took {max:?}, over AC2's 200 ms"
+        "a render took {max:?}, over the 200 ms of `tripwire@rootpoint-render@render-within-bounds`"
     );
 }
 

@@ -10,9 +10,8 @@ describes a design that is not built.
 sizes, so uniform scaling lays it out again at each size and hinting and rounding can move line
 breaks between window sizes (assumed by the survey, not measured), and that a headless image is
 only as good as the toolkit's offscreen path. A toolkit text field over a slide drawn by another
-engine would break lines differently and let the caret drift. Kept open by the doubt that this
-renderer edits text in place with the caret on the drawn glyphs, which
-`path@rootpoint-app@tests/editing.rs` checks. Its two speed bounds,
+engine would break lines differently and let the caret drift; this renderer's caret stands on the
+drawn glyphs, which `path@rootpoint-app@tests/editing.rs` checks. Its two speed bounds,
 `tripwire@rootpoint-render@render-within-bounds`, held when measured, release build,
 on the owner's Intel Core Ultra 7 165H: a frame of a divider drag in a 1600×900 view stayed within
 33 ms, as `design@rootpoint-app@gui-toolkit` records, and a 3840×2160 slide of text and an image at most 45.3 ms against 200 ms

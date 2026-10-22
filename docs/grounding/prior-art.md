@@ -1,6 +1,6 @@
 <!-- The report of the prior-art survey run on 2026-10-20 for the design discussion of the
 milestone of the first prototype, on slide tools that lay out a slide as a recursive split tree: first the report file the subagent wrote,
-then the message it returned, both verbatim. The milestone document's arguments quote the message.
+then the message it returned, both verbatim. The arguments of the milestone document, since deleted, quoted the message.
 Its scratchpad paths no longer exist. -->
 
 # Prior art: slides laid out as a recursive split tree

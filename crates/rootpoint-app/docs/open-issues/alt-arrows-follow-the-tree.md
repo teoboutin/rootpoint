@@ -50,4 +50,4 @@ code and tests.
 
 ### Re-entry
 
-The design audit of the next slice that touches the app's keys, or earlier on the owner's word.
+The design audit of the next work that touches the app's keys, or earlier on the owner's word.

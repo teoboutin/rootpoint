@@ -1,6 +1,6 @@
 <!-- The report of the toolkit survey run on 2026-10-20 for the design discussion of the
 milestone of the first prototype, on Rust GUI toolkits and slide renderers: first the report file the subagent wrote,
-then the message it returned, both verbatim. The milestone document's arguments quote the message.
+then the message it returned, both verbatim. The arguments of the milestone document, since deleted, quoted the message.
 Its scratchpad paths no longer exist. -->
 
 # GUI toolkit and renderer survey for a Rust presentation editor

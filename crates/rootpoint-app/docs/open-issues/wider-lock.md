@@ -17,8 +17,8 @@ A wider lock lets an agent edit one slide while the author edits another, or sev
 at once. `goal@rootpoint@minimal-content-set` neither asks for it nor forbids it, and keeps out of
 scope any editing that reconciles two changes made at once to one part. In the owner's view, the
 slide's tree of splits gives a clear hierarchy of which content and which changes can be applied
-with no risk of conflict, from which such a design starts; the owner judged that a survey of prior
-art would become worth running for it.
+with no risk of conflict, from which such a design starts; the owner thought a survey of prior art
+would become worth running once the scope expands so.
 
 ### Why it matters
 
@@ -27,5 +27,5 @@ wants to keep editing while an agent works waits for the agent's `release`.
 
 ### What would close it
 
-A design session on a wider lock, with a survey of prior art, and its work built; or the owner's
-word that one lock is enough.
+A design session on a wider lock, and its work built; or the owner's word that one lock is
+enough.

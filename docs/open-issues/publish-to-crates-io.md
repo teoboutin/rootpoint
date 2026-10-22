@@ -18,8 +18,8 @@ crates.io asks for.
 
 ### Why it matters
 
-The owner named publishing to crates.io as a possible later step, once the tool works out for the
-owner's own talks.
+None while the tool serves the owner alone: no one else can install it from crates.io. The owner
+named publishing to crates.io as probable later, if the tool works out well.
 
 ### What would close it
 

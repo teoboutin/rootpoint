@@ -226,11 +226,12 @@ proptest! {
     }
 }
 
-/// AC5 of the milestone of the first prototype: an agent given only the saved fixture, and asked to
-/// change the text of the top-right area to `Edited` and move the divider of the vertical split to
-/// 0.4, edited the file by hand; the edited file loads with those two changes and no other. The
-/// vertical split of that task is the side-by-side root, the axis named `Vertical` then; the rename
-/// of the axes rewrote the axis names in both files, and nothing else of the agent's edit.
+/// A criterion of the first prototype, judged when it was built: an agent given only the saved
+/// fixture, and asked to change the text of the top-right area to `Edited` and move the divider of
+/// the vertical split to 0.4, edited the file by hand; the edited file loads with those two changes
+/// and no other. The vertical split of that task is the side-by-side root, the axis named
+/// `Vertical` then; the rename of the axes rewrote the axis names in both files, and nothing else
+/// of the agent's edit.
 #[test]
 fn a_file_edited_by_an_agent_loads_with_its_edits() {
     let text = std::fs::read_to_string(data("fixture-edited-by-agent.ron")).unwrap();

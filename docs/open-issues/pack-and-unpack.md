@@ -16,10 +16,10 @@ packed file in the browser build, which saves nothing until then.
 The first prototype kept packing out of its scope. Packing writes each asset of a presentation as
 `Embedded` bytes into the RON file; unpacking writes them back as files beside it, as `Path`
 assets; the browser build opens a packed file through its file picker, and could then save one by
-a download, `design@rootpoint-app@browser-load-only`. The owner wants, later than the prototype,
-assets that an author arranges in subdirectories of any depth, and a pack then an unpack elsewhere
-to keep that tree; the save rule, `design@rootpoint-protocol@asset-save-rule`, already keeps an
-asset inside the saved file's directory at its path.
+a download, `design@rootpoint-app@browser-load-only`. A pack then an unpack elsewhere keeps the
+tree of assets an author arranges, as the owner wants and
+`design@rootpoint-protocol@asset-save-rule` records, which already keeps an asset inside the saved
+file's directory at its path.
 
 ### Why it matters
 
