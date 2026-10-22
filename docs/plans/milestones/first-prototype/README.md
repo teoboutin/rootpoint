@@ -136,6 +136,8 @@ slice's spec, with the gates run before each commit.
 ## Names
 
 - **C1 to C10**: the criteria, the items of "Criteria" below, in the order they are listed.
+  **C11 and C12**: the criteria of the design session held at the audit of the slice
+  `editor-shell`, defined in that slice's spec, since deleted.
 - **AC1 to AC5**: the acceptance criteria, labelled in their items. **T1 to T4**: the tripwires of
   the premortem.  **Q1 to Q3**: the questions put to the owner in rounds 1 to 3, whose answers are
   O10 to O12; **Q4**, put to the owner at the review of this document. The labels Q1 to Q7 inside
