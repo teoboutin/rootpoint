@@ -145,7 +145,7 @@ slice's spec, with the gates run before each commit.
   `argument@first-prototype@arg-25` are those of the goal setting, A2 to A4, a separate numbering.
   **Q5 to Q13**: the questions put to the owner at the reviews and the audits of the first slices,
   in their commits and their specs, since deleted; Q14 was numbered in the conversation only.
-  **D1 to D6**: the defaults put to the owner, listed in their own section.
+  **D1 to D7**: the defaults put to the owner, listed in their own section.
 - **O1 to O12**: the owner's messages, quoted in "Status and audience". **O13 to O16**: the
   owner's messages in the design session held at the audit of the slice `editor-shell`,
   quoted in that slice's spec, since deleted, with the questions **Q15 to Q21** they answer; that session's
@@ -159,10 +159,10 @@ slice's spec, with the gates run before each commit.
   with **Q29**, on the navigation keys, put after AC1's judgement. **Q30** to **Q32**: the
   questions put after the review of that slice before its merge, ruled in the messages of its
   repair commits. **Q33**: the open thread of the design audit of
-  `spec@first-prototype@live-control`, its #command-during-gesture, in that slice's spec.
+  the slice `live-control`, its #command-during-gesture, in that slice's spec, since deleted.
   **O20 to O26**: the owner's messages in the design session held at that audit, with the
   questions **Q34** and **Q35**, the criteria **C13 to C21**, labelled K1 to K9 there, the tripwire
-  **T6** and the acceptance criterion **AC7**, all quoted in that slice's spec. **Q36** and
+  **T6** and the acceptance criterion **AC7**, all quoted in that slice's spec, since deleted. **Q36** and
   **Q37**: the questions put to the owner after the reviews of that slice's plan, on two
   attributions of the owner's words and on the re-entry of
   `issue@rootpoint-app@alt-arrows-follow-the-tree`; with **D6**, they are answered by **O27**, which
@@ -239,7 +239,7 @@ crate, and the prototype `thread@first-prototype@prototype-scope` lists, in the 
 homes and the rejected homes of rootpoint and xtask held no entry then, and the document reversed
 or rewrote none. Each slice since has harvested its decisions into the design homes of the
 Components it built; a slice's spec names the recorded decisions it rests on, and lists the ones
-it rewrites under "What changes in the record", as `spec@first-prototype@live-control` does.
+it rewrites under "What changes in the record", as the spec of the slice `live-control` did.
 
 **The goals it serves**, all of `register@rootpoint@goal`, each the source of a criterion below:
 `goal@rootpoint@real-presentations`, `goal@rootpoint@no-language-no-build`,
@@ -445,9 +445,9 @@ by id in the protocol, in the protocol crate's Component, citing the first.
 Proposed by the session before round 1 and in round 1 (`argument@first-prototype@arg-8`,
 `argument@first-prototype@arg-38`). Closed by O10's whole-table agreement. Final state: approved;
 JSON-RPC lost. Shape: built, for stdin, in `design@rootpoint-protocol@protocol-transport`; for the
-socket, the decided design of `spec@first-prototype@live-control`. Harvest: the line grammar and the stdin binary in the protocol
-crate's Component, at the slice `command-protocol`; the socket listener and its threads
-in the app crate's Component, at `spec@first-prototype@live-control`.
+socket, in `design@rootpoint-app@control-socket`. Harvest: the line grammar and the stdin binary
+in the protocol crate's Component, at the slice `command-protocol`; the socket listener and its
+threads in the app crate's Component, at the slice `live-control`.
 
 ### The save file is RON, with a version field `##save-format`
 
@@ -1072,15 +1072,18 @@ the slice `editor-shell`, and the owner's ruling on them is O16 of that slice's 
 - **T5. A command of another client joins the GUI's undo group.** Stresses
   `design@rootpoint-protocol@gesture-undo`, decided in the design session held at the audit of the
   slice `editor-shell`. Fires when: in
-  `spec@first-prototype@live-control`, a command from the socket arrives while a group the GUI
-  opened with `begin` is open, and joins it, so one `undo` reverts the agent's edit with the
-  GUI's gesture. Response: reopen that decision, for example with one group per client. Re-entry:
-  the audit of `spec@first-prototype@live-control`. Recorded on the owner's word in O16, at the
-  harvest of the slice `editor-shell`, as `tripwire@rootpoint-protocol@client-joins-gui-group`.
-- **T6 and AC7**, from the premortem of the design session held at the audit of
-  `spec@first-prototype@live-control`, are in that slice's spec, with the owner's ruling on them,
-  O25, "Keep T6 and AC7."; and **T7**, which the owner proposed and ruled in O27, the answer to
-  D6.
+  the slice `live-control`, a command from the socket arrives while a group the GUI opened with
+  `begin` is open, and joins it, so one `undo` reverts the agent's edit with the GUI's gesture.
+  Response: reopen that decision, for example with one group per client. Re-entry: the audit of
+  the slice `live-control`. Recorded on the owner's word in O16, at the harvest of the slice
+  `editor-shell`. The slice `live-control` prevents its condition,
+  `design@rootpoint-app@one-controller-at-a-time`; its removal at that slice's harvest is D7.
+- **T6 and AC7**, from the premortem of the design session held at the audit of the slice
+  `live-control`, were in that slice's spec, with the owner's ruling on them, O25, "Keep T6 and
+  AC7."; and **T7**, which the owner proposed and ruled in O27, the answer to D6. T6 and T7 are
+  recorded as `tripwire@rootpoint-app@control-ends-a-gesture` and
+  `tripwire@rootpoint-app@agent-takes-control-back`; AC7 did not fire, and left with that slice's
+  spec.
 - **AC6. The desktop takes the editor's modifier keys.** Stresses
   `design@rootpoint-app@split-preview` and `design@rootpoint-app@node-selection`. Becomes AC6,
   `acceptance@first-prototype@modifiers-reach-app`.
@@ -1162,14 +1165,13 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 4. the slice `editor-shell`: the app crate, native, with presenter mode. Judges AC2's
    drag bound and AC6.
 5. the slice `text-editing`: editing text in place. Judges AC1.
-6. `spec@first-prototype@live-control`: the control socket, its client, and control passed
-   between the window and the socket. Judges AC7.
+6. the slice `live-control`: the control socket, its client, and control passed between the
+   window and the socket. Judged AC7, which did not fire.
 7. `spec@first-prototype@browser-build`: the browser build. Judges AC3. The owner then judges AC4,
    and the closing commit of "Harvest" follows.
 
 | slice spec |
 | --- |
-| [Driving the running GUI by text commands](live-control.md) |
 | [The editor and presenter in a web browser](browser-build.md) |
 
 ## Order rationale
@@ -1182,9 +1184,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   applies the same operations, and its tests drive it through the protocol's session.
 - the slice `editor-shell` before the slice `text-editing`: in-place editing
   needs a hosted slide view and input forwarding.
-- the slice `text-editing` before `spec@first-prototype@live-control`: the control socket
+- the slice `text-editing` before the slice `live-control`: the control socket
   drives a GUI whose editing is complete, so a failure of the socket is not one of editing.
-- `spec@first-prototype@live-control` before `spec@first-prototype@browser-build`: the browser build
+- the slice `live-control` before `spec@first-prototype@browser-build`: the browser build
   has no transport for the protocol, stdin or socket, though it links the session, so it comes
   last, on a GUI whose native features are all built.
 
@@ -1230,9 +1232,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   `skill@knowledge-architect-goal-setting`.
 - **D6, ruled.** The default put to the owner: after the window takes control with its button,
   the socket's `control` replies `err the author took control` until the author gives control back
-  with a button "Give control" of the banner. Bears on `thread@first-prototype@control-passing`, of
-  `spec@first-prototype@live-control`, where `argument@first-prototype@arg-107` argues it: under
-  the rule ruled for Q34, an agent that answers its refused edit with `control` takes control back
+  with a button "Give control" of the banner. Bears on the thread #control-passing of the slice
+  `live-control`, now `design@rootpoint-app@control-passing`, whose spec argued it: under the rule
+  ruled for Q34, an agent that answers its refused edit with `control` takes control back
   at once, and `goal@rootpoint-app@live-agent-edits` asks that the author takes the work over. The
   owner ruled, in O27: "D6: IMO, when I take control from an agent, the agent is supposed to
   receive the message that I took it (via replies to edit tentatives), and the message should
@@ -1241,7 +1243,13 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   first, with a tripwire if agents misbehave too often, that would reopen the "Give control" button
   proposal." So: `control` stays granted at once after a take-over; the socket's refused edits
   then reply `err the author took control: stop, and wait for the author's instructions`; and T7,
-  in that slice's premortem, reopens the button.
+  `tripwire@rootpoint-app@agent-takes-control-back`, reopens the button.
+- **D7, awaiting the owner.** T5, the tripwire `client-joins-gui-group` of the protocol crate, is
+  removed at the harvest of the slice `live-control`: its firing condition, a command of the socket joining a
+  group the window opened, no longer occurs, since `design@rootpoint-app@one-controller-at-a-time`
+  closes the window's gestures before the socket edits, and a design that changed that would
+  reverse the head. Its rival: the tripwire kept, its firing condition restated as that head's
+  guard. The branch merges once the owner rules.
 - **Q36 and Q37, ruled** in O27: the two attributions stand as the review's repairs wrote them, and
   the slice does not meet the re-entry of `issue@rootpoint-app@alt-arrows-follow-the-tree`.
 

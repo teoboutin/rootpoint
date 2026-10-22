@@ -61,7 +61,7 @@ fn it_exits_2_when_the_socket_cannot_be_reached_or_no_command_is_given() {
     assert_eq!(ctl(&[path.to_str().unwrap()]).0, 2);
 }
 
-/// Claim 10, the client: `rootpoint-ctl <socket>` sends the lines of its stdin over one
+/// `rootpoint-ctl <socket>` sends the lines of its stdin over one
 /// connection and prints each reply; when the listener ends the connection after a refusal, the
 /// batch stops there, its later lines unsent, and the exit code is 1.
 #[test]

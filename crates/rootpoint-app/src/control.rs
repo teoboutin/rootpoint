@@ -1,4 +1,4 @@
-//! The window's control socket, per `spec@first-prototype@live-control`: a Unix domain socket whose
+//! The window's control socket, per `design@rootpoint-app@control-socket`: a Unix domain socket whose
 //! every line goes to the GUI's thread, which runs it on the one session and sends the reply back.
 //! The session is touched by the GUI's thread alone; each connection's thread only carries lines.
 //! Native only: the browser build has no socket.

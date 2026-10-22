@@ -35,7 +35,7 @@ cites.
   `thread@first-prototype@protocol-transport`, `goal@rootpoint@runs-in-browser`.
 - eframe's web template, and the tool that builds it (trunk or wasm-bindgen-cli; assumed, chosen at
   the audit).
-- The socket's listener of `spec@first-prototype@live-control`, built native only, under
+- The socket's listener, `design@rootpoint-app@control-socket`, built native only, under
   `cfg(not(target_arch = "wasm32"))`: the app crate joins the wasm gate in this slice, and the
   browser build has no socket, so its window holds control always.
 

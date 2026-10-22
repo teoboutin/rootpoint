@@ -52,8 +52,8 @@ pub fn ok(session: &mut Session, files: &mut MemoryFiles, line: &str) -> String 
     }
 }
 
-/// A script of `path@rootpoint-protocol@tests/scripts/`, which the slice
-/// `spec@first-prototype@live-control` runs again through the editor.
+/// A script of `path@rootpoint-protocol@tests/scripts/`, which the app's tests also run through
+/// the editor's control socket.
 pub fn script(name: &str) -> String {
     std::fs::read_to_string(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

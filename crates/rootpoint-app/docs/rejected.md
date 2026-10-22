@@ -29,3 +29,27 @@ to avoid. Its `Selection` and `Cursor` take any layout.
 state, not a view `goal@rootpoint-protocol@commands-drive-everything` asks a command for, so the
 protocol carries no command for them, `design@rootpoint-app@caret-editor-state`. A script changes a
 text with `text`, and needs no caret to do so.
+
+### The authority to edit held by one connection of the control socket `##control-per-connection`
+
+`live`. `rootpoint-ctl` opens one connection for each command it sends, so an authority held by a
+connection would end at every command, and an agent would ask for it again before each edit.
+It would change what the socket's clients consume;
+`design@rootpoint-app@one-controller-at-a-time` counts the socket as one controller.
+
+### The socket's request for the authority granted only while the window has no gesture open `##control-when-idle`
+
+`live`. A stay in editing keeps its gesture open for as long as the author leaves its area, also
+while the author is in a terminal giving the agent its task, so the agent would meet refusals with
+no reason it can see. The owner chose the request granted at once,
+`design@rootpoint-app@control-passing`; `tripwire@rootpoint-app@control-ends-a-gesture` brings this
+design back if the request granted at once ends the author's gestures in real use.
+
+### A button "Give control" the author clicks before the agent may take the authority again `##give-control-button`
+
+`live`. After a take-over, the socket's `control` would be refused until the author clicks it, so
+an agent could not take back the authority an interrupt took. The owner chose instead the refusal
+that tells the agent to stop and wait for the author's instructions, judging that in principle it
+should be enough, `design@rootpoint-app@control-passing`;
+`tripwire@rootpoint-app@agent-takes-control-back` brings this design back if agents misbehave too
+often.

@@ -1,4 +1,4 @@
-//! The window's control socket, per `spec@first-prototype@live-control`: lines sent by
+//! The window's control socket, per `design@rootpoint-app@control-socket`: lines sent by
 //! `rootpoint_protocol::control::send` reach the app's frames and get their replies, the listener
 //! wakes the window once for each line, and a socket left by an earlier run is replaced while one
 //! another window listens on is refused. A socket command acts as the window's action does, the
@@ -179,7 +179,7 @@ fn one(app: &mut App, path: &Path, line: &str) -> String {
     send_all(app, path, &[line]).remove(0).unwrap()
 }
 
-/// Claim 1: after `control`, a socket command changes the document and the view as the window's
+/// After `control`, a socket command changes the document and the view as the window's
 /// action does, and once the window took control back, its undo undoes the command.
 #[test]
 fn a_socket_command_acts_as_the_window_action_and_the_window_undoes_it() {
@@ -203,7 +203,7 @@ fn a_socket_command_acts_as_the_window_action_and_the_window_undoes_it() {
     assert!(app.session().document().slides.is_empty());
 }
 
-/// Claim 3: every script of the protocol's tests gives through the socket the replies a session
+/// Every script of the protocol's tests gives through the socket the replies a session
 /// gives it, by the rule `rootpoint-headless` follows, `read_line` then `Session::run`.
 #[test]
 fn the_protocol_scripts_give_the_same_replies_through_the_socket() {
@@ -250,7 +250,7 @@ fn the_protocol_scripts_give_the_same_replies_through_the_socket() {
     }
 }
 
-/// Claim 5, the window's control: at start the window holds it, a socket edit is refused and
+/// At start the window holds the authority to edit, a socket edit is refused and
 /// changes nothing, and the queries are answered.
 #[test]
 fn the_window_holds_control_at_start_and_the_queries_need_none() {
@@ -286,9 +286,9 @@ fn sample(name: &str) -> (App, PathBuf) {
     (app, path)
 }
 
-/// Claim 5, `control` during a stay: the stay ends, its edits one undo step, and the socket's
-/// command on another area does not join it: the case
-/// `tripwire@rootpoint-protocol@client-joins-gui-group` watches.
+/// A `control` during a stay: the stay ends, its edits one undo step, and the socket's
+/// command on another area does not join it, as `design@rootpoint-app@one-controller-at-a-time`
+/// has it.
 #[test]
 fn control_ends_a_stay_and_the_socket_edit_is_a_step_of_its_own() {
     let (mut app, path) = sample("stay");
@@ -313,7 +313,7 @@ fn control_ends_a_stay_and_the_socket_edit_is_a_step_of_its_own() {
     );
 }
 
-/// Claim 5, `control` during a divider drag ends it as its release does, and during a grip drag
+/// A `control` during a divider drag ends it as its release does, and during a grip drag
 /// cancels it.
 #[test]
 fn control_ends_a_divider_drag_as_its_release_and_cancels_a_grip_drag() {
@@ -339,7 +339,7 @@ fn control_ends_a_divider_drag_as_its_release_and_cancels_a_grip_drag() {
     assert_eq!(app.session().document(), &before);
 }
 
-/// Claim 5, `release` with a group open is refused, and the take-over closes the socket's open
+/// A `release` with a group open is refused, and the take-over closes the socket's open
 /// group with `end`, so one undo reverts its edits; after the take-over, a socket edit is told to
 /// stop and wait, until its next `control`.
 #[test]
@@ -377,7 +377,7 @@ fn the_take_over_closes_the_socket_group_and_its_agent_is_told_to_wait() {
     let _ = Reply::Ok(String::new());
 }
 
-/// Claim 6, the actions: while the socket holds control, every action of the window that changes
+/// While the socket holds control, every action of the window that changes
 /// the document leaves the document and the undo stack as they were, and each view action acts.
 #[test]
 fn while_the_socket_holds_control_no_window_action_edits() {
@@ -491,7 +491,7 @@ fn press(pos: Pos2, pressed: bool) -> Vec<eframe::egui::Event> {
     ]
 }
 
-/// Claim 6, the pointer: while the socket holds control, a divider drag, a grip drag and a click
+/// While the socket holds control, a divider drag, a grip drag and a click
 /// on the selected text area change nothing and start no editing, the divider under the pointer
 /// asks for no resize cursor, and a click on an area still selects it.
 #[test]
@@ -578,7 +578,7 @@ fn draws_line(out: &eframe::egui::FullOutput, from: Pos2, to: Pos2) -> bool {
     })
 }
 
-/// Claim 6, the marks and the other gestures: while the socket holds control, the selected area's
+/// While the socket holds control, the selected area's
 /// grip is not drawn, Ctrl over the selection draws no preview line and its click splits nothing,
 /// a double-click on a divider resets nothing, and a drag of a row of the slide list moves no
 /// slide. Each mark is drawn while the window holds control, which the test checks first.
@@ -720,7 +720,7 @@ fn the_refusal_after_a_take_over_lasts_until_control() {
     app.run(Command::End);
 }
 
-/// Claim 10: a batch runs over one connection, and a take-over between two of its lines ends it
+/// A batch runs over one connection, and a take-over between two of its lines ends it
 /// with one refusal; the lines after it reach no frame.
 #[test]
 fn a_take_over_ends_a_batch_with_one_refusal() {

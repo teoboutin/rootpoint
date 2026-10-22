@@ -185,9 +185,9 @@ fn time_a_divider_drag_in_a_1600_by_900_view() {
     time_a_divider_drag(App::new(Box::new(NativeFiles)), "");
 }
 
-/// The same drag with a control socket given to the app and no line sent: claim 9 of
-/// `spec@first-prototype@live-control`, that an idle listener costs the drag no time beyond the
-/// same bound. Run with the drag above.
+/// The same drag with a control socket given to the app and no line sent, within the same bound:
+/// an idle listener of `design@rootpoint-app@control-socket` costs the drag no time. Run with the
+/// drag above.
 #[test]
 #[ignore]
 fn time_a_divider_drag_with_an_idle_control_socket() {
@@ -286,7 +286,7 @@ fn socket_takes_control(d: &mut Driver, name: &str) -> std::path::PathBuf {
     path
 }
 
-/// Claim 8 of `spec@first-prototype@live-control`: with the socket in control, presenter mode
+/// Per `design@rootpoint-app@control-passing`: with the socket in control, presenter mode
 /// draws the editor's image, places the button "Take control" where the frame records it, and a
 /// click there gives control to the window; Esc leaves presenter mode, the socket keeping control.
 #[test]

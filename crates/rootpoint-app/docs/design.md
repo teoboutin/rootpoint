@@ -37,7 +37,9 @@ it does, through `App::run`, which runs them on the app's one `rootpoint_protoco
 app changes the document and the view nowhere else. Each action is a function of
 `path@rootpoint-app@src/actions.rs`, which issues its commands, and
 `path@rootpoint-app@tests/actions.rs` checks each against the same commands on a second session,
-the documents, the views and the files they write, and again after one `undo`.
+the documents, the views and the files they write, and again after one `undo`; the take-over,
+`App::take_control`, whose command needs a control socket's open group, is checked by
+`path@rootpoint-app@tests/control.rs`.
 
 So every operation the GUI offers runs headless, as `goal@rootpoint@headless-core` asks, and a
 script of the same commands reproduces what the author did. The rival, the GUI changing the
@@ -59,16 +61,20 @@ open, and leaves a stay and its group as they are: a stay's end is always delive
 manager can take the keyboard while it resizes the window, which winit 0.30.13 reports as a loss
 of focus (its X11 `xinput2_unfocused` filters no FocusOut mode); that a resize does so on the
 owner's desktop is read from that source, not measured there. Closing the stay's group there
-would split one stay into two undo steps. The group is open while the window is away, when a
-command of another client could join it, which
-`tripwire@rootpoint-protocol@client-joins-gui-group` watches.
+would split one stay into two undo steps. The group is open while the window is away, and no
+command of the control socket joins it, since the socket's `control` ends the window's gestures
+first, `design@rootpoint-app@one-controller-at-a-time`.
 
 ### The editor's marks are drawn over the slide's texture with egui, never into the slide's image `##editor-overlay`
 
 The divider lines, the highlight of the divider under the pointer, the selection's outline and its
 grip, the preview line of a split, the hint of a drop, and the caret, the selection and the
 composition's underline of a text edited in place are drawn with egui's painter over the texture,
-in `App::overlay`. `render_slide` draws only the slide, so the image presenter mode shows
+in `App::overlay`; the marks of a gesture are not drawn while the control socket holds the
+authority to edit, `design@rootpoint-app@one-controller-at-a-time`. The banner of the control
+socket and its button "Take control", `design@rootpoint-app@control-passing`, are egui widgets, in
+presenter mode over the texture and never in its image. `render_slide` draws only the slide, so the
+image presenter mode shows
 is the editor's, pixel for pixel at one size, which `path@rootpoint-app@tests/presenter.rs`
 compares, and which `goal@rootpoint-app@faithful-slide-view` asks. The marks are lines, rectangles
 and the hint's label, editor text that is no slide content, so they are not the slide text that
@@ -110,6 +116,8 @@ Four buttons of the side panel, and Shift with an arrow, split the selection at 
 new area left, right, above or below: `split <node> beside|stacked 0.5 before|after`. With Ctrl
 held over the selection, a click splits it beside at the pointer, and with Shift, stacked; the new
 empty area takes the smaller part, `after` when the two are equal. Delete removes the selection.
+None of these acts while the control socket holds the authority to edit,
+`design@rootpoint-app@one-controller-at-a-time`.
 
 The pointer split saves a drag per split, and `split` takes `at` as a fraction of the node, so the
 pointer maps straight onto it; both ways serve `goal@rootpoint@free-slide-division` and
@@ -136,7 +144,8 @@ is a resize cursor there; a line held with Alt snaps to a divider within 8 point
 the press's offset from the line and sends nothing until the pointer moves, so a click leaves no
 step. Both bands are in points, so they are the same under the pointer at every size of the view:
 a band in slide units would narrow with the view, and at a quarter of the slide's size a band of 4
-slide units is one point.
+slide units is one point. While the control socket holds the authority to edit, a press grabs no
+divider and the cursor stays as it is, `design@rootpoint-app@one-controller-at-a-time`.
 
 The survey of split editing found shipped grab bands from 4 to 10 pixels wide in all: VS Code 4,
 Dear ImGui a 2-pixel separator with 4 of padding, egui_tiles 6, iced's example 10. The band here,
@@ -160,7 +169,9 @@ The selected area shows a grip, a square of 12 points set 8 points inside its to
 no divider's band reaches it. The area whose text is edited shows no grip and its corner takes no
 grip press, since the grip covers the first characters of its text, where a press while editing
 places the caret and a drag selects, as the next paragraph keeps; Esc leaves editing and gives the
-grip back. A drag of the grip runs in a group, per `design@rootpoint-app@gesture-groups`. Over
+grip back. While the control socket holds the authority to edit, no area shows a grip,
+`design@rootpoint-app@one-controller-at-a-time`. A drag of the grip runs in a group, per
+`design@rootpoint-app@gesture-groups`. Over
 another area, its middle third, by width and by height, swaps: the drop sends `swap`. The rest
 moves the dragged area to the edge nearest the pointer, the distances taken as fractions of the
 target's width and height, left and right winning a tie: the drop splits the target on that edge at
@@ -175,7 +186,8 @@ same two actions. The edge move replaces a removal, a split and a new edit of th
 gesture, as `goal@rootpoint-app@direct-manipulation` asks. In the survey of split editing, iced
 swaps on a centre drop and splits on an edge drop; i3 moves on a centre drop, swaps with a modifier,
 and inserts on an edge drop; Blender swaps by a drag from a corner, and docks by an edge drop; and
-the tools highlight the target. On the owner's word: the owner accepted the edge moves on the condition that
+the tools highlight the target. On the owner's word: the owner accepted the edge moves on the
+condition that
 a preview or a hint shows what a drop will do, judging that a preview of the exact result might not
 be meaningful here.
 
@@ -184,7 +196,8 @@ be meaningful here.
 ### An area's text is edited on the slide, with Parley's `Selection` on the layout the render draws `##edit-in-place`
 
 The caret and the selection of a text being edited are Parley's `Selection`, placed and moved by
-its methods on the layout `rootpoint_render::area_text` gives, `design@rootpoint-render@area-text-layout`,
+its methods on the layout `rootpoint_render::area_text` gives,
+`design@rootpoint-render@area-text-layout`,
 which is the layout `render_slide` draws. Every change of the text, a typed string, a deletion, a
 cut, a paste, an IME composition and its commit, is one `text` command with the area's whole text,
 per `design@rootpoint-app@actions-are-commands`; the render lays the new text out, and the caret is
@@ -212,7 +225,8 @@ area leaves it and acts as it does outside editing: a click on another area sele
 Outside editing, the node keys, Shift with an arrow, Delete and Alt with an arrow, act on a
 selected text area, per `design@rootpoint-app@selection-actions` and
 `design@rootpoint-app@node-selection`; while editing, the keys go to the text, where Shift with an
-arrow selects.
+arrow selects. While the control socket holds the authority to edit, a click on the selected text
+area only selects it, `design@rootpoint-app@one-controller-at-a-time`.
 
 On the owner's word: the owner chose this shape over a single click that selects a text area and
 edits it at once, which saves a click before typing in an area not yet selected, but leaves the
@@ -242,3 +256,108 @@ composition starts, read from its source,
 desktop; applied as a composition, it would replace the selection with nothing and so delete a
 selected text before the first composed character. An empty preedit while a composition is open
 ends it, removing the composing text.
+
+## The control socket
+
+### The window runs the lines of its control socket on its own thread, at the start of each frame `##control-socket`
+
+With `--control <path>`, the window listens on a Unix domain socket at that path,
+`rootpoint_app::control::Listener`. Each connection has a thread of its own, which reads one line,
+queues it on a channel to the GUI's thread, calls the window's wake-up, and waits for the reply
+before it reads the next; `App::frame` drains the channel first, so only the GUI's thread touches
+the session, and every command runs through `App::run` as the window's own do,
+`design@rootpoint-app@actions-are-commands`. The wake-up is `Context::request_repaint`, which eframe
+lets another thread call, `design@rootpoint-app@gui-toolkit`, so an idle window draws a frame for a
+line. The lines are the protocol's, `design@rootpoint-protocol@protocol-transport`, and its rule
+for one line, `read_line`, is the one `rootpoint-headless` follows; a line with no command gets no
+reply. The queries `tree`, `view` and `render` run on the session without `App::run`, so they
+neither set the status line nor make the next frame render the slide again. A connection carries
+any number of lines, a batch, `design@rootpoint-app@socket-batch`.
+
+The socket is replaced only when it is a socket nothing answers, as a run killed by a signal
+leaves it; a socket that answers is another window's, and any other file at the path is refused and
+kept, since an author who mistakes a presentation for the socket's path would otherwise lose it.
+The window removes the socket's file when it closes, if it is still the one it bound. The listener
+is native only: the browser build has no socket, and its window holds the authority to edit always.
+
+So an agent drives the running window as `goal@rootpoint-app@live-agent-edits` asks, and the
+session stays the one state, as `goal@rootpoint@headless-core` asks of every operation. The lines
+go to the session and not the session to the lines, since eframe gives the app, which owns the
+session, to the GUI's thread alone, as `&mut self` of `eframe::App::ui`.
+
+### The window and its control socket are two controllers, and one holds the authority to edit at a time `##one-controller-at-a-time`
+
+The window holds the authority to edit at start; `control` gives it to the socket, and `release`
+or the take-over, `design@rootpoint-app@control-passing`, gives it back. The socket counts as one
+controller, every connection together, since `rootpoint-ctl` opens one connection per command and
+an authority held by a connection would end at each,
+`rejected@rootpoint-app@control-per-connection`.
+While the socket holds it, every action of `path@rootpoint-app@src/actions.rs` that changes the
+document returns at once, `App::edit_at` with them, and the window draws no mark of a gesture: no
+divider highlight, no resize cursor, no grip, no preview line, no drop line in the slide list.
+While the window holds it, every command of the socket but the queries replies
+`err the window has control`, or the refusal of a take-over.
+
+Two exceptions keep looking free. The socket's queries, `tree`, `view` and `render`, need no
+authority, since they apply no operation and join no group. The window's inputs that change only
+the view need none either: a click selects, and never enters editing; Alt with an arrow, the
+breadcrumb, a row of the slide list, presenting and presenter mode's keys. The view stays the
+session's one view, `design@rootpoint-protocol@view-state`: an author inspects any slide while the
+agent edits another, since an editing command names its nodes by id and reads no view,
+`design@rootpoint-protocol@protocol-addressing`. The socket's view commands still need the
+authority, since a `select` of another node ends a stay of the window, its area no longer the
+selection.
+
+When the authority passes, the side that loses it has its gestures or its group closed, so no
+command of one controller joins the other's undo group, and
+`design@rootpoint-protocol@gesture-undo` stands as it is; one lock over the whole document needs
+no reconciling of two edits at one place, which `goal@rootpoint@minimal-content-set` keeps out of
+scope. The rival, a group per client in the session, `rejected@rootpoint-protocol@group-per-client`,
+reopens that head and orders the undo stack out of the order of the edits.
+
+On the owner's word: the owner proposed the two controllers with one holding the authority to edit,
+for an agent that makes the changes the author asks for while the author watches and can interrupt,
+which `goal@rootpoint-app@live-agent-edits` states; and proposed that the window's inputs that only
+change the view stay usable, so the author inspects the slides while the agent edits.
+
+### The take-over is immediate, and the socket's request for the authority is granted at once `##control-passing`
+
+The button "Take control" takes the authority back at once, closing with `end` a group the socket
+left open, so its edits are one undo step that one undo reverts, where `cancel` would erase what the
+author watched happen. It sits in a banner over the toolbar, and in presenter mode in a corner, over
+the slide's texture and never in its image, `design@rootpoint-app@editor-overlay`; Esc takes no
+authority, and keeps leaving presenter mode. After a take-over, each edit of the socket replies
+`err the author took control: stop, and wait for the author's instructions`, until its next
+`control`, and the window ends that connection after the refusal, so a batch stops there.
+
+The socket's `control` is granted at once, also after a take-over: it ends the window's gestures as
+any action of the window does, a stay with its edits one undo step, a divider drag as at its
+release, a grip drag cancelled, since its edits are made only at its drop. `release` gives the
+authority back while the socket holds it, and is refused while a group is open; while the socket
+holds none, it replies `ok` and changes nothing, so the refusal after a take-over lasts.
+
+An interrupt that needed the agent's consent would not be one, so the take-over is one click. On
+the owner's word: the owner chose the request granted at once over a request refused until the
+author gives the authority back and over one granted only while the window has no gesture open,
+`rejected@rootpoint-app@control-when-idle`, on the owner's workflow, where the author adjusts by
+hand
+after the agent's `release` and takes control only to interrupt; and chose, for a request right
+after a take-over, the refusal that tells the agent to stop and wait over a button "Give control"
+the author would click to hand back, `rejected@rootpoint-app@give-control-button`, judging that in
+principle this should be enough, since in the owner's view agents rarely misbehave so nowadays,
+and choosing to try it first. The owner proposed the corner button in presenter mode, wanting to
+leave presenter mode without taking control, and judging that a real talk is never under an
+agent's control, so the button costs a talk nothing. `tripwire@rootpoint-app@control-ends-a-gesture`
+and `tripwire@rootpoint-app@agent-takes-control-back` watch the two choices.
+
+### A connection to the control socket carries a batch, which a take-over ends with one refusal `##socket-batch`
+
+A client sends a task's edits over one connection, and the window runs them one at a time, between
+its frames, so the author sees each edit as it is made and a take-over falls between two. The
+refusal of a take-over is written once and ends the connection, so the batch's other lines are
+never sent. `rootpoint-ctl <socket>` with no words is such a client,
+`design@rootpoint-protocol@ctl-exits-by-replies`.
+
+The rival, one connection per command, costs an agent a round trip for each edit and answers a
+take-over with as many refusals as the agent's script has lines left. On the owner's word: the owner
+weighed one edit at a time as less efficient for an agent, and chose the batch for the prototype.

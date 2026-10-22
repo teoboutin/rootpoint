@@ -65,8 +65,8 @@ pub struct App {
     controller: Controller,
 }
 
-/// Who holds the authority to edit, per `spec@first-prototype@live-control`: the window or its
-/// control socket, every connection of the socket together.
+/// Who holds the authority to edit, per `design@rootpoint-app@one-controller-at-a-time`: the window
+/// or its control socket, every connection of the socket together.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Controller {
     /// The window, from the start or after the socket's `release`.
@@ -148,7 +148,8 @@ impl App {
 
     /// Whether the socket holds the authority to edit. While it does, every action of the window
     /// that changes the document returns at once, and the view actions run, per
-    /// `spec@first-prototype@live-control`, so every input that calls an action is guarded there.
+    /// `design@rootpoint-app@one-controller-at-a-time`, so every input that calls an action is
+    /// guarded there.
     pub(crate) fn socket_holds(&self) -> bool {
         self.controller == Controller::Socket
     }
@@ -354,8 +355,8 @@ impl App {
                     ui.painter().image(texture.id(), rect, uv, Color32::WHITE);
                 }
             });
-        // On the owner's word, a real talk is never under an agent's control, so a button over
-        // the slide's texture, never in its image, costs a talk nothing.
+        // The button over the slide's texture, never in its image, per
+        // `design@rootpoint-app@control-passing`.
         if self.socket_holds() {
             egui::Area::new(egui::Id::unique("take control"))
                 .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-8.0, 8.0))

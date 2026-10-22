@@ -23,3 +23,27 @@ commit loses the live re-layout of the slide during the drag. It keeps the proto
 script cannot see. The survey of split editing found that merging by key needs a break rule, or
 two separate drags of one divider merge, and that merging by time conflicts with replaying text
 commands deterministically.
+
+### An undo group per client of the session `##group-per-client`
+
+`live`. Each client, the window and every connection of the control socket, would open its own
+group in the session. A group of the window closed after a client's step lands above it, so its
+undo reverts edits made before the client's: where the client changed the same text, that undo
+writes the author's earlier text over the client's; where the client removed the area, the step
+fails and the undo is refused. It reopens `design@rootpoint-protocol@gesture-undo`, an interface
+of the protocol; `design@rootpoint-app@one-controller-at-a-time` keeps one group, held by one
+controller at a time.
+
+### The authority to edit taken by a client's first edit, with no verb `##implicit-control`
+
+`live`. Nothing would tell the window that the agent is done, so the window would stay under the
+agent's authority until the author clicks, and the grammar would have no command for it, which
+every program that drives rootpoint consumes. `design@rootpoint-protocol@control-commands` makes
+the authority a pair of verbs.
+
+### Verbs of the authority read by the window's listener, outside the protocol's grammar `##listener-verbs`
+
+`live`. They would make a second grammar beside the one
+`design@rootpoint-protocol@protocol-transport` calls the crate's interface to every program that
+drives rootpoint, and a script holding them would not run headless.
+`design@rootpoint-protocol@control-commands` puts them in the grammar.

@@ -42,6 +42,32 @@ and not the direction of the dividers, which a fresh agent read both ways,
 written as `left-to-right` and `top-to-bottom`, the owner chose the shorter words, which are typed
 in every `split` command.
 
+### The authority to edit a running editor is asked for with `control` and given back with `release` `##control-commands`
+
+`control` asks for the authority to edit a running editor, which its window or its control socket
+holds, `design@rootpoint-app@one-controller-at-a-time`; `release` gives it back, and replies
+`err a group is open` while a group is open, in every host, so a script gives the same replies in
+the window and headless, and the authority never passes with a group open, which
+`design@rootpoint-protocol@gesture-undo` would otherwise see joined. A headless session has one
+controller, which always holds the authority, so `Session::run` replies `ok` to `control` and
+changes nothing; a script that drives a window then runs headless unchanged, as
+`goal@rootpoint@headless-core` asks. The verbs are part of the grammar, the crate's interface to
+every program that drives rootpoint, and not of the window's listener alone,
+`rejected@rootpoint-protocol@listener-verbs`; an authority taken by a client's first edit would tell
+the window nothing when the agent is done, `rejected@rootpoint-protocol@implicit-control`.
+
+### `rootpoint-ctl` sends one command from its arguments, or a batch from its stdin, and exits by the replies `##ctl-exits-by-replies`
+
+`rootpoint-ctl <socket> <words>…` joins the words with single spaces into one line; with no words,
+it sends the lines of its stdin over one connection, a batch,
+`design@rootpoint-app@socket-batch`. It prints each reply as it comes, and exits 0 when every reply
+is `ok`, a line with no command getting none, 1 when one is `err`, and 2 when the socket cannot be
+reached or the window ends the connection before a command's reply, as when the window is closed;
+the protocol's README states the contract. `rootpoint_protocol::control::Connection` is the client
+it is built on, Unix only. A command whose connection ends with no reply is an error, never the
+empty answer of a comment: the client knows which of its lines are commands, by `read_line`, so an
+agent never reads an edit the window never ran as done.
+
 ## The session
 
 ### The view state lives in the session, outside the document's operations `##view-state`
