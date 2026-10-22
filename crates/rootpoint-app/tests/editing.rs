@@ -382,6 +382,30 @@ fn a_drag_inside_the_text_selects_and_a_shift_click_extends() {
 }
 
 #[test]
+fn a_click_where_the_grip_would_stand_moves_the_caret() {
+    let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
+    let n3 = NodeId(3);
+    d.edit_n3();
+    d.key(Key::End);
+    let doc = d.app.session().document();
+    let text = area_text(doc, d.app.shown_slide().unwrap(), n3, &mut FontSet::new()).unwrap();
+    let line = text.layout.lines().next().unwrap();
+    let m = line.metrics();
+    let middle = f64::from((m.block_min_coord + m.block_max_coord) / 2.0);
+    // One unit right of the third glyph's left edge, on the middle of the first line.
+    let x = drawn_glyphs(&d, n3)[2].1 - text.origin.0;
+    let p = d.text_point(n3, x + 1.0, middle);
+    let layout = d.app.layout().unwrap().clone();
+    assert!(
+        layout.grip(n3).is_some_and(|g| g.contains(p)),
+        "the point is on the grip's square"
+    );
+    d.click(p);
+    assert_eq!(d.app.editing(), Some(n3));
+    assert_eq!(d.app.caret_index(), Some(2));
+}
+
+#[test]
 fn copy_cut_and_paste_go_through_the_clipboard_events() {
     let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
     let n3 = NodeId(3);

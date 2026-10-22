@@ -154,7 +154,9 @@ slice's spec, with the gates run before each commit.
   **Q24 to Q27**: the questions put after the reviews of that slice, ruled in the messages of its
   last commits. **Q28**: the open thread of the design audit of the slice `text-editing`, its
   #edit-entry, now `design@rootpoint-app@edit-entry`, quoted in that slice's spec, since deleted,
-  with **Q29**, on the navigation keys, put after AC1's judgement.
+  with **Q29**, on the navigation keys, put after AC1's judgement. **Q30** and **Q31**: the
+  questions put after the review of that slice before its merge, ruled in the message of its last
+  repair commit.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
@@ -1070,7 +1072,12 @@ the slice `editor-shell`, and the owner's ruling on them is O16 of that slice's 
 
 Guards `thread@first-prototype@slide-renderer`, and `thread@first-prototype@gui-toolkit`. Judged by
 the slice `text-editing`, where it did not fire: the caret stands within half a pixel of the drawn
-glyph at three window sizes by test, and the owner tried the rest on the owner's desktop. Fires when, in a text area at three window sizes, the caret
+glyph at three window sizes by test, and the owner tried entering editing at the click, a dead key
+typing "é", and selection by drag and by Shift with an arrow on the owner's desktop. The owner's
+trial also found that a resize ended editing; the cause, a loss of the window's focus during the
+resize, is read from winit's source, not measured on the owner's desktop, and the commits "Keep
+editing in place when the window loses focus, for the text editing slice" and "Repair the text
+editing slice after the review of its work" repair it, with a test. Fires when, in a text area at three window sizes, the caret
 does not sit on the drawn glyph boundary, selection by drag or by shift+arrow fails, or a dead-key
 character such as "é" cannot be typed. Response: reopen `thread@first-prototype@slide-renderer`.
 
@@ -1228,7 +1235,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   options, its drawing and its editor, per `goal@rootpoint@minimal-content-set`.
 - **Templates and linked dividers** are re-entered at the first real talk, by T3 and T4.
 - **Rich text with per-span styles** replaces `TextStyle` per area with styled spans, on the
-  in-place editor of the slice `text-editing`, `design@rootpoint-app@edit-in-place`.
+  in-place editor of the slice `text-editing`, `design@rootpoint-app@edit-in-place`, which takes
+  style per area as given; rich text is designed in a session of its own before it builds on that
+  editor.
 - **An image export** reuses `render_slide`.
 - **Publishing to crates.io**, which the owner named in O5 and `goal@rootpoint@real-presentations`
   admits as "may be published later", gives each published crate a `CRATES-IO.md` page, as

@@ -35,10 +35,11 @@ only the caller knows. The two sets are part of the crate's public interface.
 `area_text` also calls: it gives the area's Parley `Layout`, in slide units, and the point of the
 slide where its origin is drawn. An editor that places a caret or a selection on that layout, with
 Parley's `Selection` and `Cursor`, places it on the drawn glyphs, which
-`goal@rootpoint-render@same-slide-everywhere` asks of every display. The function is part of the
-crate's public interface; the app's editing in place, `design@rootpoint-app@edit-in-place`,
+`goal@rootpoint-render@same-slide-everywhere` asks of every display. `area_text` and its `AreaText` are part
+of the crate's public interface; the app's editing in place, `design@rootpoint-app@edit-in-place`,
 consumes it. A layout the editor made itself, from the same styles set again, would be a second
-layout that must agree with the drawn one.
+layout that must agree with the drawn one, as `rejected@rootpoint-app@plain-editor` records of
+Parley's own editor.
 
 ### A text is inset from its area by 24 slide units `##text-padding`
 

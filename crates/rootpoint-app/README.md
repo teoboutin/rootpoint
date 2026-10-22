@@ -20,7 +20,7 @@ characters no font has, and text not drawn.
   the pointer, with Shift a horizontal one, and a click splits there, the new empty area taking
   the smaller part; Alt snaps the line, and a divider drag, to the nearest twelfth or to a divider
   within 8 points. Esc, or releasing the key, removes the line.
-- The selected area shows a grip in its top-left corner. Dragged onto the middle third of another
+- The selected area shows a grip in its top-left corner, except while its text is edited. Dragged onto the middle third of another
   area it swaps the two; dragged onto the rest it moves the area to the nearest edge of the
   target. A tint and a label show what the drop will do; the drop is one undo step.
 - The side panel sets the selected area's content, empty, text or an image, the text's size,
@@ -28,8 +28,9 @@ characters no font has, and text not drawn.
 - A text is edited in place, on the slide: a click on the selected text area, or a double-click on
   any text area, puts the caret where it clicked. Typing, Backspace and Delete, the arrows with
   Ctrl for words and with Shift to select, Home and End, a drag or a Shift+click to select, Ctrl+A,
-  copy, cut and paste, and IME composition and dead keys edit the text; Esc, or a click elsewhere,
-  leaves editing, the area still selected. The edits of one stay in editing are one undo step.
+  copy, cut and paste, and IME composition and dead keys edit the text; Esc leaves editing, the
+  area still selected, and a click outside the area leaves editing and acts as it does outside
+  it. The edits of one stay in editing are one undo step.
 - Present (F5) shows the shown slide full screen, alone, as the editor's slide view renders it
   with no mark over it. →, Space and Page Down show the next slide, ← and Page Up the previous,
   and Esc returns to the editor.

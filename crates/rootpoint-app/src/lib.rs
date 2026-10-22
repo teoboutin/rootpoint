@@ -202,10 +202,8 @@ impl App {
     /// Show the editor for one frame. It takes a `Ui`, so a test drives it with
     /// `Context::run_ui`, with no window.
     pub fn frame(&mut self, ui: &mut Ui) {
-        // A release never delivered, as when the window loses focus mid-drag, leaves no group
-        // open. A stay in editing goes on, its group open: its end is always delivered, by Esc, a
-        // click or an action, and a window manager can take the keyboard while the window is
-        // resized, which winit reports as a loss of focus.
+        // A loss of focus releases a drag and leaves a stay in editing and its group, per
+        // `design@rootpoint-app@gesture-groups`.
         if !ui.input(|i| i.focused) {
             self.release_drag();
         }

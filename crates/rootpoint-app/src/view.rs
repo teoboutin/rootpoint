@@ -100,7 +100,12 @@ impl App {
             && response.rect.contains(origin)
             && response.contains_pointer()
         {
-            let press = layout.press(origin, selected, split);
+            // The edited area has no grip: it would cover the first characters of its text.
+            let press = layout.press(
+                origin,
+                selected.filter(|&a| Some(a) != self.editing()),
+                split,
+            );
             self.press = Some(press);
             // While a text is edited, a press inside its area moves the caret; any other press
             // leaves editing, then acts as it would.
@@ -232,7 +237,9 @@ impl App {
             && let Some(r) = layout.rect(node)
         {
             painter.rect_stroke(r, 0.0, Stroke::new(2.0, accent), StrokeKind::Inside);
-            if let Some(grip) = layout.grip(node) {
+            if self.editing() != Some(node)
+                && let Some(grip) = layout.grip(node)
+            {
                 painter.rect_filled(grip, 2.0, accent);
                 if hover.is_some_and(|p| grip.contains(p)) && self.gesture == Gesture::Idle {
                     ui.ctx().set_cursor_icon(CursorIcon::Grab);
@@ -275,8 +282,7 @@ impl App {
             }
         }
         // The selection, the composing text's underline and the caret of a text edited in place,
-        // on the drawn glyphs; and the caret's place for the IME, which egui allows only in a frame
-        // that sets it.
+        // and the caret's place for the IME, per `design@rootpoint-app@edit-in-place`.
         if self.edit.is_some() {
             let tint = Color32::from_rgba_unmultiplied(accent.r(), accent.g(), accent.b(), 70);
             for r in self.selection_rects(layout) {

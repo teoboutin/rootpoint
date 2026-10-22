@@ -1,9 +1,6 @@
-//! Editing an area's text in place: the caret and the selection are Parley's `Selection`, placed on
-//! the very layout `render_slide` draws for the area, which `rootpoint_render::area_text` gives, so
-//! the caret sits on the drawn glyphs at every size of the view. Every change of the text is a
-//! `text` command with the area's whole text, inside the group a stay in editing holds, per
-//! `design@rootpoint-app@gesture-groups`; the render then lays the new text out, and the selection
-//! is placed again on that layout by byte index.
+//! Editing an area's text in place, per `design@rootpoint-app@edit-in-place`: a Parley `Selection`
+//! on the layout `rootpoint_render::area_text` gives, and one `text` command a change, inside the
+//! group a stay holds, per `design@rootpoint-app@gesture-groups`.
 
 use std::ops::Range;
 

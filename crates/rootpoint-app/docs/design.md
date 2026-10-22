@@ -48,15 +48,17 @@ document itself, `rejected@rootpoint-model@gui-mutation`, implements every edit 
 A divider drag, a grip drag and a stay in editing a text each open a group with `begin` when they
 start, after closing any group still open, so that within one frame a group closes before another
 opens. The release closes a drag's group with `end`, and Esc with `cancel`; the end of a stay, by
-Esc, a click outside its area, an undo, a redo or any other action, closes its group. While a drag
-runs, no key but Esc acts, since a key's edit would join the drag's step. The groups are the
-protocol's, `design@rootpoint-protocol@gesture-undo`, so a gesture is one undo step in a script as
-in the window.
+Esc, a click outside its area, an undo, a redo or any other action, closes its group, the stay
+ending first as every action ends a gesture, as the protocol's `undo` inside a group closes it
+first. While a drag runs, no key but Esc acts, since a key's edit would join the drag's step. The
+groups are the protocol's, `design@rootpoint-protocol@gesture-undo`, so a gesture is one undo step
+in a script as in the window.
 
 The window's loss of focus closes a drag's group, so a release never delivered leaves no group
 open, and leaves a stay and its group as they are: a stay's end is always delivered, and a window
 manager can take the keyboard while it resizes the window, which winit 0.30.13 reports as a loss
-of focus (its X11 `xinput2_unfocused` filters no FocusOut mode). Closing the stay's group there
+of focus (its X11 `xinput2_unfocused` filters no FocusOut mode); that a resize does so on the
+owner's desktop is read from that source, not measured there. Closing the stay's group there
 would split one stay into two undo steps. The group is open while the window is away, when a
 command of another client could join it, which
 `tripwire@rootpoint-protocol@client-joins-gui-group` watches.
@@ -64,8 +66,9 @@ command of another client could join it, which
 ### The editor's marks are drawn over the slide's texture with egui, never into the slide's image `##editor-overlay`
 
 The divider lines, the highlight of the divider under the pointer, the selection's outline and its
-grip, the preview line of a split and the hint of a drop are drawn with egui's painter over the
-texture, in `App::overlay`. `render_slide` draws only the slide, so the image presenter mode shows
+grip, the preview line of a split, the hint of a drop, and the caret, the selection and the
+composition's underline of a text edited in place are drawn with egui's painter over the texture,
+in `App::overlay`. `render_slide` draws only the slide, so the image presenter mode shows
 is the editor's, pixel for pixel at one size, which `path@rootpoint-app@tests/presenter.rs`
 compares, and which `goal@rootpoint-app@faithful-slide-view` asks. The marks are lines, rectangles
 and the hint's label, editor text that is no slide content, so they are not the slide text that
@@ -154,14 +157,16 @@ minimum sizes in Blender, 29 pixels times the interface scale, and egui_tiles, 3
 ### An area is swapped with another, or moved to its edge, by dragging its grip, with a hint of the drop's effect `##swap-gesture`
 
 The selected area shows a grip, a square of 12 points set 8 points inside its top-left corner, so
-no divider's band reaches it. A drag of the grip runs in a group, per
-`design@rootpoint-app@gesture-groups`. Over another area, its middle third, by width and by
-height, swaps: the drop sends `swap`. The rest moves the dragged area to the edge nearest the
-pointer, the distances taken as fractions of the target's width and height, left and right winning
-a tie: the drop splits the target on that edge at its middle, swaps the dragged area with the new
-one and removes the dragged one. The zone under the pointer is tinted, with a label, "swap" or
-"move left", "move right", "move up", "move down". A drop on the dragged area itself, or outside
-any area, cancels.
+no divider's band reaches it. The area whose text is edited shows no grip and its corner takes no
+grip press, since the grip covers the first characters of its text, where a press places the caret
+and a drag selects, per `design@rootpoint-app@edit-in-place`; Esc leaves editing and gives the grip
+back. A drag of the grip runs in a group, per `design@rootpoint-app@gesture-groups`. Over another
+area, its middle third, by width and by height, swaps: the drop sends `swap`. The rest moves the
+dragged area to the edge nearest the pointer, the distances taken as fractions of the target's
+width and height, left and right winning a tie: the drop splits the target on that edge at its
+middle, swaps the dragged area with the new one and removes the dragged one. The zone under the
+pointer is tinted, with a label, "swap" or "move left", "move right", "move up", "move down". A
+drop on the dragged area itself, or outside any area, cancels.
 
 A plain drag inside an area is not the gesture, since a drag inside a text area is kept for
 selecting its text, which editing text in place, `design@rootpoint-app@edit-in-place`, needs. A
@@ -183,19 +188,18 @@ its methods on the layout `rootpoint_render::area_text` gives, `design@rootpoint
 which is the layout `render_slide` draws. Every change of the text, a typed string, a deletion, a
 cut, a paste, an IME composition and its commit, is one `text` command with the area's whole text,
 per `design@rootpoint-app@actions-are-commands`; the render lays the new text out, and the caret is
-placed again on it by byte index. A deletion of one character goes by the caret's logical clusters,
-since a visual move across a soft line break only changes the caret's affinity. The composing text
+placed again on it by byte index. The composing text
 stands in the area's text, by commands, so the renderer draws it where it will stand; the overlay
 draws the caret, the selection and the composition's underline, per
 `design@rootpoint-app@editor-overlay`. While editing, the app sets `PlatformOutput::ime` every
-frame, since egui-winit 0.37.0 allows IME input only in a frame that sets it. The caret and the
-selection are the editor's state during a stay, as a drag's position is, and no protocol command:
-`goal@rootpoint-protocol@commands-drive-everything` measures building, changing, saving, rendering
-and presenting by commands, and every change they lead to is one.
+frame, since egui-winit 0.37.0 allows IME input only in a frame that sets it; an empty preedit
+with no composition open changes nothing, since winit 0.30.13's X11 backend sends one when a
+composition starts, and it would otherwise replace the selection.
 
 So the caret sits on the drawn glyphs at every size of the view, as
 `goal@rootpoint-render@same-slide-everywhere` asks of every display: a test over every character
-of the sample's text puts it within half a pixel of the drawn glyph at three window sizes. A
+of the sample's area n3 puts it on the drawn glyph at three window sizes, within half a pixel, a
+tolerance for rounding that the session chose, by `cargo test -p rootpoint-app --test editing`. A
 toolkit text field over the slide would break lines differently and let the caret drift, as
 `rejected@rootpoint-render@toolkit-painter` says, and Parley's `PlainEditor` lays its own copy of
 the text out, `rejected@rootpoint-app@plain-editor`.
@@ -211,5 +215,17 @@ arrow, act on a selected text area, per `design@rootpoint-app@selection-actions`
 arrow selects.
 
 On the owner's word: the owner chose this shape over a single click that selects a text area and
-edits it at once, which saves a click before typing but leaves the node keys to act on a text area
-only after Esc; the owner thinks it is intuitive to use.
+edits it at once, which saves a click before typing in an area not yet selected, but leaves the
+node keys to act on a text area only after Esc and makes every click on a text area place a caret;
+the owner thinks it is quite intuitive to use. Also on the owner's word: a press outside the edited
+area acts as it does outside editing, over a press that only leaves editing with the edited area
+still selected, which would cost a second click to select another area.
+
+### The caret and the selection of a text being edited are the editor's state, and no command sets them `##caret-editor-state`
+
+While a text is edited, its caret, its selection and its composing range live in the app, as a
+drag's position does, and the protocol has no command that places or reads them; every change of
+the text they lead to is a `text` command, per `design@rootpoint-app@edit-in-place`. On the
+owner's word, they are not among the views `goal@rootpoint-protocol@commands-drive-everything`
+makes commands of: the owner chose editor state alone over a protocol command for the caret and
+the selection, which would let a script drive them.
