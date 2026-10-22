@@ -182,8 +182,26 @@ fn the_presenter_keys_move_through_the_slides_and_esc_leaves_full_screen() {
 #[test]
 #[ignore]
 fn time_a_divider_drag_in_a_1600_by_900_view() {
-    let fixture = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/mixed.ron").to_owned();
+    time_a_divider_drag(App::new(Box::new(NativeFiles)), "");
+}
+
+/// The same drag with a control socket given to the app and no line sent: claim 9 of
+/// `spec@first-prototype@live-control`, that an idle listener costs the drag no time beyond the
+/// same bound. Run with the drag above.
+#[test]
+#[ignore]
+fn time_a_divider_drag_with_an_idle_control_socket() {
+    let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("idle-socket");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let listener = rootpoint_app::control::Listener::bind(&dir.join("rp.sock"), || {}).unwrap();
     let mut app = App::new(Box::new(NativeFiles));
+    app.listen(listener);
+    time_a_divider_drag(app, ", idle control socket");
+}
+
+fn time_a_divider_drag(mut app: App, label: &str) {
+    let fixture = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/mixed.ron").to_owned();
     app.open_file(fixture);
     assert!(app.status().is_empty(), "{:?}", app.status());
     // Size the window so that the slide view is 1600×900 points, at one pixel per point.
@@ -234,7 +252,7 @@ fn time_a_divider_drag_in_a_1600_by_900_view() {
     d.frame(button(start, false), Modifiers::NONE);
     let largest = times.iter().max().unwrap();
     println!(
-        "divider drag, 1600x900 view, 100 frames (ms): {:?}",
+        "divider drag, 1600x900 view{label}, 100 frames (ms): {:?}",
         times
             .iter()
             .map(|t| t.as_secs_f64() * 1000.0)

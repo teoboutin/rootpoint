@@ -6,6 +6,8 @@ const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod actions;
 mod assets;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod control;
 pub mod editing;
 pub mod hit;
 mod panels;
@@ -56,6 +58,9 @@ pub struct App {
     edit_on_click: Option<Pos2>,
     /// Whether the primary button, pressed inside the edited text, drags a selection.
     text_drag: bool,
+    /// The control socket, when the window listens on one.
+    #[cfg(not(target_arch = "wasm32"))]
+    listener: Option<control::Listener>,
 }
 
 /// A drag in progress in the slide view.
@@ -112,6 +117,27 @@ impl App {
             edit: None,
             edit_on_click: None,
             text_drag: false,
+            #[cfg(not(target_arch = "wasm32"))]
+            listener: None,
+        }
+    }
+
+    /// Take the lines of a control socket, which each frame then runs, at its start.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn listen(&mut self, listener: control::Listener) {
+        self.listener = Some(listener);
+    }
+
+    /// Answer every line the control socket received since the last frame.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn serve_socket(&mut self) {
+        let Some(listener) = &self.listener else {
+            return;
+        };
+        // The echo of the first step of the slice: every line is answered `ok`, unexecuted.
+        for request in listener.pending() {
+            drop(request.line);
+            let _ = request.reply.send(Some("ok".to_owned()));
         }
     }
 
@@ -205,6 +231,8 @@ impl App {
     /// Show the editor for one frame. It takes a `Ui`, so a test drives it with
     /// `Context::run_ui`, with no window.
     pub fn frame(&mut self, ui: &mut Ui) {
+        #[cfg(not(target_arch = "wasm32"))]
+        self.serve_socket();
         // A loss of focus releases a drag and leaves a stay in editing and its group, per
         // `design@rootpoint-app@gesture-groups`.
         if !ui.input(|i| i.focused) {

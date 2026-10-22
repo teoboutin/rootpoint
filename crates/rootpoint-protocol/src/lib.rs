@@ -6,6 +6,8 @@
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod command;
+#[cfg(unix)]
+pub mod control;
 mod files;
 mod sample;
 mod save;
