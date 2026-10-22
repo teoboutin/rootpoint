@@ -6,8 +6,9 @@ kind: todo
 ## Summary
 
 While an agent drives the window through its control socket, the author sees each change but
-not the command that made it. The owner, trying the socket with an agent, wanted the window to
-print each command the agent sends, as it comes, later than the first prototype.
+not the command that made it. The owner, trying the socket with an agent, judged that a display
+printing each command the agent sends, as it comes, would be nice, for the future and not in the
+slice that built the socket.
 
 ## Details
 

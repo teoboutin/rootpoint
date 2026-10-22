@@ -337,18 +337,20 @@ the agent at any moment, by hand, and take the work over with no typed command. 
 `end` a group the socket left open, so its edits are one undo step that one undo reverts, where
 `cancel` would erase what the author watched happen. It sits in a banner over the toolbar, and in
 presenter mode in a corner, over the slide's texture and never in its image,
-`design@rootpoint-app@editor-overlay`; Esc takes no authority, and keeps its one meaning, leaving.
+`design@rootpoint-app@editor-overlay`. Esc takes no authority: in presenter mode on the owner's
+word, below; in the editor it keeps its one meaning there too, leaving.
 After a take-over, each edit of the socket replies
 `err the author took control: stop, and wait for the author's instructions`, until its next
 `control`, and the refusal ends its connection, `design@rootpoint-app@socket-batch`.
 
-On the owner's word: the owner proposed the corner button in presenter mode, since the owner might
-want to leave presenter mode without taking control, and judged that a real talk would not happen
+On the owner's word: the owner ruled out Esc taking control in presenter mode and proposed the
+corner button in its place, since the owner might want to leave presenter mode without taking
+control, and judged that a real talk would not happen
 under an agent's control, so the button costs a talk nothing.
 
 ### The socket's request for the authority is granted at once, also right after a take-over `##control-passing`
 
-The socket's `control` is granted at once: it ends the window's gestures as any action of the
+The socket's `control` is granted at once: it ends the window's gestures as any edit of the
 window does, a stay with its edits one undo step, a divider drag as at its release, a grip drag
 cancelled, since its edits are made only at its drop. Right after a take-over it is granted too,
 and the refusal of the agent's edits, `design@rootpoint-app@take-over-at-once`, is what tells a
@@ -366,7 +368,7 @@ early, and to adjust by hand after the agent's `release`, so a request mostly co
 author is in no gesture. For a request right after a take-over, the owner chose the refusal that
 tells the agent to stop and wait over a button "Give control" the author would click to hand back,
 `rejected@rootpoint-app@give-control-button`, judging that in principle it should be enough, since
-in the owner's view agents rarely misbehave so nowadays, and choosing to try it first.
+in the owner's view agents seldom act otherwise now, and choosing to try it first.
 `tripwire@rootpoint-app@control-ends-a-gesture` and `tripwire@rootpoint-app@agent-takes-control-back`
 watch the two choices.
 

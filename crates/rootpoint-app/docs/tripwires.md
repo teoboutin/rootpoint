@@ -15,7 +15,8 @@ the window has no gesture open, `rejected@rootpoint-app@control-when-idle`.
 
 ## Guarding `design@rootpoint-app@control-passing`: an agent takes the authority back after the author took it `##agent-takes-control-back`
 
-T7 of the premortem of the first prototype, recorded on the owner's word.
+T7, which the owner proposed in answer to D6 of the first prototype, recorded on the owner's
+word.
 
 **Fires when:** in real use, an agent answers the refusal that says the author took control with
 `control`, before the author gave it new instructions, more than once; the count is a default, the

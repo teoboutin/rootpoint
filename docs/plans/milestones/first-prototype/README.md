@@ -1244,14 +1244,16 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   proposal." So: `control` stays granted at once after a take-over; the socket's refused edits
   then reply `err the author took control: stop, and wait for the author's instructions`; and T7,
   `tripwire@rootpoint-app@agent-takes-control-back`, reopens the button.
-- **D7, awaiting the owner.** T5, the tripwire `client-joins-gui-group` of the protocol crate, is
+- **D7, ruled.** T5, the tripwire `client-joins-gui-group` of the protocol crate, is
   removed at the harvest of the slice `live-control`: its firing condition, a command of the socket joining a
   group the window opened, no longer occurs, since `design@rootpoint-app@one-controller-at-a-time`
   closes the window's gestures before the socket edits, and a design that changed that would
   reverse the head. Its rival: the tripwire kept, its firing condition restated as that head's
-  guard. The branch merges once the owner rules.
-- **Q36 and Q37, ruled** in O27: the two attributions stand as the review's repairs wrote them, and
-  the slice does not meet the re-entry of `issue@rootpoint-app@alt-arrows-follow-the-tree`.
+  guard. The owner ruled: "D7 accepted".
+- **Q36 and Q37, ruled** in O27: the two attributions stand as the review's repairs wrote them; and,
+  among the readings the issue's wording permits, since "touches the app's keys" may or may not
+  cover a slice that decides only which keys act, the owner chose that the slice does not meet the
+  re-entry of `issue@rootpoint-app@alt-arrows-follow-the-tree`.
 
 ## Harvest
 
@@ -1289,7 +1291,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   control of their own, or locks per slide or per node, which `goal@rootpoint@minimal-content-set`
   neither asks for nor forbids, is designed in a session of its own. The owner judged a survey of
   prior art not necessary for the one lock, and thought one would become worth running for a
-  wider lock.
+  wider lock. In the owner's view, the slide's tree of splits gives a clear hierarchy of which
+  content and which changes can be applied with no risk of conflict, which such a design starts
+  from.
 - **Publishing to crates.io**, which the owner named in O5 and `goal@rootpoint@real-presentations`
   admits as "may be published later", gives each published crate a `CRATES-IO.md` page, as
   `skill@knowledge-architect-setup@rust-project` proposes.
