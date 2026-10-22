@@ -1,7 +1,7 @@
 //! The editing operations at the places where Parley's visual moves and the text disagree: a soft
 //! line break, where a visual move only changes the caret's affinity, and a composing text after
 //! an edit, whose byte range moves with it. Each was a defect found by the review of the slice that
-//! edits text in place, `spec@first-prototype@text-editing`.
+//! edits text in place, `design@rootpoint-app@edit-in-place`.
 
 use eframe::egui::{Pos2, Rect, Vec2};
 use rootpoint_app::App;

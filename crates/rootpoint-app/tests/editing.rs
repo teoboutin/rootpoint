@@ -1,7 +1,7 @@
 //! Editing a text in place, with no window: a click on the selected text area enters editing with
 //! the caret at the click, and at three sizes of the window the caret stands on the glyph
-//! boundary of the layout the render draws, within half a pixel. Claim 1 of the slice that edits
-//! text in place, `spec@first-prototype@text-editing`.
+//! boundary of the layout the render draws, within half a pixel, as
+//! `design@rootpoint-app@edit-in-place` says.
 
 use eframe::egui::{
     Context, Event, ImeEvent, Key, Modifiers, OutputCommand, PointerButton, Pos2, RawInput, Rect,

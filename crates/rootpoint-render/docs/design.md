@@ -29,6 +29,17 @@ opens no file. The renderer is part of the browser build,
 `path@rootpoint-model@CLAUDE.md` records, and an asset's path is relative to a presentation file
 only the caller knows. The two sets are part of the crate's public interface.
 
+### A text area's layout comes from one function, which drawing and `area_text` both call `##area-text-layout`
+
+`render_slide` lays each text area out, and places it, through one private function, which
+`area_text` also calls: it gives the area's Parley `Layout`, in slide units, and the point of the
+slide where its origin is drawn. An editor that places a caret or a selection on that layout, with
+Parley's `Selection` and `Cursor`, places it on the drawn glyphs, which
+`goal@rootpoint-render@same-slide-everywhere` asks of every display. The function is part of the
+crate's public interface; the app's editing in place, `design@rootpoint-app@edit-in-place`,
+consumes it. A layout the editor made itself, from the same styles set again, would be a second
+layout that must agree with the drawn one.
+
 ### A text is inset from its area by 24 slide units `##text-padding`
 
 Every text is laid out within its area less 24 slide units on each side. The padding sets the

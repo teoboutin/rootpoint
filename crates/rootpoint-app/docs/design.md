@@ -43,15 +43,23 @@ So every operation the GUI offers runs headless, as `goal@rootpoint@headless-cor
 script of the same commands reproduces what the author did. The rival, the GUI changing the
 document itself, `rejected@rootpoint-model@gui-mutation`, implements every edit twice.
 
-### Each gesture of the window is one undo group, closed at its end or when focus is lost `##gesture-groups`
+### Each gesture of the window is one undo group, closed at its end, and a drag's also when the window loses focus `##gesture-groups`
 
-A divider drag, a grip drag and a focus of the text field each open a group with `begin` when they
+A divider drag, a grip drag and a stay in editing a text each open a group with `begin` when they
 start, after closing any group still open, so that within one frame a group closes before another
-opens. The release closes a drag's group with `end`, and Esc with `cancel`; the loss of the field's
-focus closes its group; and the loss of the window's focus closes either, so a release never
-delivered leaves no group open. While a drag runs, no key but Esc acts, since a key's edit would
-join the drag's step. The groups are the protocol's, `design@rootpoint-protocol@gesture-undo`, so a
-gesture is one undo step in a script as in the window.
+opens. The release closes a drag's group with `end`, and Esc with `cancel`; the end of a stay, by
+Esc, a click outside its area, an undo, a redo or any other action, closes its group. While a drag
+runs, no key but Esc acts, since a key's edit would join the drag's step. The groups are the
+protocol's, `design@rootpoint-protocol@gesture-undo`, so a gesture is one undo step in a script as
+in the window.
+
+The window's loss of focus closes a drag's group, so a release never delivered leaves no group
+open, and leaves a stay and its group as they are: a stay's end is always delivered, and a window
+manager can take the keyboard while it resizes the window, which winit 0.30.13 reports as a loss
+of focus (its X11 `xinput2_unfocused` filters no FocusOut mode). Closing the stay's group there
+would split one stay into two undo steps. The group is open while the window is away, when a
+command of another client could join it, which
+`tripwire@rootpoint-protocol@client-joins-gui-group` watches.
 
 ### The editor's marks are drawn over the slide's texture with egui, never into the slide's image `##editor-overlay`
 
@@ -156,7 +164,7 @@ one and removes the dragged one. The zone under the pointer is tinted, with a la
 any area, cancels.
 
 A plain drag inside an area is not the gesture, since a drag inside a text area is kept for
-selecting its text, which editing text in place, `spec@first-prototype@text-editing`, needs. A
+selecting its text, which editing text in place, `design@rootpoint-app@edit-in-place`, needs. A
 swap button followed by a click on the target, which no fact defeats, adds a mode and costs the
 same two actions. The edge move replaces a removal, a split and a new edit of the content with one
 gesture, as `goal@rootpoint-app@direct-manipulation` asks. In the survey of split editing, iced
@@ -165,3 +173,43 @@ and inserts on an edge drop; Blender swaps by a drag from a corner, and docks by
 the tools highlight the target. On the owner's word: the owner accepted the edge moves on the condition that
 a preview or a hint shows what a drop will do, judging that a preview of the exact result might not
 be meaningful here.
+
+## Editing text
+
+### An area's text is edited on the slide, with Parley's `Selection` on the layout the render draws `##edit-in-place`
+
+The caret and the selection of a text being edited are Parley's `Selection`, placed and moved by
+its methods on the layout `rootpoint_render::area_text` gives, `design@rootpoint-render@area-text-layout`,
+which is the layout `render_slide` draws. Every change of the text, a typed string, a deletion, a
+cut, a paste, an IME composition and its commit, is one `text` command with the area's whole text,
+per `design@rootpoint-app@actions-are-commands`; the render lays the new text out, and the caret is
+placed again on it by byte index. A deletion of one character goes by the caret's logical clusters,
+since a visual move across a soft line break only changes the caret's affinity. The composing text
+stands in the area's text, by commands, so the renderer draws it where it will stand; the overlay
+draws the caret, the selection and the composition's underline, per
+`design@rootpoint-app@editor-overlay`. While editing, the app sets `PlatformOutput::ime` every
+frame, since egui-winit 0.37.0 allows IME input only in a frame that sets it. The caret and the
+selection are the editor's state during a stay, as a drag's position is, and no protocol command:
+`goal@rootpoint-protocol@commands-drive-everything` measures building, changing, saving, rendering
+and presenting by commands, and every change they lead to is one.
+
+So the caret sits on the drawn glyphs at every size of the view, as
+`goal@rootpoint-render@same-slide-everywhere` asks of every display: a test over every character
+of the sample's text puts it within half a pixel of the drawn glyph at three window sizes. A
+toolkit text field over the slide would break lines differently and let the caret drift, as
+`rejected@rootpoint-render@toolkit-painter` says, and Parley's `PlainEditor` lays its own copy of
+the text out, `rejected@rootpoint-app@plain-editor`.
+
+### A first click on a text area selects it, and a click on the selected text area edits it `##edit-entry`
+
+A click on an area selects it. A click on the selected text area, so a double-click on any text
+area, enters editing with the caret at the click; Esc leaves it, the area still selected, and a
+press outside the area leaves it and acts as it does outside editing: a click on another area
+selects that area. Outside editing, the node keys, Shift with an arrow, Delete and Alt with an
+arrow, act on a selected text area, per `design@rootpoint-app@selection-actions` and
+`design@rootpoint-app@node-selection`; while editing, the keys go to the text, where Shift with an
+arrow selects.
+
+On the owner's word: the owner chose this shape over a single click that selects a text area and
+edits it at once, which saves a click before typing but leaves the node keys to act on a text area
+only after Esc; the owner thinks it is intuitive to use.

@@ -152,9 +152,9 @@ slice's spec, with the gates run before each commit.
   in the same spec. **O18**: the owner's answer to **Q23**, the app crate's goals drafted per D2,
   quoted in the same spec. **O19**: the owner's report of AC6, quoted in the same spec.
   **Q24 to Q27**: the questions put after the reviews of that slice, ruled in the messages of its
-  last commits. **Q28**: the open thread of the design audit of `spec@first-prototype@text-editing`,
-  `thread@first-prototype@edit-entry`, in that slice's spec, with **Q29**, on the navigation keys,
-  put after AC1's judgement.
+  last commits. **Q28**: the open thread of the design audit of the slice `text-editing`, its
+  #edit-entry, now `design@rootpoint-app@edit-entry`, quoted in that slice's spec, since deleted,
+  with **Q29**, on the navigation keys, put after AC1's judgement.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
@@ -1069,7 +1069,8 @@ the slice `editor-shell`, and the owner's ruling on them is O16 of that slice's 
 ### AC1. The caret sits on the drawn text, and selection and dead keys work `##caret-on-glyph`
 
 Guards `thread@first-prototype@slide-renderer`, and `thread@first-prototype@gui-toolkit`. Judged by
-`spec@first-prototype@text-editing`. Fires when, in a text area at three window sizes, the caret
+the slice `text-editing`, where it did not fire: the caret stands within half a pixel of the drawn
+glyph at three window sizes by test, and the owner tried the rest on the owner's desktop. Fires when, in a text area at three window sizes, the caret
 does not sit on the drawn glyph boundary, selection by drag or by shift+arrow fails, or a dead-key
 character such as "é" cannot be typed. Response: reopen `thread@first-prototype@slide-renderer`.
 
@@ -1132,14 +1133,13 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 3. the slice `command-protocol`: the protocol crate and the headless binary.
 4. the slice `editor-shell`: the app crate, native, with presenter mode. Judges AC2's
    drag bound and AC6.
-5. `spec@first-prototype@text-editing`: editing text in place. Judges AC1.
+5. the slice `text-editing`: editing text in place. Judges AC1.
 6. `spec@first-prototype@live-control`: the control socket and its client.
 7. `spec@first-prototype@browser-build`: the browser build. Judges AC3. The owner then judges AC4,
    and the closing commit of "Harvest" follows.
 
 | slice spec |
 | --- |
-| [Editing text in place](text-editing.md) |
 | [Driving the running GUI by text commands](live-control.md) |
 | [The editor and presenter in a web browser](browser-build.md) |
 
@@ -1151,9 +1151,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   protocol's `render` command calls the renderer.
 - the slice `command-protocol` before the slice `editor-shell`: the GUI
   applies the same operations, and its tests drive it through the protocol's session.
-- the slice `editor-shell` before `spec@first-prototype@text-editing`: in-place editing
+- the slice `editor-shell` before the slice `text-editing`: in-place editing
   needs a hosted slide view and input forwarding.
-- `spec@first-prototype@text-editing` before `spec@first-prototype@live-control`: the control socket
+- the slice `text-editing` before `spec@first-prototype@live-control`: the control socket
   drives a GUI whose editing is complete, so a failure of the socket is not one of editing.
 - `spec@first-prototype@live-control` before `spec@first-prototype@browser-build`: the browser build
   has no transport for the protocol, stdin or socket, though it links the session, so it comes
@@ -1228,7 +1228,7 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   options, its drawing and its editor, per `goal@rootpoint@minimal-content-set`.
 - **Templates and linked dividers** are re-entered at the first real talk, by T3 and T4.
 - **Rich text with per-span styles** replaces `TextStyle` per area with styled spans, on the
-  in-place editor of the slice `spec@first-prototype@text-editing`.
+  in-place editor of the slice `text-editing`, `design@rootpoint-app@edit-in-place`.
 - **An image export** reuses `render_slide`.
 - **Publishing to crates.io**, which the owner named in O5 and `goal@rootpoint@real-presentations`
   admits as "may be published later", gives each published crate a `CRATES-IO.md` page, as
