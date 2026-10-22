@@ -1259,18 +1259,20 @@ Every slice has landed, so no slice spec remains in this directory.
   among the readings the issue's wording permits, since "touches the app's keys" may or may not
   cover a slice that decides only which keys act, the owner chose that the slice does not meet the
   re-entry of `issue@rootpoint-app@alt-arrows-follow-the-tree`.
-- **Q38, awaiting the owner.** Whether the slice `browser-build` meets the re-entry of
+- **Q38, ruled.** Whether the slice `browser-build` meets the re-entry of
   `issue@rootpoint-app@alt-arrows-follow-the-tree`, "the design audit of the next slice that touches
   the app's keys". The slice changes what Ctrl+O and Ctrl+S do in the browser build and keeps F5
   from the page, `design@rootpoint-app@editor-keys-kept-from-browser`; it changes no binding of Alt
   with an arrow, nor any key that moves through the tree. Q37's ruling, that the slice
   `live-control` does not meet it, was given for that slice alone. Default: not met, since the
-  issue is about the keys that move through the tree, and this slice changes none of them.
-- **Q39, awaiting the owner.** Whether `goal@rootpoint-app@browser-window`, "met when the browser
+  issue is about the keys that move through the tree, and this slice changes none of them. The owner
+  ruled: "Q38 not met".
+- **Q39, ruled.** Whether `goal@rootpoint-app@browser-window`, "met when the browser
   build edits and presents the built-in sample with the same actions as the native window", counts
   Save among those actions. The browser build saves nothing, per D3,
   `design@rootpoint-app@browser-load-only`. Default: it does not, since the goal names editing and
-  presenting, so the goal is met.
+  presenting, so the goal is met. The owner ruled: "Q39 no, edit only is fine for prototype, like
+  a basic demo". So, for the prototype, the goal does not count Save, and is met.
 
 ## Harvest
 
