@@ -210,8 +210,8 @@ slice's spec, with the gates run before each commit.
 - No editor code existed when this document was written; the slice `model-core` has since built
   `path@rootpoint@crates/rootpoint-model/` and harvested its decisions into its design homes and
   rootpoint's.
-- The Rust targets installed on the owner's machine are `x86_64-unknown-linux-gnu` only, measured
-  with `rustup target list --installed`; the wasm target is not installed.
+- The Rust targets installed on the owner's machine are `x86_64-unknown-linux-gnu` and
+  `wasm32-unknown-unknown`, measured with `rustup target list --installed`.
 
 **What the work builds**: the four crates of `thread@first-prototype@crate-split`, a wasm gate per
 crate, and the prototype `thread@first-prototype@prototype-scope` lists, in the seven slices of
