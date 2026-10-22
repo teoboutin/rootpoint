@@ -158,6 +158,9 @@ slice's spec, with the gates run before each commit.
   questions put after the review of that slice before its merge, ruled in the messages of its
   repair commits. **Q33**: the open thread of the design audit of
   `spec@first-prototype@live-control`, its #command-during-gesture, in that slice's spec.
+  **O20 to O26**: the owner's messages in the design session held at that audit, with the
+  questions **Q34** and **Q35**, the criteria **C13 to C21**, labelled K1 to K9 there, the tripwire
+  **T6** and the acceptance criterion **AC7**, all quoted in that slice's spec.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
@@ -1064,6 +1067,9 @@ the slice `editor-shell`, and the owner's ruling on them is O16 of that slice's 
   GUI's gesture. Response: reopen that decision, for example with one group per client. Re-entry:
   the audit of `spec@first-prototype@live-control`. Recorded on the owner's word in O16, at the
   harvest of the slice `editor-shell`, as `tripwire@rootpoint-protocol@client-joins-gui-group`.
+- **T6 and AC7**, from the premortem of the design session held at the audit of
+  `spec@first-prototype@live-control`, are in that slice's spec, with the owner's ruling on them,
+  O25, "Keep T6 and AC7."
 - **AC6. The desktop takes the editor's modifier keys.** Stresses
   `design@rootpoint-app@split-preview` and `design@rootpoint-app@node-selection`. Becomes AC6,
   `acceptance@first-prototype@modifiers-reach-app`.
@@ -1145,7 +1151,8 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 4. the slice `editor-shell`: the app crate, native, with presenter mode. Judges AC2's
    drag bound and AC6.
 5. the slice `text-editing`: editing text in place. Judges AC1.
-6. `spec@first-prototype@live-control`: the control socket and its client.
+6. `spec@first-prototype@live-control`: the control socket, its client, and control passed
+   between the window and the socket. Judges AC7.
 7. `spec@first-prototype@browser-build`: the browser build. Judges AC3. The owner then judges AC4,
    and the closing commit of "Harvest" follows.
 
@@ -1243,6 +1250,10 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   style per area as given; rich text is designed in a session of its own before it builds on that
   editor.
 - **An image export** reuses `render_slide`.
+- **A wider lock** than one controller over the whole document, as several clients each with
+  control of their own, or locks per slide or per node, which `goal@rootpoint@minimal-content-set`
+  neither asks for nor forbids, is designed in a session of its own; on the owner's word, a survey
+  of prior art becomes worth running then, and not before.
 - **Publishing to crates.io**, which the owner named in O5 and `goal@rootpoint@real-presentations`
   admits as "may be published later", gives each published crate a `CRATES-IO.md` page, as
   `skill@knowledge-architect-setup@rust-project` proposes.
