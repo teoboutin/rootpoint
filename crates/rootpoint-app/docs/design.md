@@ -158,13 +158,13 @@ minimum sizes in Blender, 29 pixels times the interface scale, and egui_tiles, 3
 
 The selected area shows a grip, a square of 12 points set 8 points inside its top-left corner, so
 no divider's band reaches it. The area whose text is edited shows no grip and its corner takes no
-grip press, since the grip covers the first characters of its text, where a press places the caret,
-per `design@rootpoint-app@edit-entry`, and a drag selects, as the next paragraph keeps; Esc leaves editing and gives the grip
-back. A drag of the grip runs in a group, per `design@rootpoint-app@gesture-groups`. Over another
-area, its middle third, by width and by height, swaps: the drop sends `swap`. The rest moves the
-dragged area to the edge nearest the pointer, the distances taken as fractions of the target's
-width and height, left and right winning a tie: the drop splits the target on that edge at its
-middle, swaps the dragged area with the new one and removes the dragged one. The zone under the
+grip press, since the grip covers the first characters of its text, where a press while editing
+places the caret and a drag selects, as the next paragraph keeps; Esc leaves editing and gives the
+grip back. A drag of the grip runs in a group, per `design@rootpoint-app@gesture-groups`. Over
+another area, its middle third, by width and by height, swaps: the drop sends `swap`. The rest
+moves the dragged area to the edge nearest the pointer, the distances taken as fractions of the
+target's width and height, left and right winning a tie: the drop splits the target on that edge at
+its middle, swaps the dragged area with the new one and removes the dragged one. The zone under the
 pointer is tinted, with a label, "swap" or "move left", "move right", "move up", "move down". A
 drop on the dragged area itself, or outside any area, cancels.
 
@@ -205,36 +205,40 @@ the text out, `rejected@rootpoint-app@plain-editor`.
 ### A first click on a text area selects it, and a click on the selected text area edits it `##edit-entry`
 
 A click on an area selects it. A click on the selected text area, so a double-click on any text
-area, enters editing with the caret at the click; Esc leaves it, the area still selected, and a
-press outside the area leaves it and acts as it does outside editing: a click on another area
-selects that area. Outside editing, the node keys, Shift with an arrow, Delete and Alt with an
-arrow, act on a selected text area, per `design@rootpoint-app@selection-actions` and
+area, enters editing with the caret at the click, wherever no other gesture takes the press: a
+press on the grip, `design@rootpoint-app@swap-gesture`, or on a divider's band keeps its own
+gesture and never enters editing; Esc leaves it, the area still selected, and a press outside the
+area leaves it and acts as it does outside editing: a click on another area selects that area.
+Outside editing, the node keys, Shift with an arrow, Delete and Alt with an arrow, act on a
+selected text area, per `design@rootpoint-app@selection-actions` and
 `design@rootpoint-app@node-selection`; while editing, the keys go to the text, where Shift with an
 arrow selects.
 
 On the owner's word: the owner chose this shape over a single click that selects a text area and
 edits it at once, which saves a click before typing in an area not yet selected, but leaves the
 node keys to act on a text area only after Esc and makes every click on a text area place a caret;
-the owner thinks it is quite intuitive to use. Also on the owner's word: a press outside the edited
-area acts as it does outside editing, over a press that only leaves editing with the edited area
-still selected, which would cost a second click to select another area.
+the owner thinks it is quite intuitive to use. Also on the owner's word: a click enters editing
+only at a place that serves no other gesture, so the grip and the dividers stay usable. And: a
+press outside the edited area acts as it does outside editing, over a press that only leaves
+editing with the edited area still selected, which would cost a second click to select another
+area.
 
 ### The caret and the selection of a text being edited are the editor's state, and no command places or reads them `##caret-editor-state`
 
-While a text is edited, its caret and its selection live in the app, as a drag's position does,
-and the protocol has no command that places or reads them; every change of the text they lead to
-is a `text` command, per `design@rootpoint-app@edit-in-place`. On the owner's word, they are not
-among the views `goal@rootpoint-protocol@commands-drive-everything` makes commands of: the owner
-chose editor state alone over a protocol command for the caret and the selection,
-`rejected@rootpoint-app@caret-command`. The composing range lives in the app too, on its own
-argument: the composing text itself stands in the area's text, by `text` commands, and the range
-only tells the overlay where to draw the underline.
+While a text is edited, its caret, its selection and its composing range live in the app, as a
+drag's position does, and the protocol has no command that places or reads them; every change of
+the text they lead to is a `text` command, per `design@rootpoint-app@edit-in-place`. On the
+owner's word, they are not among the views `goal@rootpoint-protocol@commands-drive-everything`
+makes commands of: the owner chose editor state alone over a protocol command for the caret and
+the selection, `rejected@rootpoint-app@caret-command`, and approved the same for the composing
+range.
 
 ### An empty preedit with no composition open changes nothing `##empty-preedit`
 
 While a text is edited, an IME preedit with an empty text, when no composition is open, leaves the
 text and the selection as they are. winit 0.30.13's X11 backend sends such a preedit when a
-composition starts, read from its source (`x11/event_processor.rs`), not measured on the owner's
+composition starts, read from its source,
+`path@elsewhere@src/platform_impl/linux/x11/event_processor.rs`, not measured on the owner's
 desktop; applied as a composition, it would replace the selection with nothing and so delete a
 selected text before the first composed character. An empty preedit while a composition is open
 ends it, removing the composing text.
