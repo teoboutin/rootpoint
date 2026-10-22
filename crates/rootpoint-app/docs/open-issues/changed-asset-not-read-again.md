@@ -6,8 +6,9 @@ kind: todo
 ## Summary
 
 The editor decodes each asset once, and decodes it again only when the document's assets, their
-use, or the session's directory change. A file edited or replaced outside the editor keeps showing
-as it was until one of those changes, as on reopening the presentation.
+use, or the session's directory change, or, in the browser build, when a picked directory opens, per
+`design@rootpoint-app@picked-files-by-path`. A file edited or replaced outside the editor keeps
+showing as it was until one of those changes, as on reopening the presentation.
 
 ## Details
 
