@@ -14,8 +14,8 @@ with `Precision::Native` at the view's size in physical pixels and uploaded with
 since the render is premultiplied RGBA8 in sRGB, the format of
 `ColorImage::from_rgba_premultiplied`: `Context::load_texture` once, then `TextureHandle::set`. A
 side is at most 8192 pixels, both sides scaled by one factor beyond it, because egui-wgpu 0.37.0
-asks the GPU for textures of at most 8192 pixels a side (`egui-wgpu/src/setup.rs`), below the
-render crate's own limit.
+asks the GPU for textures of at most 8192 pixels a side (`path@elsewhere@egui-wgpu/src/setup.rs`),
+below the render crate's own limit.
 
 It depends on `design@rootpoint-render@slide-renderer`: under the project's own renderer the host
 needs only panels, a list, a texture view, input forwarding, a browser build, which
