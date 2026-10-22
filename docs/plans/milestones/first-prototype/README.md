@@ -214,8 +214,8 @@ slice's spec, with the gates run before each commit.
 - The Rust targets installed on the owner's machine are `x86_64-unknown-linux-gnu` and
   `wasm32-unknown-unknown`, measured with `rustup target list --installed`.
 
-**What the work builds**: the four crates of `thread@first-prototype@crate-split`, a wasm gate per
-crate, and the prototype `thread@first-prototype@prototype-scope` lists, in the seven slices of
+**What the work builds**: the four crates of `thread@first-prototype@crate-split`, the crates the
+browser build links in the one gate `wasm`, and the prototype `thread@first-prototype@prototype-scope` lists, in the seven slices of
 "Implementation sequence".
 
 **Outside the work**, each owned elsewhere:
@@ -1165,13 +1165,13 @@ that holds it is reopened for its keys. Kept on the owner's word in O16 of that 
 Each slice's steps were in its spec, deleted when the slice landed.
 
 1. the slice `model-core`: the model crate, its operations, its geometry and its RON
-   format; the wasm gate. Judges AC5.
-2. the slice `slide-rendering`: the render crate and a headless PNG. Judges AC2's 4K
-   bound.
+   format; the wasm gate. Judged AC5, which did not fire.
+2. the slice `slide-rendering`: the render crate and a headless PNG. Judged AC2's 4K
+   bound, which did not fire.
 3. the slice `command-protocol`: the protocol crate and the headless binary.
-4. the slice `editor-shell`: the app crate, native, with presenter mode. Judges AC2's
-   drag bound and AC6.
-5. the slice `text-editing`: editing text in place. Judges AC1.
+4. the slice `editor-shell`: the app crate, native, with presenter mode. Judged AC2's
+   drag bound and AC6, which did not fire.
+5. the slice `text-editing`: editing text in place. Judged AC1, which did not fire.
 6. the slice `live-control`: the control socket, its client, and control passed between the
    window and the socket. Judged AC7, which did not fire.
 7. the slice `browser-build`: the browser build. Judged AC3, which did not fire. The owner then
