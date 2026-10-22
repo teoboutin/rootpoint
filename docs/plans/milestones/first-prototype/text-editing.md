@@ -161,6 +161,20 @@ crates/rootpoint-app/     the editing state of the app: the area, its Selection,
 
 This slice judges AC1, `acceptance@first-prototype@caret-on-glyph`, after step 2.
 
+Judged after step 2. The caret's place at three window sizes is claim 1's test. The owner tried the
+other parts on the owner's desktop and reported: "AC1: 1, 2 and 3 work fine. However, on window
+resize, the caret is lost, the selected text node is exited (like on pressing esc)." The three
+were entering editing with the caret at the click, a dead key typing "é", and selection by drag and
+by Shift with an arrow. The resize ended the stay through the window's loss of focus, and is
+repaired in the commit "Keep editing in place when the window loses focus, for the text editing
+slice", whose test resizes the window unfocused and keeps the caret. AC1 did not fire.
+
+In the same message the owner reported that Alt+↓ from the title of the sample's first slide does
+not always reach the bottom row, which the session measured as the tree navigation of
+`design@rootpoint-app@node-selection`, and put to the owner as Q29: keep it, or design a spatial
+one. The owner ruled: "agreed on default, keep a and open an issue to rediscuss, then proceed toward
+review and merge". The issue is `issue@rootpoint-app@alt-arrows-follow-the-tree`.
+
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`: the shared layout between editing and drawing,

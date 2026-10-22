@@ -153,7 +153,8 @@ slice's spec, with the gates run before each commit.
   quoted in the same spec. **O19**: the owner's report of AC6, quoted in the same spec.
   **Q24 to Q27**: the questions put after the reviews of that slice, ruled in the messages of its
   last commits. **Q28**: the open thread of the design audit of `spec@first-prototype@text-editing`,
-  `thread@first-prototype@edit-entry`, in that slice's spec.
+  `thread@first-prototype@edit-entry`, in that slice's spec, with **Q29**, on the navigation keys,
+  put after AC1's judgement.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
