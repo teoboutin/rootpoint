@@ -21,7 +21,7 @@ with a toolkit's own painter, where its one text engine and its `iced_test` scre
 `StyleSet` (the field `layout` of the struct in `parley/src/editing/editor.rs`), so it cannot work on
 the layout `render_slide` draws: its caret would sit on a second layout that has to agree with the
 drawn one, from styles set again by hand, which `design@rootpoint-render@area-text-layout` exists
-to avoid. Its `Selection` and `Cursor` take any layout, which is what the editor uses.
+to avoid. Its `Selection` and `Cursor` take any layout.
 
 ### A protocol command that places or reads the caret and the selection of an edited text `##caret-command`
 
