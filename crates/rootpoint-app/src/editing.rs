@@ -188,8 +188,8 @@ impl App {
         let Some(edit) = &self.edit else {
             return;
         };
-        // An empty preedit with no composition open changes nothing: winit's X11 backend sends
-        // one when a composition starts, and it must not replace the selection.
+        // An empty preedit with no composition open changes nothing, per
+        // `design@rootpoint-app@empty-preedit`.
         if s.is_empty() && edit.preedit.is_none() {
             return;
         }

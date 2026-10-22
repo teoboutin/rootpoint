@@ -158,8 +158,8 @@ minimum sizes in Blender, 29 pixels times the interface scale, and egui_tiles, 3
 
 The selected area shows a grip, a square of 12 points set 8 points inside its top-left corner, so
 no divider's band reaches it. The area whose text is edited shows no grip and its corner takes no
-grip press, since the grip covers the first characters of its text, where a press places the caret
-and a drag selects, per `design@rootpoint-app@edit-in-place`; Esc leaves editing and gives the grip
+grip press, since the grip covers the first characters of its text, where a press places the caret,
+per `design@rootpoint-app@edit-entry`, and a drag selects, as the next paragraph keeps; Esc leaves editing and gives the grip
 back. A drag of the grip runs in a group, per `design@rootpoint-app@gesture-groups`. Over another
 area, its middle third, by width and by height, swaps: the drop sends `swap`. The rest moves the
 dragged area to the edge nearest the pointer, the distances taken as fractions of the target's
@@ -192,9 +192,7 @@ placed again on it by byte index. The composing text
 stands in the area's text, by commands, so the renderer draws it where it will stand; the overlay
 draws the caret, the selection and the composition's underline, per
 `design@rootpoint-app@editor-overlay`. While editing, the app sets `PlatformOutput::ime` every
-frame, since egui-winit 0.37.0 allows IME input only in a frame that sets it; an empty preedit
-with no composition open changes nothing, since winit 0.30.13's X11 backend sends one when a
-composition starts, and it would otherwise replace the selection.
+frame, since egui-winit 0.37.0 allows IME input only in a frame that sets it.
 
 So the caret sits on the drawn glyphs at every size of the view, as
 `goal@rootpoint-render@same-slide-everywhere` asks of every display: a test over every character
@@ -221,11 +219,22 @@ the owner thinks it is quite intuitive to use. Also on the owner's word: a press
 area acts as it does outside editing, over a press that only leaves editing with the edited area
 still selected, which would cost a second click to select another area.
 
-### The caret and the selection of a text being edited are the editor's state, and no command sets them `##caret-editor-state`
+### The caret and the selection of a text being edited are the editor's state, and no command places or reads them `##caret-editor-state`
 
-While a text is edited, its caret, its selection and its composing range live in the app, as a
-drag's position does, and the protocol has no command that places or reads them; every change of
-the text they lead to is a `text` command, per `design@rootpoint-app@edit-in-place`. On the
-owner's word, they are not among the views `goal@rootpoint-protocol@commands-drive-everything`
-makes commands of: the owner chose editor state alone over a protocol command for the caret and
-the selection, which would let a script drive them.
+While a text is edited, its caret and its selection live in the app, as a drag's position does,
+and the protocol has no command that places or reads them; every change of the text they lead to
+is a `text` command, per `design@rootpoint-app@edit-in-place`. On the owner's word, they are not
+among the views `goal@rootpoint-protocol@commands-drive-everything` makes commands of: the owner
+chose editor state alone over a protocol command for the caret and the selection,
+`rejected@rootpoint-app@caret-command`. The composing range lives in the app too, on its own
+argument: the composing text itself stands in the area's text, by `text` commands, and the range
+only tells the overlay where to draw the underline.
+
+### An empty preedit with no composition open changes nothing `##empty-preedit`
+
+While a text is edited, an IME preedit with an empty text, when no composition is open, leaves the
+text and the selection as they are. winit 0.30.13's X11 backend sends such a preedit when a
+composition starts, read from its source (`x11/event_processor.rs`), not measured on the owner's
+desktop; applied as a composition, it would replace the selection with nothing and so delete a
+selected text before the first composed character. An empty preedit while a composition is open
+ends it, removing the composing text.

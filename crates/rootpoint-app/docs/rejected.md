@@ -22,3 +22,10 @@ with a toolkit's own painter, where its one text engine and its `iced_test` scre
 the layout `render_slide` draws: its caret would sit on a second layout that has to agree with the
 drawn one, from styles set again by hand, which `design@rootpoint-render@area-text-layout` exists
 to avoid. Its `Selection` and `Cursor` take any layout, which is what the editor uses.
+
+### A protocol command that places or reads the caret and the selection of an edited text `##caret-command`
+
+`live`. On the owner's word, the caret and the selection of a text being edited are the editor's
+state, not a view `goal@rootpoint-protocol@commands-drive-everything` asks a command for, so the
+protocol carries no command for them, `design@rootpoint-app@caret-editor-state`. A script changes a
+text with `text`, and needs no caret to do so.
