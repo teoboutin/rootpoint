@@ -37,7 +37,8 @@ characters no font has, and text not drawn.
   area still selected, and a click outside the area leaves editing and acts as it does outside
   it. The edits of one stay in editing are one undo step.
 - Present (F5) shows the shown slide full screen, alone, as the editor's slide view renders it
-  with no mark over it. →, Space and Page Down show the next slide, ← and Page Up the previous,
+  with no mark over it, but for the button "Take control" in a corner while the control socket
+  holds control. →, Space and Page Down show the next slide, ← and Page Up the previous,
   and Esc returns to the editor.
 - The slide list shows each slide: a click shows it, a drag onto another row moves it there, and
   its buttons add a slide after the shown one, and remove or duplicate the shown one.

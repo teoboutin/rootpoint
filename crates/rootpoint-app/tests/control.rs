@@ -364,3 +364,153 @@ fn the_take_over_closes_the_socket_group_and_its_agent_is_told_to_wait() {
     assert!(matches!(app.session().document().slides.len(), 3));
     let _ = Reply::Ok(String::new());
 }
+
+/// Claim 6, the actions: while the socket holds control, every action of the window that changes
+/// the document leaves the document and the undo stack as they were, and each view action acts.
+#[test]
+fn while_the_socket_holds_control_no_window_action_edits() {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("frozen-actions");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let (mut app, path) = listening("frozen-actions", Box::new(DirFiles(dir.clone())));
+    app.run(Command::Sample);
+    assert_eq!(one(&mut app, &path, "control"), "ok");
+    let before = app.session().document().clone();
+    let n3 = NodeId(3);
+    app.select_node(n3);
+    assert_eq!(
+        app.session().view().selected,
+        Some(n3),
+        "a view action acts"
+    );
+    app.add_slide();
+    app.remove_slide();
+    app.duplicate_slide();
+    app.move_slide(rootpoint_model::SlideId(1), 2);
+    app.split_middle(rootpoint_app::hit::Edge::Left);
+    app.remove_selection();
+    app.grab_divider(NodeId(4), 0);
+    app.drag_divider(0.6);
+    app.grab_grip(n3);
+    app.reset_divider(NodeId(4), 0);
+    app.clear_content();
+    app.set_text_content();
+    app.set_style(rootpoint_protocol::StyleOption::Bold(true));
+    app.add_asset("missing.png".to_owned());
+    app.undo();
+    app.redo();
+    app.save_to("deck.ron".to_owned());
+    app.open_sample();
+    app.open_file("deck.ron".to_owned());
+    assert_eq!(app.session().document(), &before);
+    assert!(!app.session().group_open());
+    assert!(!dir.join("deck.ron").exists(), "save wrote nothing");
+    assert!(!app.can_split_middle(rootpoint_model::Axis::LeftToRight));
+    // The undo stack is as it was: empty, since the sample was opened.
+    app.take_control();
+    assert!(matches!(app.run(Command::Undo), Reply::Err(_)));
+    // The view actions act.
+    app.show_slide(rootpoint_model::SlideId(7));
+    assert_eq!(app.shown_slide(), Some(rootpoint_model::SlideId(7)));
+}
+
+/// A frame of the app with input events, and the cursor it asks for.
+fn frame_with(
+    app: &mut App,
+    ctx: &Context,
+    time: &mut f64,
+    events: Vec<eframe::egui::Event>,
+) -> eframe::egui::CursorIcon {
+    *time += 1.0 / 60.0;
+    let input = RawInput {
+        screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1000.0, 700.0))),
+        max_texture_side: Some(8192),
+        time: Some(*time),
+        events,
+        ..Default::default()
+    };
+    let mut out = ctx.run_ui(input, |ui| app.frame(ui));
+    out.textures_delta.clear();
+    out.platform_output.cursor_icon
+}
+
+fn press(pos: Pos2, pressed: bool) -> Vec<eframe::egui::Event> {
+    vec![
+        eframe::egui::Event::PointerMoved(pos),
+        eframe::egui::Event::PointerButton {
+            pos,
+            button: eframe::egui::PointerButton::Primary,
+            pressed,
+            modifiers: eframe::egui::Modifiers::NONE,
+        },
+    ]
+}
+
+/// Claim 6, the pointer: while the socket holds control, a divider drag, a grip drag and a click
+/// on the selected text area change nothing and start no editing, the divider under the pointer
+/// asks for no resize cursor, and a click on an area still selects it.
+#[test]
+fn while_the_socket_holds_control_no_pointer_gesture_edits() {
+    let (mut app, path) = sample("frozen-pointer");
+    assert_eq!(one(&mut app, &path, "control"), "ok");
+    let (ctx, mut time) = (Context::default(), 0.0);
+    for _ in 0..3 {
+        frame_with(&mut app, &ctx, &mut time, vec![]);
+    }
+    let before = app.session().document().clone();
+    let layout = app.layout().unwrap().clone();
+    let d = &layout.dividers[0];
+    let on_divider = d.from + (d.to - d.from) / 2.0;
+    let hover = frame_with(
+        &mut app,
+        &ctx,
+        &mut time,
+        vec![eframe::egui::Event::PointerMoved(on_divider)],
+    );
+    assert_eq!(hover, eframe::egui::CursorIcon::Default, "no resize cursor");
+    frame_with(&mut app, &ctx, &mut time, press(on_divider, true));
+    frame_with(
+        &mut app,
+        &ctx,
+        &mut time,
+        vec![eframe::egui::Event::PointerMoved(
+            on_divider + Vec2::new(40.0, 40.0),
+        )],
+    );
+    frame_with(
+        &mut app,
+        &ctx,
+        &mut time,
+        press(on_divider + Vec2::new(40.0, 40.0), false),
+    );
+    assert_eq!(app.session().document(), &before);
+    // A click selects an area; a second click on it, a text area, enters no editing.
+    let n3 = NodeId(3);
+    let centre = layout.rect(n3).unwrap().center();
+    for _ in 0..2 {
+        frame_with(&mut app, &ctx, &mut time, press(centre, true));
+        frame_with(&mut app, &ctx, &mut time, press(centre, false));
+        frame_with(&mut app, &ctx, &mut time, vec![]);
+    }
+    assert_eq!(app.session().view().selected, Some(n3));
+    assert_eq!(app.editing(), None);
+    // The selected area shows no grip, and a press where the grip stands drags nothing.
+    let grip = layout.grip(n3).unwrap().center();
+    frame_with(&mut app, &ctx, &mut time, press(grip, true));
+    frame_with(
+        &mut app,
+        &ctx,
+        &mut time,
+        vec![eframe::egui::Event::PointerMoved(
+            grip + Vec2::new(200.0, 0.0),
+        )],
+    );
+    frame_with(
+        &mut app,
+        &ctx,
+        &mut time,
+        press(grip + Vec2::new(200.0, 0.0), false),
+    );
+    assert_eq!(app.session().document(), &before);
+    assert!(!app.session().group_open());
+}

@@ -265,3 +265,70 @@ fn time_a_divider_drag(mut app: App, label: &str) {
         "the largest frame took {largest:?}"
     );
 }
+
+/// Give the socket control of the driver's app: a listener bound in a scratch directory, and
+/// `control` sent from a thread while the driver shows frames.
+fn socket_takes_control(d: &mut Driver, name: &str) -> std::path::PathBuf {
+    let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("rp.sock");
+    d.app
+        .listen(rootpoint_app::control::Listener::bind(&path, || {}).unwrap());
+    let client = path.clone();
+    let handle =
+        std::thread::spawn(move || rootpoint_protocol::control::send(&client, "control").unwrap());
+    while !handle.is_finished() {
+        d.frame(vec![], Modifiers::NONE);
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+    assert_eq!(handle.join().unwrap().as_deref(), Some("ok"));
+    path
+}
+
+/// Claim 8 of `spec@first-prototype@live-control`: with the socket in control, presenter mode
+/// draws the editor's image, places the button "Take control" where the frame records it, and a
+/// click there gives control to the window; Esc leaves presenter mode, the socket keeping control.
+#[test]
+fn the_take_over_button_works_in_presenter_mode_and_leaves_the_slide_as_the_editors() {
+    let mut d = Driver::new(sample(), Vec2::new(1000.0, 700.0));
+    d.settle();
+    let (size, editor) = d.settle().unwrap_or_else(|| {
+        d.app.select_node(NodeId(3));
+        d.settle().unwrap()
+    });
+    d.size = Vec2::new(size[0] as f32, size[1] as f32);
+    socket_takes_control(&mut d, "presenter-control");
+    d.app.present();
+    let (presented, presenter) = d.settle().expect("the presenter draws the slide");
+    assert_eq!(presented, size);
+    assert!(editor == presenter, "the two images differ");
+    // Esc leaves presenter mode and the socket keeps control.
+    d.key(Key::Escape);
+    assert_eq!(d.presenting(), None);
+    assert_eq!(d.app.controller(), rootpoint_app::Controller::Socket);
+    d.app.present();
+    d.settle();
+    let button = d
+        .app
+        .take_control_rect()
+        .expect("the button is shown")
+        .center();
+    let click = |pressed| Event::PointerButton {
+        pos: button,
+        button: PointerButton::Primary,
+        pressed,
+        modifiers: Modifiers::NONE,
+    };
+    d.frame(
+        vec![Event::PointerMoved(button), click(true)],
+        Modifiers::NONE,
+    );
+    d.frame(vec![click(false)], Modifiers::NONE);
+    assert_eq!(
+        d.app.controller(),
+        rootpoint_app::Controller::TakenFromSocket
+    );
+    d.frame(vec![], Modifiers::NONE);
+    assert_eq!(d.app.take_control_rect(), None);
+}

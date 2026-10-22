@@ -54,8 +54,12 @@ impl App {
 
     /// The axis of the split at the pointer that the held keys ask for, Ctrl a vertical line, which
     /// splits beside, and Shift a horizontal one, which stacks, and whether Alt snaps it; `None`
-    /// with neither key held, after Esc until both are released, or while a text is edited.
+    /// with neither key held, after Esc until both are released, while a text is edited, or while
+    /// the socket holds control.
     fn split_keys(&mut self, ui: &Ui) -> Option<(Axis, bool)> {
+        if self.socket_holds() {
+            return None;
+        }
         let m = ui.input(|i| i.modifiers);
         let axis = if m.command {
             Some(Axis::LeftToRight)
@@ -225,7 +229,10 @@ impl App {
                 .dividers
                 .iter()
                 .position(|d| d.split == split && d.index == index),
-            Gesture::Idle if split.is_none() => hover.and_then(|p| layout.divider_at(p)),
+            // While the socket holds control, no divider offers a drag.
+            Gesture::Idle if split.is_none() && !self.socket_holds() => {
+                hover.and_then(|p| layout.divider_at(p))
+            }
             _ => None,
         };
         for (i, d) in layout.dividers.iter().enumerate() {
@@ -247,6 +254,7 @@ impl App {
         {
             painter.rect_stroke(r, 0.0, Stroke::new(2.0, accent), StrokeKind::Inside);
             if self.editing() != Some(node)
+                && !self.socket_holds()
                 && let Some(grip) = layout.grip(node)
             {
                 painter.rect_filled(grip, 2.0, accent);

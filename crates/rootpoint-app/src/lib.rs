@@ -112,6 +112,8 @@ struct SlideView {
     layout: Option<Layout>,
     /// Where the last frame placed each row of the slide list, in points.
     rows: Vec<(SlideId, Rect)>,
+    /// Where the last frame placed the button "Take control", while the socket held control.
+    take_control: Option<Rect>,
 }
 
 impl App {
@@ -144,6 +146,13 @@ impl App {
         self.controller
     }
 
+    /// Whether the socket holds the authority to edit. While it does, every action of the window
+    /// that changes the document returns at once, and the view actions run, per
+    /// `spec@first-prototype@live-control`, so every input that calls an action is guarded there.
+    pub(crate) fn socket_holds(&self) -> bool {
+        self.controller == Controller::Socket
+    }
+
     /// The button "Take control": the window takes the authority to edit back from the socket,
     /// closing with `end` a group the socket left open, so its edits are one undo step.
     pub fn take_control(&mut self) {
@@ -168,6 +177,21 @@ impl App {
     /// Where the last frame placed each row of the slide list, in points.
     pub fn slide_rows(&self) -> &[(SlideId, Rect)] {
         &self.view.rows
+    }
+
+    /// Where the last frame placed the button "Take control", in points: shown while the socket
+    /// holds control, in the editor's banner and in a corner of presenter mode.
+    pub fn take_control_rect(&self) -> Option<Rect> {
+        self.view.take_control
+    }
+
+    /// The button "Take control", placed where the frame records it.
+    fn take_control_button(&mut self, ui: &mut Ui) {
+        let response = ui.button("Take control");
+        self.view.take_control = Some(response.rect);
+        if response.clicked() {
+            self.take_control();
+        }
     }
 
     /// Run a command on the session. Every action of the editor goes through here, so the
@@ -248,6 +272,7 @@ impl App {
     pub fn frame(&mut self, ui: &mut Ui) {
         #[cfg(not(target_arch = "wasm32"))]
         self.serve_socket();
+        self.view.take_control = None;
         // A loss of focus releases a drag and leaves a stay in editing and its group, per
         // `design@rootpoint-app@gesture-groups`.
         if !ui.input(|i| i.focused) {
@@ -282,6 +307,16 @@ impl App {
         } else if !ui.ctx().egui_wants_keyboard_input() && self.gesture == Gesture::Idle {
             self.shortcuts(ui);
         }
+        // While the socket holds control, a banner over the toolbar says so, with the button that
+        // takes control back.
+        if self.socket_holds() {
+            Panel::top("control").show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("The text protocol has control");
+                    self.take_control_button(ui);
+                });
+            });
+        }
         Panel::top("toolbar").show(ui, |ui| self.toolbar(ui));
         Panel::bottom("status").show(ui, |ui| {
             for line in self.status() {
@@ -297,7 +332,8 @@ impl App {
 
     /// Presenter mode: the presented slide alone, scaled uniformly to the largest size that fits
     /// the window and letterboxed, rendered as the editor's slide view renders, with no mark over
-    /// it. →, Space and Page Down show the next slide, ← and Page Up the previous, and Esc leaves.
+    /// it but, while the socket holds control, the button "Take control" in a corner. →, Space and
+    /// Page Down show the next slide, ← and Page Up the previous, and Esc leaves.
     fn presenter(&mut self, ui: &mut Ui) {
         let key = |ui: &mut Ui, key| ui.input_mut(|i| i.consume_key(Modifiers::NONE, key));
         if key(ui, Key::Escape) {
@@ -329,6 +365,20 @@ impl App {
                     ui.painter().image(texture.id(), rect, uv, Color32::WHITE);
                 }
             });
+        // A real talk is never under an agent's control, so a button over the slide's texture,
+        // never in its image, costs a talk nothing.
+        if self.socket_holds() {
+            egui::Area::new(egui::Id::unique("take control"))
+                .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-8.0, 8.0))
+                .show(ui.ctx(), |ui| {
+                    egui::Frame::popup(ui.style()).show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.label("The text protocol has control");
+                            self.take_control_button(ui);
+                        });
+                    });
+                });
+        }
     }
 
     /// The keys of the editor, while no text is edited. `consume_shortcut` ignores extra

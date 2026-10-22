@@ -41,6 +41,9 @@ impl App {
 
     /// Add a slide after the shown one, or at the end when none is shown.
     pub fn add_slide(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         let doc = self.session.document();
         let at = self
@@ -52,6 +55,9 @@ impl App {
 
     /// Remove the shown slide.
     pub fn remove_slide(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         if let Some(slide) = self.shown_slide() {
             self.run(Command::RemoveSlide { slide });
@@ -60,6 +66,9 @@ impl App {
 
     /// Insert a copy of the shown slide after it.
     pub fn duplicate_slide(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         if let Some(slide) = self.shown_slide() {
             self.run(Command::DuplicateSlide { slide });
@@ -68,6 +77,9 @@ impl App {
 
     /// A drop of a slide on the row at `to` in the slide list.
     pub fn move_slide(&mut self, slide: SlideId, to: usize) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         self.run(Command::MoveSlide { slide, to });
     }
@@ -75,6 +87,9 @@ impl App {
     /// Whether the selection splits at its middle along `axis`: refused where a part would be less
     /// than `MIN_PART` slide units, the bound a divider drag keeps.
     pub fn can_split_middle(&self, axis: Axis) -> bool {
+        if self.socket_holds() {
+            return false;
+        }
         let (Some(node), Some(slide)) = (self.session.view().selected, self.shown_slide()) else {
             return false;
         };
@@ -97,6 +112,9 @@ impl App {
     /// A split button, or Shift and an arrow: split the selection at its middle, the new area on
     /// that edge.
     pub fn split_middle(&mut self, edge: Edge) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         let (axis, side) = edge.split();
         if let Some(node) = self.session.view().selected
@@ -113,6 +131,9 @@ impl App {
 
     /// A click with Ctrl or Shift held: split the node at the preview line.
     pub fn split_at(&mut self, p: Preview) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         self.run(Command::Split {
             node: p.node,
@@ -124,6 +145,9 @@ impl App {
 
     /// Delete: remove the selection.
     pub fn remove_selection(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         if let Some(node) = self.session.view().selected {
             self.run(Command::Remove { node });
@@ -133,6 +157,9 @@ impl App {
     /// Open an undo group for a gesture, after closing any group still open, so that within one
     /// frame a group closes before another opens. `false` when the session refuses it.
     pub(crate) fn open_group(&mut self) -> bool {
+        if self.socket_holds() {
+            return false;
+        }
         self.end_gestures();
         matches!(self.run(Command::Begin), Reply::Ok(_))
     }
@@ -147,6 +174,9 @@ impl App {
 
     /// The press that grabs a divider opens an undo group, so the whole drag is one undo step.
     pub fn grab_divider(&mut self, split: NodeId, index: usize) {
+        if self.socket_holds() {
+            return;
+        }
         let Some(pos) = self.divider(split, index) else {
             return;
         };
@@ -162,6 +192,9 @@ impl App {
 
     /// A frame of a divider drag that moves it to `pos`.
     pub fn drag_divider(&mut self, pos: f64) {
+        if self.socket_holds() {
+            return;
+        }
         if let Gesture::Divider {
             split,
             index,
@@ -182,6 +215,9 @@ impl App {
 
     /// The press on the selected area's grip opens an undo group; the drop sends the commands.
     pub fn grab_grip(&mut self, area: NodeId) {
+        if self.socket_holds() {
+            return;
+        }
         if self.open_group() {
             self.gesture = Gesture::Grip { area };
         }
@@ -192,6 +228,9 @@ impl App {
     /// removal of the dragged one; then the group ends. A drop on the dragged area itself, or
     /// outside any area, is `None` and cancels.
     pub fn drop_grip(&mut self, drop: Option<(NodeId, Zone)>) {
+        if self.socket_holds() {
+            return;
+        }
         let Gesture::Grip { area } = self.gesture else {
             return;
         };
@@ -247,6 +286,9 @@ impl App {
     /// A double-click on a divider sets it halfway between its neighbours, the neighbouring
     /// dividers or the split's edges.
     pub fn reset_divider(&mut self, split: NodeId, index: usize) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         let Some(Node::Split(s)) = self.node(split) else {
             return;
@@ -273,6 +315,9 @@ impl App {
 
     /// Set the selected area's content to empty.
     pub fn clear_content(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         if let Some(area) = self.selected_area() {
             self.run(Command::Clear { area });
@@ -281,6 +326,9 @@ impl App {
 
     /// Set the selected area's content to an empty text, in the default style.
     pub fn set_text_content(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         if let Some(area) = self.selected_area() {
             self.run(Command::Text {
@@ -293,6 +341,9 @@ impl App {
 
     /// Set one option of the selected text's style.
     pub fn set_style(&mut self, option: StyleOption) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         if let (Some(area), Some(Content::Text(t))) =
             (self.selected_area(), self.selected_content())
@@ -308,6 +359,9 @@ impl App {
 
     /// Set the selected area's content to an image asset, fitted or filling the area.
     pub fn set_image(&mut self, asset: AssetId, fit: ImageFit) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         if let Some(area) = self.selected_area() {
             self.run(Command::Image { area, asset, fit });
@@ -316,6 +370,9 @@ impl App {
 
     /// Add an image asset, by its path relative to the session's directory.
     pub fn add_asset(&mut self, path: String) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         self.run(Command::Asset { path });
     }
@@ -323,18 +380,27 @@ impl App {
     /// Undo the last step: a drag or a stay in editing still open ends first, and is that
     /// step.
     pub fn undo(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         self.run(Command::Undo);
     }
 
     /// Redo the last step undone, after closing any group still open.
     pub fn redo(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         self.run(Command::Redo);
     }
 
     /// Load a presentation file; Save then writes to it.
     pub fn open_file(&mut self, path: String) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         let path = self.relative_if_absolute(path);
         if let Reply::Ok(_) = self.run(Command::Load { path: path.clone() }) {
@@ -344,6 +410,9 @@ impl App {
 
     /// Save the presentation to a file; Save then writes to it again.
     pub fn save_to(&mut self, path: String) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         let path = self.relative_if_absolute(path);
         if let Reply::Ok(_) = self.run(Command::Save { path: path.clone() }) {
@@ -353,6 +422,9 @@ impl App {
 
     /// Open the built-in sample, which has no file of its own.
     pub fn open_sample(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         self.end_gestures();
         if let Reply::Ok(_) = self.run(Command::Sample) {
             self.path = None;
@@ -384,6 +456,9 @@ impl App {
 
     /// Ctrl+O: ask for a presentation file, and load it.
     pub(crate) fn open_dialog(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         let picked = rfd::FileDialog::new()
             .add_filter("rootpoint presentation", &["ron"])
             .pick_file();
@@ -394,6 +469,9 @@ impl App {
 
     /// Ctrl+S: save to the presentation's file, or ask for one when it has none.
     pub(crate) fn save(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         match self.path.clone() {
             Some(path) => self.save_to(path),
             None => self.save_dialog(),
@@ -402,6 +480,9 @@ impl App {
 
     /// Ask for the file to save to.
     pub(crate) fn save_dialog(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         let picked = rfd::FileDialog::new()
             .add_filter("rootpoint presentation", &["ron"])
             .set_file_name("presentation.ron")
@@ -414,6 +495,9 @@ impl App {
     /// Ask for an image file, and add it as an asset, its path relative to the session's
     /// directory, as every asset's path is.
     pub(crate) fn add_asset_dialog(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
         let Some(file) = rfd::FileDialog::new()
             .add_filter("image", &["png", "jpg", "jpeg"])
             .pick_file()

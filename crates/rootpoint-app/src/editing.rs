@@ -58,6 +58,9 @@ impl App {
     /// the selected text area, so a first click selects and a second edits. The stay opens an undo
     /// group, after closing any group still open.
     pub fn edit_at(&mut self, area: NodeId, p: Pos2, layout: &Layout) {
+        if self.socket_holds() {
+            return;
+        }
         if !self.is_text_area(area) {
             return;
         }
