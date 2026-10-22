@@ -6,7 +6,7 @@ const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod actions;
 mod assets;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(unix)]
 pub mod control;
 pub mod editing;
 pub mod hit;
@@ -59,7 +59,7 @@ pub struct App {
     /// Whether the primary button, pressed inside the edited text, drags a selection.
     text_drag: bool,
     /// The control socket, when the window listens on one.
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(unix)]
     listener: Option<control::Listener>,
     /// Who holds the authority to edit: the window, or the control socket.
     controller: Controller,
@@ -135,7 +135,7 @@ impl App {
             edit: None,
             edit_on_click: None,
             text_drag: false,
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(unix)]
             listener: None,
             controller: Controller::Window,
         }
@@ -259,7 +259,7 @@ impl App {
     /// Show the editor for one frame. It takes a `Ui`, so a test drives it with
     /// `Context::run_ui`, with no window.
     pub fn frame(&mut self, ui: &mut Ui) {
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(unix)]
         self.serve_socket();
         self.view.take_control = None;
         // A loss of focus releases a drag and leaves a stay in editing and its group, per
@@ -356,7 +356,7 @@ impl App {
                 }
             });
         // The button over the slide's texture, never in its image, per
-        // `design@rootpoint-app@control-passing`.
+        // `design@rootpoint-app@take-over-at-once`.
         if self.socket_holds() {
             egui::Area::new(egui::Id::unique("take control"))
                 .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-8.0, 8.0))

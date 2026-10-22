@@ -13,8 +13,9 @@ not, an agent's command waits until the window is shown again, and the client ha
 
 ### What
 
-`App::frame` in `path@rootpoint-app@src/lib.rs` drains the socket's lines at its start, and the
-listener of `path@rootpoint-app@src/control.rs` wakes the window by `Context::request_repaint` for
+`App::frame` in `path@rootpoint-app@src/lib.rs` drains the socket's lines at its start, as
+`design@rootpoint-app@control-socket` has it, and the listener of
+`path@rootpoint-app@src/control.rs` wakes the window by `Context::request_repaint` for
 each line. `rootpoint_protocol::control::Connection::send` then waits for the reply with no timeout.
 Seen by the review of the slice that built the socket, under Xvfb: with the window idle and shown,
 every command got its reply, so the wake works there. Not reproduced: a window minimized, or

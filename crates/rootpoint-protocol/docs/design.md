@@ -46,27 +46,31 @@ in every `split` command.
 
 `control` asks for the authority to edit a running editor, which its window or its control socket
 holds, `design@rootpoint-app@one-controller-at-a-time`; `release` gives it back, and replies
-`err a group is open` while a group is open, in every host, so a script gives the same replies in
-the window and headless, and the authority never passes with a group open, which
-`design@rootpoint-protocol@gesture-undo` would otherwise see joined. A headless session has one
-controller, which always holds the authority, so `Session::run` replies `ok` to `control` and
-changes nothing; a script that drives a window then runs headless unchanged, as
-`goal@rootpoint@headless-core` asks. The verbs are part of the grammar, the crate's interface to
-every program that drives rootpoint, and not of the window's listener alone,
-`rejected@rootpoint-protocol@listener-verbs`; an authority taken by a client's first edit would tell
-the window nothing when the agent is done, `rejected@rootpoint-protocol@implicit-control`.
+`err a group is open` while a group is open, so the authority never passes with a client's group
+open, which `design@rootpoint-protocol@gesture-undo` would otherwise see joined by the other
+controller's edits. A headless session has one controller, which always holds the authority, so
+`Session::run` replies `ok` to `control` and changes nothing; a script that holds the authority in
+a window gives the same replies headless, as `goal@rootpoint@headless-core` asks. The cost: a
+client ends its group before it releases. The rival, a `release` that closes the open group as
+`end` does, `rejected@rootpoint-protocol@release-closes-group`, adds a closer to that head's list.
+The verbs are part of the grammar, the crate's interface to every program that drives rootpoint,
+and not of the window's listener alone, `rejected@rootpoint-protocol@listener-verbs`; an authority
+taken by a client's first edit would tell the window nothing when the agent is done,
+`rejected@rootpoint-protocol@implicit-control`.
 
-### `rootpoint-ctl` sends one command from its arguments, or a batch from its stdin, and exits by the replies `##ctl-exits-by-replies`
+### `rootpoint-ctl` sends one command from its arguments, or a batch from its stdin, and exits by the replies `##ctl-sends-a-line-or-a-batch`
 
 `rootpoint-ctl <socket> <words>…` joins the words with single spaces into one line; with no words,
-it sends the lines of its stdin over one connection, a batch,
+it sends the lines of its stdin, as bytes, over one connection, a batch,
 `design@rootpoint-app@socket-batch`. It prints each reply as it comes, and exits 0 when every reply
-is `ok`, a line with no command getting none, 1 when one is `err`, and 2 when the socket cannot be
-reached or the window ends the connection before a command's reply, as when the window is closed;
-the protocol's README states the contract. `rootpoint_protocol::control::Connection` is the client
-it is built on, Unix only. A command whose connection ends with no reply is an error, never the
-empty answer of a comment: the client knows which of its lines are commands, by `read_line`, so an
-agent never reads an edit the window never ran as done.
+is `ok`, a line with no command getting none; 1 when one is `err`, also when the connection then
+ends, as after the refusal of a take-over; and 2 when the socket cannot be reached, or stdin or the
+connection fails before any `err`, as when the window is closed. `path@rootpoint-protocol@README.md`
+states the contract for its users. `rootpoint_protocol::control::Connection` is the client it is
+built on, Unix only. A command whose connection ends with no reply is an error, never the empty
+answer of a comment, and a line holding a newline is refused before it is sent: the client knows
+which of its lines are commands, by `read_line`, so an agent never reads an edit the window never
+ran as done, nor one it ran as none.
 
 ## The session
 

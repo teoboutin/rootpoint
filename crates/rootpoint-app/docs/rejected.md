@@ -32,24 +32,46 @@ text with `text`, and needs no caret to do so.
 
 ### The authority to edit held by one connection of the control socket `##control-per-connection`
 
-`live`. `rootpoint-ctl` opens one connection for each command it sends, so an authority held by a
-connection would end at every command, and an agent would ask for it again before each edit.
-It would change what the socket's clients consume;
+`live`. An authority held by a connection would end with it: at every command a client sends on a
+connection of its own, as `rootpoint-ctl <socket> <words>…` does, and between two batches, so an
+agent would ask for it again before each edit or each batch, and the window would show the author
+an authority that comes and goes. It would change what the socket's clients consume;
 `design@rootpoint-app@one-controller-at-a-time` counts the socket as one controller.
+
+### The socket holding the authority to edit when the window starts `##socket-holds-control-at-start`
+
+`live`. A window just opened with `--control` would refuse its author's every edit until the
+agent released it, and a client would not need `control` before its first edit, which changes what
+the socket's clients consume. `design@rootpoint-app@one-controller-at-a-time` gives the window the
+authority at start.
+
+### The socket's request for the authority refused until the author gives it back `##request-refused-until-handed-back`
+
+`live`. Every task the author gives the agent would need a click from the author first, or the
+agent stalls and must tell the author, and `control` would reply otherwise, which the socket's
+clients consume. The owner chose the request granted at once, `design@rootpoint-app@control-passing`,
+on the owner's workflow.
 
 ### The socket's request for the authority granted only while the window has no gesture open `##control-when-idle`
 
-`live`. A stay in editing keeps its gesture open for as long as the author leaves its area, also
-while the author is in a terminal giving the agent its task, so the agent would meet refusals with
-no reason it can see. The owner chose the request granted at once,
-`design@rootpoint-app@control-passing`; `tripwire@rootpoint-app@control-ends-a-gesture` brings this
-design back if the request granted at once ends the author's gestures in real use.
+`live`. A stay in editing keeps its gesture open until the author leaves its area, also while the
+author is in a terminal giving the agent its task, so the agent would meet refusals with no reason
+it can see. The owner chose the request granted at once, `design@rootpoint-app@control-passing`;
+`tripwire@rootpoint-app@control-ends-a-gesture` brings this design back if the request granted at
+once ends the author's gestures in real use.
 
 ### A button "Give control" the author clicks before the agent may take the authority again `##give-control-button`
 
-`live`. After a take-over, the socket's `control` would be refused until the author clicks it, so
-an agent could not take back the authority an interrupt took. The owner chose instead the refusal
-that tells the agent to stop and wait for the author's instructions, judging that in principle it
-should be enough, `design@rootpoint-app@control-passing`;
-`tripwire@rootpoint-app@agent-takes-control-back` brings this design back if agents misbehave too
-often.
+`live`. After a take-over, the socket's `control` would be refused until the author clicks it, at
+the cost of one click to hand back after each interrupt. The owner chose instead the refusal that
+tells the agent to stop and wait for the author's instructions, judging that in principle it should
+be enough, `design@rootpoint-app@control-passing`; `tripwire@rootpoint-app@agent-takes-control-back`
+brings this design back if agents misbehave too often.
+
+### One connection to the control socket for each command `##connection-per-command`
+
+`live`. An agent would pay a round trip for each edit, and a take-over would be answered with as
+many refusals as the agent's script has lines left, since each line opens a connection of its own.
+It would change the socket's contract and the command line of `rootpoint-ctl`, which other programs
+consume. The owner judged that restricting an agent to one edit at a time seems a less efficient
+method; `design@rootpoint-app@socket-batch` lets a connection carry a batch.

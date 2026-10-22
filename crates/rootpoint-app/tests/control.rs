@@ -755,3 +755,49 @@ fn a_take_over_ends_a_batch_with_one_refusal() {
     );
     assert_eq!(app.session().document().slides.len(), slides + 1);
 }
+
+/// After a take-over, a query that fails for a reason of its own is answered and ends nothing: the
+/// connection stays open for the batch's next query, since only the take-over's refusal ends it.
+#[test]
+fn a_query_error_after_a_take_over_keeps_the_connection() {
+    use rootpoint_protocol::control::Connection;
+    let (mut app, path) = sample("query-after-take-over");
+    let connection = Connection::open(&path).unwrap();
+    let connection = with_frames(&mut app, move || {
+        let mut connection = connection;
+        assert_eq!(connection.send("control").unwrap().as_deref(), Some("ok"));
+        connection
+    });
+    app.take_control();
+    let replies = with_frames(&mut app, move || {
+        let mut connection = connection;
+        let failed = connection.send("tree s99").unwrap();
+        let next = connection.send("view").map(|r| r.is_some());
+        (failed, next.ok())
+    });
+    assert!(replies.0.as_deref().is_some_and(|r| r.starts_with("err")));
+    assert_eq!(replies.1, Some(true), "the connection stays open");
+}
+
+/// Over one connection, a comment gets no reply, so the reply that follows is the next command's:
+/// a reply sent for a line with no command would be read as the answer to the next.
+#[test]
+fn a_comment_in_a_batch_gets_no_reply() {
+    use rootpoint_protocol::control::Connection;
+    let (mut app, path) = sample("comment-in-batch");
+    let connection = Connection::open(&path).unwrap();
+    let replies = with_frames(&mut app, move || {
+        let mut connection = connection;
+        ["# a comment", "", "view"]
+            .iter()
+            .map(|line| connection.send(line).unwrap())
+            .collect::<Vec<_>>()
+    });
+    assert_eq!(replies[0], None);
+    assert_eq!(replies[1], None);
+    assert!(
+        replies[2]
+            .as_deref()
+            .is_some_and(|r| r.starts_with("ok selected="))
+    );
+}

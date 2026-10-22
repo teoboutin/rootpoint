@@ -24,18 +24,21 @@ prints each reply as it comes:
 
 - `rootpoint-ctl <socket> <words>…` sends one line: the words joined with single spaces, so a line
   holding a quoted text is given as one word, `rootpoint-ctl /tmp/rp 'text n3 "two words"'`.
-- `rootpoint-ctl <socket>` sends the lines of its stdin, a batch, over one connection. The editor
-  runs them one at a time. When the author takes control during a batch, the next edit gets the
-  refusal, which tells the agent to stop and wait for the author's instructions, the editor ends
-  the connection, and the batch's other lines are not sent.
+- `rootpoint-ctl <socket>` sends the lines of its stdin, a batch, over one connection; a line that
+  is not UTF-8 is sent as it is, and gets its `err` reply. The editor runs them one a frame. When
+  the author takes control during a batch, the next edit gets the refusal, which tells the agent
+  to stop and wait for the author's instructions, the editor ends the connection, and the batch's
+  other lines are not sent.
 - It exits 0 when every reply is `ok`, a blank line or a comment getting none; 1 when a reply is
-  `err`; 2 when the socket cannot be reached, or the editor ends the connection before a reply.
+  `err`, also when the editor then ends the connection, as after a take-over; 2 when the socket
+  cannot be reached, or stdin or the connection fails before any `err`, as when the editor is
+  closed. A line holding a newline is refused before it is sent.
 - The paths of `save`, `load` and `render` are relative to the editor's working directory, not to
   the client's; an asset's path is relative to the directory of the presentation last saved or
   loaded, as below.
 
 `control` asks for the authority to edit a running editor, and `release` gives it back, refused
-while a group is open; headless, `control` replies `ok`, since a headless session has one
+while the client holding it has a group open; headless, `control` replies `ok`, since a headless session has one
 controller.
 
 The paths of `save`, `load` and `render` are relative to the working directory. An asset's path is

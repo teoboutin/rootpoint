@@ -27,9 +27,22 @@ impl Connection {
     /// error, as when the window was closed, or ended the connection after the refusal of a
     /// take-over, so a batch stops there.
     pub fn send(&mut self, line: &str) -> io::Result<Option<String>> {
-        self.out.write_all(line.as_bytes())?;
+        self.send_bytes(line.as_bytes())
+    }
+
+    /// `send` for a line given as bytes, which need not be UTF-8: the window replies to such a
+    /// line with the `err` reply `read_line` gives it. A line holding a newline is refused, since
+    /// the window would read two lines where the client waits for one reply.
+    pub fn send_bytes(&mut self, line: &[u8]) -> io::Result<Option<String>> {
+        if line.contains(&b'\n') {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "a line holds a newline",
+            ));
+        }
+        self.out.write_all(line)?;
         self.out.write_all(b"\n")?;
-        if read_line(line.as_bytes()).is_none() {
+        if read_line(line).is_none() {
             return Ok(None);
         }
         let mut reply = String::new();

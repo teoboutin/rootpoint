@@ -72,7 +72,7 @@ grip, the preview line of a split, the hint of a drop, and the caret, the select
 composition's underline of a text edited in place are drawn with egui's painter over the texture,
 in `App::overlay`; the marks of a gesture are not drawn while the control socket holds the
 authority to edit, `design@rootpoint-app@one-controller-at-a-time`. The banner of the control
-socket and its button "Take control", `design@rootpoint-app@control-passing`, are egui widgets, in
+socket and its button "Take control", `design@rootpoint-app@take-over-at-once`, are egui widgets, in
 presenter mode over the texture and never in its image. `render_slide` draws only the slide, so the
 image presenter mode shows
 is the editor's, pixel for pixel at one size, which `path@rootpoint-app@tests/presenter.rs`
@@ -264,39 +264,47 @@ ends it, removing the composing text.
 With `--control <path>`, the window listens on a Unix domain socket at that path,
 `rootpoint_app::control::Listener`. Each connection has a thread of its own, which reads one line,
 queues it on a channel to the GUI's thread, calls the window's wake-up, and waits for the reply
-before it reads the next; `App::frame` drains the channel first, so only the GUI's thread touches
-the session, and every command runs through `App::run` as the window's own do,
-`design@rootpoint-app@actions-are-commands`. The wake-up is `Context::request_repaint`, which eframe
-lets another thread call, `design@rootpoint-app@gui-toolkit`, so an idle window draws a frame for a
+before it reads the next; `App::frame` takes the lines queued when it starts, at most one per
+connection, so a batch runs one line a frame, and only the GUI's thread touches the session. Every
+command runs through `App::run` as the window's own do, `design@rootpoint-app@actions-are-commands`,
+but the queries, which change nothing. The wake-up is `Context::request_repaint`, which eframe lets
+another thread call, `design@rootpoint-app@gui-toolkit`, so an idle window draws a frame for a
 line. The lines are the protocol's, `design@rootpoint-protocol@protocol-transport`, and its rule
 for one line, `read_line`, is the one `rootpoint-headless` follows; a line with no command gets no
-reply. The queries `tree`, `view` and `render` run on the session without `App::run`, so they
-neither set the status line nor make the next frame render the slide again. A connection carries
-any number of lines, a batch, `design@rootpoint-app@socket-batch`.
-
-The socket is replaced only when it is a socket nothing answers, as a run killed by a signal
-leaves it; a socket that answers is another window's, and any other file at the path is refused and
-kept, since an author who mistakes a presentation for the socket's path would otherwise lose it.
-The window removes the socket's file when it closes, if it is still the one it bound. The listener
-is native only: the browser build has no socket, and its window holds the authority to edit always.
+reply. A connection carries any number of lines, a batch, `design@rootpoint-app@socket-batch`. The
+listener is built on Unix only: the browser build has no socket, and its window holds the
+authority to edit always.
 
 So an agent drives the running window as `goal@rootpoint-app@live-agent-edits` asks, and the
 session stays the one state, as `goal@rootpoint@headless-core` asks of every operation. The lines
 go to the session and not the session to the lines, since eframe gives the app, which owns the
 session, to the GUI's thread alone, as `&mut self` of `eframe::App::ui`.
 
+### The window replaces only a socket nothing answers, and refuses any other file at its path `##only-a-stale-socket-is-replaced`
+
+At start, a socket at the path that accepts a connection is another window's, and the window
+refuses to start; a socket that refuses connections is left by a run that ended, as a run killed
+by a signal leaves it, and is removed before the bind; a socket that fails to connect for another
+reason, and any file that is no socket, is refused and kept. The window removes the socket's file
+when it closes, if it is still the one it bound, by its inode. The rival, removing whatever refuses
+a connection, deleted the presentation an author gave as the socket's path, since a regular file
+refuses a connection too. The window's bind is not atomic against another window that starts at
+the same moment on the same path, `issue@rootpoint-app@two-windows-bind-one-path`.
+
 ### The window and its control socket are two controllers, and one holds the authority to edit at a time `##one-controller-at-a-time`
 
-The window holds the authority to edit at start; `control` gives it to the socket, and `release`
-or the take-over, `design@rootpoint-app@control-passing`, gives it back. The socket counts as one
-controller, every connection together, since `rootpoint-ctl` opens one connection per command and
-an authority held by a connection would end at each,
-`rejected@rootpoint-app@control-per-connection`.
-While the socket holds it, every action of `path@rootpoint-app@src/actions.rs` that changes the
-document returns at once, `App::edit_at` with them, and the window draws no mark of a gesture: no
-divider highlight, no resize cursor, no grip, no preview line, no drop line in the slide list.
-While the window holds it, every command of the socket but the queries replies
-`err the window has control`, or the refusal of a take-over.
+The window holds the authority to edit at start, so a window just opened is the author's,
+`rejected@rootpoint-app@socket-holds-control-at-start`; the socket asks for it with `control`,
+`design@rootpoint-app@control-passing`, and the window takes it back by its button,
+`design@rootpoint-app@take-over-at-once`. The socket counts as one controller, every connection
+together: an authority held by a connection would end with it, at every command a client sends
+on a connection of its own, as `rootpoint-ctl <socket> <words>…` does, and between two batches,
+`rejected@rootpoint-app@control-per-connection`. While the socket holds it, every action of
+`path@rootpoint-app@src/actions.rs` that changes the document returns at once, `App::edit_at`
+with them, and the window draws no mark of a gesture: no divider highlight, no resize cursor, no
+grip, no preview line, no drop line in the slide list. While the window holds it, every command of
+the socket but the queries, `control` and `release` replies `err the window has control`, or the
+refusal of a take-over.
 
 Two exceptions keep looking free. The socket's queries, `tree`, `view` and `render`, need no
 authority, since they apply no operation and join no group. The window's inputs that change only
@@ -315,49 +323,63 @@ no reconciling of two edits at one place, which `goal@rootpoint@minimal-content-
 scope. The rival, a group per client in the session, `rejected@rootpoint-protocol@group-per-client`,
 reopens that head and orders the undo stack out of the order of the edits.
 
-On the owner's word: the owner proposed the two controllers with one holding the authority to edit,
-for an agent that makes the changes the author asks for while the author watches and can interrupt,
-which `goal@rootpoint-app@live-agent-edits` states; and proposed that the window's inputs that only
-change the view stay usable, so the author inspects the slides while the agent edits.
+On the owner's word: the owner proposed the two controllers, one with the authority to edit at a
+time, each able to ask the other for it, for an agent that makes the changes the author asks for
+while the author watches and can interrupt, which `goal@rootpoint-app@live-agent-edits` states; and
+asked whether the window's inputs that only change the view could stay usable, so the author
+inspects the slides while the agent edits, which the owner approved.
 
-### The take-over is immediate, and the socket's request for the authority is granted at once `##control-passing`
+### The window takes the authority back at once, by a button, closing the socket's open group with `end` `##take-over-at-once`
 
-The button "Take control" takes the authority back at once, closing with `end` a group the socket
-left open, so its edits are one undo step that one undo reverts, where `cancel` would erase what the
-author watched happen. It sits in a banner over the toolbar, and in presenter mode in a corner, over
-the slide's texture and never in its image, `design@rootpoint-app@editor-overlay`; Esc takes no
-authority, and keeps leaving presenter mode. After a take-over, each edit of the socket replies
+The button "Take control" takes the authority back at once: an interrupt that needed the agent's
+consent would not be one, and `goal@rootpoint-app@live-agent-edits` asks that the author interrupt
+the agent at any moment, by hand, and take the work over with no typed command. It closes with
+`end` a group the socket left open, so its edits are one undo step that one undo reverts, where
+`cancel` would erase what the author watched happen. It sits in a banner over the toolbar, and in
+presenter mode in a corner, over the slide's texture and never in its image,
+`design@rootpoint-app@editor-overlay`; Esc takes no authority, and keeps its one meaning, leaving.
+After a take-over, each edit of the socket replies
 `err the author took control: stop, and wait for the author's instructions`, until its next
-`control`, and the window ends that connection after the refusal, so a batch stops there.
+`control`, and the refusal ends its connection, `design@rootpoint-app@socket-batch`.
 
-The socket's `control` is granted at once, also after a take-over: it ends the window's gestures as
-any action of the window does, a stay with its edits one undo step, a divider drag as at its
-release, a grip drag cancelled, since its edits are made only at its drop. `release` gives the
-authority back while the socket holds it, and is refused while a group is open; while the socket
-holds none, it replies `ok` and changes nothing, so the refusal after a take-over lasts.
+On the owner's word: the owner proposed the corner button in presenter mode, since the owner might
+want to leave presenter mode without taking control, and judged that a real talk would not happen
+under an agent's control, so the button costs a talk nothing.
 
-An interrupt that needed the agent's consent would not be one, so the take-over is one click. On
-the owner's word: the owner chose the request granted at once over a request refused until the
-author gives the authority back and over one granted only while the window has no gesture open,
-`rejected@rootpoint-app@control-when-idle`, on the owner's workflow, where the author adjusts by
-hand
-after the agent's `release` and takes control only to interrupt; and chose, for a request right
-after a take-over, the refusal that tells the agent to stop and wait over a button "Give control"
-the author would click to hand back, `rejected@rootpoint-app@give-control-button`, judging that in
-principle this should be enough, since in the owner's view agents rarely misbehave so nowadays,
-and choosing to try it first. The owner proposed the corner button in presenter mode, wanting to
-leave presenter mode without taking control, and judging that a real talk is never under an
-agent's control, so the button costs a talk nothing. `tripwire@rootpoint-app@control-ends-a-gesture`
-and `tripwire@rootpoint-app@agent-takes-control-back` watch the two choices.
+### The socket's request for the authority is granted at once, also right after a take-over `##control-passing`
+
+The socket's `control` is granted at once: it ends the window's gestures as any action of the
+window does, a stay with its edits one undo step, a divider drag as at its release, a grip drag
+cancelled, since its edits are made only at its drop. Right after a take-over it is granted too,
+and the refusal of the agent's edits, `design@rootpoint-app@take-over-at-once`, is what tells a
+well-behaved agent to stop and wait. `release` gives the authority back as
+`design@rootpoint-protocol@control-commands` says, while the socket holds it; while the socket
+holds none, it replies `ok` and changes nothing, so the refusal after a take-over lasts, and a
+group the window holds open is no concern of the socket's.
+
+On the owner's word: the owner chose the request granted at once, judging it fits the owner's
+workflow best, over a request refused until the author gives the authority back,
+`rejected@rootpoint-app@request-refused-until-handed-back`, and over one granted only while the
+window has no gesture open, `rejected@rootpoint-app@control-when-idle`. The owner expects to take
+control to interrupt the agent, to ask a question, change the instructions or correct a mistake
+early, and to adjust by hand after the agent's `release`, so a request mostly comes when the
+author is in no gesture. For a request right after a take-over, the owner chose the refusal that
+tells the agent to stop and wait over a button "Give control" the author would click to hand back,
+`rejected@rootpoint-app@give-control-button`, judging that in principle it should be enough, since
+in the owner's view agents rarely misbehave so nowadays, and choosing to try it first.
+`tripwire@rootpoint-app@control-ends-a-gesture` and `tripwire@rootpoint-app@agent-takes-control-back`
+watch the two choices.
 
 ### A connection to the control socket carries a batch, which a take-over ends with one refusal `##socket-batch`
 
-A client sends a task's edits over one connection, and the window runs them one at a time, between
-its frames, so the author sees each edit as it is made and a take-over falls between two. The
-refusal of a take-over is written once and ends the connection, so the batch's other lines are
-never sent. `rootpoint-ctl <socket>` with no words is such a client,
-`design@rootpoint-protocol@ctl-exits-by-replies`.
+A client sends a task's edits over one connection, and the window runs them one a frame, so the
+author sees each edit as it is made, as `goal@rootpoint-app@live-agent-edits` asks, and a take-over
+falls between two. The refusal of a take-over, and it alone, is written once and ends the
+connection, so the batch's other lines are dropped, never run; a query's own error ends nothing.
+`rootpoint-ctl <socket>` with no words is such a client,
+`design@rootpoint-protocol@ctl-sends-a-line-or-a-batch`.
 
-The rival, one connection per command, costs an agent a round trip for each edit and answers a
-take-over with as many refusals as the agent's script has lines left. On the owner's word: the owner
-weighed one edit at a time as less efficient for an agent, and chose the batch for the prototype.
+The rival, one connection per command, `rejected@rootpoint-app@connection-per-command`, costs an
+agent a round trip for each edit and answers a take-over with as many refusals as the agent's
+script has lines left. On the owner's word: the owner judged that restricting an agent to one edit
+at a time seems a less efficient method.

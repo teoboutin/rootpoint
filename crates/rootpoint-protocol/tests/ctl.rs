@@ -1,7 +1,8 @@
-//! `rootpoint-ctl` sends one line to a control socket, prints its reply, and exits by it: 0 on
-//! `ok` and on no reply, 1 on `err`, 2 when the socket cannot be reached. The listener here is the
-//! test's own, which answers each line with a reply fixed by the line, so the binary is judged
-//! alone, with no window.
+//! `rootpoint-ctl` sends one line from its arguments, or a batch from its stdin, to a control
+//! socket, prints each reply, and exits by them, per
+//! `design@rootpoint-protocol@ctl-sends-a-line-or-a-batch`. The listeners here are the tests' own,
+//! which answer each line with a reply fixed by the line, so the binary is judged alone, with no
+//! window.
 
 mod common;
 
@@ -55,7 +56,7 @@ fn it_prints_the_reply_and_exits_by_it() {
 }
 
 #[test]
-fn it_exits_2_when_the_socket_cannot_be_reached_or_no_command_is_given() {
+fn it_exits_2_when_the_socket_cannot_be_reached() {
     let path = socket_dir("ctl-none").join("rp.sock");
     assert_eq!(ctl(&[path.to_str().unwrap(), "tree"]).0, 2);
     assert_eq!(ctl(&[path.to_str().unwrap()]).0, 2);
@@ -109,4 +110,61 @@ fn a_batch_on_stdin_goes_over_one_connection_and_stops_at_its_end() {
     );
     assert_eq!(*seen.lock().unwrap(), 1, "one connection");
     assert!(!received.lock().unwrap().contains(&"three".to_owned()));
+}
+
+/// A line of the batch that is not UTF-8 is sent as it is, and gets its reply; the batch goes on.
+/// A line that holds a newline is refused by the client before anything is sent.
+#[test]
+fn a_line_that_is_not_utf8_goes_on_and_a_line_with_a_newline_is_refused() {
+    use std::io::Write as _;
+    use std::sync::{Arc, Mutex};
+    let path = socket_dir("ctl-bytes").join("rp.sock");
+    let socket = UnixListener::bind(&path).unwrap();
+    let received = Arc::new(Mutex::new(Vec::new()));
+    let lines = received.clone();
+    thread::spawn(move || {
+        for stream in socket.incoming() {
+            let mut stream = stream.unwrap();
+            for line in BufReader::new(stream.try_clone().unwrap()).split(b'\n') {
+                let line = line.unwrap();
+                let text = String::from_utf8_lossy(&line).into_owned();
+                lines.lock().unwrap().push(text.clone());
+                let reply = match String::from_utf8(line) {
+                    Ok(_) => format!("ok {text}"),
+                    Err(_) => "err the line is not UTF-8".to_owned(),
+                };
+                writeln!(stream, "{reply}").unwrap();
+            }
+        }
+    });
+    let mut child = Command::new(env!("CARGO_BIN_EXE_rootpoint-ctl"))
+        .arg(&path)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"one\n\xff\ntwo\n")
+        .unwrap();
+    let out = child.wait_with_output().unwrap();
+    assert_eq!(out.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8(out.stdout).unwrap(),
+        "ok one\nerr the line is not UTF-8\nok two\n"
+    );
+    let mut connection = rootpoint_protocol::control::Connection::open(&path).unwrap();
+    assert_eq!(
+        connection.send("# note\nadd-slide").err().map(|e| e.kind()),
+        Some(std::io::ErrorKind::InvalidInput)
+    );
+    assert!(
+        !received
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|l| l.contains("add-slide"))
+    );
 }

@@ -250,8 +250,8 @@ impl Session {
             // A session run headless has one controller, which holds the authority to edit; an
             // editor's host decides who holds it before the command reaches the session.
             Command::Control => Ok(String::new()),
-            // Refused in every host while a group is open, so that a script's replies are the same
-            // in a window and headless.
+            // Refused while a group is open, so that a script that holds the authority gives the
+            // same replies in a window and headless, `design@rootpoint-protocol@control-commands`.
             Command::Release => match self.group {
                 Some(_) => Err("a group is open".to_owned()),
                 None => Ok(String::new()),

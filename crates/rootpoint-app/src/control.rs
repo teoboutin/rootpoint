@@ -1,12 +1,14 @@
 //! The window's control socket, per `design@rootpoint-app@control-socket`: a Unix domain socket whose
 //! every line goes to the GUI's thread, which runs it on the one session and sends the reply back.
 //! The session is touched by the GUI's thread alone; each connection's thread only carries lines.
-//! Native only: the browser build has no socket.
+//! Unix only: the socket is a Unix domain socket, and the browser build has none.
 
 use std::io::{self, BufRead, BufReader, Write};
 use std::os::unix::fs::{FileTypeExt, MetadataExt};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
@@ -28,13 +30,15 @@ pub(crate) struct Answer {
     pub close: bool,
 }
 
-/// A socket the window listens on. Dropping it removes the socket's file, if the file is still
-/// this socket's; its threads end when their connections do.
+/// A socket the window listens on. Dropping it ends its accept thread and removes the socket's
+/// file, if the file is still this socket's; the connections' threads end with their connections.
 pub struct Listener {
     path: PathBuf,
     /// The socket file's inode, so that dropping the listener removes no other window's socket.
     inode: u64,
     requests: Receiver<Request>,
+    /// Set when the listener is dropped, so its accept thread stops at its next connection.
+    closed: Arc<AtomicBool>,
 }
 
 impl Listener {
@@ -51,20 +55,32 @@ impl Listener {
                     format!("{} exists and is no socket", path.display()),
                 ));
             }
-            if UnixStream::connect(path).is_ok() {
-                return Err(io::Error::new(
-                    io::ErrorKind::AddrInUse,
-                    format!("another window listens at {}", path.display()),
-                ));
+            match UnixStream::connect(path) {
+                Ok(_) => {
+                    return Err(io::Error::new(
+                        io::ErrorKind::AddrInUse,
+                        format!("another window listens at {}", path.display()),
+                    ));
+                }
+                // Only a socket that refuses connections is a stale one; any other error, as a
+                // socket the user may not open, leaves the file as it is.
+                Err(e) if e.kind() == io::ErrorKind::ConnectionRefused => {
+                    std::fs::remove_file(path)?;
+                }
+                Err(e) => return Err(e),
             }
-            std::fs::remove_file(path)?;
         }
         let socket = UnixListener::bind(path)?;
         let inode = std::fs::symlink_metadata(path)?.ino();
         let (sender, requests) = mpsc::channel();
-        let wake = std::sync::Arc::new(wake);
+        let wake = Arc::new(wake);
+        let closed = Arc::new(AtomicBool::new(false));
+        let stop = closed.clone();
         thread::spawn(move || {
             for stream in socket.incoming() {
+                if stop.load(Ordering::SeqCst) {
+                    return;
+                }
                 let Ok(stream) = stream else { continue };
                 let (sender, wake) = (sender.clone(), wake.clone());
                 thread::spawn(move || serve(stream, &sender, &*wake));
@@ -74,17 +90,25 @@ impl Listener {
             path: path.to_owned(),
             inode,
             requests,
+            closed,
         })
     }
 
-    /// The lines received since the last call, in the order they came.
-    pub(crate) fn pending(&self) -> impl Iterator<Item = Request> + '_ {
-        self.requests.try_iter()
+    /// The lines queued when it is called, in the order they came: at most one per connection,
+    /// since a connection's thread waits for a line's reply before it reads the next, so a batch
+    /// runs one line a frame. Taken at once, not read lazily while the frame runs them, since a
+    /// lazy read takes a connection's next line in the same frame when it comes in time.
+    pub(crate) fn pending(&self) -> Vec<Request> {
+        self.requests.try_iter().collect()
     }
 }
 
 impl Drop for Listener {
     fn drop(&mut self) {
+        // A connection of its own wakes the accept thread, which then sees the flag and ends,
+        // closing the listening socket.
+        self.closed.store(true, Ordering::SeqCst);
+        let _ = UnixStream::connect(&self.path);
         if std::fs::symlink_metadata(&self.path).is_ok_and(|m| m.ino() == self.inode) {
             let _ = std::fs::remove_file(&self.path);
         }
@@ -139,12 +163,18 @@ impl crate::App {
                     close: false,
                 },
                 Some(Ok(command)) => {
-                    let taken = self.controller == Controller::TakenFromSocket;
+                    // The refusal of a take-over, and it alone, ends its connection, dropping the
+                    // rest of a batch; a query's own error, after a take-over, ends nothing.
+                    let close = self.controller == Controller::TakenFromSocket
+                        && !matches!(
+                            command,
+                            Command::Tree { .. }
+                                | Command::View
+                                | Command::Render { .. }
+                                | Command::Control
+                                | Command::Release
+                        );
                     let reply = self.socket_command(command);
-                    // The refusal of a take-over ends its connection, dropping the rest of a batch.
-                    let close = taken
-                        && self.controller == Controller::TakenFromSocket
-                        && matches!(reply, Reply::Err(_));
                     Answer {
                         reply: Some(reply.to_string()),
                         close,

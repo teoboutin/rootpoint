@@ -5,6 +5,7 @@
 //! headless runner's are.
 
 use rootpoint_app::App;
+#[cfg(unix)]
 use rootpoint_app::control::Listener;
 use rootpoint_protocol::Files;
 
@@ -52,6 +53,10 @@ fn main() -> eframe::Result {
         "rootpoint",
         eframe::NativeOptions::default(),
         Box::new(move |cc| {
+            // The control socket is a Unix domain socket; elsewhere `--control` opens none.
+            #[cfg(not(unix))]
+            let _ = (cc, socket);
+            #[cfg(unix)]
             if let Some(socket) = socket {
                 // The socket's thread wakes the window for each line, through the repaint that
                 // eframe lets any thread request.

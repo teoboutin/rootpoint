@@ -14,11 +14,12 @@ on a socket no path reaches, while its author believes it is driven.
 
 ### What
 
-In `path@rootpoint-app@src/control.rs`, `Listener::bind` reads the path's metadata, connects to it
+In `path@rootpoint-app@src/control.rs`, `Listener::bind`, which
+`design@rootpoint-app@only-a-stale-socket-is-replaced` describes, reads the path's metadata, connects to it
 to tell another window's live socket from a stale one, removes a stale one, then calls
 `UnixListener::bind`. Between the removal and the bind, another `Listener::bind` on the same path
-can run the same steps. Measured by the review of the slice that built the socket, with a test not
-committed:
+can run the same steps. Measured by the review of the slice that built the socket, on the owner's Intel Core Ultra 7 165H,
+with a test not committed:
 
 ```rust
 // Two threads behind a barrier each call Listener::bind on a path that holds a stale socket,
@@ -31,7 +32,11 @@ for _ in 0..200 {
         let (path, barrier) = (path.clone(), barrier.clone());
         std::thread::spawn(move || { barrier.wait(); Listener::bind(&path, || {}) })
     }).map(|t| t.join().unwrap()).collect::<Vec<_>>();
-    // count the rounds where both are Ok, then drop both and remove the path
+    if both.iter().all(|b| b.is_ok()) {
+        rounds_both_bound += 1; // declared before the loop: let mut rounds_both_bound = 0;
+    }
+    drop(both);
+    let _ = std::fs::remove_file(&path);
 }
 ```
 

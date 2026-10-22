@@ -87,7 +87,8 @@ pub enum Command {
     /// Ask for the authority to edit a running editor, which its window or its control socket
     /// holds; a headless session has one controller, which always holds it.
     Control,
-    /// Give the authority to edit back to the window; refused while a group is open.
+    /// Give the authority to edit back to the window; refused while the client holding it has a
+    /// group open.
     Release,
     /// Select a node, and show its slide.
     Select {

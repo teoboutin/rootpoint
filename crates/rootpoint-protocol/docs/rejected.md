@@ -47,3 +47,10 @@ the authority a pair of verbs.
 `design@rootpoint-protocol@protocol-transport` calls the crate's interface to every program that
 drives rootpoint, and a script holding them would not run headless.
 `design@rootpoint-protocol@control-commands` puts them in the grammar.
+
+### A `release` that closes the client's open group, as `end` does `##release-closes-group`
+
+`live`. It adds a closer to the list of `design@rootpoint-protocol@gesture-undo`, which the
+protocol's clients consume, and when only the window closed the group and a headless session
+changed nothing, a script's replies differed between the two hosts.
+`design@rootpoint-protocol@control-commands` refuses a `release` while a group is open.
