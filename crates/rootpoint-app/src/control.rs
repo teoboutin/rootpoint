@@ -4,6 +4,7 @@
 //! Native only: the browser build has no socket.
 
 use std::io::{self, BufRead, BufReader, Write};
+use std::os::unix::fs::{FileTypeExt, MetadataExt};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver, Sender};
@@ -13,26 +14,43 @@ use rootpoint_protocol::{Command, Reply};
 
 use crate::Controller;
 
-/// One line received, as bytes, and where its reply goes: `None` for a line that is no command.
+/// One line received, as bytes, and where its answer goes.
 pub(crate) struct Request {
     pub line: Vec<u8>,
-    pub reply: Sender<Option<String>>,
+    pub reply: Sender<Answer>,
 }
 
-/// A socket the window listens on. Dropping it removes the socket's file; its threads end when
-/// their connections do.
+/// The answer to one line: its reply, `None` for a line that is no command, and whether the
+/// connection ends after it, as it does after the refusal of a take-over, so that the rest of a
+/// batch is dropped.
+pub(crate) struct Answer {
+    pub reply: Option<String>,
+    pub close: bool,
+}
+
+/// A socket the window listens on. Dropping it removes the socket's file, if the file is still
+/// this socket's; its threads end when their connections do.
 pub struct Listener {
     path: PathBuf,
+    /// The socket file's inode, so that dropping the listener removes no other window's socket.
+    inode: u64,
     requests: Receiver<Request>,
 }
 
 impl Listener {
-    /// Listen at `path`, calling `wake` once for each line received, before the GUI's thread reads
-    /// it, so a window idle on its event loop draws a frame for it. A path that accepts a
-    /// connection is another window's, and is refused; a path that refuses one is a socket left by
-    /// a run that ended, and is removed first.
+    /// Listen at `path`, calling `wake` once for each line received, after the line is queued for
+    /// the GUI's thread and before its reply, so a window idle on its event loop draws a frame for
+    /// it. A socket that accepts a connection is another window's, and is refused; a socket that
+    /// refuses one is left by a run that ended, as one killed by a signal leaves it, and is
+    /// removed first. Any other file at the path is refused, and left as it is.
     pub fn bind(path: &Path, wake: impl Fn() + Send + Sync + 'static) -> io::Result<Listener> {
-        if path.exists() {
+        if let Ok(meta) = std::fs::symlink_metadata(path) {
+            if !meta.file_type().is_socket() {
+                return Err(io::Error::new(
+                    io::ErrorKind::AlreadyExists,
+                    format!("{} exists and is no socket", path.display()),
+                ));
+            }
             if UnixStream::connect(path).is_ok() {
                 return Err(io::Error::new(
                     io::ErrorKind::AddrInUse,
@@ -42,6 +60,7 @@ impl Listener {
             std::fs::remove_file(path)?;
         }
         let socket = UnixListener::bind(path)?;
+        let inode = std::fs::symlink_metadata(path)?.ino();
         let (sender, requests) = mpsc::channel();
         let wake = std::sync::Arc::new(wake);
         thread::spawn(move || {
@@ -53,6 +72,7 @@ impl Listener {
         });
         Ok(Listener {
             path: path.to_owned(),
+            inode,
             requests,
         })
     }
@@ -65,13 +85,15 @@ impl Listener {
 
 impl Drop for Listener {
     fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.path);
+        if std::fs::symlink_metadata(&self.path).is_ok_and(|m| m.ino() == self.inode) {
+            let _ = std::fs::remove_file(&self.path);
+        }
     }
 }
 
 /// Carry one connection's lines to the GUI's thread, one at a time: a line is sent, then its reply
-/// is awaited and written before the next line is read. The connection closes at its end, or
-/// when the window is gone.
+/// is awaited and written before the next line is read. The connection closes at its end, after
+/// an answer that ends it, or when the window is gone.
 fn serve(stream: UnixStream, sender: &Sender<Request>, wake: &(dyn Fn() + Send + Sync)) {
     let Ok(mut out) = stream.try_clone() else {
         return;
@@ -83,14 +105,14 @@ fn serve(stream: UnixStream, sender: &Sender<Request>, wake: &(dyn Fn() + Send +
             return;
         }
         wake();
-        match answer.recv() {
-            Ok(Some(text)) => {
-                if writeln!(out, "{text}").is_err() {
-                    return;
-                }
-            }
-            Ok(None) => {}
-            Err(_) => return,
+        let Ok(answer) = answer.recv() else { return };
+        if let Some(text) = answer.reply
+            && writeln!(out, "{text}").is_err()
+        {
+            return;
+        }
+        if answer.close {
+            return;
         }
     }
 }
@@ -107,12 +129,29 @@ impl crate::App {
             return;
         };
         for request in listener.pending() {
-            let reply = match rootpoint_protocol::read_line(&request.line) {
-                None => None,
-                Some(Err(reply)) => Some(reply.to_string()),
-                Some(Ok(command)) => Some(self.socket_command(command).to_string()),
+            let answer = match rootpoint_protocol::read_line(&request.line) {
+                None => Answer {
+                    reply: None,
+                    close: false,
+                },
+                Some(Err(reply)) => Answer {
+                    reply: Some(reply.to_string()),
+                    close: false,
+                },
+                Some(Ok(command)) => {
+                    let taken = self.controller == Controller::TakenFromSocket;
+                    let reply = self.socket_command(command);
+                    // The refusal of a take-over ends its connection, dropping the rest of a batch.
+                    let close = taken
+                        && self.controller == Controller::TakenFromSocket
+                        && matches!(reply, Reply::Err(_));
+                    Answer {
+                        reply: Some(reply.to_string()),
+                        close,
+                    }
+                }
             };
-            let _ = request.reply.send(reply);
+            let _ = request.reply.send(answer);
         }
         self.listener = Some(listener);
     }
@@ -137,6 +176,9 @@ impl crate::App {
                 }
                 Reply::Ok(String::new())
             }
+            // A socket that holds no control has none to give back, and no group of its own; a
+            // refusal after a take-over lasts until the socket's next `control`.
+            Command::Release if self.controller != Controller::Socket => Reply::Ok(String::new()),
             Command::Release => {
                 let reply = self.session.run(Command::Release, &mut *self.files);
                 if matches!(reply, Reply::Ok(_)) {

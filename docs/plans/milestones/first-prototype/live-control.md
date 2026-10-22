@@ -38,15 +38,18 @@ O20 to O26, are quoted verbatim in their own section.
 ## Builds
 
 - `rootpoint [--control <path>] [presentation.ron]`: with `--control`, the native GUI listens on a
-  Unix domain socket at that path; a Windows build is not part of the prototype. At start, a path
-  that exists and accepts a connection is another window's, and the GUI exits with an error that
-  names it; a path that exists and refuses one is left from a run that ended, and is removed before
-  the bind. The socket's file is removed at exit. The usage line of `path@rootpoint-app@src/main.rs`
+  Unix domain socket at that path; a Windows build is not part of the prototype. At start, a socket
+  that accepts a connection is another window's, and the GUI exits with an error that names it; a
+  socket that refuses one is left from a run that ended, as a run killed by a signal leaves it, and
+  is removed before the bind; a path that holds any other kind of file is refused, and the file
+  kept. The socket's file is removed when the window closes, if it is still this window's socket.
+  `--control` with no path after it is an error. The usage line of `path@rootpoint-app@src/main.rs`
   and of `path@rootpoint-app@README.md` say so.
 - The listener, in the app's library, native only (`cfg(not(target_arch = "wasm32"))`, since the
   app crate joins the wasm gate in `spec@first-prototype@browser-build`):
   `rootpoint_app::control::Listener::bind(path, wake)`, where `wake` is a function the listener
-  calls once for each line it receives. An accept thread serves each connection on a thread of its
+  calls once for each line it receives, after the line is queued for the GUI's thread and before
+  its reply. An accept thread serves each connection on a thread of its
   own; a connection thread reads one line at a time, sends it over a channel to the GUI's thread,
   and waits for the reply before it reads the next. `App::listen(listener)` gives the listener to
   the app, which keeps its receiver; `App::frame` drains the channel at its start, before anything
@@ -55,15 +58,18 @@ O20 to O26, are quoted verbatim in their own section.
   context's `request_repaint`, which wakes the window from another thread, per
   `design@rootpoint-app@gui-toolkit`.
 - The binary `rootpoint-ctl <path> <words>…`, in the protocol crate: joins the words after the path
-  with single spaces into one line, sends it, prints the reply, and exits 0 on `ok` and on no reply,
-  1 on `err`, and 2 when it cannot connect. A line holding a quoted text is given as one word, as
-  `rootpoint-ctl /tmp/rp 'text n3 "two words"'`, and its doc comment says so. Its target reads
-  `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires. It is a thin `main` over a function of
-  the protocol crate's library,
-  `rootpoint_protocol::control::send(path: &Path, line: &str) -> io::Result<Option<String>>`:
-  `Ok(Some(reply))`, `Ok(None)` when the listener closed the
-  connection with no reply, `Err` when it could not connect. It is built on Unix only, so the wasm
-  gate never sees it. The app's tests drive the listener through that function, since cargo sets
+  with single spaces into one line, sends it, prints the reply, and exits 0 when every reply is
+  `ok`, a line with no command getting none, 1 when a reply is `err`, and 2 when it cannot connect
+  or the window ends the connection before a reply. A line holding a quoted text is given as one
+  word, as `rootpoint-ctl /tmp/rp 'text n3 "two words"'`. The protocol crate's README states this
+  contract, and the binary's doc comment points to it. Its target reads
+  `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires. It is a thin `main` over the protocol crate's
+  library, `rootpoint_protocol::control::Connection`, whose `send(&mut self, line: &str) ->
+  io::Result<Option<String>>` gives `Ok(Some(reply))`, `Ok(None)` for a line with no command,
+  which gets none, and `Err` when the connection ends before a command's reply, as when the window
+  is closed; `rootpoint_protocol::control::send(path, line)` opens a connection for one line. The
+  library's module is built on Unix only, so the wasm gate never sees it; on another platform the
+  binary says it runs on Unix only and exits 2. The app's tests drive the listener through that function, since cargo sets
   `CARGO_BIN_EXE_<name>` for a test only for a binary of the test's own package: measured at the
   plan's review, a test that reads the variable of a dependency's binary fails to compile.
 - A batch over one connection (`thread@first-prototype@socket-batch`): `rootpoint-ctl <socket>`
@@ -113,7 +119,10 @@ O20 to O26, are quoted verbatim in their own section.
     focus, since its edits are made only at its drop (`thread@first-prototype@control-passing`).
     A `control` after a take-over by the button is granted at once too, by D6 of the milestone
     document, ruled in O27;
-  - `release` replies as `Session::run` does, and on `ok` gives control to the window;
+  - `release`, while the socket holds control, replies as `Session::run` does, and on `ok` gives
+    control to the window; while it does not, `release` replies `ok` and changes nothing, so the
+    refusal after a take-over lasts, and a group the window holds open is no concern of the
+    socket's;
   - every other command, the view commands included, runs while the socket holds control, and
     otherwise replies `err the window has control` while the window holds control from the start
     or from a `release`, and
@@ -165,16 +174,17 @@ Each claim's test is shown to fail against a wrong implementation as its last se
 3. **The scripts of the protocol run through the socket.** After `control`, every script of
    `path@rootpoint-protocol@tests/scripts/` gives through the socket, one connection per line by
    `rootpoint_protocol::control::send`, the replies a `Session` gives it by `Session::execute` in
-   the test's own process, the function `rootpoint-headless` runs. Each script runs from an empty
+   the test's own process, by the rule `rootpoint-headless` follows, `read_line` then
+   `Session::run`. Each script runs from an empty
    session in a scratch directory of its own, with the window and the reference session each given
    a `Files` that resolves paths under its directory; `ids-readdress.txt` runs after `ids-build.txt`
    in the same directory, as it loads the file that one saves; `golden.txt` finds
-   `talk/two-colours.png` written there first, as `path@rootpoint-protocol@tests/files.rs` writes
-   it. Test: an app integration test, with `image` as a dev-dependency of the app crate for the
-   fixture. Fails when the socket drops a line, or a line with no command gets a reply: the reply
+   `talk/two-colours.png` copied there first, from `path@rootpoint-app@tests/data/two-colours.png`.
+   Test: an app integration test. Fails when the socket drops a line, or a line with no command gets a reply: the reply
    lists differ.
 4. **`rootpoint-ctl` prints the reply and exits by it.** It prints the reply line, exits 0 on `ok`
-   and on no reply, 1 on `err`, 2 when it cannot connect. Test: a protocol integration test runs the
+   and on no reply, 1 on `err`, 2 when it cannot connect; and `rootpoint_protocol::control::send`
+   of a command whose window closes before its reply is an error. Test: a protocol integration test runs the
    binary against a listener the test holds, which answers `ok`, `err` and nothing, and once with no
    listener. Fails when the exit codes are swapped: the assertion on each code fails.
 5. **Control passes as "Builds" says.** The window holds control at start; a socket edit without
@@ -191,12 +201,15 @@ Each claim's test is shown to fail against a wrong implementation as its last se
    then `control` and a socket `text` on another area, then the take-over and one `undo`, which
    must revert the socket's edit alone.
 6. **While the socket holds control, no window input runs a command but a view command and the
-   take-over.** Test, two parts. Every action of `path@rootpoint-app@src/actions.rs` that changes
-   the document, called as `path@rootpoint-app@tests/actions.rs` calls them, leaves the document and
-   the undo stack as they were while the socket holds control, and each view action changes the view
-   as with the window in control. Each pointer gesture of `path@rootpoint-app@tests/gestures.rs`,
-   and the entry into editing of `path@rootpoint-app@tests/editing.rs`, driven through `App::frame`
-   with the socket in control, changes nothing, and the frame draws no gesture mark. Fails against
+   take-over.** Test, three parts. Every action of `path@rootpoint-app@src/actions.rs` that changes
+   the document, and `App::edit_at`, called as `path@rootpoint-app@tests/actions.rs` calls them,
+   leave the document and the undo stack as they were while the socket holds control, and each view
+   action changes the view as with the window in control. The pointer gestures, driven through
+   `App::frame` with the socket in control, a divider drag, a double-click on a divider, a click
+   with Ctrl over the selection, a press on the grip and its drag, a drag of a row of the slide list,
+   and two clicks on a text area, change nothing and start no editing, and the click selects. The
+   frame draws no resize cursor over a divider, no grip and no preview line, each of which it draws
+   while the window holds control. Fails against
    the app before the guard is built: every edit applies.
 7. **`control` and `release` run headless.** `control` replies `ok` from `rootpoint-headless`;
    `release` replies `ok`, and `err a group is open` between a `begin` and its `end`; a script
@@ -278,10 +291,10 @@ Each claim's test is shown to fail against a wrong implementation as its last se
 2. **The line rule and the verbs `control` and `release`**, in the protocol crate: `read_line`,
    used by `Session::execute` and `rootpoint-headless`; the verbs parsed, printed and run, with
    their arms in `Session::run`, `Session::group_open`, and `rootpoint-ctl`. Claims 4 and 7, and the
-   protocol's existing tests unchanged. Fails alone on: the grammar. The commit that adds
-   `control::send` brings the line of `path@rootpoint-protocol@CLAUDE.md` that says only
-   `rootpoint-headless` touches the file system to what is then true: `control::send` and
-   `rootpoint-ctl` open a socket at a path.
+   protocol's existing tests unchanged. Fails alone on: the grammar. The commit of step 1, which
+   adds `control::send`, brings the line of `path@rootpoint-protocol@CLAUDE.md` that says only
+   `rootpoint-headless` touches the file system to what is then true: the client of the control
+   socket connects to a socket at a path.
 3. **Execution, with control.** Socket commands run on the GUI's session, by the rules of control,
    the command line of `rootpoint` included. Claims 1, 2, 3 and 5.
 4. **The window under the socket's control.** The guard on the actions, the table of inputs, the
@@ -851,14 +864,24 @@ harvest rewrites each, unless a step's commit says otherwise:
 - `design@rootpoint-app@editor-overlay`: its list of marks gains the banner and the button, and its
   marks of a gesture are not drawn while the socket holds control.
 - `path@rootpoint-app@CLAUDE.md`: the line that `App::presenter` draws nothing over the slide
-  becomes "nothing but the button 'Take control'"; and the line that an action not part of a
-  gesture closes any group still open, which says more than `App::end_gestures` does (it ends the
-  window's own gestures), is brought to the code and to the socket's group.
+  names the frame with its label and the button "Take control"; and the line that an action not
+  part of a gesture closes any group still open, which says more than `App::end_gestures` does (it
+  ends the window's own gestures), is brought to the code and to the socket's group. Both are
+  brought in the commits that change the code they state.
+- `design@rootpoint-app@actions-are-commands`: the take-over, `App::take_control`, is an action of
+  `path@rootpoint-app@src/actions.rs` whose command, `end`, is checked by
+  `path@rootpoint-app@tests/control.rs`, since it needs a socket, and not by
+  `path@rootpoint-app@tests/actions.rs`.
+- The comments that cite this spec as the home of a rule, as the doc comments of `Controller` and of
+  `App::socket_holds`, are re-pointed at the harvest to the design heads that record the rule; the
+  comment that a real talk is never under an agent's control, on the owner's word, is replaced by a
+  reference to the head that records it; and the labels "Claim 1" to "Claim 10" in the test
+  comments, which name items of this spec, are rewritten as the tests' own statements.
 - The doc comment of `App::presenter` in `path@rootpoint-app@src/lib.rs` and the description of
   presenter mode in `path@rootpoint-app@README.md`, which say "with no mark over it".
 - `path@rootpoint-app@README.md` and the doc comment of `path@rootpoint-app@src/main.rs`: the
   command line gains `--control`.
-- `path@rootpoint-protocol@CLAUDE.md`: brought to `control::send` in step 2.
+- `path@rootpoint-protocol@CLAUDE.md`: brought to `control::send` in step 1.
 - The other texts that cite `design@rootpoint-app@gesture-groups`, which stay true:
   `design@rootpoint-app@swap-gesture`,
   `issue@rootpoint-app@abandoned-composition-undo-step`, and the comments of
@@ -866,9 +889,9 @@ harvest rewrites each, unless a step's commit says otherwise:
   the harvest.
 - T5, `tripwire@rootpoint-protocol@client-joins-gui-group`, guards
   `design@rootpoint-protocol@gesture-undo`, which stands; its condition is prevented by the app, so
-  the harvest puts it to the owner, to keep or to remove. It cites this spec twice, and
-  `path@rootpoint-protocol@tests/common/mod.rs` cites it once; the commit that deletes this spec
-  rewrites each, the tripwire's as the owner rules.
+  the harvest puts it to the owner, to keep or to remove. Every text that cites this spec, which
+  `cargo klarch check` lists at its deletion, is rewritten by the commit that deletes it, the
+  tripwire's as the owner rules.
 
 ## Losing alternatives
 

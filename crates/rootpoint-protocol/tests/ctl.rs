@@ -10,7 +10,7 @@ use std::os::unix::net::UnixListener;
 use std::process::Command;
 use std::thread;
 
-use common::scratch;
+use common::socket_dir;
 
 /// Run `rootpoint-ctl` on `args`, and return its exit code and its stdout.
 fn ctl(args: &[&str]) -> (i32, String) {
@@ -27,7 +27,7 @@ fn ctl(args: &[&str]) -> (i32, String) {
 /// A listener that reads one line per connection and answers `ok <line>` to a line that starts
 /// with `good`, `err <line>` to one that starts with `bad`, and nothing to any other, then closes.
 fn listener(name: &str) -> std::path::PathBuf {
-    let path = scratch(name).join("rp.sock");
+    let path = socket_dir(name).join("rp.sock");
     let socket = UnixListener::bind(&path).unwrap();
     thread::spawn(move || {
         for stream in socket.incoming() {
@@ -56,7 +56,57 @@ fn it_prints_the_reply_and_exits_by_it() {
 
 #[test]
 fn it_exits_2_when_the_socket_cannot_be_reached_or_no_command_is_given() {
-    let path = scratch("ctl-none").join("rp.sock");
+    let path = socket_dir("ctl-none").join("rp.sock");
     assert_eq!(ctl(&[path.to_str().unwrap(), "tree"]).0, 2);
     assert_eq!(ctl(&[path.to_str().unwrap()]).0, 2);
+}
+
+/// Claim 10, the client: `rootpoint-ctl <socket>` sends the lines of its stdin over one
+/// connection and prints each reply; when the listener ends the connection after a refusal, the
+/// batch stops there, its later lines unsent, and the exit code is 1.
+#[test]
+fn a_batch_on_stdin_goes_over_one_connection_and_stops_at_its_end() {
+    use std::io::Write as _;
+    use std::sync::{Arc, Mutex};
+    let path = socket_dir("ctl-batch").join("rp.sock");
+    let socket = UnixListener::bind(&path).unwrap();
+    let (received, seen) = (Arc::new(Mutex::new(Vec::new())), Arc::new(Mutex::new(0)));
+    let (lines, connections) = (received.clone(), seen.clone());
+    thread::spawn(move || {
+        for stream in socket.incoming() {
+            *connections.lock().unwrap() += 1;
+            let mut stream = stream.unwrap();
+            for line in BufReader::new(stream.try_clone().unwrap()).lines() {
+                let line = line.unwrap();
+                lines.lock().unwrap().push(line.clone());
+                if line == "stop" {
+                    writeln!(stream, "err the author took control").unwrap();
+                    break;
+                }
+                if !line.starts_with('#') {
+                    writeln!(stream, "ok {line}").unwrap();
+                }
+            }
+        }
+    });
+    let mut child = Command::new(env!("CARGO_BIN_EXE_rootpoint-ctl"))
+        .arg(&path)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(b"one\n# a comment\ntwo\nstop\nthree\n")
+        .unwrap();
+    let out = child.wait_with_output().unwrap();
+    assert_eq!(out.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8(out.stdout).unwrap(),
+        "ok one\nok two\nerr the author took control\n"
+    );
+    assert_eq!(*seen.lock().unwrap(), 1, "one connection");
+    assert!(!received.lock().unwrap().contains(&"three".to_owned()));
 }

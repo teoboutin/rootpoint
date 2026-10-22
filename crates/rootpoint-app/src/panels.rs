@@ -126,9 +126,11 @@ impl App {
             if response.dragged() {
                 response.dnd_set_drag_payload(id);
             }
-            if response
-                .dnd_hover_payload::<SlideId>()
-                .is_some_and(|p| *p != id)
+            // While the socket holds control a row moves nothing, so it shows no drop line.
+            if !self.socket_holds()
+                && response
+                    .dnd_hover_payload::<SlideId>()
+                    .is_some_and(|p| *p != id)
             {
                 ui.painter().hline(
                     rect.x_range(),

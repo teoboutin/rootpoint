@@ -191,7 +191,7 @@ fn time_a_divider_drag_in_a_1600_by_900_view() {
 #[test]
 #[ignore]
 fn time_a_divider_drag_with_an_idle_control_socket() {
-    let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("idle-socket");
+    let dir = socket_dir("idle-socket");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let listener = rootpoint_app::control::Listener::bind(&dir.join("rp.sock"), || {}).unwrap();
@@ -269,7 +269,7 @@ fn time_a_divider_drag(mut app: App, label: &str) {
 /// Give the socket control of the driver's app: a listener bound in a scratch directory, and
 /// `control` sent from a thread while the driver shows frames.
 fn socket_takes_control(d: &mut Driver, name: &str) -> std::path::PathBuf {
-    let dir = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let dir = socket_dir(name);
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("rp.sock");
@@ -331,4 +331,15 @@ fn the_take_over_button_works_in_presenter_mode_and_leaves_the_slide_as_the_edit
     );
     d.frame(vec![], Modifiers::NONE);
     assert_eq!(d.app.take_control_rect(), None);
+}
+
+/// A directory for a socket: under the build's scratch directory, or under `/tmp` when that path
+/// would make a socket path longer than a Unix socket's address holds, 108 bytes.
+fn socket_dir(name: &str) -> std::path::PathBuf {
+    let base = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"));
+    if base.as_os_str().len() + name.len() + 10 < 100 {
+        base.join(name)
+    } else {
+        std::path::PathBuf::from("/tmp").join(format!("rootpoint-{}-{name}", std::process::id()))
+    }
 }

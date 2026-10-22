@@ -153,18 +153,6 @@ impl App {
         self.controller == Controller::Socket
     }
 
-    /// The button "Take control": the window takes the authority to edit back from the socket,
-    /// closing with `end` a group the socket left open, so its edits are one undo step.
-    pub fn take_control(&mut self) {
-        if self.controller != Controller::Socket {
-            return;
-        }
-        if self.session.group_open() {
-            self.run(Command::End);
-        }
-        self.controller = Controller::TakenFromSocket;
-    }
-
     pub fn session(&self) -> &Session {
         &self.session
     }
@@ -332,8 +320,9 @@ impl App {
 
     /// Presenter mode: the presented slide alone, scaled uniformly to the largest size that fits
     /// the window and letterboxed, rendered as the editor's slide view renders, with no mark over
-    /// it but, while the socket holds control, the button "Take control" in a corner. →, Space and
-    /// Page Down show the next slide, ← and Page Up the previous, and Esc leaves.
+    /// it but, while the socket holds control, a frame in a corner with its label and the button
+    /// "Take control". →, Space and Page Down show the next slide, ← and Page Up the previous, and
+    /// Esc leaves.
     fn presenter(&mut self, ui: &mut Ui) {
         let key = |ui: &mut Ui, key| ui.input_mut(|i| i.consume_key(Modifiers::NONE, key));
         if key(ui, Key::Escape) {
@@ -365,8 +354,8 @@ impl App {
                     ui.painter().image(texture.id(), rect, uv, Color32::WHITE);
                 }
             });
-        // A real talk is never under an agent's control, so a button over the slide's texture,
-        // never in its image, costs a talk nothing.
+        // On the owner's word, a real talk is never under an agent's control, so a button over
+        // the slide's texture, never in its image, costs a talk nothing.
         if self.socket_holds() {
             egui::Area::new(egui::Id::unique("take control"))
                 .anchor(egui::Align2::RIGHT_TOP, egui::Vec2::new(-8.0, 8.0))

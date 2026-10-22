@@ -88,3 +88,17 @@ pub fn scratch(name: &str) -> std::path::PathBuf {
     std::fs::create_dir_all(&dir).unwrap();
     dir
 }
+
+/// A directory for a socket, made empty: under the build's scratch directory, or under `/tmp` when that path
+/// would make a socket path longer than a Unix socket's address holds, 108 bytes.
+pub fn socket_dir(name: &str) -> std::path::PathBuf {
+    let base = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"));
+    let dir = if base.as_os_str().len() + name.len() + 10 < 100 {
+        base.join(name)
+    } else {
+        std::path::PathBuf::from("/tmp").join(format!("rootpoint-{}-{name}", std::process::id()))
+    };
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}

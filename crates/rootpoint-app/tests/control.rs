@@ -34,9 +34,20 @@ impl Files for NoFiles {
     }
 }
 
+/// A directory for a socket: under the build's scratch directory, or under `/tmp` when that path
+/// would make a socket path longer than a Unix socket's address holds, 108 bytes.
+fn socket_dir(name: &str) -> PathBuf {
+    let base = PathBuf::from(env!("CARGO_TARGET_TMPDIR"));
+    if base.as_os_str().len() + name.len() + 10 < 100 {
+        base.join(name)
+    } else {
+        PathBuf::from("/tmp").join(format!("rootpoint-{}-{name}", std::process::id()))
+    }
+}
+
 /// A socket path in a scratch directory of its own.
 fn socket(name: &str) -> PathBuf {
-    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join(name);
+    let dir = socket_dir(name);
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     dir.join("rp.sock")
@@ -193,7 +204,7 @@ fn a_socket_command_acts_as_the_window_action_and_the_window_undoes_it() {
 }
 
 /// Claim 3: every script of the protocol's tests gives through the socket the replies a session
-/// gives it, the function `rootpoint-headless` runs.
+/// gives it, by the rule `rootpoint-headless` follows, `read_line` then `Session::run`.
 #[test]
 fn the_protocol_scripts_give_the_same_replies_through_the_socket() {
     let scripts =
@@ -276,7 +287,8 @@ fn sample(name: &str) -> (App, PathBuf) {
 }
 
 /// Claim 5, `control` during a stay: the stay ends, its edits one undo step, and the socket's
-/// command on another area does not join it. The case T5 watches, from the milestone's premortem.
+/// command on another area does not join it: the case
+/// `tripwire@rootpoint-protocol@client-joins-gui-group` watches.
 #[test]
 fn control_ends_a_stay_and_the_socket_edit_is_a_step_of_its_own() {
     let (mut app, path) = sample("stay");
@@ -374,6 +386,9 @@ fn while_the_socket_holds_control_no_window_action_edits() {
     std::fs::create_dir_all(&dir).unwrap();
     let (mut app, path) = listening("frozen-actions", Box::new(DirFiles(dir.clone())));
     app.run(Command::Sample);
+    // Frames lay the slide view out, for `edit_at`.
+    one(&mut app, &path, "view");
+    one(&mut app, &path, "view");
     assert_eq!(one(&mut app, &path, "control"), "ok");
     let before = app.session().document().clone();
     let n3 = NodeId(3);
@@ -397,6 +412,22 @@ fn while_the_socket_holds_control_no_window_action_edits() {
     app.set_text_content();
     app.set_style(rootpoint_protocol::StyleOption::Bold(true));
     app.add_asset("missing.png".to_owned());
+    app.split_at(rootpoint_app::hit::Preview {
+        node: n3,
+        axis: rootpoint_model::Axis::LeftToRight,
+        at: 0.25,
+        side: rootpoint_model::Side::Before,
+        from: Default::default(),
+        to: Default::default(),
+    });
+    app.set_image(
+        rootpoint_model::AssetId(19),
+        rootpoint_model::ImageFit::Fill,
+    );
+    app.drop_grip(Some((NodeId(5), rootpoint_app::hit::Zone::Swap)));
+    let layout = app.layout().unwrap().clone();
+    app.edit_at(n3, layout.rect(n3).unwrap().center(), &layout);
+    assert_eq!(app.editing(), None);
     app.undo();
     app.redo();
     app.save_to("deck.ron".to_owned());
@@ -421,6 +452,20 @@ fn frame_with(
     time: &mut f64,
     events: Vec<eframe::egui::Event>,
 ) -> eframe::egui::CursorIcon {
+    frame_out(app, ctx, time, events, eframe::egui::Modifiers::NONE)
+        .platform_output
+        .cursor_icon
+}
+
+/// A frame of the app with input events and held modifiers, and its whole output.
+fn frame_out(
+    app: &mut App,
+    ctx: &Context,
+    time: &mut f64,
+    mut events: Vec<eframe::egui::Event>,
+    modifiers: eframe::egui::Modifiers,
+) -> eframe::egui::FullOutput {
+    events.insert(0, eframe::egui::Event::ModifiersChanged(modifiers));
     *time += 1.0 / 60.0;
     let input = RawInput {
         screen_rect: Some(Rect::from_min_size(Pos2::ZERO, Vec2::new(1000.0, 700.0))),
@@ -431,7 +476,7 @@ fn frame_with(
     };
     let mut out = ctx.run_ui(input, |ui| app.frame(ui));
     out.textures_delta.clear();
-    out.platform_output.cursor_icon
+    out
 }
 
 fn press(pos: Pos2, pressed: bool) -> Vec<eframe::egui::Event> {
@@ -513,4 +558,200 @@ fn while_the_socket_holds_control_no_pointer_gesture_edits() {
     );
     assert_eq!(app.session().document(), &before);
     assert!(!app.session().group_open());
+}
+
+/// Whether a frame's output fills a rectangle at `rect`, as the grip is drawn.
+fn fills(out: &eframe::egui::FullOutput, rect: Rect) -> bool {
+    out.shapes.iter().any(|c| match &c.shape {
+        eframe::egui::Shape::Rect(r) => {
+            r.rect == rect && r.fill != eframe::egui::Color32::TRANSPARENT
+        }
+        _ => false,
+    })
+}
+
+/// Whether a frame's output draws the line from `from` to `to`, as the preview of a split is.
+fn draws_line(out: &eframe::egui::FullOutput, from: Pos2, to: Pos2) -> bool {
+    out.shapes.iter().any(|c| match &c.shape {
+        eframe::egui::Shape::LineSegment { points, .. } => *points == [from, to],
+        _ => false,
+    })
+}
+
+/// Claim 6, the marks and the other gestures: while the socket holds control, the selected area's
+/// grip is not drawn, Ctrl over the selection draws no preview line and its click splits nothing,
+/// a double-click on a divider resets nothing, and a drag of a row of the slide list moves no
+/// slide. Each mark is drawn while the window holds control, which the test checks first.
+#[test]
+fn while_the_socket_holds_control_no_mark_of_a_gesture_is_drawn() {
+    use eframe::egui::{Event, Modifiers};
+    let (mut app, path) = sample("frozen-marks");
+    let (ctx, mut time) = (Context::default(), 0.0);
+    let n3 = NodeId(3);
+    app.select_node(n3);
+    // Whether a frame with Ctrl held over n3 fills its grip and draws the preview line, the
+    // places read from the layout of the frame before, since the banner moves the slide view.
+    let marks = |app: &mut App, time: &mut f64| {
+        for _ in 0..3 {
+            frame_with(app, &ctx, time, vec![]);
+        }
+        let layout = app.layout().unwrap().clone();
+        let r = layout.rect(n3).unwrap();
+        let at = Pos2::new(r.min.x + r.width() * 0.3, r.center().y);
+        let line = layout
+            .preview(n3, rootpoint_model::Axis::LeftToRight, at, false)
+            .unwrap();
+        let out = frame_out(
+            app,
+            &ctx,
+            time,
+            vec![Event::PointerMoved(at)],
+            Modifiers::COMMAND,
+        );
+        let drawn = (
+            fills(&out, layout.grip(n3).unwrap()),
+            draws_line(&out, line.from, line.to),
+        );
+        (drawn, at, layout)
+    };
+    assert_eq!(
+        marks(&mut app, &mut time).0,
+        (true, true),
+        "the window draws both marks"
+    );
+    assert_eq!(one(&mut app, &path, "control"), "ok");
+    let (drawn, at, layout) = marks(&mut app, &mut time);
+    assert_eq!(drawn, (false, false));
+    let before = app.session().document().clone();
+    let click = |pressed| Event::PointerButton {
+        pos: at,
+        button: eframe::egui::PointerButton::Primary,
+        pressed,
+        modifiers: Modifiers::COMMAND,
+    };
+    frame_out(
+        &mut app,
+        &ctx,
+        &mut time,
+        vec![click(true)],
+        Modifiers::COMMAND,
+    );
+    frame_out(
+        &mut app,
+        &ctx,
+        &mut time,
+        vec![click(false)],
+        Modifiers::COMMAND,
+    );
+    let d = &layout.dividers[0];
+    let on_divider = d.from + (d.to - d.from) / 2.0;
+    for _ in 0..2 {
+        frame_with(&mut app, &ctx, &mut time, press(on_divider, true));
+        frame_with(&mut app, &ctx, &mut time, press(on_divider, false));
+    }
+    let rows = app.slide_rows().to_vec();
+    let (from, to) = (rows[0].1.center(), rows[2].1.center());
+    frame_with(&mut app, &ctx, &mut time, press(from, true));
+    for i in 1..=10 {
+        let p = from + (to - from) * (i as f32 / 10.0);
+        frame_with(&mut app, &ctx, &mut time, vec![Event::PointerMoved(p)]);
+    }
+    frame_with(&mut app, &ctx, &mut time, press(to, false));
+    frame_with(&mut app, &ctx, &mut time, vec![]);
+    assert_eq!(app.session().document(), &before);
+}
+
+/// The listener refuses a path that holds another kind of file, and leaves the file as it is.
+#[test]
+fn a_path_that_holds_a_file_is_refused_and_the_file_kept() {
+    let path = socket("a-file");
+    std::fs::write(&path, b"precious").unwrap();
+    let bound = Listener::bind(&path, || {});
+    assert_eq!(
+        bound.err().map(|e| e.kind()),
+        Some(std::io::ErrorKind::AlreadyExists)
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), b"precious");
+}
+
+/// A listener whose socket file another window has replaced leaves that window's file at its end.
+#[test]
+fn a_listener_removes_no_other_windows_socket() {
+    let path = socket("replaced");
+    let first = Listener::bind(&path, || {}).unwrap();
+    std::fs::remove_file(&path).unwrap();
+    let second = Listener::bind(&path, || {}).unwrap();
+    drop(first);
+    assert!(path.exists(), "the second window's socket is kept");
+    drop(second);
+    assert!(!path.exists());
+}
+
+/// A command the window never ran, since it was closed first, is an error for its client, never
+/// the empty answer of a comment.
+#[test]
+fn a_command_the_window_closed_on_is_an_error() {
+    let (app, path) = listening("closed", Box::new(NoFiles));
+    let client = thread::spawn(move || send(&path, "add-slide"));
+    thread::sleep(Duration::from_millis(100));
+    drop(app);
+    let reply = client.join().unwrap();
+    assert_eq!(
+        reply.err().map(|e| e.kind()),
+        Some(std::io::ErrorKind::UnexpectedEof)
+    );
+}
+
+/// The refusal after a take-over lasts until the socket's next `control`, a `release` included,
+/// and a `release` while the window holds control, its own group open, is no error.
+#[test]
+fn the_refusal_after_a_take_over_lasts_until_control() {
+    let (mut app, path) = sample("refusal-lasts");
+    assert_eq!(one(&mut app, &path, "control"), "ok");
+    app.take_control();
+    assert_eq!(one(&mut app, &path, "release"), "ok");
+    assert_eq!(
+        one(&mut app, &path, "add-slide"),
+        "err the author took control: stop, and wait for the author's instructions"
+    );
+    assert_eq!(app.controller(), Controller::TakenFromSocket);
+    app.run(Command::Begin);
+    assert_eq!(one(&mut app, &path, "release"), "ok");
+    app.run(Command::End);
+}
+
+/// Claim 10: a batch runs over one connection, and a take-over between two of its lines ends it
+/// with one refusal; the lines after it reach no frame.
+#[test]
+fn a_take_over_ends_a_batch_with_one_refusal() {
+    use rootpoint_protocol::control::Connection;
+    let (mut app, path) = sample("batch");
+    let slides = app.session().document().slides.len();
+    let connection = Connection::open(&path).unwrap();
+    let (connection, first) = with_frames(&mut app, move || {
+        let mut connection = connection;
+        let replies: Vec<_> = ["control", "add-slide"]
+            .iter()
+            .map(|line| connection.send(line).unwrap())
+            .collect();
+        (connection, replies)
+    });
+    assert_eq!(first[0].as_deref(), Some("ok"));
+    assert!(first[1].as_deref().is_some_and(|r| r.starts_with("ok")));
+    app.take_control();
+    let rest = with_frames(&mut app, move || {
+        let mut connection = connection;
+        let refused = connection.send("add-slide");
+        let after = connection.send("add-slide");
+        (refused.unwrap(), after.err().map(|e| e.kind()))
+    });
+    assert_eq!(
+        rest.0.as_deref(),
+        Some("err the author took control: stop, and wait for the author's instructions")
+    );
+    assert!(
+        rest.1.is_some(),
+        "the connection is closed after the refusal"
+    );
+    assert_eq!(app.session().document().slides.len(), slides + 1);
 }

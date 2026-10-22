@@ -1,23 +1,56 @@
-//! The client side of a running editor's control socket: one line sent, one reply read. Unix only,
-//! since the socket is a Unix domain socket and the browser build has none.
+//! The client side of a running editor's control socket: lines sent, one reply read for each
+//! command. Unix only, since the socket is a Unix domain socket and the browser build has none.
 
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::Shutdown;
 use std::os::unix::net::UnixStream;
 use std::path::Path;
 
-/// Send one command line to the socket at `path` and read its reply: `Ok(Some(reply))`, or
-/// `Ok(None)` when the listener closed the connection with no reply, as it does for a blank line
-/// or a comment; `Err` when the socket cannot be reached. The client shuts down its side after the
-/// line, so the listener sees the end of the connection after it.
-pub fn send(path: &Path, line: &str) -> io::Result<Option<String>> {
-    let mut stream = UnixStream::connect(path)?;
-    stream.write_all(line.as_bytes())?;
-    stream.write_all(b"\n")?;
-    stream.shutdown(Shutdown::Write)?;
-    let mut reply = String::new();
-    if BufReader::new(stream).read_line(&mut reply)? == 0 {
-        return Ok(None);
+use crate::read_line;
+
+/// One connection to a control socket, which carries any number of lines, a batch, one at a time.
+pub struct Connection {
+    out: UnixStream,
+    replies: BufReader<UnixStream>,
+}
+
+impl Connection {
+    /// Connect to the socket at `path`; `Err` when it cannot be reached.
+    pub fn open(path: &Path) -> io::Result<Connection> {
+        let out = UnixStream::connect(path)?;
+        let replies = BufReader::new(out.try_clone()?);
+        Ok(Connection { out, replies })
     }
-    Ok(Some(reply.trim_end_matches('\n').to_owned()))
+
+    /// Send one line and read its reply: `Ok(None)` for a blank line or a comment, which gets
+    /// none, by the rule of `read_line`. A command whose connection ends with no reply is an
+    /// error, as when the window was closed, or ended the connection after the refusal of a
+    /// take-over, so a batch stops there.
+    pub fn send(&mut self, line: &str) -> io::Result<Option<String>> {
+        self.out.write_all(line.as_bytes())?;
+        self.out.write_all(b"\n")?;
+        if read_line(line.as_bytes()).is_none() {
+            return Ok(None);
+        }
+        let mut reply = String::new();
+        if self.replies.read_line(&mut reply)? == 0 {
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                "the window closed the connection with no reply",
+            ));
+        }
+        Ok(Some(reply.trim_end_matches('\n').to_owned()))
+    }
+}
+
+impl Drop for Connection {
+    fn drop(&mut self) {
+        let _ = self.out.shutdown(Shutdown::Both);
+    }
+}
+
+/// Send one line to the socket at `path` over a connection of its own, and read its reply, as
+/// `Connection::send` does.
+pub fn send(path: &Path, line: &str) -> io::Result<Option<String>> {
+    Connection::open(path)?.send(line)
 }

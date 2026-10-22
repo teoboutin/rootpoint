@@ -4,9 +4,15 @@ The editor of rootpoint, in a window: the binary `rootpoint`. `rootpoint [--cont
 [presentation.ron]` opens the presentation given, or an empty one. With `--control`, on Unix, the
 window listens on a socket at that path for the commands of the text protocol, which
 `rootpoint-ctl` of the protocol crate sends; the window exits with an error when another window
-listens there, and removes the socket when it closes. The window holds the authority to edit at
-start; `control` gives it to the socket, `release` gives it back, and the queries `tree`, `view`
-and `render` need none. The toolbar opens a presentation (Ctrl+O), saves it to its
+listens there, refuses a path that holds another kind of file, and removes the socket when it
+closes; a socket left by a run that was killed is replaced at the next start. The window holds the
+authority to edit at start; `control` gives it to the socket, `release` gives it back, and the
+queries `tree`, `view` and `render` need none. While the socket holds control, a banner over the
+toolbar says so beside a button "Take control", which takes it back; the window shows each change
+as it is made, and of the actions below it keeps only those that change the view: selecting by a
+click, Alt and the arrows or the breadcrumb, showing a slide of the list, and presenting. It
+draws no grip, no divider highlight and no preview line, and a click on the selected text area
+only selects it. The toolbar opens a presentation (Ctrl+O), saves it to its
 file (Ctrl+S) or to another, opens the built-in sample, presents, and undoes (Ctrl+Z) and redoes
 (Ctrl+Shift+Z or Ctrl+Y). A save copies beside the saved file every asset outside its directory,
 and every embedded one, as the protocol's `save` does. The window shows the
@@ -37,8 +43,8 @@ characters no font has, and text not drawn.
   area still selected, and a click outside the area leaves editing and acts as it does outside
   it. The edits of one stay in editing are one undo step.
 - Present (F5) shows the shown slide full screen, alone, as the editor's slide view renders it
-  with no mark over it, but for the button "Take control" in a corner while the control socket
-  holds control. →, Space and Page Down show the next slide, ← and Page Up the previous,
+  with no mark over it, but for a frame in a corner, with the label "The text protocol has
+  control" and the button "Take control", while the control socket holds control. →, Space and Page Down show the next slide, ← and Page Up the previous,
   and Esc returns to the editor.
 - The slide list shows each slide: a click shows it, a drag onto another row moves it there, and
   its buttons add a slide after the shown one, and remove or duplicate the shown one.

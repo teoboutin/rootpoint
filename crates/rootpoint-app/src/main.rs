@@ -34,6 +34,10 @@ fn main() -> eframe::Result {
     while let Some(arg) = args.next() {
         if arg == "--control" {
             socket = args.next();
+            if socket.is_none() {
+                eprintln!("--control needs the path of a socket");
+                std::process::exit(2);
+            }
         } else {
             presentation = Some(arg);
         }

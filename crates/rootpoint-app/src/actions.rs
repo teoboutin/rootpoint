@@ -9,7 +9,7 @@ use rootpoint_protocol::{Command, Reply, StyleOption};
 
 use crate::hit::{Edge, MIN_PART, Preview, Zone};
 use crate::selection::Move;
-use crate::{App, Gesture};
+use crate::{App, Controller, Gesture};
 
 impl App {
     /// Select a node: a click on an area, or on a breadcrumb entry.
@@ -164,9 +164,22 @@ impl App {
         matches!(self.run(Command::Begin), Reply::Ok(_))
     }
 
-    /// Before an edit that is no part of a gesture: close any group still open, a drag's or a
-    /// text's edited in place, so the edit is a step of its own. A button of the slide list or of
-    /// the side panel can be pressed while a text is edited.
+    /// The button "Take control": the window takes the authority to edit back from the socket,
+    /// closing with `end` a group the socket left open, so its edits are one undo step.
+    pub fn take_control(&mut self) {
+        if self.controller != Controller::Socket {
+            return;
+        }
+        if self.session.group_open() {
+            self.run(Command::End);
+        }
+        self.controller = Controller::TakenFromSocket;
+    }
+
+    /// Before an edit that is no part of a gesture: end the window's own gestures, a drag and a
+    /// text edited in place, closing their group, so the edit is a step of its own. A group the
+    /// control socket opened is closed by the socket or by the take-over, never here. A button of
+    /// the slide list or of the side panel can be pressed while a text is edited.
     pub(crate) fn end_gestures(&mut self) {
         self.release_drag();
         self.stop_editing();

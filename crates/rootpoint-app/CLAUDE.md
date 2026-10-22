@@ -15,8 +15,8 @@ size can change once after the first.
 
 Every editor mark is drawn by `App::overlay` over the texture, never into the image `App::draw`
 uploads, per `design@rootpoint-app@editor-overlay`; `App::presenter` renders through `App::draw`
-and draws nothing over it but, while the control socket holds control, the button "Take
-control" in a corner, and `path@rootpoint-app@tests/presenter.rs` compares its image with the
+and draws nothing over it but, while the control socket holds control, a frame in a corner with
+the label "The text protocol has control" and the button "Take control", and `path@rootpoint-app@tests/presenter.rs` compares its image with the
 editor's. `App::frame` asks the window for full screen whenever presenter mode starts, and to
 leave it when it ends.
 
@@ -30,9 +30,10 @@ the one with more.
 
 ## A gesture's undo group closes before another opens
 
-A gesture opens its group through `App::open_group`, which first closes any group still open, per
-`design@rootpoint-app@gesture-groups`. An action that does not join the gesture, as undo, an
-open, a save or presenting does, closes any group still open before it acts.
+A gesture opens its group through `App::open_group`, which first ends the window's gestures and
+closes their group, per `design@rootpoint-app@gesture-groups`. An action that does not join the
+gesture, as undo, an open, a save or presenting does, ends them too before it acts. A group the
+control socket opened is closed only by the socket or by the take-over, `App::take_control`.
 
 ## The tests find widgets by the places the last frame recorded
 
