@@ -66,6 +66,13 @@ O20 to O26, are quoted verbatim in their own section.
   gate never sees it. The app's tests drive the listener through that function, since cargo sets
   `CARGO_BIN_EXE_<name>` for a test only for a binary of the test's own package: measured at the
   plan's review, a test that reads the variable of a dependency's binary fails to compile.
+- A batch over one connection (`thread@first-prototype@socket-batch`): `rootpoint-ctl <socket>`
+  with no words reads lines from its stdin until its end and sends them over one connection,
+  printing each reply as it comes. The window runs them one by one, so each edit shows as it is
+  made and a take-over falls between two lines. When the window refuses a line because the author
+  took control, it writes that refusal once and closes the connection, so the batch's other lines
+  are dropped; `rootpoint-ctl` prints the refusal and exits 1. `rootpoint-ctl` exits 1 too when a
+  batch had any `err` reply.
 - One rule for a line, in the protocol crate's library, shared by `rootpoint-headless` and the
   listener: `rootpoint_protocol::read_line(bytes: &[u8]) -> Option<Result<Command, Reply>>` gives
   `None` for a blank line or a comment, the `err` reply `rootpoint-headless` gives today for a line
@@ -204,6 +211,14 @@ Each claim's test is shown to fail against a wrong implementation as its last se
    `path@rootpoint-app@tests/presenter.rs` compares them; and Esc leaves presenter mode with the
    socket keeping control. Test: additions to that file. Fails when the button is not drawn: the
    click leaves control with the socket.
+10. **A batch runs over one connection, and a take-over ends it with one refusal.** Lines piped
+   into `rootpoint-ctl <socket>` each get their reply; after a take-over between two lines, the next
+   line gets the refusal that says the author took control, the connection closes, and the lines
+   after it reach no frame. Test: an app integration test sends a batch over one connection, takes
+   control after its first reply, and finds one refusal and the document with the first line's edit
+   alone; and a protocol integration test runs the binary with a batch on stdin against a listener
+   the test holds. Fails when the connection stays open after the refusal: the next line gets a
+   second refusal.
 9. **An idle listener costs a divider drag no time beyond its recorded bound.** With a `Listener`
    given to the app and no line sent, the largest frame of the divider drag of
    `design@rootpoint-app@gui-toolkit` stays within 33 ms, AC2's bound, the recorded runs being 5.9
@@ -271,6 +286,9 @@ Each claim's test is shown to fail against a wrong implementation as its last se
    the command line of `rootpoint` included. Claims 1, 2, 3 and 5.
 4. **The window under the socket's control.** The guard on the actions, the table of inputs, the
    marks, the banner and the button. Claims 6 and 8.
+
+5. **A batch over one connection**, decided during the owner's trial of the slice: `rootpoint-ctl`
+   reading its stdin, and the connection closed after a take-over's refusal. Claim 10.
 
 The echo socket before the verbs: the verbs have nothing to carry without a transport. The verbs
 before execution: the rules of control take them as input. Execution before the window under the
@@ -453,6 +471,18 @@ applied the same rule to `release`; at the plan's review it replaced that clause
 refused while a group is open (`argument@first-prototype@arg-106`), argued. Harvest: judged on its
 own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at
 its code where none does.
+
+### A batch of lines goes over one connection, and a take-over ends it with one refusal `##socket-batch`
+
+Proposed by the owner during the trial of the built slice, in O30: "maybe the "Take control"
+button should just consume all pending commands at once, instead of processing them one by one and
+sending the message multiple times. Restricting agents to one edit at a time seem like a less
+efficient method." Shaped by the session in its answer (`argument@first-prototype@arg-110`): the
+batch over one connection, the refusal written once and the connection closed, the window still
+running the lines one by one. Final state: approved, by the owner's word in O31: "Build the batch in
+this slice". Shape: "Builds" and "Decided design". Harvest: judged on its own by the entry tests of
+`primer@design-heads`; it changes the command line of `rootpoint-ctl` and what a connection to the
+socket does after a take-over, which other programs consume.
 
 ## Arguments
 
@@ -700,6 +730,24 @@ In principle this should be enough, agents rarely misbehave like that nowadays."
 try out this shape first, with a tripwire if agents misbehave too often, that would reopen the
 "Give control" button proposal." Bears on `thread@first-prototype@control-passing`.
 
+### Sending one command at a time costs an agent a round trip per edit `##arg-109`
+
+Round: the trial of the built slice. Owner, O30. "maybe the "Take control" button should just
+consume all pending commands at once, instead of processing them one by one and sending the message
+multiple times. Restricting agents to one edit at a time seem like a less efficient method." Bears
+on `thread@first-prototype@socket-batch`.
+
+### Nothing is queued in the window today; a batch over one connection, ended by the take-over `##arg-110`
+
+Round: the trial of the built slice. Assistant. "Each `rootpoint-ctl` call is one connection
+carrying one command, and it waits for its reply before the next call. So nothing was queued in the
+window when you clicked. The repeated refusals came from my shell loop, which kept starting new
+calls after the first refusal." The shape: one connection for a batch read from stdin; "When an edit
+is refused because you took control, the window replies with the refusal once, closes that
+connection, and drops the batch's remaining lines"; "A batch still runs line by line in the window,
+so you see each edit as it happens, and the take-over cuts in between two lines." Bears on
+`thread@first-prototype@socket-batch`.
+
 ## New names
 
 ```text
@@ -780,6 +828,13 @@ editor's banner and in a corner of presenter mode, over the texture, so the slid
 editor's, `design@rootpoint-app@editor-overlay`. Nearest rival: Esc taking control in presenter
 mode; defeated by the owner's word in O24, since the owner wants to leave presenter mode without
 taking control.
+
+**A batch over one connection** (`thread@first-prototype@socket-batch`). A connection carries
+any number of lines, and a take-over's refusal closes it, so an agent sends a task's edits in one
+batch and a take-over stops the batch with one message. The window still runs one line at a time,
+between its frames, so the author sees each edit and can cut in between two. Nearest rival: one
+connection per command, as `rootpoint-ctl` had; defeated by the owner's weighing in O30, that one
+edit at a time is less efficient for an agent.
 
 **What changes in the record.** Each text below states a rule the decided design changes. The
 harvest rewrites each, unless a step's commit says otherwise:
@@ -965,6 +1020,26 @@ round 3; O26 round 4; O27 answers D6, Q36 and Q37, put after the reviews.
 > Q36: There is nothing asked of me here, right ?  Your defaults look right.
 > Q37: no reentry here.
 
+**O28 to O31**, the owner's messages during the trial of the built slice, AC7's.
+
+**O28**
+
+> I started rootpoint with the control socket as you asked, start creating anything, just to try it out.
+
+**O29**
+
+> Go on with the edits, write more slides with made up content, I'm now gonna try out inspecting slides while you are editing others, to see whether the live edits allow this without constantly bringing my view back to were you are editing
+
+**O30**
+
+> Inspection went perfectly fine. Maybe (for the future, not today), a notification system that tells me what the agent is doing would be nice. Simply printing the command the agent send, as they come.
+> About sending commands one at a time: maybe the "Take control" button should just consume all pending commands at once, instead of processing them one by one and sending the message multiple times. Restricting agents to one edit at a time seem like a less efficient method.
+> Is there anything else needed to live test ?
+
+**O31**
+
+> Build the batch in this slice, and go finish s15
+
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`, under
@@ -972,6 +1047,8 @@ Judged by the entry tests of `primer@design-heads`, under
 harvest line says: two statements are one head only where they answer one question and lose to the
 same nearest rival, and each part states its own ground, the owner's where the item says so.
 
+- `thread@first-prototype@socket-batch`, its command line in the protocol crate's design home and
+  its connection's end at a take-over in the app's, by that item's harvest line.
 - The socket listener and its threads, into the design home of the app crate's Component, citing
   `design@rootpoint-protocol@protocol-transport`.
 - `thread@first-prototype@one-controller-at-a-time`, with its clause that control belongs to the

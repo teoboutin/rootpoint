@@ -166,7 +166,9 @@ slice's spec, with the gates run before each commit.
   **Q37**: the questions put to the owner after the reviews of that slice's plan, on two
   attributions of the owner's words and on the re-entry of
   `issue@rootpoint-app@alt-arrows-follow-the-tree`; with **D6**, they are answered by **O27**, which
-  also proposes the tripwire **T7**, both quoted in that slice's spec.
+  also proposes the tripwire **T7**, both quoted in that slice's spec. **O28 to O31**: the
+  owner's messages during the trial of that slice's built work, AC7's, quoted in that slice's
+  spec.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
