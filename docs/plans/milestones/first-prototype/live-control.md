@@ -3,125 +3,231 @@
 This slice's spec leaves the repository when the slice lands. The milestone document,
 `milestone@plans@first-prototype`, holds the names, the criteria, the threads and the arguments it
 cites, and those of this spec that cross slices. Where this spec and a design home disagree on a
-point that "Decided design" below does not list as rewritten, the design home wins.
+point that "What changes in the record", under "Decided design", does not list, the design home
+wins.
 
-The design of how the window and the socket share the session was argued in a design session
-held at this slice's design audit. It was assembled from the transcript of the session that ran the
-audit, where the discussion begins at the owner's message that opens "Q33: here, I think it is
-important to keep things simple". Its threads, arguments, criteria, premortem and acceptance
-criterion are below, and the owner's messages in it, O20 to O26, are quoted verbatim in their own
-section.
+The slice's design audit is done: its record is the message of the commit "Apply the design audit
+of the sixth slice, driving the running GUI" (`git log --grep='design audit'`). Its load-bearing
+gap opened a design session, held at the audit, which converged; the plan reviews of the converged
+design read its shapes against the code, and their repairs are in this spec. The slice resumes at
+point 3 of `skill@knowledge-architect-planning@working-a-slice`; the case D6 of the milestone
+document covers waits for the owner's word, and the rest does not. The session was assembled from the transcript of the
+session that ran the audit, where the discussion begins at the owner's answer to Q33. Its threads,
+arguments, criteria, premortem and acceptance criterion are below, and the owner's messages in it,
+O20 to O26, are quoted verbatim in their own section.
+
+## Names
+
+- **round 1 to round 4**: the rounds of the design session held at this slice's audit, each a
+  message of the session and the owner's answer to it: round 1 the grounding, the criteria and the
+  first threads, answered by O23; round 2 the finding on presenter mode, the premortem and the goal
+  drafts, answered by O24; round 3 the corner button and the redrafted goal, answered by O25; round
+  4 the window's inspection, answered by O26. "Round: the audit" names the message that put Q33.
+  They are not the rounds of the milestone's own session, which the milestone's "Names" defines.
+- **Q33**: what a socket command does to a gesture of the window still open, put to the owner at
+  the audit. **Q34**: which rule grants the protocol's request for control, (i), (ii) or (iii) of
+  `argument@first-prototype@arg-87`. **Q35**: whether to run a survey of prior art on sharing an
+  application between a person and an automated controller.
+- **the socket**: the listener of `--control <path>` and every connection to it, counted as one
+  controller.
+- **control**: the authority to edit, held by the window or by the socket.
+- **the window under the socket's control**: the window while the socket holds control, as
+  "Builds" describes it.
 
 ## Builds
 
-- `rootpoint --control <path>`: the native GUI listens on a local socket at that path, reads one
-  command per line from each connection, executes it on the GUI's session between frames, and
-  writes one reply line. On Linux, the platform built first, the socket is a Unix domain socket; a
-  Windows build is not part of the prototype.
-- The binary `rootpoint-ctl <path> <command>`, in the protocol crate: sends one line, prints the
-  reply, and exits non-zero on `err`. Its target reads `ROOTPOINT_CHECKOUT`, as
-  `path@xtask@CLAUDE.md` requires. It is a thin `main` over a function of the protocol crate's
-  library, `rootpoint_protocol::control::send`, built on Unix only, so the wasm gate never sees it.
-  The app's tests drive the listener through that function, since cargo gives a test the path of a
-  binary of its own package only (`CARGO_BIN_EXE_<name>`).
-- A line that is no command, blank or a comment, gets no reply, as in `rootpoint-headless`. The
-  client shuts down its side of the connection after its line, and the listener closes the
-  connection at its end, so `rootpoint-ctl` given such a line reads the end of the connection,
-  prints nothing and exits 0. A line that is not UTF-8 gets the reply `rootpoint-headless` gives it.
+- `rootpoint [--control <path>] [presentation.ron]`: with `--control`, the native GUI listens on a
+  Unix domain socket at that path; a Windows build is not part of the prototype. At start, a path
+  that exists and accepts a connection is another window's, and the GUI exits with an error that
+  names it; a path that exists and refuses one is left from a run that ended, and is removed before
+  the bind. The socket's file is removed at exit. The usage line of `path@rootpoint-app@src/main.rs`
+  and of `path@rootpoint-app@README.md` say so.
+- The listener, in the app's library, native only (`cfg(not(target_arch = "wasm32"))`, since the
+  app crate joins the wasm gate in `spec@first-prototype@browser-build`):
+  `rootpoint_app::control::Listener::bind(path, wake)`, where `wake` is a function the listener
+  calls once for each line it receives. An accept thread serves each connection on a thread of its
+  own; a connection thread reads one line at a time, sends it over a channel to the GUI's thread,
+  and waits for the reply before it reads the next. `App::listen(listener)` gives the listener to
+  the app, which keeps its receiver; `App::frame` drains the channel at its start, before anything
+  else, so the session is only touched by the GUI's thread. `main` binds the listener in the
+  closure that `eframe::run_native` calls with the `CreationContext`, with `wake` set to that
+  context's `request_repaint`, which wakes the window from another thread, per
+  `design@rootpoint-app@gui-toolkit`.
+- The binary `rootpoint-ctl <path> <words>…`, in the protocol crate: joins the words after the path
+  with single spaces into one line, sends it, prints the reply, and exits 0 on `ok` and on no reply,
+  1 on `err`, and 2 when it cannot connect. A line holding a quoted text is given as one word, as
+  `rootpoint-ctl /tmp/rp 'text n3 "two words"'`, and its doc comment says so. Its target reads
+  `ROOTPOINT_CHECKOUT`, as `path@xtask@CLAUDE.md` requires. It is a thin `main` over a function of
+  the protocol crate's library, `rootpoint_protocol::control::send(path: &Path, line: &str) ->
+  io::Result<Option<String>>`: `Ok(Some(reply))`, `Ok(None)` when the listener closed the
+  connection with no reply, `Err` when it could not connect. It is built on Unix only, so the wasm
+  gate never sees it. The app's tests drive the listener through that function, since cargo sets
+  `CARGO_BIN_EXE_<name>` for a test only for a binary of the test's own package: measured at the
+  plan's review, a test that reads the variable of a dependency's binary fails to compile.
+- One rule for a line, in the protocol crate's library, shared by `rootpoint-headless` and the
+  listener: `rootpoint_protocol::read_line(bytes: &[u8]) -> Option<Result<Command, Reply>>` gives
+  `None` for a blank line or a comment, the `err` reply `rootpoint-headless` gives today for a line
+  that is not UTF-8 or does not parse, and the command otherwise. `Session::execute` and
+  `rootpoint-headless` use it in place of their own rules, so the replies stay as they are. A line
+  with no command gets no reply: the listener writes nothing, and the client, which shuts down its
+  side of the connection after its line, reads the end of the connection.
 - A socket command runs as the window's action for it would: through `App::run`, per
-  `design@rootpoint-app@actions-are-commands`; and the file Save writes, `App::path`, follows the
-  socket's commands as it follows the window's: a `load` or a `save` that succeeds sets it, as
+  `design@rootpoint-app@actions-are-commands`, so the status line shows the reason of the last
+  command that failed, the socket's included. The file Save writes, the field `App::path`, follows
+  the socket's commands as it follows the window's: a `load` or a `save` that succeeds sets it, as
   `App::open_file` and `App::save_to` do, its path first made relative to the working directory
   when it is absolute, by `App::relative_if_absolute`; a `sample` or a `new` that succeeds clears
   it, as `App::open_sample` does, so that Save never writes the new document over the file last
-  opened. Paths are relative to the window's working directory, not to that of
-  `rootpoint-ctl`, and its doc comment says so.
-- The protocol's verbs `control` and `release`, parsed and printed by the protocol crate. A
-  headless session has one controller, so `Session::run` replies `ok` to both and changes nothing.
-  `thread@first-prototype@control-commands`.
-- Control in the window: the app holds which controller has the authority to edit, the window or
-  the socket, the window at start (`thread@first-prototype@control-at-start`). Control belongs to
-  the socket as a whole, every connection together. A socket command is executed as follows:
+  opened. The paths of `save`, `load` and `render` are relative to the window's working directory,
+  not to that of `rootpoint-ctl`; an asset's path is relative to the directory of the presentation
+  last saved or loaded, as `path@rootpoint-protocol@README.md` says; the doc comment of
+  `rootpoint-ctl` says both. The queries `tree`, `view` and `render` run on the session without
+  `App::run`, since they change nothing, so they neither change the status line nor make the next
+  frame render the slide again; `render` writes its image into the window's working directory.
+- The protocol's verbs `control` and `release`, parsed and printed by the protocol crate, each with
+  its own arm in `Session::run`: a headless session has one controller, so `control` replies `ok`;
+  `release` replies `err a group is open` while a group is open, in every host, and `ok` otherwise.
+  `thread@first-prototype@control-commands`. A new public accessor,
+  `Session::group_open() -> bool`, tells a host whether a group is open.
+- Control in the window: the field `App::controller`, of the type `Controller { Window, Socket }`,
+  with the accessor `App::controller()`; `Window` at start
+  (`thread@first-prototype@control-at-start`). Control belongs to the socket as a whole, every
+  connection together. A socket command is executed as follows:
   - `tree`, `view` and `render` run whoever holds control
     (`thread@first-prototype@read-without-control`);
-  - `control` ends the window's gestures, as `App::end_gestures` does, gives control to the socket
-    and replies `ok`, also when the socket holds it already
-    (`thread@first-prototype@control-passing`);
-  - `release` closes with `end` a group the socket opened and left open, gives control to the
-    window and replies `ok`, also when the window holds it already;
+  - `control` gives control to the socket and replies `ok`, also when the socket holds it already,
+    after ending the window's gestures as `App::end_gestures` does and clearing the press in
+    progress (`App::press`, `App::edit_on_click`, `App::text_drag`), so a press begun before it
+    completes nothing at its release: a stay in editing ends with its edits one undo step, a
+    divider drag ends as at its release, and a grip drag is cancelled, as at a loss of the window's
+    focus, since its edits are made only at its drop (`thread@first-prototype@control-passing`).
+    a `control` sent after the window took control with its button is the case of D6 of the
+    milestone document, which waits for the owner's word; its default replies
+    `err the author took control` until the author gives control back;
+  - `release` replies as `Session::run` does, and on `ok` gives control to the window;
   - every other command, the view commands included, runs while the socket holds control, and
     otherwise replies `err the window has control`.
-- The window while the socket holds control (`thread@first-prototype@window-under-protocol-control`):
-  - it shows each change as it is made;
-  - the inputs that change only the view stay usable: a click on an area, which selects it and no
-    more, a click on the selected text area included; Alt with an arrow; the breadcrumb; a click on
-    a row of the slide list, which shows its slide; F5; and, in presenter mode, →, ←, Space, Page
-    Up, Page Down, and Esc, which leaves presenter mode;
-  - every input that changes the document is ignored: a split, by a button, by Shift and an arrow
-    or at the pointer, and its preview line; a divider drag and a double-click on a divider; a grip
-    drag; Delete; the slide list's drag and its buttons; the side panel's content, style and image
-    controls; undo, redo, open, the sample and save; and entering text editing;
-  - it draws no divider highlight, no resize cursor and no grip;
-  - a banner over the toolbar reads "The text protocol has control" beside a button "Take
-    control", and in presenter mode the same button sits in a corner, over the slide's texture and
-    never in its image. The button closes with `end` a group the socket left open, and gives
-    control to the window (`thread@first-prototype@interrupted-client-group`).
+- The window under the socket's control (`thread@first-prototype@window-under-protocol-control`).
+  It shows each change as it is made. Every action of `path@rootpoint-app@src/actions.rs` that
+  changes the document returns at once, changing nothing, while the socket holds control; every
+  view action runs. Each input of the window, by the table below; Esc in the editor, which ends a
+  gesture, has none to end. The window draws no divider highlight, no grab, grabbing or resize
+  cursor, no grip, no preview line and no drop hint. A banner over the toolbar reads "The text
+  protocol has control" beside a button "Take control"; in presenter mode the same button sits in
+  a corner, over the slide's texture and never in its image. The button closes with `end` a group
+  the socket left open, when `Session::group_open` says one is, and gives control to the window
+  (`thread@first-prototype@interrupted-client-group`). By D6, after a take-over the banner reads
+  "You took control from the text protocol" beside a button "Give control", which lets the socket's
+  next `control` be granted.
+
+| input of the window | while the socket holds control |
+| --- | --- |
+| a click on an area, the selected text area included | selects it (`select`), and never enters editing |
+| Alt with an arrow; a link of the breadcrumb | selects, as now |
+| a click on a row of the slide list | shows its slide |
+| F5; the toolbar's "Present" | presents |
+| in presenter mode: →, Space, Page Down, ←, Page Up, Esc | as now |
+| the button "Take control" | takes control |
+| the toolbar's "Open…", "Save", "Save as…", "Sample", "Undo", "Redo"; Ctrl+O, Ctrl+S, Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y | ignored |
+| the slide list's "Add", "Remove", "Duplicate", and its drag of a row | ignored |
+| the side panel's split buttons, "Remove", content, size, bold, italic, colour, alignments, font, image, fit and "Add an image…" | ignored |
+| Shift with an arrow; Delete | ignored |
+| Ctrl or Shift over the selection, and the click that splits; a press on a divider, its drag and its double-click; a press on the grip and its drag | ignored |
+| typing, the IME, copy, cut, paste: none reach a text, since editing cannot start | ignored |
 
 ## Claims
 
+Each claim's test is shown to fail against a wrong implementation as its last sentence says.
+
 1. **A command over the socket acts like one from the UI.** After `control`, a command sent with
    `rootpoint_protocol::control::send` changes the document and the view as the window's action for
-   it does, and, once the window has taken control back, `undo` from the UI undoes it. Test: an
-   integration test that starts the app's control loop with no window, sends commands, and reads
-   the session.
-2. **The GUI wakes for a command.** A command sent while the GUI is idle is applied within one frame
-   of its arrival, through egui's `request_repaint` from the socket's thread. Test: the integration
-   test of claim 1 times the reply.
+   it does, and, once the window has taken control back, `undo` from the UI undoes it. Test: an app
+   integration test that binds a `Listener` in a scratch directory, gives it to an `App`, and runs
+   `App::frame` through `Context::run_ui` in a loop on the test's thread while a client thread
+   sends commands and the test reads the session. Fails when the drain is removed from
+   `App::frame`: the client never gets its reply, and the test times out after 5 s, a bound the
+   session chose.
+2. **The GUI wakes for a command.** The listener calls `wake` once for each line, before the GUI's
+   thread has read it, and the next `App::frame` applies it. Test: the integration test of claim 1,
+   with a `wake` that counts its calls: after each command, the count rose by one before the reply
+   came. Fails when `wake` is not called: the count stays at 0.
 3. **The scripts of the protocol run through the socket.** After `control`, every script of
-   `path@rootpoint-protocol@tests/scripts/` gives the same replies through the socket, one
-   connection per line by `rootpoint_protocol::control::send`, as through `rootpoint-headless`,
-   each run from an empty session in a scratch directory of its own; `ids-readdress.txt` runs after
-   `ids-build.txt` in the same directory, as it loads the file that one saves. Test: an app
-   integration test whose `Files` resolve paths under that directory.
+   `path@rootpoint-protocol@tests/scripts/` gives through the socket, one connection per line by
+   `rootpoint_protocol::control::send`, the replies a `Session` gives it by `Session::execute` in
+   the test's own process, the function `rootpoint-headless` runs. Each script runs from an empty
+   session in a scratch directory of its own, with the window and the reference session each given
+   a `Files` that resolves paths under its directory; `ids-readdress.txt` runs after `ids-build.txt`
+   in the same directory, as it loads the file that one saves; `golden.txt` finds
+   `talk/two-colours.png` written there first, as `path@rootpoint-protocol@tests/files.rs` writes
+   it. Test: an app integration test, with `image` as a dev-dependency of the app crate for the
+   fixture. Fails when the socket drops a line, or a line with no command gets a reply: the reply
+   lists differ.
 4. **`rootpoint-ctl` prints the reply and exits by it.** It prints the reply line, exits 0 on `ok`
-   and on no reply, and non-zero on `err` or when it cannot connect. Test: a protocol integration
-   test runs the binary against a listener the test holds, which answers `ok`, `err` and nothing.
+   and on no reply, 1 on `err`, 2 when it cannot connect. Test: a protocol integration test runs the
+   binary against a listener the test holds, which answers `ok`, `err` and nothing, and once with no
+   listener. Fails when the exit codes are swapped: the assertion on each code fails.
 5. **Control passes as "Builds" says.** The window holds control at start; a socket edit without
    control replies `err the window has control` and changes nothing; `tree`, `view` and `render`
    are answered without control; `control` during a stay in editing ends the stay, its edits one
-   undo step, and during a divider drag ends the drag as at its release; `release` and the button
-   close the socket's open group with `end`, so one undo reverts its edits. Test: an app
-   integration test per case. Shown to fail against a wrong implementation by the case T5 watches:
-   a stay, then `control` and a socket `text` on another area, then the window's take-over and one
-   `undo`, which must revert the socket's edit alone; it fails when the socket's command runs
-   inside the stay's group.
+   undo step, during a divider drag ends the drag as at its release, and during a grip drag cancels
+   it; `release` with a group open replies `err a group is open`; the button closes the socket's
+   open group with `end`, so one undo reverts its edits. A stay whose only edits are an IME
+   composition is outside the claim: it leaves an undo step that changes nothing, the defect
+   `issue@rootpoint-app@abandoned-composition-undo-step`. Test: an app integration test per case.
+   Fails, for the case T5 watches, when the socket's command runs inside the window's group: a stay,
+   then `control` and a socket `text` on another area, then the take-over and one `undo`, which
+   must revert the socket's edit alone.
 6. **While the socket holds control, no window input runs a command but a view command and the
-   take-over.** Test: each action of `path@rootpoint-app@tests/actions.rs`, each gesture of
-   `path@rootpoint-app@tests/gestures.rs` and the entry into editing of
-   `path@rootpoint-app@tests/editing.rs`, driven through `App::frame` with the socket in control,
-   leaves the document and the undo stack as they were; and each view input of "Builds" changes the
-   view as it does with the window in control. Shown to fail by running it against the app before
-   the freeze is built.
-7. **`control` and `release` run headless.** Each replies `ok` from `rootpoint-headless`, and a
-   script holding them gives the same document as the script without them. Test: a protocol
-   integration test.
-8. **Presenter mode under the socket's control shows the slide as the editor does.** The image
+   take-over.** Test, two parts. Every action of `path@rootpoint-app@src/actions.rs` that changes
+   the document, called as `path@rootpoint-app@tests/actions.rs` calls them, leaves the document and
+   the undo stack as they were while the socket holds control, and each view action changes the view
+   as with the window in control. Each pointer gesture of `path@rootpoint-app@tests/gestures.rs`,
+   and the entry into editing of `path@rootpoint-app@tests/editing.rs`, driven through `App::frame`
+   with the socket in control, changes nothing, and the frame draws no gesture mark. Fails against
+   the app before the guard is built: every edit applies.
+7. **`control` and `release` run headless.** `control` replies `ok` from `rootpoint-headless`;
+   `release` replies `ok`, and `err a group is open` between a `begin` and its `end`; a script
+   holding them gives the same document as the script without them. Test: a protocol integration
+   test, and both verbs join the round-trip list of `path@rootpoint-protocol@tests/commands.rs`.
+   Fails when either verb falls to the catch-all arm of `Session::run`: the reply is "applies no
+   operation".
+8. **The take-over button works in presenter mode, and keeps the slide as the editor's.** With the
+   socket in control, presenter mode places the button where the last frame recorded it,
+   `App::take_control_rect()`; a synthetic click there gives control to the window; the image
    presenter mode draws equals the editor's at the same size, as
-   `path@rootpoint-app@tests/presenter.rs` compares it, with the button outside the image; Esc
-   leaves presenter mode and the socket keeps control. Test: an addition to that file.
+   `path@rootpoint-app@tests/presenter.rs` compares them; and Esc leaves presenter mode with the
+   socket keeping control. Test: additions to that file. Fails when the button is not drawn: the
+   click leaves control with the socket.
+9. **An idle listener costs a divider drag no time beyond its recorded bound.** With a `Listener`
+   given to the app and no line sent, the largest frame of the divider drag of
+   `design@rootpoint-app@gui-toolkit` stays within 33 ms, AC2's bound, the recorded runs being 5.9
+   ms and 6.05 ms. Instrument: `cargo test --release -p rootpoint-app --test presenter -- --ignored
+   --nocapture`, run with and without the listener; both times are reported in the step's commit.
 
 ## Audit subjects
 
 - `thread@first-prototype@protocol-transport`.
-- egui's `Context::request_repaint`, callable from any thread (quoted in
-  `argument@first-prototype@arg-26`).
+- egui's `Context::request_repaint`, callable from any thread: egui 0.37.0's `context.rs` says
+  the UI thread wakes "provided the egui integration has set that up via
+  [`Self::set_request_repaint_callback`] (this will work on `eframe`)".
 - T5 of the milestone document's premortem: a command from the socket arriving while a group of the
   GUI is open, `begin` without its `end`, joins that group. The decided design below prevents its
   firing condition, `thread@first-prototype@one-controller-at-a-time`.
-- `issue@rootpoint-protocol@save-mixes-relative-and-absolute`, which a protocol client other than
-  the window can produce: the socket's `load` and `save` take the window's paths, per "Builds".
-- `design@rootpoint-app@gesture-groups`, `design@rootpoint-protocol@view-state` and
-  `design@rootpoint-app@editor-overlay`, which the decided design meets as "Decided design" says.
+- `issue@rootpoint-protocol@save-mixes-relative-and-absolute`: a protocol client other than the
+  window can produce the mix, and the socket does not, since its `load` and `save` take the
+  window's paths, per "Builds". The issue stays open for headless scripts.
+- `issue@rootpoint-app@abandoned-composition-undo-step`: `control` ends a stay through
+  `App::stop_editing`, the site the issue names; claim 5 leaves the case out, and the issue stays
+  open.
+- `issue@rootpoint-app@alt-arrows-follow-the-tree`, whose re-entry is the design audit of the next
+  slice that touches the app's keys: this slice decides which keys act while the socket holds
+  control, and changes what none of them does; Q37 of the milestone document asks the owner whether
+  that meets the re-entry.
+- `design@rootpoint-app@gesture-groups`, `design@rootpoint-protocol@view-state`,
+  `design@rootpoint-app@editor-overlay`, `design@rootpoint-app@edit-entry`,
+  `design@rootpoint-app@selection-actions`, `design@rootpoint-app@divider-drag` and
+  `design@rootpoint-app@swap-gesture`, which the decided design meets or rewrites as "What changes
+  in the record" says.
 
 ## Fails alone on
 
@@ -131,28 +237,38 @@ section.
 
 ## Premises that expire
 
-- The socket is native only. Guard: the browser build has no transport, per
-  `thread@first-prototype@protocol-transport`, and `spec@first-prototype@browser-build` does not
-  build this listener for the wasm target, so the window holds control there always.
+- The socket is native only. Guard: the listener is built under
+  `cfg(not(target_arch = "wasm32"))`, so the wasm gate, which builds the app crate from
+  `spec@first-prototype@browser-build`, fails if a part of it reaches the browser build; the
+  browser build has no socket, and its window holds control always. That spec's audit subjects
+  name it.
 - Control belongs to the socket as a whole, which holds while one socket is the one other
   controller. A design that widens the lock, to several clients each with control of their own or
-  to locks per slide or per node, ends it; the milestone document's "Later consequences" carries
-  the owner's condition for that design.
+  to locks per slide or per node, ends it. Guard: the app's design head that records
+  `thread@first-prototype@one-controller-at-a-time` states the clause, so a design that widens the
+  lock reverses that head under `skill@knowledge-architect-decision-recording`; the milestone
+  document's "Later consequences" carries the owner's view on a survey for that design.
 
 ## Implementation sequence
 
-1. **An echo socket.** The GUI replies `ok` to every line without executing it, and
-   `rootpoint-ctl` sends one line. Claim 4. Fails alone on: the socket and the wakeup.
-2. **The verbs `control` and `release`**, in the protocol crate: parsed, printed and run headless.
-   Claim 7. Fails alone on: the grammar.
-3. **Execution, with control.** Socket commands run on the GUI's session, by the rules of control.
-   Claims 1, 2, 3 and 5.
-4. **The window under the socket's control.** The view inputs, the ignored inputs, the banner and
-   the button. Claims 6 and 8.
+1. **An echo socket.** The listener, its wake-up and `rootpoint_protocol::control::send`; the GUI
+   replies `ok` to every line without executing it. Claims 2 and 9, on echoed lines. Fails alone
+   on: the socket and the wake-up.
+2. **The line rule and the verbs `control` and `release`**, in the protocol crate: `read_line`,
+   used by `Session::execute` and `rootpoint-headless`; the verbs parsed, printed and run, with
+   their arms in `Session::run`, `Session::group_open`, and `rootpoint-ctl`. Claims 4 and 7, and the
+   protocol's existing tests unchanged. Fails alone on: the grammar. The commit that adds
+   `control::send` brings the line of `path@rootpoint-protocol@CLAUDE.md` that says only
+   `rootpoint-headless` touches the file system to what is then true: `control::send` and
+   `rootpoint-ctl` open a socket at a path.
+3. **Execution, with control.** Socket commands run on the GUI's session, by the rules of control,
+   the command line of `rootpoint` included. Claims 1, 2, 3 and 5.
+4. **The window under the socket's control.** The guard on the actions, the table of inputs, the
+   marks, the banner and the button. Claims 6 and 8.
 
 The echo socket before the verbs: the verbs have nothing to carry without a transport. The verbs
-before execution: the rules of control take them as input. Execution before the window's freeze:
-the freeze is tested by socket commands that hold control.
+before execution: the rules of control take them as input. Execution before the window under the
+socket's control: its tests send socket commands that hold control.
 
 ## Criteria
 
@@ -213,9 +329,23 @@ controller holds control, and one banner with its button.
 ### What a command of the socket does to a gesture of the window still open `##command-during-gesture`
 
 Proposed by the session at the audit and put to the owner as Q33, with three shapes and a default:
-(a) a socket command ends the window's gestures first, as each of the window's actions does; (b)
-it closes the window's group and the gesture goes on in a new one; (c) one group per client, in the
-session. The discriminating fact: a stay in editing keeps its group open from its first click to
+
+- (a), the default: a socket command ends the window's gestures first, as each of the window's
+  edits does, `tree`, `view` and `render` excepted. Its cost, in the audit's words: "an agent's
+  edit ends the author's stay in editing, and the author clicks the area again to go on".
+- (b): it closes the window's group, and the gesture goes on in a new group opened after the
+  command. Its cost: "a stay or a drag that an agent's edit interrupted is two undo steps, before
+  and after it, where `design@rootpoint-app@gesture-groups` makes it one; and the app must place
+  the caret again when the agent changed the edited text, and end a drag whose split the agent
+  removed".
+- (c): one group per client, in the session, the response T5 names, a reopening of
+  `design@rootpoint-protocol@gesture-undo`. Its cost: "the session keeps a group per connection,
+  and the window's group, closed after the agent's step, is pushed above it, so its undo reverts
+  edits made before the agent's: where the agent changed the same text, that undo writes the
+  author's earlier text over the agent's; where the agent removed the area, the step fails and the
+  undo is refused".
+
+The discriminating fact: a stay in editing keeps its group open from its first click to
 its end, also while the window has lost the focus, per `design@rootpoint-app@gesture-groups` and
 `App::frame` in `path@rootpoint-app@src/lib.rs`, so a socket command sent during a stay joins it,
 which is T5's firing condition (`argument@first-prototype@arg-81`). The owner answered Q33 in O20
@@ -232,8 +362,9 @@ ability for each one to "request" control from the other when it does not have i
 session in round 1 (`argument@first-prototype@arg-85`). Final state: approved, by the owner's word
 in O23: "Overall I agree with your positions over the whole table, I think they would make for
 quite a convenient workflow." Shape: "Decided design". Harvest: a design head of the app crate's
-Component, on the owner's word for the rule and on its argument for the rest, and the rewrite of
-the last sentence of `design@rootpoint-app@gesture-groups`.
+Component, its rule on the owner's word, and on its argument the clause that control belongs to the
+socket as a whole (`argument@first-prototype@arg-97`), which the premortem of round 2 added and
+which closed on its argument; with the rewrites "What changes in the record" lists.
 
 ### The window takes control at once, and the protocol's `control` is granted at once, ending the window's gestures `##control-passing`
 
@@ -246,19 +377,23 @@ a task and control was handed back to me with `release`, before giving further i
 think (i) fits this workflow best." (`argument@first-prototype@arg-94`). Final state: approved, on
 (i), by those words and the whole-table agreement of O23. A refused edit replies
 `err the window has control` (`argument@first-prototype@arg-98`). Shape: "Decided design". Harvest:
-part of the app's head of `thread@first-prototype@one-controller-at-a-time`, if the rules on one
-decision per head join them; a head of its own otherwise. T6 guards it.
+judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does. Its rule (i) is the owner's choice in O23, on the owner's workflow; the take-over's
+immediacy stands on `argument@first-prototype@arg-86`. T6 guards it. D6 of the milestone
+document, awaiting the owner, adds a case to it (`argument@first-prototype@arg-107`).
 
 ### The protocol asks for control with the verbs `control` and `release`, which run headless `##control-commands`
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-88`). Rivals: control taken
 implicitly by the socket's first edit, and verbs the app's listener intercepts outside the grammar
 (`argument@first-prototype@arg-89`). Final state: approved, by the whole-table agreement of O23.
-The clause that control belongs to the socket as a whole, every connection together, was added by
-the premortem of round 2, and closed on its argument (`argument@first-prototype@arg-97`): argued.
+The clause that control belongs to the socket as a whole is the app's, in
+`thread@first-prototype@one-controller-at-a-time`. At the plan's review the session decided that
+`release` replies `err a group is open` while a group is open, in every host, so that a script
+gives the same replies in the window and headless (`argument@first-prototype@arg-106`): argued.
 Shape: "Decided design". Harvest: a design head of the protocol crate's Component, since the verbs
 are part of the grammar every program that drives rootpoint consumes, citing
-`design@rootpoint-protocol@protocol-transport`.
+`design@rootpoint-protocol@protocol-transport`; `rootpoint-ctl`, its command line and its exit
+codes, and `rootpoint_protocol::control::send`, {J}.
 
 ### The protocol's queries need no control; its view commands do; the window's view inputs never do `##read-without-control`
 
@@ -266,7 +401,7 @@ Proposed by the session in round 1, for the protocol's queries (`argument@first-
 reshaped in round 4 with the window's view inputs and the asymmetry
 (`argument@first-prototype@arg-105`). Final state: approved, by the whole-table agreement of O23
 and, reshaped, by O26: "I agree with the reshaped thread, proceed". Shape: "Decided design".
-Harvest: part of the app's head of `thread@first-prototype@one-controller-at-a-time`.
+Harvest: judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does; its ground is its argument.
 
 ### While the protocol holds control, the window takes only the inputs that change the view, and a button takes control back `##window-under-protocol-control`
 
@@ -283,21 +418,22 @@ discrete overlay in a corner is not a problem." (`argument@first-prototype@arg-1
 window input ? ... any input that only changes the view but not the content/layout of the
 presentation can stay useable." (`argument@first-prototype@arg-103`), and the session reshaped it
 (`argument@first-prototype@arg-104`, `argument@first-prototype@arg-105`). Final state: approved, by
-O26: "I agree with the reshaped thread, proceed". Shape: "Decided design". Harvest: part of the
-app's head of `thread@first-prototype@one-controller-at-a-time`, and the rewrite of the line of
-`path@rootpoint-app@CLAUDE.md` that says `App::presenter` draws nothing over the slide.
+O26: "I agree with the reshaped thread, proceed". Shape: "Decided design". Harvest: judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does; the
+corner button and the inspection of the slides are the owner's proposals in O24 and O25, and Esc
+taking no control in presenter mode is the owner's word in O24; the rest stands on its argument.
+With the rewrites "What changes in the record" lists.
 
 ### The window holds control when it starts `##control-at-start`
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-92`). Final state: approved, by
-the whole-table agreement of O23. Harvest: part of the app's head of
-`thread@first-prototype@one-controller-at-a-time`.
+the whole-table agreement of O23. Harvest: judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does.
 
 ### Taking control closes the group the protocol left open with `end` `##interrupted-client-group`
 
-Proposed by the session in round 1 (`argument@first-prototype@arg-93`); `release` does the same.
-Final state: approved, by the whole-table agreement of O23. Harvest: part of the app's head of
-`thread@first-prototype@one-controller-at-a-time`.
+Proposed by the session in round 1 (`argument@first-prototype@arg-93`), for the take-over by the
+window. Final state: approved, by the whole-table agreement of O23. At the assembly the session
+applied the same rule to `release`; at the plan's review it replaced that clause by a `release`
+refused while a group is open (`argument@first-prototype@arg-106`), argued. Harvest: judged on its own by the entry tests of `primer@design-heads`, a head of its own where one passes, a comment at its code where none does.
 
 ## Arguments
 
@@ -406,7 +542,7 @@ before it propagates. Manual adjustement (layout, wording...) is something that 
 agent has finished a task and control was handed back to me with `release`, before giving further
 instructions. I think (i) fits this workflow best." Bears on `thread@first-prototype@control-passing`.
 
-### No prior art faces this case; a survey waits for a wider lock `##arg-95`
+### In the owner's view, no similar use case exists; a survey would be worth it for a wider lock `##arg-95`
 
 Round: round 1, the owner's answer. Owner, O23, Q35. "There's not really a similar use case IMO: it
 is a bit similar to collaborative editing, except that one of the collaborators has authority to
@@ -508,23 +644,52 @@ effect on your edits. The window's view inputs act on nothing of the agent's." B
 `thread@first-prototype@window-under-protocol-control`,
 `thread@first-prototype@read-without-control`.
 
+### `release` refused while a group is open keeps the two hosts alike `##arg-106`
+
+Round: the plan's review. Assistant, on the design-conformance review's finding that `release`
+closing the socket's group in the window, and changing nothing headless, gives a script `begin`, an
+edit, `release`, `control`, `begin` the reply `ok` in the window and `err` headless, against the
+replay argument of `design@rootpoint-protocol@gesture-undo` and the plan's "runs headless
+unchanged". `release` closing the group in every host adds a closer to that head's list; a
+`release` refused while a group is open, in every host, adds none, keeps the replies alike, and
+costs the agent an `end` before its `release`. Bears on `thread@first-prototype@control-commands`,
+`thread@first-prototype@interrupted-client-group`.
+
+### Under (i), the agent's next `control` undoes the author's take-over `##arg-107`
+
+Round: the plan's review. Assistant, on the design-conformance review's finding: under (i), an
+agent that answers `err the window has control` with `control` has control back at once, so the
+author's take-over holds only while the agent does not ask, which is the agent's consent that
+`argument@first-prototype@arg-86` rules out, and `goal@rootpoint-app@live-agent-edits` asks that
+the author "takes the work over". The owner chose (i) in O23 on a workflow where the agent asks for
+control at the start of a task the author gave; the case of an agent asking again right after an
+interrupt was not put to the owner. Default, D6: after a take-over by the button, `control` replies
+`err the author took control` until the author gives control back with the banner's "Give
+control"; at start and after `release`, `control` is granted at once, as (i). Its cost: one click
+to hand back after an interrupt. Bears on `thread@first-prototype@control-passing`.
+
 ## New names
 
 ```text
 crates/rootpoint-protocol/  (crate rootpoint-protocol)
   Command::Control, Command::Release   the verbs `control` and `release`
+  read_line                            the rule for one line: none, a command, or an `err` reply
+  Session::group_open                  whether a group is open
   control::send                        Unix only: send one line to a socket, read the reply
   binary rootpoint-ctl                 src/bin/rootpoint-ctl.rs
 crates/rootpoint-app/       (crate rootpoint-app)
-  the controller holding control: the window or the socket, a field of App
-  the listener of `--control <path>`, its thread and its channel
+  control::Listener, Listener::bind    native only: the socket's listener and its threads
+  App::listen                          gives the app a listener
+  Controller { Window, Socket }        who holds control; the field App::controller,
+                                       the accessor App::controller()
+  App::take_control_rect               where the last frame placed the button "Take control"
 ```
 
 ## Decided design
 
-**The transport.** The socket's thread parses each line and sends the command to the GUI's thread
-over a channel, then waits for the reply; the GUI drains the channel at the start of each frame, so
-the session is only touched by the GUI's thread (`thread@first-prototype@protocol-transport`).
+**The transport.** Each connection's thread reads a line and sends it to the GUI's thread over a
+channel, then waits for the reply; the GUI drains the channel at the start of each frame, so the
+session is only touched by the GUI's thread (`thread@first-prototype@protocol-transport`).
 Nearest rival: JSON-RPC; see "Losing alternatives" of the milestone document.
 
 **One controller at a time** (`thread@first-prototype@one-controller-at-a-time`). The app holds which
@@ -532,26 +697,34 @@ of two controllers, the window or the socket, has the authority to edit; the soc
 every connection together. When control passes, the side that loses it has its gestures or its
 group closed, so no group is ever shared, which meets
 `criterion@first-prototype@c17-no-shared-group` and prevents T5's firing condition; and one lock
-over the whole document meets `criterion@first-prototype@c19-no-reconciling`. Nearest rival:
-`thread@first-prototype@command-during-gesture`'s (a), the socket's commands ending the window's
-gestures one by one, with no notion of control; defeated by the owner's intent in O20 and O23: the
-author interrupts the agent, which (a) cannot express, since the agent's next command runs anyway.
+over the whole document meets `criterion@first-prototype@c19-no-reconciling`. The rule is the
+owner's, in O20. Nearest rival: `thread@first-prototype@command-during-gesture`'s (a), the socket's
+commands ending the window's gestures one by one, with no notion of control. The owner answered Q33
+with this rule in its place, and the session argued it, `argument@first-prototype@arg-85`. The
+session's reading, at the assembly, of what (a) lacks: with no control, the agent's next command
+runs whatever the author does, so the author cannot interrupt the agent, which the owner's intent
+in O20 asks.
 
 **Passing control** (`thread@first-prototype@control-passing`,
 `thread@first-prototype@interrupted-client-group`, `thread@first-prototype@control-at-start`). The
 window holds control at start. The button takes control at once, closing with `end` any group the
 socket left open. The socket's `control` is granted at once, ending the window's gestures as
-`App::end_gestures` does: a stay ends with its edits one undo step, a drag as at its release.
-`release` closes the socket's open group with `end` and gives control back. An edit refused for
-want of control replies `err the window has control`. Nearest rival for the request: (ii), refused
-until the author gives control back; defeated by the owner's workflow in O23, where the author
-adjusts by hand after `release` and so is rarely in a gesture when the agent asks.
+`App::end_gestures` does: a stay ends with its edits one undo step, a divider drag as at its
+release, a grip drag cancelled, as at a loss of the window's focus. `release` gives control back,
+and is refused while a group is open. An edit refused for want of control replies
+`err the window has control`. Nearest rival for the request: (ii), refused until the author gives
+control back; defeated by the owner's workflow in O23, where the author adjusts by hand after
+`release` and so is rarely in a gesture when the agent asks. D6, awaiting the owner, refuses the
+request after a take-over by the button until the author gives control back
+(`argument@first-prototype@arg-107`).
 
 **The verbs** (`thread@first-prototype@control-commands`). `control` and `release` are verbs of the
-protocol's grammar, `ok` headless, since a headless session has one controller; a script that
-drives the window then runs headless unchanged. Nearest rival: implicit control, taken by the
-socket's first edit; defeated because nothing would tell the window the agent is done, and an agent
-could not ask whether it holds control.
+protocol's grammar. Headless, `control` replies `ok`, since a headless session has one controller,
+and `release` replies as it does in the window, so a script gives the same replies in both hosts.
+Nearest rival: implicit control, taken by the socket's first edit; defeated because nothing would
+tell the window the agent is done (`argument@first-prototype@arg-89`). The second point that
+argument made, that an agent could not ask whether it holds control, is true of the chosen verbs
+too, since `control` replies `ok` whether or not the socket held control, and decides nothing.
 
 **What needs control** (`thread@first-prototype@read-without-control`). `tree`, `view` and `render`
 run whoever holds control, since they apply no operation and join no group. The protocol's view
@@ -563,30 +736,61 @@ while the socket holds control; defeated because it brings back the rival that h
 against, a view no headless test reaches, and adds a second view to reconcile at each hand-over.
 
 **The window under the socket's control**
-(`thread@first-prototype@window-under-protocol-control`). As "Builds" lists. The button sits in the
+(`thread@first-prototype@window-under-protocol-control`). As "Builds" and its table say. The guard
+sits in the actions of `path@rootpoint-app@src/actions.rs`, which every input calls, so the input
+layer needs no list of its own and a test calls the actions directly. The button sits in the
 editor's banner and in a corner of presenter mode, over the texture, so the slide's image stays the
 editor's, `design@rootpoint-app@editor-overlay`. Nearest rival: Esc taking control in presenter
-mode; defeated by the owner's word in O24, who wants to leave presenter mode without taking control.
+mode; defeated by the owner's word in O24, since the owner wants to leave presenter mode without
+taking control.
 
-**What changes in the record.** The last sentence of `design@rootpoint-app@gesture-groups`, that a
-command of another client could join a group left open while the window is away, becomes false: the
-harvest rewrites it. The line of `path@rootpoint-app@CLAUDE.md` that says `App::presenter` draws
-nothing over the slide becomes "nothing but the control button". T5,
-`tripwire@rootpoint-protocol@client-joins-gui-group`, guards `design@rootpoint-protocol@gesture-undo`,
-which stands; its condition is prevented by the app, so the harvest puts it to the owner, to keep or
-to remove.
+**What changes in the record.** Each text below states a rule the decided design changes. The
+harvest rewrites each, unless a step's commit says otherwise:
+
+- `design@rootpoint-app@gesture-groups`: its last sentence, that a command of another client could
+  join a group left open while the window is away, becomes false.
+- `design@rootpoint-app@edit-entry`, `design@rootpoint-app@selection-actions`,
+  `design@rootpoint-app@divider-drag` and `design@rootpoint-app@swap-gesture`: a click on the
+  selected text area enters editing, Delete removes, the cursor is a resize cursor over a divider,
+  and the selected area shows a grip, only while the window holds control. The owner approved the
+  window under the socket's control in O26, which includes these limits; `design@rootpoint-app@edit-entry` rests on the
+  owner's word, and the limit is within that approval.
+- `design@rootpoint-app@editor-overlay`: its list of marks gains the banner and the button, and its
+  marks of a gesture are not drawn while the socket holds control.
+- `path@rootpoint-app@CLAUDE.md`: the line that `App::presenter` draws nothing over the slide
+  becomes "nothing but the button 'Take control'"; and the line that an action not part of a
+  gesture closes any group still open, which says more than `App::end_gestures` does (it ends the
+  window's own gestures), is brought to the code and to the socket's group.
+- The doc comment of `App::presenter` in `path@rootpoint-app@src/lib.rs` and the description of
+  presenter mode in `path@rootpoint-app@README.md`, which say "with no mark over it".
+- `path@rootpoint-app@README.md` and the doc comment of `path@rootpoint-app@src/main.rs`: the
+  command line gains `--control`.
+- `path@rootpoint-protocol@CLAUDE.md`: brought to `control::send` in step 2.
+- The other texts that cite `design@rootpoint-app@gesture-groups`, which stay true:
+  `design@rootpoint-app@swap-gesture`,
+  `issue@rootpoint-app@abandoned-composition-undo-step`, and the comments of
+  `path@rootpoint-app@src/editing.rs` and `path@rootpoint-app@src/lib.rs`; each is read again at
+  the harvest.
+- T5, `tripwire@rootpoint-protocol@client-joins-gui-group`, guards
+  `design@rootpoint-protocol@gesture-undo`, which stands; its condition is prevented by the app, so
+  the harvest puts it to the owner, to keep or to remove. It cites this spec twice, and
+  `path@rootpoint-protocol@tests/common/mod.rs` cites it once; the commit that deletes this spec
+  rewrites each, the tripwire's as the owner rules.
 
 ## Losing alternatives
 
 - **The socket's commands ending the window's gestures, with no control**, Q33's (a), lost to
-  `thread@first-prototype@one-controller-at-a-time`: the author could not interrupt the agent, whose
-  next command runs anyway (`argument@first-prototype@arg-83`, `argument@first-prototype@arg-94`).
+  `thread@first-prototype@one-controller-at-a-time`, on the owner's answer to Q33 and the session's
+  argument for that thread (`argument@first-prototype@arg-83`, `argument@first-prototype@arg-85`);
+  the session's reading of what it lacks is under "Decided design".
 - **The window's gesture going on in a new group after a socket command**, Q33's (b), lost to the
   same thread: a gesture an agent interrupts is two undo steps, and the app must place the caret
-  again on a text the agent changed (`argument@first-prototype@arg-85`).
+  again on a text the agent changed, as the thread `thread@first-prototype@command-during-gesture`
+  quotes the audit.
 - **One group per client in the session**, Q33's (c), lost to the same thread: per-connection undo
-  state, and an undo that writes the author's earlier text over the agent's or is refused
-  (`argument@first-prototype@arg-85`).
+  state (`argument@first-prototype@arg-85`), and an undo that writes the author's earlier text over
+  the agent's or is refused, as the same thread quotes the audit. It reopens
+  `design@rootpoint-protocol@gesture-undo`, and T5's response names it.
 - **Holding a socket command until the window's group closes**, ruled out at the audit: the agent
   waits with no reply as long as a stay lasts, against `goal@rootpoint-app@live-agent-edits`
   (`argument@first-prototype@arg-81`).
@@ -594,16 +798,21 @@ to remove.
   when no gesture is open**, (iii), lost to (i) of `thread@first-prototype@control-passing`: a click
   before each task, or refusals for no visible reason (`argument@first-prototype@arg-87`,
   `argument@first-prototype@arg-94`). T6 brings (iii) back if (i) ends the owner's gestures in real
-  use.
+  use; D6 takes from (ii) the case after a take-over.
 - **Implicit control, and verbs the listener intercepts**, lost to
   `thread@first-prototype@control-commands` (`argument@first-prototype@arg-89`).
-- **Control held by one connection**, lost to the same thread: `rootpoint-ctl` opens one connection
-  per command (`argument@first-prototype@arg-97`).
+- **Control held by one connection**, lost to `thread@first-prototype@one-controller-at-a-time`:
+  `rootpoint-ctl` opens one connection per command (`argument@first-prototype@arg-97`).
+- **`release` closing the socket's open group with `end`**, the session's clause at the assembly,
+  lost to the refused `release`: headless, with no window, the group would close in one host only
+  (`argument@first-prototype@arg-106`).
 - **Every window input ignored**, lost to `thread@first-prototype@window-under-protocol-control`:
   the author inspects the slides while the agent edits, and editing commands read no view
   (`argument@first-prototype@arg-103`, `argument@first-prototype@arg-104`).
-- **Esc taking control**, in presenter mode and in the editor, lost to the same thread, by the
-  owner's word in O24 (`argument@first-prototype@arg-100`, `argument@first-prototype@arg-101`).
+- **Esc taking control**, lost to the same thread: in presenter mode by the owner's word in O24
+  (`argument@first-prototype@arg-100`); in the editor by the session's default of round 3, that
+  Esc keeps one meaning, "leave" (`argument@first-prototype@arg-101`), within the thread the owner
+  approved in O26.
 - **A synthetic cursor**, as in the owner's game, lost to the same thread: the protocol has no
   pointer commands (`argument@first-prototype@arg-91`).
 - **A view the window keeps apart while the socket holds control**, lost to
@@ -701,21 +910,28 @@ round 3; O26 round 4.
 ## Harvest
 
 Judged by the entry tests of `primer@design-heads`, under
-`skill@knowledge-architect-decision-recording`:
+`skill@knowledge-architect-decision-recording`. Each thread is judged on its own, as its item's
+harvest line says: two statements are one head only where they answer one question and lose to the
+same nearest rival, and each part states its own ground, the owner's where the item says so.
 
 - The socket listener and its threads, into the design home of the app crate's Component, citing
   `design@rootpoint-protocol@protocol-transport`.
-- `thread@first-prototype@one-controller-at-a-time`, with the threads that join it by the rules on
-  one decision per head (`thread@first-prototype@control-passing`,
-  `thread@first-prototype@read-without-control`,
-  `thread@first-prototype@window-under-protocol-control`, `thread@first-prototype@control-at-start`,
-  `thread@first-prototype@interrupted-client-group`), into the design home of the app crate's
-  Component; the rule on the owner's word, the rest on its argument; citing the `rejected` entries
-  the losing alternatives earn, if any.
+- `thread@first-prototype@one-controller-at-a-time`, with its clause that control belongs to the
+  socket as a whole, into the design home of the app crate's Component.
+- `thread@first-prototype@control-passing`, `thread@first-prototype@read-without-control`,
+  `thread@first-prototype@window-under-protocol-control`, `thread@first-prototype@control-at-start`
+  and `thread@first-prototype@interrupted-client-group`, each by its item's harvest line, into the
+  design home of the app crate's Component or a comment at its code.
 - `thread@first-prototype@control-commands`, into the design home of the protocol crate's
-  Component, citing `design@rootpoint-protocol@protocol-transport`.
-- The rewrite of the last sentence of `design@rootpoint-app@gesture-groups`, and of the line of
-  `path@rootpoint-app@CLAUDE.md` on `App::presenter`.
+  Component, citing `design@rootpoint-protocol@protocol-transport`; `rootpoint-ctl` and
+  `rootpoint_protocol::control::send` by that item's harvest line.
+- The losing alternatives, each judged by the tests of
+  `skill@knowledge-architect-decision-recording@losing-alternatives`; those the session expects to
+  meet a test: Q33's (c), which reopens `design@rootpoint-protocol@gesture-undo` and which T5's
+  response names; (iii), toward which T6 reopens `thread@first-prototype@control-passing`; implicit
+  control and verbs the listener intercepts, which would change the grammar; control held by one
+  connection, which would change the socket's contract.
+- Every text "What changes in the record" lists, under "Decided design".
 - T6, in the tripwires home of the app crate's Component, on the owner's word, as
   `skill@knowledge-architect-decision-recording@ruled-tripwires` says.
 - T5, `tripwire@rootpoint-protocol@client-joins-gui-group`, put to the owner: its condition is

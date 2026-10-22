@@ -143,7 +143,7 @@ slice's spec, with the gates run before each commit.
   `argument@first-prototype@arg-25` are those of the goal setting, A2 to A4, a separate numbering.
   **Q5 to Q13**: the questions put to the owner at the reviews and the audits of the first slices,
   in their commits and their specs, since deleted; Q14 was numbered in the conversation only.
-  **D1 to D5**: the defaults put to the owner, listed in their own section.
+  **D1 to D6**: the defaults put to the owner, listed in their own section.
 - **O1 to O12**: the owner's messages, quoted in "Status and audience". **O13 to O16**: the
   owner's messages in the design session held at the audit of the slice `editor-shell`,
   quoted in that slice's spec, since deleted, with the questions **Q15 to Q21** they answer; that session's
@@ -160,7 +160,10 @@ slice's spec, with the gates run before each commit.
   `spec@first-prototype@live-control`, its #command-during-gesture, in that slice's spec.
   **O20 to O26**: the owner's messages in the design session held at that audit, with the
   questions **Q34** and **Q35**, the criteria **C13 to C21**, labelled K1 to K9 there, the tripwire
-  **T6** and the acceptance criterion **AC7**, all quoted in that slice's spec.
+  **T6** and the acceptance criterion **AC7**, all quoted in that slice's spec. **Q36** and
+  **Q37**: the questions put to the owner after the reviews of that slice's plan, on two
+  attributions of the owner's words and on the re-entry of
+  `issue@rootpoint-app@alt-arrows-follow-the-tree`, ruled in the messages of its repair commits.
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
@@ -227,9 +230,11 @@ crate, and the prototype `thread@first-prototype@prototype-scope` lists, in the 
 
 ## What is already decided
 
-**Recorded decisions the design rests on**: none. The design homes and the rejected homes of
-rootpoint and xtask held no entry when this document was written. The work reverses or rewrites no
-recorded decision.
+**Recorded decisions the design rests on**: none when this document was written, since the design
+homes and the rejected homes of rootpoint and xtask held no entry then, and the document reversed
+or rewrote none. Each slice since has harvested its decisions into the design homes of the
+Components it built; a slice's spec names the recorded decisions it rests on, and lists the ones
+it rewrites under "What changes in the record", as `spec@first-prototype@live-control` does.
 
 **The goals it serves**, all of `register@rootpoint@goal`, each the source of a criterion below:
 `goal@rootpoint@real-presentations`, `goal@rootpoint@no-language-no-build`,
@@ -1217,6 +1222,16 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
   editor has" excluded, read literally, presenter mode, saving and the protocol, which other goals
   require. The owner ruled: "Q4 accepted, go ahead". The goal is reworded under
   `skill@knowledge-architect-goal-setting`.
+- **D6, awaiting the owner.** After the window takes control with its button, the socket's `control`
+  replies `err the author took control` until the author gives control back with a button "Give
+  control" of the banner; at start and after the socket's `release`, `control` is granted at once,
+  as the owner chose in O23. Bears on `thread@first-prototype@control-passing`, of
+  `spec@first-prototype@live-control`, where `argument@first-prototype@arg-107` argues it: under
+  the rule as ruled, an agent that answers its refused edit with `control` takes control back at
+  once, so the author's take-over holds only while the agent does not ask, and
+  `goal@rootpoint-app@live-agent-edits` asks that the author takes the work over. A premise of the
+  owner's ruling on Q34 proved false, so the case it covers, a `control` after a take-over, waits
+  for the owner's word, per `primer@owner-word-premise`; the rest of the slice goes on.
 
 ## Harvest
 
@@ -1252,8 +1267,9 @@ Each slice's steps are in its spec, linked from this directory's `README.md` row
 - **An image export** reuses `render_slide`.
 - **A wider lock** than one controller over the whole document, as several clients each with
   control of their own, or locks per slide or per node, which `goal@rootpoint@minimal-content-set`
-  neither asks for nor forbids, is designed in a session of its own; on the owner's word, a survey
-  of prior art becomes worth running then, and not before.
+  neither asks for nor forbids, is designed in a session of its own. The owner judged a survey of
+  prior art not necessary for the one lock, and thought one would become worth running for a
+  wider lock.
 - **Publishing to crates.io**, which the owner named in O5 and `goal@rootpoint@real-presentations`
   admits as "may be published later", gives each published crate a `CRATES-IO.md` page, as
   `skill@knowledge-architect-setup@rust-project` proposes.
