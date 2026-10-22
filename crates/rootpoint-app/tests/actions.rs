@@ -1,7 +1,13 @@
 //! Every UI action goes through the session: each action of the app, called with no window, leaves
 //! the document and the view that its commands, run on a second session, leave; and one `undo`
 //! after it leaves them equal too, so the action groups its commands as they do, as
-//! `design@rootpoint-app@actions-are-commands` says.
+//! `design@rootpoint-app@actions-are-commands` says. The same tests run in a browser, for the
+//! browser build, as `path@rootpoint-app@tests/web.rs` says.
+
+#[cfg(target_arch = "wasm32")]
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_test::wasm_bindgen_test as test;
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;

@@ -37,9 +37,12 @@ impl App {
             if ui.button("Open…").clicked() {
                 self.open_dialog();
             }
+            // The browser build saves no file, so it shows no button that saves.
+            #[cfg(not(target_arch = "wasm32"))]
             if ui.button("Save").clicked() {
                 self.save();
             }
+            #[cfg(not(target_arch = "wasm32"))]
             if ui.button("Save as…").clicked() {
                 self.save_dialog();
             }

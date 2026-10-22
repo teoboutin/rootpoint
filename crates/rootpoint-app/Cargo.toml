@@ -20,7 +20,6 @@ eframe = { version = "0.37.0", default-features = false, features = [
 # The caret and the selection of a text edited in place are Parley's, on the render crate's layout;
 # the same version and features as the render crate's, so the two share one `Layout` type.
 parley = { version = "0.12", default-features = false, features = ["std"] }
-rfd = "0.17.2"
 rootpoint-model = { path = "../rootpoint-model" }
 rootpoint-protocol = { path = "../rootpoint-protocol" }
 rootpoint-render = { path = "../rootpoint-render" }
@@ -29,7 +28,34 @@ rootpoint-render = { path = "../rootpoint-render" }
 # winit with its default features: among them, Wayland's libraries are loaded at run time, and its
 # windows get client-side decorations.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rfd = "0.17.2"
 winit = "0.30.13"
+
+# The browser build: its entry point, its pickers and full screen, through the page. The versions
+# are the ones eframe 0.37.0 links.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "0.3.106"
+wasm-bindgen = "0.2.129"
+wasm-bindgen-futures = "0.4.79"
+web-sys = { version = "0.3.106", features = [
+    "Blob",
+    "Document",
+    "Element",
+    "File",
+    "FileList",
+    "HtmlCanvasElement",
+    "HtmlInputElement",
+    "KeyboardEvent",
+    "Window",
+    "console",
+] }
+
+[dev-dependencies]
+# The golden image of `path@rootpoint-app@tests/web.rs`, read and written as PNG.
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3.79"
 
 [[bin]]
 name = "rootpoint"

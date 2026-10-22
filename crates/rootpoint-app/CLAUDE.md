@@ -44,6 +44,17 @@ gives where a text's characters are, in slide units, which `App::layout` carries
 selection changes the side panel, which egui sizes again on the next frame, so a test lets two
 frames pass before it reads a place.
 
+## The browser build differs only where the page does
+
+The code built for the wasm target alone is under `cfg(target_arch = "wasm32")`: the entry point in
+`path@rootpoint-app@src/main.rs`, the pickers and full screen in `path@rootpoint-app@src/web.rs`,
+and the dialogs of `path@rootpoint-app@src/actions.rs` that ask the page; the control socket is
+under `cfg(unix)`, which the wasm target is not. What a picker gives goes through an action of
+`actions.rs`, `App::open_directory` or `App::add_picked_image`, built on every target, so the
+native tests check it. `path@rootpoint-app@tests/actions.rs` and `path@rootpoint-app@tests/web.rs`
+also run in a headless browser, the gate `wasm-test` of `path@xtask@src/main.rs`; a test added to
+either must build for the wasm target, with no file system and no thread.
+
 ## The build is tied to its checkout
 
 `path@rootpoint-app@src/lib.rs` and `path@rootpoint-app@src/main.rs` read `ROOTPOINT_CHECKOUT`. So

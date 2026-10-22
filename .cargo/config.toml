@@ -4,3 +4,8 @@ klarch = "run -q --release -p xtask -- klarch"
 
 [env]
 ROOTPOINT_CHECKOUT = { value = ".", relative = true, force = true }
+
+# The tests built for the browser run in a headless browser, through the runner of the
+# `wasm-bindgen` version in `Cargo.lock`, which `cargo x web` checks for.
+[target.wasm32-unknown-unknown]
+runner = "wasm-bindgen-test-runner"

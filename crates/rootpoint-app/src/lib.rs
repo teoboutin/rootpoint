@@ -10,13 +10,18 @@ mod assets;
 pub mod control;
 pub mod editing;
 pub mod hit;
+mod memory;
 mod panels;
 pub mod selection;
 mod view;
+#[cfg(target_arch = "wasm32")]
+mod web;
 
+#[cfg(not(target_arch = "wasm32"))]
+use eframe::egui::ViewportCommand;
 use eframe::egui::{
     self, CentralPanel, Color32, ColorImage, Context, Frame, Key, KeyboardShortcut, Modifiers,
-    Panel, Pos2, Rect, TextureHandle, TextureOptions, Ui, ViewportCommand,
+    Panel, Pos2, Rect, TextureHandle, TextureOptions, Ui,
 };
 use rootpoint_model::{NodeId, SlideId};
 use rootpoint_protocol::{Command, Files, Reply, Session};
@@ -25,6 +30,10 @@ use rootpoint_render::{Precision, Report, render_slide};
 use assets::Assets;
 use hit::{Edge, Layout, Press};
 use selection::{Memory, Move};
+
+pub use memory::MemoryFiles;
+#[cfg(target_arch = "wasm32")]
+pub use web::keep_f5;
 
 /// The largest side of the slide's texture, in pixels: egui-wgpu 0.37.0 asks the GPU for textures
 /// of at most 8192 pixels per side, below the render crate's `MAX_SIDE`.
@@ -63,6 +72,12 @@ pub struct App {
     listener: Option<control::Listener>,
     /// Who holds the authority to edit: the window, or the control socket.
     controller: Controller,
+    /// The files, when the app holds them in memory, as the browser build does: the same files
+    /// as `files`, which the actions that open a picked directory or add a picked image fill.
+    held: Option<MemoryFiles>,
+    /// The pickers and full screen of the page.
+    #[cfg(target_arch = "wasm32")]
+    web: web::Web,
 }
 
 /// Who holds the authority to edit, per `design@rootpoint-app@one-controller-at-a-time`: the window
@@ -138,7 +153,19 @@ impl App {
             #[cfg(unix)]
             listener: None,
             controller: Controller::Window,
+            held: None,
+            #[cfg(target_arch = "wasm32")]
+            web: web::Web::default(),
         }
+    }
+
+    /// An editor on an empty session whose files are held in memory, as the browser build's are:
+    /// `App::open_directory` and `App::add_picked_image` put files in, and a save writes none.
+    pub fn in_memory() -> Self {
+        let files = MemoryFiles::default();
+        let mut app = App::new(Box::new(files.clone()));
+        app.held = Some(files);
+        app
     }
 
     /// Who holds the authority to edit.
@@ -261,6 +288,8 @@ impl App {
     pub fn frame(&mut self, ui: &mut Ui) {
         #[cfg(unix)]
         self.serve_socket();
+        #[cfg(target_arch = "wasm32")]
+        self.serve_pickers(ui.ctx());
         self.view.take_control = None;
         // A loss of focus releases a drag and leaves a stay in editing and its group, per
         // `design@rootpoint-app@gesture-groups`.
@@ -275,9 +304,30 @@ impl App {
         // Presenter mode is full screen, and the editor is not.
         let presenting = self.session.view().presenting.is_some();
         if presenting != self.fullscreen {
+            // eframe 0.37.0's web backend handles no `ViewportCommand::Fullscreen`.
+            #[cfg(target_arch = "wasm32")]
+            self.web.set_fullscreen(presenting);
+            #[cfg(not(target_arch = "wasm32"))]
             ui.ctx()
                 .send_viewport_cmd(ViewportCommand::Fullscreen(presenting));
             self.fullscreen = presenting;
+        }
+    }
+
+    /// The browser build: open what the pickers read since the last frame; and leave presenter
+    /// mode when the page left full screen, since the browser takes Esc for that.
+    #[cfg(target_arch = "wasm32")]
+    fn serve_pickers(&mut self, ctx: &Context) {
+        self.web.set_context(ctx);
+        for picked in self.web.take() {
+            match picked {
+                web::Picked::Directory(files) => self.open_directory(files),
+                web::Picked::Image(name, bytes) => self.add_picked_image(name, bytes),
+                web::Picked::Failed(reason) => self.error = Some(reason),
+            }
+        }
+        if self.fullscreen && self.web.left_fullscreen() {
+            self.stop_presenting();
         }
     }
 

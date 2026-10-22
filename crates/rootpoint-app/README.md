@@ -49,7 +49,28 @@ characters no font has, and text not drawn.
 - The slide list shows each slide: a click shows it, a drag onto another row moves it there, and
   its buttons add a slide after the shown one, and remove or duplicate the shown one.
 
+## In a web browser
+
+`cargo x web` builds the browser build into `target/web/`: a page, the editor built for the wasm
+target and its loader, which any static file server serves, such as
+`python3 -m http.server -d target/web`. It opens the built-in sample, and has the editor's actions
+above, with these differences:
+
+- Open (Ctrl+O) asks for a directory, with the browser's directory picker, and opens the one
+  `.ron` file directly in it, its images and fonts read from the directory's files. The browser
+  reads every file of the directory, at any depth, when it is picked.
+- It saves nothing: it has no Save button, and Ctrl+S says so in the status line. Its changes are
+  lost when the page is closed or reloaded; F5 presents and does not reload.
+- Add an image asks for a PNG or JPEG file, which joins the presentation's directory in memory
+  under its name, or the name with a number when another file has it.
+- Present asks the browser for full screen; when the browser leaves full screen, as it does on
+  Esc, presenter mode ends.
+- It has no control socket.
+
+## Its library
+
 Its library root holds the editor's state, `App`, whose `run` takes a protocol `Command`: every
 action of the editor is such a command, run on one `rootpoint_protocol::Session`. `App::frame`
 shows the editor for one frame in an `egui::Ui`, so a test drives it with `Context::run_ui` and
-no window.
+no window. `App::in_memory` makes an editor whose files are held in memory, as the browser build's
+are, which `App::open_directory` and `App::add_picked_image` fill.

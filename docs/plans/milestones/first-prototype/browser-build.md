@@ -27,7 +27,7 @@ cites.
 - The command that builds the static directory, `cargo x web`, per
   `goal@xtask@repeated-tasks-are-automated`: the editor's binary built in release for the wasm
   target, bound by the `wasm-bindgen` program of `wasm-bindgen-cli` at the version of the
-  `wasm-bindgen` crate in `Cargo.lock`, and the page of `planned@rootpoint-app@web/index.html`.
+  `wasm-bindgen` crate in `Cargo.lock`, and the page of `path@rootpoint-app@web/index.html`.
   wasm-bindgen-cli over trunk: claim 1's runner, `wasm-bindgen-test-runner`, comes with it, so one
   tool serves both.
 
@@ -38,14 +38,14 @@ cites.
    save excepted per D3; adding an image reads it through the browser's file picker. Test:
    `path@rootpoint-app@tests/actions.rs` runs in a headless Firefox through
    `wasm-bindgen-test-runner` and geckodriver, both on the owner's machine, as the new gate
-   `wasm-test` of `path@xtask@src/main.rs`; and `planned@rootpoint-app@tests/web.rs` checks
+   `wasm-test` of `path@xtask@src/main.rs`; and `path@rootpoint-app@tests/web.rs` checks
    `App::open_directory` and `App::add_picked_image`, the actions a picker's files go through, on
    both targets.
 2. **The same layout.** A slide rendered in the browser build and natively at the same size gives
-   the same image. Test: in `planned@rootpoint-app@tests/web.rs`, the image the app hands its
+   the same image. Test: in `path@rootpoint-app@tests/web.rs`, the image the app hands its
    texture for the sample's first slide in presenter mode, in a 640×360 window, equals pixel for
    pixel the golden image a native run of the same test writes,
-   `planned@rootpoint-app@tests/data/sample-s1.png`.
+   `path@rootpoint-app@tests/data/sample-s1.png`.
 
 ## Audit subjects
 

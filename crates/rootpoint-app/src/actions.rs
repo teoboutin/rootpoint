@@ -467,7 +467,103 @@ impl App {
         self.run(Command::Stop);
     }
 
+    /// Open the presentation of a directory the author picked, given as each file's path under
+    /// the picked directory, its first component that directory's name, and its bytes: the
+    /// files become the ones the app holds in memory, under their paths below the directory, and
+    /// the one `.ron` file directly in it is loaded. Only an app made by `App::in_memory` holds
+    /// them; the browser build is one.
+    pub fn open_directory(&mut self, picked: Vec<(String, Vec<u8>)>) {
+        if self.socket_holds() {
+            return;
+        }
+        let Some(held) = self.held.clone() else {
+            self.error = Some("this editor holds no files in memory".to_owned());
+            return;
+        };
+        let files: std::collections::BTreeMap<String, Vec<u8>> = picked
+            .into_iter()
+            .map(|(path, bytes)| match path.split_once('/') {
+                Some((_, below)) => (below.to_owned(), bytes),
+                None => (path, bytes),
+            })
+            .collect();
+        let presentations: Vec<&String> = files
+            .keys()
+            .filter(|p| !p.contains('/') && p.ends_with(".ron"))
+            .collect();
+        let [presentation] = presentations[..] else {
+            self.error = Some(format!(
+                "a presentation directory holds one .ron file directly in it, and this one holds {}",
+                presentations.len()
+            ));
+            return;
+        };
+        let presentation = presentation.clone();
+        held.replace(files);
+        self.open_file(presentation);
+    }
+
+    /// Add an image the author picked, by its file name and its bytes, as an asset: it joins the
+    /// files the app holds in memory, in the presentation's directory, under its name, or the name
+    /// with a number where another file already has it.
+    pub fn add_picked_image(&mut self, name: String, bytes: Vec<u8>) {
+        if self.socket_holds() {
+            return;
+        }
+        let Some(held) = self.held.clone() else {
+            self.error = Some("this editor holds no files in memory".to_owned());
+            return;
+        };
+        let directory = self.session.directory().to_path_buf();
+        let (stem, extension) = match name.rsplit_once('.') {
+            Some((stem, ext)) => (stem.to_owned(), format!(".{ext}")),
+            None => (name.clone(), String::new()),
+        };
+        let mut path = name;
+        for n in 2.. {
+            let full = normalize(&directory.join(&path));
+            let Some(full) = self.utf8(&full) else {
+                return;
+            };
+            match held.get(&full) {
+                Some(held) if held != bytes => path = format!("{stem}-{n}{extension}"),
+                _ => {
+                    held.insert(full, bytes);
+                    break;
+                }
+            }
+        }
+        self.add_asset(path);
+    }
+
+    /// Ctrl+O: ask for a presentation directory, whose files the next frames read, then open it
+    /// with `App::open_directory`.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn open_dialog(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        self.web.pick_directory();
+    }
+
+    /// Ctrl+S: the browser build saves no file, and says so.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn save(&mut self) {
+        self.error = Some("the browser build saves no file".to_owned());
+    }
+
+    /// Ask for an image file, which the next frames read, then add it with
+    /// `App::add_picked_image`.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn add_asset_dialog(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        self.web.pick_image();
+    }
+
     /// Ctrl+O: ask for a presentation file, and load it.
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn open_dialog(&mut self) {
         if self.socket_holds() {
             return;
@@ -481,6 +577,7 @@ impl App {
     }
 
     /// Ctrl+S: save to the presentation's file, or ask for one when it has none.
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn save(&mut self) {
         if self.socket_holds() {
             return;
@@ -492,6 +589,7 @@ impl App {
     }
 
     /// Ask for the file to save to.
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn save_dialog(&mut self) {
         if self.socket_holds() {
             return;
@@ -507,6 +605,7 @@ impl App {
 
     /// Ask for an image file, and add it as an asset, its path relative to the session's
     /// directory, as every asset's path is.
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn add_asset_dialog(&mut self) {
         if self.socket_holds() {
             return;

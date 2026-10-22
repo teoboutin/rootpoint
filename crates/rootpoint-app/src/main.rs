@@ -3,18 +3,51 @@
 //! socket at that path, and runs the commands `rootpoint-ctl` sends it; the window exits with an
 //! error when another window listens there. Paths are relative to the working directory, as the
 //! headless runner's are.
+//!
+//! Built for the wasm target, it is the browser build instead: it draws in the page's canvas of
+//! id `rootpoint`, opens the built-in sample, and holds its files in memory.
 
 use rootpoint_app::App;
 #[cfg(unix)]
 use rootpoint_app::control::Listener;
+#[cfg(not(target_arch = "wasm32"))]
 use rootpoint_protocol::Files;
 
 // Ties this binary's build to its checkout.
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
+/// The browser build: the sample, in the page's canvas.
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    use wasm_bindgen::JsCast;
+
+    let mut app = App::in_memory();
+    app.open_sample();
+    rootpoint_app::keep_f5();
+    wasm_bindgen_futures::spawn_local(async move {
+        let canvas = web_sys::window()
+            .and_then(|w| w.document())
+            .and_then(|d| d.get_element_by_id("rootpoint"))
+            .and_then(|e| e.dyn_into::<web_sys::HtmlCanvasElement>().ok())
+            .expect("the page has a canvas of id rootpoint");
+        let started = eframe::WebRunner::new()
+            .start(
+                canvas,
+                eframe::WebOptions::default(),
+                Box::new(|_| Ok(Box::new(app))),
+            )
+            .await;
+        if let Err(e) = started {
+            web_sys::console::error_1(&e);
+        }
+    });
+}
+
 /// The native file system, paths relative to the working directory.
+#[cfg(not(target_arch = "wasm32"))]
 struct NativeFiles;
 
+#[cfg(not(target_arch = "wasm32"))]
 impl Files for NativeFiles {
     fn read(&mut self, path: &str) -> Result<Vec<u8>, String> {
         std::fs::read(path).map_err(|e| format!("{path}: {e}"))
@@ -29,6 +62,7 @@ impl Files for NativeFiles {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
     let mut args = std::env::args().skip(1);
     let (mut socket, mut presentation) = (None, None);
