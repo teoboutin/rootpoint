@@ -304,7 +304,7 @@ impl App {
         // Presenter mode is full screen, and the editor is not.
         let presenting = self.session.view().presenting.is_some();
         if presenting != self.fullscreen {
-            // eframe 0.37.0's web backend handles no `ViewportCommand::Fullscreen`.
+            // The browser build asks the page, per `design@rootpoint-app@page-full-screen`.
             #[cfg(target_arch = "wasm32")]
             self.web.set_fullscreen(presenting);
             #[cfg(not(target_arch = "wasm32"))]
@@ -315,7 +315,7 @@ impl App {
     }
 
     /// The browser build: open what the pickers read since the last frame; and leave presenter
-    /// mode when the page left full screen, since the browser takes Esc for that.
+    /// mode when the page left full screen, per `design@rootpoint-app@page-full-screen`.
     #[cfg(target_arch = "wasm32")]
     fn serve_pickers(&mut self, ctx: &Context) {
         self.web.set_context(ctx);

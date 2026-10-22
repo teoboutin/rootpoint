@@ -128,10 +128,9 @@ fn wasm_gate() -> Gate {
     }
 }
 
-/// The app's tests that run in a browser, for the browser build: its actions, the layout of a slide
-/// against the native golden image, and F5 kept from the browser, which only a browser can refute,
-/// as `goal@rootpoint-app@browser-window` asks the same actions there. `wasm-bindgen-test-runner`
-/// runs them in a headless Firefox, through geckodriver, both found on the `PATH`.
+/// The app's tests that run in a browser, per `design@xtask@browser-tests-gated`.
+/// `wasm-bindgen-test-runner` runs them in a headless Firefox, through geckodriver, both found on
+/// the `PATH`.
 fn wasm_test_gate() -> Gate {
     Gate {
         name: "wasm-test".to_owned(),
@@ -158,7 +157,8 @@ fn wasm_test_gate() -> Gate {
 
 /// Build the editor's binary for the wasm target, bind it with `wasm-bindgen` for a page that
 /// loads it as a module, and write it with the app's page into `out`. The `wasm-bindgen` program
-/// must be the version of the `wasm-bindgen` crate in `Cargo.lock`, since the two share a format.
+/// must be the version of the `wasm-bindgen` crate in `Cargo.lock`, per
+/// `design@xtask@one-tool-binds-and-tests`.
 fn build_web(root: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
     let target = target_directory(root)?;
     let out = out.unwrap_or_else(|| target.join("web"));
@@ -193,6 +193,7 @@ fn build_web(root: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
         return Err(format!("the build wrote no {}", module.display()));
     }
     if out.exists() {
+        refuse_to_empty(root, &out)?;
         std::fs::remove_dir_all(&out).map_err(|e| format!("{}: {e}", out.display()))?;
     }
     run(Process::new("wasm-bindgen")
@@ -202,6 +203,33 @@ fn build_web(root: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
     let page = root.join("crates/rootpoint-app/web/index.html");
     std::fs::copy(&page, out.join("index.html")).map_err(|e| format!("{}: {e}", page.display()))?;
     Ok(out)
+}
+
+/// Refuse to empty a directory that holds the checkout or a file git tracks, as `--out .` or
+/// `--out crates/rootpoint-app/web` would: the output is a build's, and emptying it is no loss.
+fn refuse_to_empty(root: &Path, out: &Path) -> Result<(), String> {
+    let out = out
+        .canonicalize()
+        .map_err(|e| format!("{}: {e}", out.display()))?;
+    let root = root
+        .canonicalize()
+        .map_err(|e| format!("{}: {e}", root.display()))?;
+    if root.starts_with(&out) {
+        return Err(format!("{} holds the checkout", out.display()));
+    }
+    let tracked = Process::new("git")
+        .current_dir(&root)
+        .args(["ls-files", "--"])
+        .arg(&out)
+        .output()
+        .map_err(|e| format!("git ls-files: {e}"))?;
+    if !tracked.status.success() || !tracked.stdout.is_empty() {
+        return Err(format!(
+            "{} holds files git tracks, or git could not tell",
+            out.display()
+        ));
+    }
+    Ok(())
 }
 
 /// The directory cargo builds into, as `cargo metadata` gives it from the root: `CARGO_TARGET_DIR`,

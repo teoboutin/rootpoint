@@ -507,9 +507,8 @@ impl App {
         }) {
             Reply::Ok(_) => {
                 self.path = Some(presentation);
-                // Every picked presentation's directory is the same, the root of the files held,
-                // so the decoded images and fonts, keyed on the directory and the assets' paths,
-                // are those of the last directory: they are decoded again.
+                // The decoded assets are those of the last directory, which had the same root, per
+                // `design@rootpoint-app@picked-files-by-path`.
                 self.assets = crate::assets::Assets::default();
             }
             Reply::Err(_) => {
@@ -544,6 +543,9 @@ impl App {
                 Some(held) if held != bytes => path = format!("{stem}-{n}{extension}"),
                 _ => {
                     held.insert(full, bytes);
+                    // An asset the document names at this path, drawn missing until now, is
+                    // decoded again: the cache's key holds the path, not whether its file exists.
+                    self.assets = crate::assets::Assets::default();
                     break;
                 }
             }
@@ -561,7 +563,8 @@ impl App {
         self.web.pick_directory();
     }
 
-    /// Ctrl+S: the browser build saves no file, and says so.
+    /// Ctrl+S: the browser build saves no file, and says so, per
+    /// `design@rootpoint-app@browser-load-only`.
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn save(&mut self) {
         self.error = Some("the browser build saves no file".to_owned());

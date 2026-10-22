@@ -6,8 +6,8 @@ This is the milestone document of the first prototype of rootpoint: an editor wi
 out slides as trees of splits, puts plain text or an image in each area, saves to a readable text
 file, shows a presenter mode, runs headless, is driven by text commands and builds for the browser.
 It is written for the sessions that implement its slices, which did not witness the discussion that
-produced it. It leaves the repository when its last slice lands; each slice's spec leaves when that
-slice lands.
+produced it. It leaves the repository in the closing commit its "Harvest" describes, after its last
+slice lands and the owner judges AC4; each slice's spec leaves when that slice lands.
 
 - Where this document, or a slice's spec, and a design home disagree on a point that "What is
   already decided" does not list as reversed or rewritten, the design home wins.
@@ -168,7 +168,8 @@ slice's spec, with the gates run before each commit.
   `issue@rootpoint-app@alt-arrows-follow-the-tree`; with **D6**, they are answered by **O27**, which
   also proposes the tripwire **T7**, both quoted in that slice's spec, since deleted. **O28 to
   O31**: the owner's messages during the trial of that slice's built work, AC7's, quoted in that
-  slice's spec, since deleted.
+  slice's spec, since deleted. **Q38 and Q39**: the questions put after the review before the merge
+  of the slice `browser-build`, in "Defaults awaiting the owner".
 - **A1 to A8**: the session's messages: A1 the first analysis of the idea, A2 to A4 the drafts of
   the goals, A5 round 1, A6 round 2, A7 round 3 with the checkpoint and the premortem, A8 the
   proposal of this milestone.
@@ -473,8 +474,8 @@ the scope and the hedge of the answer.
 
 Proposed by the session in round 1 (`argument@first-prototype@arg-41`), by
 `criterion@first-prototype@c10-crate-rule`. Closed by O10's whole-table agreement. Final state:
-approved. Shape: "Decided design" below. Harvest: a design head of rootpoint, at the harvest of
-the slice `browser-build`, the slice that completes the split.
+approved. Shape: "Decided design" below. Harvest: a design head of rootpoint, at the milestone's
+closing commit, after the slice `browser-build`, the slice that completes the split.
 
 ### The prototype holds the scope of round 1, and its wasm build is gated from the first slice `##prototype-scope`
 
@@ -877,7 +878,7 @@ crates/rootpoint-model/   (crate rootpoint-model)
   Op { AddSlide, RemoveSlide, RestoreSlide, MoveSlide, DuplicateSlide, Split, Remove,
        SetTree, MoveDivider, Swap, SetContent, AddAsset, RemoveAsset, RestoreAsset },
   OpError, apply
-  (fields and shapes: "Decided design" and "Mapping tables" of its slice's spec)
+  (fields and shapes: "Decided design" and "Mapping tables" of its slice's spec, since deleted)
   added by the native GUI slice: node_rects, Op::SetAssetSource { id, source }
 crates/rootpoint-render/  (crate rootpoint-render)
   FontSet, RenderError, render_slide
@@ -895,8 +896,8 @@ tools/xtask/src/main.rs   (existing file)
 
 ## Decided design
 
-The design of each thread built by one slice is in that slice's spec. The threads below cross
-slices.
+The design of each thread built by one slice was in that slice's spec, deleted when the slice
+landed, and is now in the design homes. The threads below cross slices.
 
 ### Slide coordinates
 
@@ -1258,6 +1259,18 @@ Every slice has landed, so no slice spec remains in this directory.
   among the readings the issue's wording permits, since "touches the app's keys" may or may not
   cover a slice that decides only which keys act, the owner chose that the slice does not meet the
   re-entry of `issue@rootpoint-app@alt-arrows-follow-the-tree`.
+- **Q38, awaiting the owner.** Whether the slice `browser-build` meets the re-entry of
+  `issue@rootpoint-app@alt-arrows-follow-the-tree`, "the design audit of the next slice that touches
+  the app's keys". The slice changes what Ctrl+O and Ctrl+S do in the browser build and keeps F5
+  from the page, `design@rootpoint-app@editor-keys-kept-from-browser`; it changes no binding of Alt
+  with an arrow, nor any key that moves through the tree. Q37's ruling, that the slice
+  `live-control` does not meet it, was given for that slice alone. Default: not met, since the
+  issue is about the keys that move through the tree, and this slice changes none of them.
+- **Q39, awaiting the owner.** Whether `goal@rootpoint-app@browser-window`, "met when the browser
+  build edits and presents the built-in sample with the same actions as the native window", counts
+  Save among those actions. The browser build saves nothing, per D3,
+  `design@rootpoint-app@browser-load-only`. Default: it does not, since the goal names editing and
+  presenting, so the goal is met.
 
 ## Harvest
 
@@ -1266,7 +1279,7 @@ Every slice has landed, so no slice spec remains in this directory.
   reports on AC4, harvests `thread@first-prototype@crate-split` and the wasm rule of
   `thread@first-prototype@prototype-scope` into rootpoint's design home, and deletes this
   directory.
-- **Each slice** harvests by the row of its spec.
+- **Each slice** harvested by the row of its spec.
 - **T3 and T4**, recorded on the owner's word, are written at the harvest of
   the slice `model-core` as the triggers of two `deferred` issue entries in the model
   crate's Component, as `skill@knowledge-architect-decision-recording@ruled-tripwires` says of a

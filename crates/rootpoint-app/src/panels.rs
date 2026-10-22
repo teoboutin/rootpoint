@@ -37,7 +37,8 @@ impl App {
             if ui.button("Open…").clicked() {
                 self.open_dialog();
             }
-            // The browser build saves no file, so it shows no button that saves.
+            // The browser build saves no file, so it shows no button that saves, per
+            // `design@rootpoint-app@browser-load-only`.
             #[cfg(not(target_arch = "wasm32"))]
             if ui.button("Save").clicked() {
                 self.save();

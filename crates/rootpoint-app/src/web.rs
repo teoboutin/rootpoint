@@ -145,8 +145,8 @@ impl Web {
         }
     }
 
-    /// Whether the page left full screen after it was seen in it: the browser takes Esc to leave
-    /// full screen, and the page may not see the key.
+    /// Whether the page left full screen after it was seen in it, per
+    /// `design@rootpoint-app@page-full-screen`.
     pub(crate) fn left_fullscreen(&mut self) -> bool {
         let now = web_sys::window()
             .and_then(|w| w.document())
@@ -157,12 +157,9 @@ impl Web {
     }
 }
 
-/// Keep F5, the key that starts presenter mode, from reloading the page, which would lose every
-/// change held in memory: eframe 0.37.0 lets the browser act on F5, in
-/// `should_prevent_default_for_key` of `path@elsewhere@src/web/events.rs`. Its listener on the
-/// canvas also stops every key's propagation, `WebOptions::should_stop_propagation`, so a listener
-/// of the window prevents F5 in the capture phase, before the canvas has it, and the canvas still
-/// gets the key.
+/// Keep F5, the key that starts presenter mode, from reloading the page: a listener of the window,
+/// in the capture phase, prevents its default, per
+/// `design@rootpoint-app@editor-keys-kept-from-browser`.
 pub fn keep_f5() {
     let Some(window) = web_sys::window() else {
         return;

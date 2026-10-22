@@ -400,7 +400,7 @@ presentation into one file, `design@rootpoint-model@image-storage`; until then
 On the owner's word: for the prototype, the owner chose a browser build that loads only over one
 that opens a presentation through the file picker and saves it by a download, judging that it
 reduces the work without losing much of the features; and proposed opening a whole directory
-rather than file by file. The owner confirmed both when the milestone was reviewed.
+rather than file by file.
 
 ### A picked directory's files are held in memory by their paths, and the document keeps its `Path` assets `##picked-files-by-path`
 
@@ -408,13 +408,12 @@ rather than file by file. The owner confirmed both when the milestone was review
 paths below the picked directory, and loads the presentation at the root of those paths;
 `App::add_picked_image` holds an image under its name in the presentation's directory. The session
 reads each `Path` asset from memory as it reads one from disk, per
-`design@rootpoint-protocol@session-files`, so the document is the one its file holds and a script
-of the same commands reproduces it. Every picked presentation has the same directory, so a new
-directory's assets are decoded again rather than taken from the cache, which is keyed on the
-directory and the assets' paths; and a directory that loads no presentation leaves the open one and
-its files as they were. The rival, each picked image converted to `AssetSource::Embedded`, would
-apply an operation per asset at every open, an undo step the author never made, and the document
-would no longer be its file.
+`design@rootpoint-protocol@session-files`, so the document is the one its file holds and a script of
+the same commands reproduces it, as `goal@rootpoint@headless-core` asks of every operation. Every
+picked presentation has the same directory, so a new directory's assets are decoded again rather
+than taken from the cache, which is keyed on the directory and the assets' paths. The rival, each
+picked image converted to `AssetSource::Embedded`, would apply an operation per asset at every open,
+an undo step the author never made, and the document would no longer be its file.
 
 ### In the browser, presenter mode asks the page for full screen, and ends when the page leaves it `##page-full-screen`
 
@@ -425,13 +424,17 @@ when it ends. The browser takes Esc to leave full screen, and the page may not r
 presenter mode ends when the page leaves full screen while presenting, as Esc ends it natively;
 `goal@rootpoint-app@presents-full-screen` asks presenter mode to be full screen.
 
-### In the browser, F5 is kept from reloading the page by a listener of the window in the capture phase `##f5-kept-from-browser`
+### In the browser, no key of the editor reaches the browser's own action `##editor-keys-kept-from-browser`
 
-F5 starts presenter mode, and a reload of the page loses every edit held in memory,
-`design@rootpoint-app@browser-load-only`. eframe 0.37.0 never prevents F5's default action, in
-`should_prevent_default_for_key` of `path@elsewhere@src/web/events.rs`, and its listener on the
-canvas stops the propagation of every key, `WebOptions::should_stop_propagation` being true by
-default. So a listener of the window in the capture phase prevents F5's default before the canvas
-has the key, and the canvas still receives it. A listener in the bubble phase never sees the key
-while the canvas has focus, measured in Firefox at the review of the browser build;
-`path@rootpoint-app@tests/web.rs` checks the capture in a headless browser.
+A key's default action in the browser, a reload or a step back in the history, leaves the page and
+loses every edit held in memory, `design@rootpoint-app@browser-load-only`. eframe 0.37.0 prevents
+the default of some keys itself, in `should_prevent_default_for_key` of
+`path@elsewhere@src/web/events.rs`: every arrow key, so Alt with an arrow,
+`design@rootpoint-app@node-selection`, never goes back in the history, and Ctrl with O or S. It
+never prevents F5's, which starts presenter mode, and its listener on the canvas stops the
+propagation of every key, `WebOptions::should_stop_propagation` being true by default. So a
+listener of the window in the capture phase prevents F5's default before the canvas has the key,
+and the canvas still receives it. A listener in the bubble phase never sees the key while the
+canvas has focus, `rejected@rootpoint-app@bubble-phase-f5-listener`. The test
+`f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation` of
+`path@rootpoint-app@tests/web.rs` checks it in a headless browser.

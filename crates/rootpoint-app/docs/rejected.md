@@ -75,3 +75,12 @@ many refusals as the agent's script has lines left, since each line opens a conn
 It would change the socket's contract and the command line of `rootpoint-ctl`, which other programs
 consume. The owner judged that restricting an agent to one edit at a time seems a less efficient
 method; `design@rootpoint-app@socket-batch` lets a connection carry a batch.
+
+### A listener of the window in the bubble phase that keeps F5 from the browser `##bubble-phase-f5-listener`
+
+`live`. eframe 0.37.0's listener on the canvas stops the propagation of every key, so such a
+listener never receives F5 while the canvas has focus, and the browser reloads the page: in a
+headless Firefox, an F5 dispatched on the focused canvas ended with its default not prevented, and
+the test `f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation` of
+`path@rootpoint-app@tests/web.rs` fails with the listener in the bubble phase.
+`design@rootpoint-app@editor-keys-kept-from-browser` listens in the capture phase.

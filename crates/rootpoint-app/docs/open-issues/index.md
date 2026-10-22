@@ -1,6 +1,6 @@
 **Generated — do not edit.** `cargo klarch index`
 
-6 entries
+7 entries
 
 | kind | title |
 | --- | --- |
@@ -9,4 +9,5 @@
 | design | [Alt and the arrows move through the tree, where the owner expects them to move on the slide](alt-arrows-follow-the-tree.md) |
 | observation | [A command of the control socket may wait while the window draws no frame](socket-waits-for-a-frame.md) |
 | todo | [An image or a font file changed on disk while the editor runs is not read again](changed-asset-not-read-again.md) |
+| todo | [Closing or reloading the browser build's page loses its edits with no warning](page-close-loses-edits.md) |
 | todo | [The window does not show the commands its control socket runs](socket-commands-not-shown.md) |

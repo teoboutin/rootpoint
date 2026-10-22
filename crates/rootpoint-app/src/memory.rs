@@ -1,7 +1,8 @@
 //! Files held in memory, by path: the file system of the browser build, which holds the files of a
-//! directory the author picked and the images added since, and writes none, since a browser
-//! cannot write the files beside a presentation. It is built on every target, so the native tests
-//! check the actions that read it.
+//! directory the author picked and the images added since, by path, per
+//! `design@rootpoint-app@picked-files-by-path`, and writes none, per
+//! `design@rootpoint-app@browser-load-only`. It is built on every target, so the native tests check
+//! the actions that read it.
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;

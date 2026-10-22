@@ -250,6 +250,31 @@ fn a_refused_directory_keeps_the_open_presentation_s_files() {
     );
 }
 
+/// An image added under the path the document already names, drawn missing until then, is drawn.
+#[test]
+fn an_image_added_at_a_missing_asset_s_path_is_drawn() {
+    let mut app = App::in_memory();
+    let ron = picked()
+        .into_iter()
+        .filter(|(p, _)| p.ends_with(".ron"))
+        .collect();
+    app.open_directory(ron);
+    app.present();
+    presented_image(&mut app);
+    assert_eq!(
+        app.status().len(),
+        1,
+        "the image is missing: {:?}",
+        app.status()
+    );
+    app.stop_presenting();
+    let png = include_bytes!("data/two-colours.png").to_vec();
+    app.add_picked_image("two-colours.png".to_owned(), png);
+    app.present();
+    presented_image(&mut app);
+    assert!(app.status().is_empty(), "{:?}", app.status());
+}
+
 /// F5 presents and never reloads the page: the window's listener prevents its default before the
 /// canvas's listener, which stops the propagation of every key as eframe 0.37.0's does.
 #[cfg(target_arch = "wasm32")]

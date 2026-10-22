@@ -14,15 +14,16 @@ program for a page that loads it as a module; the browser tests run through
 Both programs come with wasm-bindgen-cli, which writes the module the `wasm-bindgen` crate of the
 build describes, so its version is the crate's in `Cargo.lock`, and `cargo x web` refuses another.
 The rival, trunk, would build the page with a tool of its own, while the tests' runner would still
-need wasm-bindgen-cli: two tools where one serves both, which
-`goal@xtask@repeated-tasks-are-automated` keeps to one command.
+need wasm-bindgen-cli: two tools to install where one serves both.
 
 ### Every test of the browser build runs in a headless browser, as a gate `##browser-tests-gated`
 
 The gate `wasm-test` runs the app's browser tests, `path@rootpoint-app@tests/actions.rs` and
 `path@rootpoint-app@tests/web.rs`, on the wasm target in a headless Firefox through geckodriver, so
 `goal@xtask@one-command-runs-every-gate` covers what only a browser refutes: a key the page handles,
-and the layout of a slide against the native golden image. A native run cannot refute them: at the
-build of the browser build, a wasm-only break of an action and of the font size each failed in
-Firefox and passed natively. The cost is that the machine that runs the gates needs Firefox and
-geckodriver, as `path@xtask@README.md` says.
+and the layout of a slide against the native golden image. A native run cannot refute them: a break
+on the wasm target alone, `App::select_node` returning at once, or the renderer's font size scaled
+by 1.01, under `cfg(target_arch = "wasm32")`, fails these tests in Firefox and passes them natively;
+it is taken again by such an edit and `cargo test -p rootpoint-app --test actions --test web`, run
+with and without `--target wasm32-unknown-unknown`. The cost is that the machine that runs the gates
+needs Firefox and geckodriver, as `path@xtask@README.md` says.
