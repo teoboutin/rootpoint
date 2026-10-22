@@ -104,10 +104,17 @@ line breaks differ and the caret would drift (`argument@first-prototype@arg-35`)
   `Selection::from_byte_index`. `PlainEditor` is not used: it lays its own copy of the text out,
   from its own styles, which would be a second layout that has to agree with the drawn one.
 - **One group.** Entering editing opens a group, per `design@rootpoint-app@gesture-groups`, which
-  the text field's focus held before; leaving editing, the window's loss of focus, an undo or a redo
-  close it, so one stay in editing is one undo step. An editing action that is no part of the stay,
-  a button of the slide list or the side panel, closes it first, as every action does.
-- **IME and dead keys.** A preedit string from `ImeEvent::Preedit` is put into the area's text at the
+  the text field's focus held before; leaving editing closes it, so one stay in editing is one undo
+  step. An undo, a redo, and any editing action that is no part of the stay, a button of the slide
+  list or the side panel, end the stay first, as every action ends a gesture. The window's loss of
+  focus does not end it: unlike a drag's release, a stay's end is always delivered, by Esc, a click
+  or an action, and a window manager can take the keyboard while it resizes the window, which
+  winit reports as a loss of focus. The group stays open while the window is away; a command of
+  another client could join it then, which the audit of `spec@first-prototype@live-control` reads,
+  per `tripwire@rootpoint-protocol@client-joins-gui-group`.
+- **IME and dead keys.** An empty preedit with no composition open changes nothing, since winit's
+  X11 backend sends one when a composition starts. A preedit string from `ImeEvent::Preedit` is put
+  into the area's text at the
   caret, replacing the previous preedit, by a `text` command inside the group, so the renderer draws
   it where it will stand; the overlay underlines it. `ImeEvent::Commit` keeps its text and clears the
   preedit, and an empty preedit removes it. While editing, the app sets `PlatformOutput::ime` every
@@ -124,9 +131,9 @@ line breaks differ and the caret would drift (`argument@first-prototype@arg-35`)
   editor's other shortcuts do not act while editing.
 - **The pointer while editing.** Inside the edited area, after the grip and a divider's band, a
   press places the caret, a drag selects, the use `design@rootpoint-app@swap-gesture` keeps a drag
-inside a text area for, and a Shift+click
-  extends the selection; elsewhere a press leaves editing, then acts as "Pointer input to gestures"
-  of the app gives it.
+  inside a text area for, and a Shift+click extends the selection; elsewhere a press leaves
+  editing, then acts as it does outside editing, as the doc comment of `hit::Press` in
+  `path@rootpoint-app@src/hit.rs` orders the gestures: a click on another area selects it.
 - **The view.** The caret and the selection are the editor's state during a stay, as a divider
   drag's position is, and no command of the protocol: every change of the text they lead to is a
   command, which is what `goal@rootpoint-protocol@commands-drive-everything` measures.
@@ -165,9 +172,11 @@ Judged after step 2. The caret's place at three window sizes is claim 1's test. 
 other parts on the owner's desktop and reported: "AC1: 1, 2 and 3 work fine. However, on window
 resize, the caret is lost, the selected text node is exited (like on pressing esc)." The three
 were entering editing with the caret at the click, a dead key typing "é", and selection by drag and
-by Shift with an arrow. The resize ended the stay through the window's loss of focus, and is
-repaired in the commit "Keep editing in place when the window loses focus, for the text editing
-slice", whose test resizes the window unfocused and keeps the caret. AC1 did not fire.
+by Shift with an arrow. The resize ended the stay, as a frame with the window unfocused did; that
+the resize unfocuses the window is read from winit's source, not measured on the owner's desktop.
+The stay is repaired to go on through a loss of focus, in the commit "Keep editing in place when
+the window loses focus, for the text editing slice" and its repair after the slice's review, whose
+test resizes the window unfocused and keeps the caret and one undo step. AC1 did not fire.
 
 In the same message the owner reported that Alt+↓ from the title of the sample's first slide does
 not always reach the bottom row, which the session measured as the tree navigation of

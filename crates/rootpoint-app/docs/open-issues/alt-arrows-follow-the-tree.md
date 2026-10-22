@@ -23,8 +23,8 @@ n3 and n5 side by side, the keys do this, measured with no window by driving `Ap
 - from n4, Alt+↓ selects the child selected last in it, n2 or n6 by the history.
 
 So Alt+↓ reaches the bottom row from the root when the row was the last child selected, and never
-from the title itself, which reads as moving down "most of the time" to an author who thinks of
-the arrows as directions on the slide. The owner first suspected a link with leaving a text with
+from the title itself. The owner, thinking of the arrows as directions on the slide, found that it
+moved down most of the time. The owner first suspected a link with leaving a text with
 Esc; the measurement shows none: Esc leaves the selection where it was.
 
 Instances seen: the owner's report while judging AC1 of the slice that edits text in place, on the

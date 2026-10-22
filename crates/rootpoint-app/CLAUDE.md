@@ -37,8 +37,9 @@ open, a save or presenting does, closes any group still open before it acts.
 
 `App::layout` and `App::slide_rows` return where the last frame put the slide and the list's rows,
 so a test of `App::frame` places its synthetic pointer on them; `rootpoint_render::area_text`
-gives where a text's characters are. A selection changes the side panel, which egui sizes again on the next frame, so
-a test lets two frames pass before it reads a place.
+gives where a text's characters are, in slide units, which `App::layout` carries to the view. A
+selection changes the side panel, which egui sizes again on the next frame, so a test lets two
+frames pass before it reads a place.
 
 ## The build is tied to its checkout
 

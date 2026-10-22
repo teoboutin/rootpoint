@@ -107,7 +107,7 @@ impl App {
             if let Some(editing) = self.editing() {
                 if press == Press::Area(editing) {
                     if ui.input(|i| i.modifiers.shift) {
-                        self.extend_to_point(origin, layout);
+                        self.shift_click(origin, layout);
                     } else {
                         self.place_caret(origin, layout);
                     }

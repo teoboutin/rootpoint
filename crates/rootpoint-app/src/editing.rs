@@ -10,7 +10,7 @@ use std::ops::Range;
 use eframe::egui::{Pos2, Rect};
 use parley::{Affinity, Selection};
 use rootpoint_model::{Content, Node, NodeId};
-use rootpoint_protocol::{Command, Reply};
+use rootpoint_protocol::Command;
 use rootpoint_render::{AreaText, area_text};
 
 use crate::App;
@@ -26,10 +26,6 @@ pub(crate) struct Editing {
     pub area: NodeId,
     pub selection: Selection,
     pub preedit: Option<Range<usize>>,
-    /// Whether the stay's undo group is open. The window's loss of focus closes it and keeps the
-    /// stay, as a resize does on a desktop whose window manager takes the keyboard while it
-    /// resizes; the next change opens another.
-    pub group_open: bool,
 }
 
 /// A move of the caret.
@@ -78,7 +74,6 @@ impl App {
                 area,
                 selection,
                 preedit: None,
-                group_open: true,
             });
         }
     }
@@ -89,18 +84,7 @@ impl App {
         if self.edit.as_ref().is_some_and(|e| e.preedit.is_some()) {
             self.set_preedit("");
         }
-        if self.edit.take().is_some_and(|e| e.group_open) {
-            self.run(Command::End);
-        }
-    }
-
-    /// The window lost focus: close the stay's group, so no group is left open while the window
-    /// is away, and stay in editing.
-    pub fn suspend_editing(&mut self) {
-        if let Some(edit) = &mut self.edit
-            && edit.group_open
-        {
-            edit.group_open = false;
+        if self.edit.take().is_some() {
             self.run(Command::End);
         }
     }
@@ -110,10 +94,14 @@ impl App {
         self.at_point(p, layout, |_, l, x, y| Selection::from_point(l, x, y));
     }
 
-    /// Extend the selection to the point `p` of the slide view, as a drag inside the text or a
-    /// Shift+click does.
+    /// Extend the selection to the point `p` of the slide view, as a drag inside the text does.
     pub fn extend_to_point(&mut self, p: Pos2, layout: &Layout) {
         self.at_point(p, layout, |s, l, x, y| s.extend_to_point(l, x, y));
+    }
+
+    /// Extend the selection to the point `p` of the slide view by a Shift+click.
+    pub fn shift_click(&mut self, p: Pos2, layout: &Layout) {
+        self.at_point(p, layout, |s, l, x, y| s.shift_click_extension(l, x, y));
     }
 
     /// Move the caret, collapsing the selection, or, with `extend`, move the selection's focus.
@@ -203,6 +191,11 @@ impl App {
         let Some(edit) = &self.edit else {
             return;
         };
+        // An empty preedit with no composition open changes nothing: winit's X11 backend sends
+        // one when a composition starts, and it must not replace the selection.
+        if s.is_empty() && edit.preedit.is_none() {
+            return;
+        }
         let range = edit
             .preedit
             .clone()
@@ -264,16 +257,6 @@ impl App {
         text.replace_range(range.clone(), s);
         let caret = range.start + s.len();
         let kept = edit.preedit.clone();
-        // After a loss of the window's focus closed the stay's group, its next change opens
-        // another.
-        if !edit.group_open {
-            if !matches!(self.run(Command::Begin), Reply::Ok(_)) {
-                return;
-            }
-            if let Some(edit) = &mut self.edit {
-                edit.group_open = true;
-            }
-        }
         self.run(Command::Text {
             area,
             text,
@@ -281,7 +264,17 @@ impl App {
         });
         let preedit = match preedit {
             Some(p) => p,
-            None => kept.filter(|p| p.start >= range.end || p.end <= range.start),
+            None => kept.and_then(|p| {
+                if p.end <= range.start {
+                    Some(p)
+                } else if p.start >= range.end {
+                    // After the edit: moved by the change of length.
+                    let shift = |i: usize| i + s.len() - range.len();
+                    Some(shift(p.start)..shift(p.end))
+                } else {
+                    None
+                }
+            }),
         };
         if let Some(edit) = &mut self.edit {
             edit.preedit = preedit;
@@ -289,21 +282,42 @@ impl App {
         self.set_caret(caret);
     }
 
+    /// Delete the selection, or, with none, the character after the caret or before it. The
+    /// character is found by the caret's logical clusters, as Parley's `PlainEditor` does: a
+    /// visual move at a soft line break only changes the caret's affinity, and would delete
+    /// nothing. Backspace deletes one character of a cluster, or a whole line break or emoji.
     fn delete(&mut self, forward: bool) {
         let Some(edit) = self.edit.clone() else {
             return;
         };
         let range = if edit.selection.is_collapsed() {
-            let Some(text) = self.area_text(edit.area) else {
+            let (Some(text), Some(buffer)) = (self.area_text(edit.area), self.edited_text()) else {
                 return;
             };
-            let s = edit.selection.refresh(&text.layout);
-            let moved = if forward {
-                s.next_visual(&text.layout, true)
+            let focus = edit.selection.refresh(&text.layout).focus();
+            let [before, after] = focus.logical_clusters(&text.layout);
+            if forward {
+                let Some(c) = after else {
+                    return;
+                };
+                c.text_range()
             } else {
-                s.previous_visual(&text.layout, true)
-            };
-            moved.text_range()
+                let Some(c) = before else {
+                    return;
+                };
+                let r = c.text_range();
+                if c.is_hard_line_break() || c.is_emoji() {
+                    r
+                } else {
+                    let Some((start, _)) = buffer
+                        .get(..r.end)
+                        .and_then(|t| t.char_indices().next_back())
+                    else {
+                        return;
+                    };
+                    start..r.end
+                }
+            }
         } else {
             edit.selection.text_range()
         };

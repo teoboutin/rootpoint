@@ -438,7 +438,7 @@ fn an_ime_composition_stands_in_the_text_until_it_is_committed() {
 }
 
 #[test]
-fn a_loss_of_the_window_s_focus_keeps_editing_and_leaves_no_group_open() {
+fn a_loss_of_the_window_s_focus_keeps_editing_in_one_undo_step() {
     let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
     let n3 = NodeId(3);
     let before = d.text_of(n3);
@@ -453,14 +453,28 @@ fn a_loss_of_the_window_s_focus_keeps_editing_and_leaves_no_group_open() {
     d.frame(vec![]);
     assert_eq!(d.app.editing(), Some(n3), "the resize keeps editing");
     assert_eq!(d.app.caret_index(), Some(1), "and the caret");
-    // The window's loss of focus closed the stay's group: no group is open.
-    assert!(matches!(d.app.run(Command::End), Reply::Err(_)));
-    // Typing goes on, in a group of its own: one undo reverts it, the next the first part.
+    // Typing goes on in the same stay, whose edits stay one undo step.
     d.frame(vec![Event::Text("Y".to_owned())]);
     assert_eq!(d.text_of(n3), format!("XY{before}"));
     d.key(Key::Escape);
     assert!(matches!(d.app.run(Command::Undo), Reply::Ok(_)));
-    assert_eq!(d.text_of(n3), format!("X{before}"));
-    assert!(matches!(d.app.run(Command::Undo), Reply::Ok(_)));
     assert_eq!(d.text_of(n3), before);
+}
+
+#[test]
+fn an_empty_composition_started_with_a_selection_deletes_nothing() {
+    let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
+    let n3 = NodeId(3);
+    let before = d.text_of(n3);
+    d.edit_n3();
+    for _ in 0..3 {
+        d.key_with(Key::ArrowRight, Modifiers::SHIFT);
+    }
+    // winit's X11 backend sends an empty preedit when a composition starts.
+    d.frame(vec![Event::Ime(ImeEvent::Preedit {
+        text: String::new(),
+        active_range_chars: None,
+    })]);
+    assert_eq!(d.text_of(n3), before);
+    assert_eq!(d.app.selected_text().unwrap(), before[..3]);
 }
