@@ -19,8 +19,7 @@ enum Command {
     /// Run every gate a branch must pass before it merges.
     Gates(GatesArgs),
     /// Build the browser build of the editor into a static directory, `web/` under the target
-    /// directory by default,
-    /// which any static file server serves.
+    /// directory by default, which any static file server serves.
     Web {
         /// The directory to write, emptied first.
         #[arg(long)]

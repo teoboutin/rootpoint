@@ -88,7 +88,7 @@ impl Web {
                         continue;
                     };
                     // `webkitRelativePath` is the path under the picked directory's parent; web-sys
-                    // has no binding for it.
+                    // 0.3.106 has no binding for it.
                     let path = if directory {
                         js_sys::Reflect::get(&file, &"webkitRelativePath".into())
                             .ok()
