@@ -173,7 +173,7 @@ fn the_presenter_keys_move_through_the_slides_and_esc_leaves_full_screen() {
     assert_eq!(d.presenting(), Some(SlideId(7)));
 }
 
-/// AC2's drag bound, of `milestone@plans@first-prototype`: 100 frames of a drag of one divider of
+/// The drag bound of `tripwire@rootpoint-render@render-within-bounds`: 100 frames of a drag of one divider of
 /// the fixture `path@rootpoint-app@tests/data/mixed.ron` in a 1600×900 editor view, each timed
 /// with `Instant` around the whole `Context::run_ui`, which holds the app's `ui` call and its
 /// `TextureHandle::set`, and egui's own work around them. The bound holds when every frame is

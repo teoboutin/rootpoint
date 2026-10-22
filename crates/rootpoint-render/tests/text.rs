@@ -108,7 +108,7 @@ fn a_font_no_font_of_the_set_has_falls_back_and_is_reported() {
     assert_eq!(render(&doc), vec![]);
 }
 
-/// AC2's 4K bound, of the milestone `milestone@plans@first-prototype`: 10 renders of the mixed
+/// The 4K bound of `tripwire@rootpoint-render@render-within-bounds`: 10 renders of the mixed
 /// slide at 3840×2160, each within 200 ms. Run in a release build with
 /// `cargo test --release -p rootpoint-render --test text -- --ignored --nocapture`.
 #[test]

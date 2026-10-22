@@ -1,6 +1,6 @@
 **Generated — do not edit.** `cargo klarch index`
 
-7 entries
+8 entries
 
 | kind | title |
 | --- | --- |
@@ -11,3 +11,4 @@
 | todo | [An image or a font file changed on disk while the editor runs is not read again](changed-asset-not-read-again.md) |
 | todo | [Closing or reloading the browser build's page loses its edits with no warning](page-close-loses-edits.md) |
 | todo | [The window does not show the commands its control socket runs](socket-commands-not-shown.md) |
+| todo | [The authority to edit is one lock over the whole document](wider-lock.md) |

@@ -86,8 +86,8 @@ fn slide_to_pixels_names_where_the_slide_is_drawn() {
     assert_eq!(pixel(&out.pixmap, 246, 54), [0, 0, 0, 255]);
 }
 
-/// The time of an empty 3840×2160 render, the baseline of AC2's 4K bound, of the
-/// milestone `milestone@plans@first-prototype`. Run with
+/// The time of an empty 3840×2160 render, the baseline of the 4K bound of
+/// `tripwire@rootpoint-render@render-within-bounds`. Run with
 /// `cargo test --release -p rootpoint-render --test empty -- --ignored --nocapture`.
 #[test]
 #[ignore]
