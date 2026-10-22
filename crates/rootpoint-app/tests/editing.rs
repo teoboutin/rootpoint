@@ -60,7 +60,16 @@ impl Driver {
     }
 
     /// One frame, and what it put on the clipboard and whether it allowed IME input.
-    fn frame_with(&mut self, mut events: Vec<Event>, modifiers: Modifiers) -> (Vec<String>, bool) {
+    fn frame_with(&mut self, events: Vec<Event>, modifiers: Modifiers) -> (Vec<String>, bool) {
+        self.frame_focused(events, modifiers, true)
+    }
+
+    fn frame_focused(
+        &mut self,
+        mut events: Vec<Event>,
+        modifiers: Modifiers,
+        focused: bool,
+    ) -> (Vec<String>, bool) {
         self.time += 1.0 / 60.0;
         events.insert(0, Event::ModifiersChanged(modifiers));
         let mut input = RawInput {
@@ -68,6 +77,7 @@ impl Driver {
             max_texture_side: Some(8192),
             time: Some(self.time),
             events,
+            focused,
             ..Default::default()
         };
         input
@@ -425,4 +435,32 @@ fn an_ime_composition_stands_in_the_text_until_it_is_committed() {
     d.key(Key::Escape);
     let (_, ime) = d.frame_with(vec![], Modifiers::NONE);
     assert!(!ime);
+}
+
+#[test]
+fn a_loss_of_the_window_s_focus_keeps_editing_and_leaves_no_group_open() {
+    let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
+    let n3 = NodeId(3);
+    let before = d.text_of(n3);
+    d.edit_n3();
+    d.frame(vec![Event::Text("X".to_owned())]);
+    // A resize on a desktop whose window manager takes the keyboard: the window is unfocused for
+    // the frames of the resize, at another size.
+    d.size = Vec2::new(900.0, 640.0);
+    d.frame_focused(vec![], Modifiers::NONE, false);
+    d.frame_focused(vec![], Modifiers::NONE, false);
+    d.size = Vec2::new(1100.0, 760.0);
+    d.frame(vec![]);
+    assert_eq!(d.app.editing(), Some(n3), "the resize keeps editing");
+    assert_eq!(d.app.caret_index(), Some(1), "and the caret");
+    // The window's loss of focus closed the stay's group: no group is open.
+    assert!(matches!(d.app.run(Command::End), Reply::Err(_)));
+    // Typing goes on, in a group of its own: one undo reverts it, the next the first part.
+    d.frame(vec![Event::Text("Y".to_owned())]);
+    assert_eq!(d.text_of(n3), format!("XY{before}"));
+    d.key(Key::Escape);
+    assert!(matches!(d.app.run(Command::Undo), Reply::Ok(_)));
+    assert_eq!(d.text_of(n3), format!("X{before}"));
+    assert!(matches!(d.app.run(Command::Undo), Reply::Ok(_)));
+    assert_eq!(d.text_of(n3), before);
 }

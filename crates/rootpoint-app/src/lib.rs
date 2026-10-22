@@ -203,10 +203,11 @@ impl App {
     /// `Context::run_ui`, with no window.
     pub fn frame(&mut self, ui: &mut Ui) {
         // A release never delivered, as when the window loses focus mid-drag, leaves no group
-        // open.
+        // open. A stay in editing closes its group and goes on: a window manager can take the
+        // keyboard while the window is resized, which winit reports as a loss of focus.
         if !ui.input(|i| i.focused) {
             self.release_drag();
-            self.stop_editing();
+            self.suspend_editing();
         }
         if self.session.view().presenting.is_some() {
             self.presenter(ui);

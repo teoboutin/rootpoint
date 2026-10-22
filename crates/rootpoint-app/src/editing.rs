@@ -10,7 +10,7 @@ use std::ops::Range;
 use eframe::egui::{Pos2, Rect};
 use parley::{Affinity, Selection};
 use rootpoint_model::{Content, Node, NodeId};
-use rootpoint_protocol::Command;
+use rootpoint_protocol::{Command, Reply};
 use rootpoint_render::{AreaText, area_text};
 
 use crate::App;
@@ -26,6 +26,10 @@ pub(crate) struct Editing {
     pub area: NodeId,
     pub selection: Selection,
     pub preedit: Option<Range<usize>>,
+    /// Whether the stay's undo group is open. The window's loss of focus closes it and keeps the
+    /// stay, as a resize does on a desktop whose window manager takes the keyboard while it
+    /// resizes; the next change opens another.
+    pub group_open: bool,
 }
 
 /// A move of the caret.
@@ -74,6 +78,7 @@ impl App {
                 area,
                 selection,
                 preedit: None,
+                group_open: true,
             });
         }
     }
@@ -84,7 +89,18 @@ impl App {
         if self.edit.as_ref().is_some_and(|e| e.preedit.is_some()) {
             self.set_preedit("");
         }
-        if self.edit.take().is_some() {
+        if self.edit.take().is_some_and(|e| e.group_open) {
+            self.run(Command::End);
+        }
+    }
+
+    /// The window lost focus: close the stay's group, so no group is left open while the window
+    /// is away, and stay in editing.
+    pub fn suspend_editing(&mut self) {
+        if let Some(edit) = &mut self.edit
+            && edit.group_open
+        {
+            edit.group_open = false;
             self.run(Command::End);
         }
     }
@@ -248,6 +264,16 @@ impl App {
         text.replace_range(range.clone(), s);
         let caret = range.start + s.len();
         let kept = edit.preedit.clone();
+        // After a loss of the window's focus closed the stay's group, its next change opens
+        // another.
+        if !edit.group_open {
+            if !matches!(self.run(Command::Begin), Reply::Ok(_)) {
+                return;
+            }
+            if let Some(edit) = &mut self.edit {
+                edit.group_open = true;
+            }
+        }
         self.run(Command::Text {
             area,
             text,
