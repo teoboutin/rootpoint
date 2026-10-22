@@ -14,9 +14,9 @@ use rootpoint_protocol::Files;
 pub struct MemoryFiles(Rc<RefCell<BTreeMap<String, Vec<u8>>>>);
 
 impl MemoryFiles {
-    /// Hold these files, and no other.
-    pub(crate) fn replace(&self, files: BTreeMap<String, Vec<u8>>) {
-        *self.0.borrow_mut() = files;
+    /// Hold these files, and no other, and give back the files held before.
+    pub(crate) fn replace(&self, files: BTreeMap<String, Vec<u8>>) -> BTreeMap<String, Vec<u8>> {
+        std::mem::replace(&mut *self.0.borrow_mut(), files)
     }
 
     pub(crate) fn insert(&self, path: String, bytes: Vec<u8>) {

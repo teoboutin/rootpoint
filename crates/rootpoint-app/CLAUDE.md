@@ -18,7 +18,7 @@ uploads, per `design@rootpoint-app@editor-overlay`; `App::presenter` renders thr
 and draws nothing over it but, while the control socket holds control, a frame in a corner with
 its label and the button that takes control back, and `path@rootpoint-app@tests/presenter.rs` compares its image with the
 editor's. `App::frame` asks the window for full screen whenever presenter mode starts, and to
-leave it when it ends.
+leave it when it ends; in the browser build it asks the page.
 
 ## The slide view's marks and hits come from one layout
 
@@ -47,13 +47,15 @@ frames pass before it reads a place.
 ## The browser build differs only where the page does
 
 The code built for the wasm target alone is under `cfg(target_arch = "wasm32")`: the entry point in
-`path@rootpoint-app@src/main.rs`, the pickers and full screen in `path@rootpoint-app@src/web.rs`,
-and the dialogs of `path@rootpoint-app@src/actions.rs` that ask the page; the control socket is
-under `cfg(unix)`, which the wasm target is not. What a picker gives goes through an action of
-`actions.rs`, `App::open_directory` or `App::add_picked_image`, built on every target, so the
-native tests check it. `path@rootpoint-app@tests/actions.rs` and `path@rootpoint-app@tests/web.rs`
-also run in a headless browser, the gate `wasm-test` of `path@xtask@src/main.rs`; a test added to
-either must build for the wasm target, with no file system and no thread.
+`path@rootpoint-app@src/main.rs`, the pickers and full screen in `path@rootpoint-app@src/web.rs`
+with their calls in `App::frame`, and the actions of `path@rootpoint-app@src/actions.rs` that
+differ there, open, save and adding an image; the control socket is under `cfg(unix)`, which the
+wasm target is not, per `design@rootpoint-app@control-socket`. What a picker gives goes through an
+action of `actions.rs`, `App::open_directory` or `App::add_picked_image`, built on every target,
+so the native tests check it. `path@rootpoint-app@tests/actions.rs` and
+`path@rootpoint-app@tests/web.rs` also run in a headless browser, the gate `wasm-test` of
+`path@xtask@src/main.rs`; a test added to either must build and pass on the wasm target, with no
+file system and no thread.
 
 ## The build is tied to its checkout
 

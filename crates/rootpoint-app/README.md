@@ -51,7 +51,8 @@ characters no font has, and text not drawn.
 
 ## In a web browser
 
-`cargo x web` builds the browser build into `target/web/`: a page, the editor built for the wasm
+`cargo x web` builds the browser build into `web/` under cargo's target directory, `target/web/`
+unless cargo is told another: a page, the editor built for the wasm
 target and its loader, which any static file server serves, such as
 `python3 -m http.server -d target/web`. It opens the built-in sample, and has the editor's actions
 above, with these differences:
@@ -62,7 +63,7 @@ above, with these differences:
 - It saves nothing: it has no Save button, and Ctrl+S says so in the status line. Its changes are
   lost when the page is closed or reloaded; F5 presents and does not reload.
 - Add an image asks for a PNG or JPEG file, which joins the presentation's directory in memory
-  under its name, or the name with a number when another file has it.
+  under its name, or the name with a number when another file with other bytes has it.
 - Present asks the browser for full screen; when the browser leaves full screen, as it does on
   Esc, presenter mode ends.
 - It has no control socket.

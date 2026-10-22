@@ -18,7 +18,8 @@ struct Cli {
 enum Command {
     /// Run every gate a branch must pass before it merges.
     Gates(GatesArgs),
-    /// Build the browser build of the editor into a static directory, `target/web/` by default,
+    /// Build the browser build of the editor into a static directory, `web/` under the target
+    /// directory by default,
     /// which any static file server serves.
     Web {
         /// The directory to write, emptied first.
@@ -127,9 +128,9 @@ fn wasm_gate() -> Gate {
     }
 }
 
-/// The app's tests that run in a browser, for the browser build: its actions, its pickers' actions
-/// and the layout of a slide against the native golden image, each claim of
-/// `spec@first-prototype@browser-build` that only a browser can refute. `wasm-bindgen-test-runner`
+/// The app's tests that run in a browser, for the browser build: its actions, the layout of a slide
+/// against the native golden image, and F5 kept from the browser, which only a browser can refute,
+/// as `goal@rootpoint-app@browser-window` asks the same actions there. `wasm-bindgen-test-runner`
 /// runs them in a headless Firefox, through geckodriver, both found on the `PATH`.
 fn wasm_test_gate() -> Gate {
     Gate {
@@ -159,9 +160,7 @@ fn wasm_test_gate() -> Gate {
 /// loads it as a module, and write it with the app's page into `out`. The `wasm-bindgen` program
 /// must be the version of the `wasm-bindgen` crate in `Cargo.lock`, since the two share a format.
 fn build_web(root: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
-    let target = std::env::var_os("CARGO_TARGET_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| root.join("target"));
+    let target = target_directory(root)?;
     let out = out.unwrap_or_else(|| target.join("web"));
     let locked = locked_version(root, "wasm-bindgen")?;
     let found = Process::new("wasm-bindgen")
@@ -189,10 +188,13 @@ fn build_web(root: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
         "--bin",
         "rootpoint",
     ]))?;
+    let module = target.join("wasm32-unknown-unknown/release/rootpoint.wasm");
+    if !module.exists() {
+        return Err(format!("the build wrote no {}", module.display()));
+    }
     if out.exists() {
         std::fs::remove_dir_all(&out).map_err(|e| format!("{}: {e}", out.display()))?;
     }
-    let module = target.join("wasm32-unknown-unknown/release/rootpoint.wasm");
     run(Process::new("wasm-bindgen")
         .args(["--target", "web", "--no-typescript", "--out-dir"])
         .arg(&out)
@@ -200,6 +202,37 @@ fn build_web(root: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
     let page = root.join("crates/rootpoint-app/web/index.html");
     std::fs::copy(&page, out.join("index.html")).map_err(|e| format!("{}: {e}", page.display()))?;
     Ok(out)
+}
+
+/// The directory cargo builds into, as `cargo metadata` gives it from the root: `CARGO_TARGET_DIR`,
+/// `CARGO_BUILD_TARGET_DIR` and `build.target-dir` can each move it, and a relative one is read
+/// against the directory cargo runs in, so a guess could take a stale module from another one.
+fn target_directory(root: &Path) -> Result<PathBuf, String> {
+    let output = Process::new(env!("CARGO"))
+        .current_dir(root)
+        .args(["metadata", "--format-version", "1", "--no-deps"])
+        .output()
+        .map_err(|e| format!("cargo metadata: {e}"))?;
+    if !output.status.success() {
+        return Err(format!("cargo metadata failed: {}", output.status));
+    }
+    let json = String::from_utf8_lossy(&output.stdout);
+    // A JSON string: the path ends at the first quote no backslash escapes.
+    let key = "\"target_directory\":\"";
+    let start = json
+        .find(key)
+        .map(|i| i + key.len())
+        .ok_or("cargo metadata gave no target_directory")?;
+    let mut path = String::new();
+    let mut chars = json[start..].chars();
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => return Ok(PathBuf::from(path)),
+            '\\' => path.extend(chars.next()),
+            c => path.push(c),
+        }
+    }
+    Err("cargo metadata's target_directory has no end".to_owned())
 }
 
 /// The version of a package in `Cargo.lock`, which holds it once.

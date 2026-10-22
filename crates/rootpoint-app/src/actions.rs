@@ -470,8 +470,9 @@ impl App {
     /// Open the presentation of a directory the author picked, given as each file's path under
     /// the picked directory, its first component that directory's name, and its bytes: the
     /// files become the ones the app holds in memory, under their paths below the directory, and
-    /// the one `.ron` file directly in it is loaded. Only an app made by `App::in_memory` holds
-    /// them; the browser build is one.
+    /// the one `.ron` file directly in it is loaded. A directory that loads no presentation leaves
+    /// the open one and its files as they were. Only an app made by `App::in_memory` holds them;
+    /// the browser build is one.
     pub fn open_directory(&mut self, picked: Vec<(String, Vec<u8>)>) {
         if self.socket_holds() {
             return;
@@ -499,13 +500,27 @@ impl App {
             return;
         };
         let presentation = presentation.clone();
-        held.replace(files);
-        self.open_file(presentation);
+        let before = held.replace(files);
+        self.end_gestures();
+        match self.run(Command::Load {
+            path: presentation.clone(),
+        }) {
+            Reply::Ok(_) => {
+                self.path = Some(presentation);
+                // Every picked presentation's directory is the same, the root of the files held,
+                // so the decoded images and fonts, keyed on the directory and the assets' paths,
+                // are those of the last directory: they are decoded again.
+                self.assets = crate::assets::Assets::default();
+            }
+            Reply::Err(_) => {
+                held.replace(before);
+            }
+        }
     }
 
     /// Add an image the author picked, by its file name and its bytes, as an asset: it joins the
     /// files the app holds in memory, in the presentation's directory, under its name, or the name
-    /// with a number where another file already has it.
+    /// with a number where another file with other bytes already has it.
     pub fn add_picked_image(&mut self, name: String, bytes: Vec<u8>) {
         if self.socket_holds() {
             return;

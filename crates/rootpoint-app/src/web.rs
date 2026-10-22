@@ -102,18 +102,22 @@ impl Web {
                             files.push((path, js_sys::Uint8Array::new(&buffer).to_vec()));
                         }
                         Err(_) => {
+                            // A directory read in part opens nothing, and the status says why.
+                            files.clear();
                             inbox
                                 .borrow_mut()
                                 .push(Picked::Failed(format!("{path} could not be read")));
-                            files.clear();
                             break;
                         }
                     }
                 }
-                let picked = if directory {
-                    Some(Picked::Directory(files))
-                } else {
-                    files.pop().map(|(name, bytes)| Picked::Image(name, bytes))
+                let picked = match files.pop() {
+                    None => None,
+                    Some(file) if directory => {
+                        files.push(file);
+                        Some(Picked::Directory(files))
+                    }
+                    Some((name, bytes)) => Some(Picked::Image(name, bytes)),
                 };
                 inbox.borrow_mut().extend(picked);
                 if let Some(ctx) = ctx {
@@ -155,8 +159,10 @@ impl Web {
 
 /// Keep F5, the key that starts presenter mode, from reloading the page, which would lose every
 /// change held in memory: eframe 0.37.0 lets the browser act on F5, in
-/// `should_prevent_default_for_key` of `path@elsewhere@src/web/events.rs`, so a listener of the
-/// window prevents it, and the canvas still gets the key.
+/// `should_prevent_default_for_key` of `path@elsewhere@src/web/events.rs`. Its listener on the
+/// canvas also stops every key's propagation, `WebOptions::should_stop_propagation`, so a listener
+/// of the window prevents F5 in the capture phase, before the canvas has it, and the canvas still
+/// gets the key.
 pub fn keep_f5() {
     let Some(window) = web_sys::window() else {
         return;
@@ -167,6 +173,10 @@ pub fn keep_f5() {
                 e.prevent_default();
             }
         });
-    let _ = window.add_event_listener_with_callback("keydown", listener.as_ref().unchecked_ref());
+    let _ = window.add_event_listener_with_callback_and_bool(
+        "keydown",
+        listener.as_ref().unchecked_ref(),
+        true,
+    );
     listener.forget();
 }

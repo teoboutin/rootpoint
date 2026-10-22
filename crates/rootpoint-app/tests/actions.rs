@@ -424,3 +424,61 @@ fn the_presenter_actions_issue_their_commands() {
         vec![c("stop")]
     });
 }
+
+/// The actions a browser picker's files go through, on an app that holds its files in memory: a
+/// picked directory loads its one presentation, whose files the app holds under their paths below
+/// the directory, and a picked image is added under its name, or a numbered name where another
+/// file with other bytes has it.
+#[test]
+fn the_picker_actions_issue_their_commands() {
+    let ron = include_bytes!("data/mixed.ron").to_vec();
+    let png = include_bytes!("data/two-colours.png").to_vec();
+    let mut app = App::in_memory();
+    let mut files = MemoryFiles::default();
+    for (path, bytes) in [("mixed.ron", &ron), ("two-colours.png", &png)] {
+        files.0.borrow_mut().insert(path.to_owned(), bytes.clone());
+    }
+    let mut session = Session::new();
+    let same = |app: &App, session: &Session, name: &str| {
+        assert_eq!(app.session().document(), session.document(), "{name}");
+        assert_eq!(app.session().view(), session.view(), "{name}");
+    };
+    let picked = vec![
+        ("talk/mixed.ron".to_owned(), ron.clone()),
+        ("talk/two-colours.png".to_owned(), png.clone()),
+    ];
+    app.open_directory(picked);
+    assert!(matches!(
+        session.run(c("load mixed.ron"), &mut files),
+        Reply::Ok(_)
+    ));
+    same(&app, &session, "open a directory");
+    // A load leaves no step to undo, in the app as in the session.
+    assert_eq!(
+        app.run(Command::Undo),
+        session.run(Command::Undo, &mut files)
+    );
+    app.add_picked_image("two-colours.png".to_owned(), png);
+    assert!(matches!(
+        session.run(c("asset two-colours.png"), &mut files),
+        Reply::Ok(_)
+    ));
+    same(&app, &session, "add an image held under its name");
+    app.add_picked_image("two-colours.png".to_owned(), vec![0, 1, 2]);
+    files
+        .0
+        .borrow_mut()
+        .insert("two-colours-2.png".to_owned(), vec![0, 1, 2]);
+    assert!(matches!(
+        session.run(c("asset two-colours-2.png"), &mut files),
+        Reply::Ok(_)
+    ));
+    same(&app, &session, "add an image under a numbered name");
+    assert_eq!(
+        app.run(Command::Undo),
+        session.run(Command::Undo, &mut files)
+    );
+    same(&app, &session, "after undo");
+    // The browser build saves nothing.
+    assert!(matches!(app.run(c("save x.ron")), Reply::Err(_)));
+}

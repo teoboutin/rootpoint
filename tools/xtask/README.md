@@ -12,8 +12,9 @@ The maintenance tool of the project. It is never published.
   `cargo install wasm-bindgen-cli --version <version> --locked`; and Firefox and geckodriver on the
   `PATH`.
 - `cargo x web [--out <dir>]` builds the browser build of the editor into a static directory,
-  `target/web/` by default, emptied first: the page of `path@rootpoint-app@web/index.html`, the
-  editor built for the wasm target in release, and the loader `wasm-bindgen` writes. It needs the
+  `web/` under cargo's target directory by default, `target/web/` unless cargo is told another,
+  emptied first: the page of `path@rootpoint-app@web/index.html`, the editor built for the wasm
+  target in release, and the loader `wasm-bindgen` writes. It needs the
   `wasm-bindgen` program at the version the gates need, and says how to install it otherwise.
 - `cargo klarch <command>` runs the knowledge-architect checker at the version pinned in
   `path@xtask@Cargo.toml` and in `knowledge-architect.toml`. `cargo klarch check` checks the

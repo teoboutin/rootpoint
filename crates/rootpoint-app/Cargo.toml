@@ -56,6 +56,7 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.79"
+web-sys = { version = "0.3.106", features = ["KeyboardEventInit"] }
 
 [[bin]]
 name = "rootpoint"
