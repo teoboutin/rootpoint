@@ -219,7 +219,8 @@ crate, and the prototype `thread@first-prototype@prototype-scope` lists, in the 
 - image and PDF export: secondary, per `goal@rootpoint@presenter-mode`;
 - the protocol's transports, stdin and the local socket, in the browser build: excluded by
   `thread@first-prototype@protocol-transport`; the protocol's session is part of the browser build;
-- collaborative editing: out of scope, per `goal@rootpoint@minimal-content-set`.
+- editing that would reconcile two changes made at once to the same part of a presentation: out
+  of scope, per `goal@rootpoint@minimal-content-set`.
 
 ## What is already decided
 

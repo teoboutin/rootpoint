@@ -32,7 +32,8 @@ snippet, and a few more, such as video. Each kind is edited in the ways that mak
 with the options that belong to it, such as bold and colour for text or the scaling method for an
 image. It is met while every feature of slide content the editor has serves one of these kinds or
 the division of a slide; the features other goals require, such as presenter mode, saving and the
-text protocol, are not counted against it. Collaborative editing is not in scope.
+text protocol, are not counted against it. Editing that would reconcile two changes made at once
+to the same part of a presentation, by two people or by a person and an agent, is not in scope.
 
 ## A presentation is shown from the tool in presenter mode `##presenter-mode`
 

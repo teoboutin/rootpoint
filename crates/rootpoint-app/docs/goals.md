@@ -28,11 +28,15 @@ The window shows a presentation full screen, slide by slide, moved by the keys a
 It refines `goal@rootpoint@presenter-mode`. It is met when the author gives a talk from the window
 alone.
 
-## A running window shows live what an agent's commands do `##live-agent-edits`
+## A running window is shared with an agent that makes the changes the author asks for `##live-agent-edits`
 
-An agent drives the open window through the text protocol, and the author sees each change as it
-is made. It refines `goal@rootpoint@text-command-protocol`. It is met when an LLM session builds
-and changes a presentation while the window shows the result live.
+The author asks an agent for changes, and the agent makes them in the open window through the text
+protocol while the author watches each one as it is made. The author can interrupt the agent at any
+moment, by hand, to ask a question, change the instructions or correct a mistake before it spreads,
+and adjusts the slides by hand once the agent has finished. It refines
+`goal@rootpoint@text-command-protocol`. It is met when an LLM session builds and changes a
+presentation while the window shows the result live, and the author interrupts it and takes the
+work over without typing a command.
 
 ## The window runs in a web browser `##browser-window`
 
