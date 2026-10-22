@@ -1,7 +1,12 @@
 # rootpoint-app
 
-The editor of rootpoint, in a window: the binary `rootpoint`. `rootpoint [presentation.ron]` opens
-the presentation given, or an empty one. The toolbar opens a presentation (Ctrl+O), saves it to its
+The editor of rootpoint, in a window: the binary `rootpoint`. `rootpoint [--control <socket>]
+[presentation.ron]` opens the presentation given, or an empty one. With `--control`, on Unix, the
+window listens on a socket at that path for the commands of the text protocol, which
+`rootpoint-ctl` of the protocol crate sends; the window exits with an error when another window
+listens there, and removes the socket when it closes. The window holds the authority to edit at
+start; `control` gives it to the socket, `release` gives it back, and the queries `tree`, `view`
+and `render` need none. The toolbar opens a presentation (Ctrl+O), saves it to its
 file (Ctrl+S) or to another, opens the built-in sample, presents, and undoes (Ctrl+Z) and redoes
 (Ctrl+Shift+Z or Ctrl+Y). A save copies beside the saved file every asset outside its directory,
 and every embedded one, as the protocol's `save` does. The window shows the

@@ -91,7 +91,8 @@ O20 to O26, are quoted verbatim in their own section.
   `release` replies `err a group is open` while a group is open, in every host, and `ok` otherwise.
   `thread@first-prototype@control-commands`. A new public accessor,
   `Session::group_open() -> bool`, tells a host whether a group is open.
-- Control in the window: the field `App::controller`, of the type `Controller { Window, Socket }`,
+- Control in the window: the field `App::controller`, of the type
+  `Controller { Window, Socket, TakenFromSocket }`,
   with the accessor `App::controller()`; `Window` at start
   (`thread@first-prototype@control-at-start`). Control belongs to the socket as a whole, every
   connection together. A socket command is executed as follows:
@@ -148,8 +149,8 @@ Each claim's test is shown to fail against a wrong implementation as its last se
    integration test that binds a `Listener` in a scratch directory, gives it to an `App`, and runs
    `App::frame` through `Context::run_ui` in a loop on the test's thread while a client thread
    sends commands and the test reads the session. Fails when the drain is removed from
-   `App::frame`: the client never gets its reply, and the test times out after 5 s, a bound the
-   session chose.
+   `App::frame`: the client never gets its reply, and the test times out after 30 s, a bound the
+   session chose, since a debug build renders the slide after each command.
 2. **The GUI wakes for a command.** The listener calls `wake` once for each line, before the GUI's
    thread has read it, and the next `App::frame` applies it. Test: the integration test of claim 1,
    with a `wake` that counts its calls: after each command, the count rose by one before the reply
@@ -711,8 +712,10 @@ crates/rootpoint-protocol/  (crate rootpoint-protocol)
 crates/rootpoint-app/       (crate rootpoint-app)
   control::Listener, Listener::bind    native only: the socket's listener and its threads
   App::listen                          gives the app a listener
-  Controller { Window, Socket }        who holds control; the field App::controller,
+  Controller { Window, Socket,         who holds control, TakenFromSocket after a take-over;
+    TakenFromSocket }                   the field App::controller,
                                        the accessor App::controller()
+  App::take_control                    the button's action: the window takes control back
   App::take_control_rect               where the last frame placed the button "Take control"
 ```
 

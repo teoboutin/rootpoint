@@ -61,6 +61,22 @@ pub struct App {
     /// The control socket, when the window listens on one.
     #[cfg(not(target_arch = "wasm32"))]
     listener: Option<control::Listener>,
+    /// Who holds the authority to edit: the window, or the control socket.
+    controller: Controller,
+}
+
+/// Who holds the authority to edit, per `spec@first-prototype@live-control`: the window or its
+/// control socket, every connection of the socket together.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Controller {
+    /// The window, from the start or after the socket's `release`.
+    Window,
+    /// The socket, after its `control`.
+    Socket,
+    /// The window, which the author took back from the socket with the button "Take control":
+    /// the socket's refused edits tell its agent to stop and wait for the author's instructions,
+    /// until its next `control`.
+    TakenFromSocket,
 }
 
 /// A drag in progress in the slide view.
@@ -119,26 +135,25 @@ impl App {
             text_drag: false,
             #[cfg(not(target_arch = "wasm32"))]
             listener: None,
+            controller: Controller::Window,
         }
     }
 
-    /// Take the lines of a control socket, which each frame then runs, at its start.
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn listen(&mut self, listener: control::Listener) {
-        self.listener = Some(listener);
+    /// Who holds the authority to edit.
+    pub fn controller(&self) -> Controller {
+        self.controller
     }
 
-    /// Answer every line the control socket received since the last frame.
-    #[cfg(not(target_arch = "wasm32"))]
-    fn serve_socket(&mut self) {
-        let Some(listener) = &self.listener else {
+    /// The button "Take control": the window takes the authority to edit back from the socket,
+    /// closing with `end` a group the socket left open, so its edits are one undo step.
+    pub fn take_control(&mut self) {
+        if self.controller != Controller::Socket {
             return;
-        };
-        // The echo of the first step of the slice: every line is answered `ok`, unexecuted.
-        for request in listener.pending() {
-            drop(request.line);
-            let _ = request.reply.send(Some("ok".to_owned()));
         }
+        if self.session.group_open() {
+            self.run(Command::End);
+        }
+        self.controller = Controller::TakenFromSocket;
     }
 
     pub fn session(&self) -> &Session {

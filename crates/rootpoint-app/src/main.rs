@@ -1,8 +1,11 @@
-//! The editor of rootpoint, in a window. `rootpoint [presentation.ron]` opens the presentation
-//! given, or an empty one. Paths are relative to the working directory, as the headless runner's
-//! are.
+//! The editor of rootpoint, in a window. `rootpoint [--control <socket>] [presentation.ron]` opens
+//! the presentation given, or an empty one. With `--control`, the window listens on a Unix domain
+//! socket at that path, and runs the commands `rootpoint-ctl` sends it; the window exits with an
+//! error when another window listens there. Paths are relative to the working directory, as the
+//! headless runner's are.
 
 use rootpoint_app::App;
+use rootpoint_app::control::Listener;
 use rootpoint_protocol::Files;
 
 // Ties this binary's build to its checkout.
@@ -26,8 +29,17 @@ impl Files for NativeFiles {
 }
 
 fn main() -> eframe::Result {
+    let mut args = std::env::args().skip(1);
+    let (mut socket, mut presentation) = (None, None);
+    while let Some(arg) = args.next() {
+        if arg == "--control" {
+            socket = args.next();
+        } else {
+            presentation = Some(arg);
+        }
+    }
     let mut app = App::new(Box::new(NativeFiles));
-    if let Some(path) = std::env::args().nth(1) {
+    if let Some(path) = presentation {
         // A file that cannot be loaded leaves the empty presentation, and the status line says
         // why. One that loads is the file Save writes.
         app.open_file(path);
@@ -35,6 +47,15 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "rootpoint",
         eframe::NativeOptions::default(),
-        Box::new(|_| Ok(Box::new(app))),
+        Box::new(move |cc| {
+            if let Some(socket) = socket {
+                // The socket's thread wakes the window for each line, through the repaint that
+                // eframe lets any thread request.
+                let ctx = cc.egui_ctx.clone();
+                let listener = Listener::bind(socket.as_ref(), move || ctx.request_repaint())?;
+                app.listen(listener);
+            }
+            Ok(Box::new(app))
+        }),
     )
 }

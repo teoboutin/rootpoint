@@ -140,7 +140,7 @@ impl App {
     /// Before an edit that is no part of a gesture: close any group still open, a drag's or a
     /// text's edited in place, so the edit is a step of its own. A button of the slide list or of
     /// the side panel can be pressed while a text is edited.
-    fn end_gestures(&mut self) {
+    pub(crate) fn end_gestures(&mut self) {
         self.release_drag();
         self.stop_editing();
     }
@@ -446,7 +446,7 @@ impl App {
     /// copy an asset already inside the target's directory, as
     /// `issue@rootpoint-protocol@save-mixes-relative-and-absolute` records. A path that has none
     /// from the working directory stays absolute.
-    fn relative_if_absolute(&mut self, path: String) -> String {
+    pub(crate) fn relative_if_absolute(&mut self, path: String) -> String {
         let given = Path::new(&path);
         if !given.is_absolute() {
             return path;
