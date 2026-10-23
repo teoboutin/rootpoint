@@ -8,7 +8,7 @@ each naming its decision. What is outstanding is in `register@rootpoint-app@issu
 T6 of the premortem of the first prototype, recorded on the owner's word.
 
 **Fires when:** in real use, the owner reports, more than once, that an agent's `control` ended a
-stay in editing, a drag, or a dialog or a menu of the window, that the owner had not finished.
+stay in editing or a drag the owner had not finished.
 **Response:** reopen `design@rootpoint-app@control-passing`, toward the request granted only while
 the window has no gesture open, `rejected@rootpoint-app@control-when-idle`.
 **Re-entry:** the first real talk prepared with an agent.

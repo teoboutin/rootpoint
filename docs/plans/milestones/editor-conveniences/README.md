@@ -143,7 +143,7 @@ its slice.
   `thread@editor-conveniences@new-area-style`.
 - **T1 to T4, AC1 to AC4**: the labels under which the premortem's tripwires and acceptance
   criteria were put to the owner, "Premortem" below.
-- **D1 to D5**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
+- **D1 to D6**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
 
 ## What the work is
 
@@ -1170,9 +1170,11 @@ not that node after the click, or when the menu is not open on the next frame. R
   recorded on the owner's word, named a stay in editing and a drag. The socket's `control` now also
   closes the dialog of a style's removal as a gesture ends, and closes the node menu of
   `spec@editor-conveniences@context-menu` the same way, so a report that `control` closed one of
-  them in the middle of a choice would not fire it. Default, built as
-  written: the clause names a dialog or a menu of the window too. The rival: the clause as the owner
-  ruled it, a dialog or a menu closed being no loss of work. Awaiting the owner.
+  them in the middle of a choice would not fire it. Default: the clause names a dialog or a menu of
+  the window too. The rival: the clause as the owner ruled it, a dialog or a menu closed being no
+  loss of work. Awaiting the owner; until the ruling, the tripwire states the clause as the owner
+  ruled it, since it is recorded on the owner's word, as the head of D3 and D5 states the rule as
+  approved.
 
 ## Harvest
 
