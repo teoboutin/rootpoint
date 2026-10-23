@@ -353,8 +353,8 @@ a place that serves no other gesture, so the grip and the dividers stay usable. 
 the edited area acts as it does outside editing, over a press that only leaves editing with the
 edited area still selected, which would cost a second click to select another area. And: the owner
 chose that the secondary click leaves editing before the menu opens, over a stay kept open under the
-menu, and that a double-click begun in the final view acts as its one click, over its second click
-entering editing. With the stay open, Delete and the node keys would act on the text while the menu
+menu, and that a double-click begun in the final view acts as its one click, over its second press
+acting as outside the final view, entering editing or setting a divider halfway. With the stay open, Delete and the node keys would act on the text while the menu
 names the area; and the double-click's second press would act where the author, with no mark in
 view, did not see it would, as `design@rootpoint-app@final-view-presses` argues of any press in the
 final view.
