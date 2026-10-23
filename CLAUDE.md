@@ -19,8 +19,9 @@ The project's own skills, agents and workflows are named with the prefix `rootpo
 
 ## No backward compatibility `##no-backward-compat`
 
-A change of the save format, of the protocol's grammar or of a crate's API writes no migration and
-keeps no old form, per `design@rootpoint@no-compat-in-initial-dev`.
+While the project is in initial development, a change of the save format, of the protocol's grammar
+or of a crate's public API writes no migration and keeps no old form, per
+`design@rootpoint@no-compat-in-initial-dev`.
 
 ## Git workflow `##git-workflow`
 

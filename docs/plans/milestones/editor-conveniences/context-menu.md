@@ -24,7 +24,9 @@ this spec.
 
   - "Select" lists the node's ancestors from the root down, then the node itself, each with its
     kind, and a click selects it.
-  - "Content", on an area, offers text and each image asset, as the side panel's content row does.
+  - "Content", on an area, offers text and image, as the side panel's content row does, image taking
+    the first image asset as its button does; on an image area, it also offers each image asset, as
+    the list of `App::image` does.
   - "Style", on a text area, offers the table's styles and custom, as the style row of
     `spec@editor-conveniences@styles-window` does.
   - "Remove" removes the node, as Delete does. It is absent on the slide's root.
@@ -57,8 +59,10 @@ this spec.
 - `design@rootpoint-app@edit-entry`, `design@rootpoint-app@one-controller-at-a-time`,
   `design@rootpoint-app@control-passing`; `tripwire@rootpoint-app@control-ends-a-gesture`.
 - In the browser: eframe 0.37.0 prevents the browser's context menu on the canvas
-  (`argument@editor-conveniences@arg-13`), which the browser tests of the gate `wasm-test` can show
-  with a test in `path@rootpoint-app@tests/web.rs`.
+  (`argument@editor-conveniences@arg-13`), read in `install_event_handlers` of eframe's
+  `path@elsewhere@src/web/events.rs`. No browser test checks it: the harness of
+  `path@rootpoint-app@tests/web.rs` runs no `WebRunner`, and installs an imitation of eframe's
+  listener for its F5 test.
 
 ## Fails alone on
 

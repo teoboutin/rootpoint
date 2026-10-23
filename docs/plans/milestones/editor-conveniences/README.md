@@ -84,10 +84,11 @@ the session's reply to it. Round 5 was typed while the session worked on the han
 ## How the work is done
 
 Before each slice, read `skill@knowledge-architect-planning@working-a-slice` whole, and follow it.
-Each slice is one branch and one pull request, merged before the next slice begins, in the order of
-"Implementation sequence".
+Each slice is one branch, merged as `instructions@git-workflow` says before the next slice begins,
+in the order of "Implementation sequence".
 
-- **Gates.** `cargo x gates` runs every check a branch owes before it merges. Every slice keeps them
+- **Gates.** `cargo x gates` runs every check a branch owes before it merges,
+  `instructions@merge-gates`. Every slice keeps them
   passing, the gate `wasm` and the browser tests of the gate `wasm-test` included: a test added to
   `path@rootpoint-app@tests/actions.rs` or `path@rootpoint-app@tests/web.rs` builds and passes on the
   wasm target, as `path@rootpoint-app@CLAUDE.md` says.
@@ -98,11 +99,16 @@ Each slice is one branch and one pull request, merged before the next slice begi
 - **No compatibility.** A slice that changes the save format bumps `FORMAT_VERSION` in
   `path@rootpoint-model@src/file.rs` and writes no migration, per
   `design@rootpoint@no-compat-in-initial-dev`. The committed files in the old format are rewritten
-  in the new one in the same slice: `path@rootpoint-model@tests/data/fixture.ron`,
-  `path@rootpoint-protocol@sample/sample.ron`, and every other `.ron` file under a `tests/` or a
-  `sample/` directory the slice's search finds.
+  in the new one in the same slice: every `.ron` file `find crates -name '*.ron'` lists, four at the
+  time of writing. `path@rootpoint-model@tests/data/fixture.ron` is written again by running its
+  test `the_fixture_round_trips_and_matches_its_committed_file` with `ROOTPOINT_BLESS=1`; the others
+  are edited by hand. A test that writes the version as a literal, such as `version: 1`, follows
+  `FORMAT_VERSION`.
 - **This milestone's branch** carries this document, the two issues the discussion asked for, and
-  the record of `design@rootpoint@no-compat-in-initial-dev`. It merges into the main branch before
+  the decisions no work implements: `design@rootpoint@no-compat-in-initial-dev` with
+  `rejected@rootpoint@format-migration`, and `design@rootpoint-app@removal-without-confirmation` with
+  `rejected@rootpoint-app@removal-guard`. It merges once the owner has ruled on every default awaiting
+  the owner, and before
   the slice `spec@editor-conveniences@empty-text` begins, and each slice branches from the main branch.
 
 ## Names
@@ -117,7 +123,7 @@ Each slice is one branch and one pull request, merged before the next slice begi
 - **The node keys**: Alt with an arrow, read in `App::shortcuts` in `path@rootpoint-app@src/lib.rs`,
   which calls `App::move_selection` with a `selection::Move` of
   `path@rootpoint-app@src/selection.rs`.
-- **The report**: `rootpoint_render::RenderReport`, what a render could not draw, read by
+- **The report**: `rootpoint_render::Report`, what a render could not draw, read by
   `App::status` in `path@rootpoint-app@src/lib.rs` and printed by the reply of the protocol's
   `render`.
 - **A stand-in**: what is drawn in place of a missing target: the grey of a missing image, the
@@ -137,8 +143,8 @@ Each slice is one branch and one pull request, merged before the next slice begi
 - **Content.** `Content` in `path@rootpoint-model@src/document.rs` is `Empty`, `Text(TextContent)`
   or `Image(ImageContent)`, and `TextContent` holds a `text` and a `TextStyle`. A new area, made by
   `Op::Split` or by `Op::AddSlide`, holds `Content::Empty`, in `apply_in` and `empty_area` of
-  `path@rootpoint-model@src/ops.rs`. 17 lines of Rust name `Content::Empty`, by
-  `grep -rn Empty crates --include=*.rs`; "Mapping tables" in `spec@editor-conveniences@empty-text`
+  `path@rootpoint-model@src/ops.rs`. 17 lines of Rust match `Empty`, by
+  `grep -rn Empty crates --include=*.rs`: 16 name `Content::Empty`, and one is the variant itself; "Mapping tables" in `spec@editor-conveniences@empty-text`
   lists each.
 - **Validation.** `Document::validate` in `path@rootpoint-model@src/validate.rs` refuses every
   breach it finds, a missing asset included: an area whose image or font names an asset id the
@@ -146,7 +152,9 @@ Each slice is one branch and one pull request, merged before the next slice begi
   `design@rootpoint-model@validated-documents`.
 - **Stand-ins.** The renderer draws an image it was not given as grey and lists it in
   `missing_images`, in `render_slide` of `path@rootpoint-render@src/lib.rs`; a font it cannot find
-  draws in the built-in sans and is listed in `font_fallbacks`, per `path@rootpoint-render@src/text.rs`.
+  draws in the built-in sans, chosen by `FontSet::family` in `path@rootpoint-render@src/text.rs`, and
+  `render_slide` lists it in `font_fallbacks`. A `FontRef::Builtin` naming any family but "sans" falls
+  back the same way.
 - **Styles.** One `TextStyle` per text area, `design@rootpoint-model@text-style-per-area`. The
   side panel's style controls, `App::style`, send one `text` command per change, with a
   `StyleOption`. The protocol's `text` command applies its options to the area's current style, or
@@ -157,8 +165,10 @@ Each slice is one branch and one pull request, merged before the next slice begi
   `App::shortcuts`.
 - **The side panel's width.** `Panel::right("selection").default_size(260.0)`. egui 0.37.0 reads
   `default_size` as "the initial wrapping width" (`Panel::default_size` in egui's
-  `path@elsewhere@src/containers/panel.rs`), and the panel widens to fit its widest row. That the style rows of a text
-  area are the rows that widen it was read in the code, not measured.
+  `path@elsewhere@src/containers/panel.rs`). Each frame starts from the size the content took in the
+  last one, so the width follows the content, wider or narrower, unless a widget fills the width, as
+  egui's doc of `Panel::resizable` says. That the style rows of a text area widen it was read in the
+  code, not measured.
 - **Right-click.** No widget of the app reads a secondary click; a search of
   `path@rootpoint-app@src/` for `secondary_clicked` and `context_menu` returns nothing. In the
   browser, eframe 0.37.0 stops the browser's own context menu on the canvas, in
@@ -187,6 +197,8 @@ Each slice is one branch and one pull request, merged before the next slice begi
 **Recorded decisions the design rests on, not argued again.**
 
 - `design@rootpoint@no-compat-in-initial-dev`: no migration for the format changes of this work.
+- `design@rootpoint-app@removal-without-confirmation`: no slice adds a confirmation before a removal;
+  undo restores it.
 - `design@rootpoint-model@edit-operation-core`: every new change is an `Op` with an inverse.
 - `design@rootpoint-app@actions-are-commands`: every new window action is protocol commands.
 - `design@rootpoint-app@one-controller-at-a-time`: new edit actions return while the socket holds
@@ -208,11 +220,13 @@ updated.** The texts are those `cargo klarch show` lists.
 | decision | change | slice | citing texts, judged at that slice's harvest |
 | --- | --- | --- | --- |
 | `design@rootpoint-model@inline-content-assets` | "empty" leaves its list of contents | `spec@editor-conveniences@empty-text` | none |
+| `design@rootpoint-model@inline-content-assets` | a text's style may name an entry of the document's style table, by name: shared data held apart from the area, argued against `rejected@rootpoint-model@content-by-reference` below | `spec@editor-conveniences@styles-model` | none |
 | `design@rootpoint-app@selection-actions` | "the new empty area" becomes the new area, an empty text | `spec@editor-conveniences@empty-text` | `design@rootpoint-app@edit-entry` |
 | `design@rootpoint-app@edit-entry` | a second click enters editing on any area that is not an image, since every such area is a text | `spec@editor-conveniences@empty-text` | none |
+| `design@rootpoint-app@edit-entry` | a secondary click, inside the edited area too, ends editing before it opens the node menu, as the owner approved with `thread@editor-conveniences@node-menu` | `spec@editor-conveniences@context-menu` | none |
 | `design@rootpoint-model@validated-documents` | a cosmetic breach is accepted, reported and drawn with a stand-in; a structural breach is still refused | `spec@editor-conveniences@breach-tiers` | the comments of `path@rootpoint-model@src/ops.rs` and `path@rootpoint-model@src/validate.rs` |
 | `design@rootpoint-model@text-style-per-area` | a text's style is named or custom | `spec@editor-conveniences@styles-model` | `issue@rootpoint@rich-text-spans` |
-| `design@rootpoint-protocol@protocol-addressing` | styles are named by name, a member its argument covers by `thread@editor-conveniences@style-key` | `spec@editor-conveniences@styles-model` | `design@rootpoint-app@one-controller-at-a-time` |
+| `design@rootpoint-protocol@protocol-addressing` | a change of the decision, argued by `thread@editor-conveniences@style-key`: a command names a style by its name, which a rename changes, so the head's argument, an id that names one thing after every edit, does not cover it; its title widens to state both | `spec@editor-conveniences@styles-model` | `design@rootpoint-app@one-controller-at-a-time` |
 | `design@rootpoint-app@node-selection` | the outline replaces the breadcrumb; the node keys follow the outline | `spec@editor-conveniences@side-panel` | `design@rootpoint-app@edit-entry`, `design@rootpoint-app@editor-keys-kept-from-browser`, the comment of `path@rootpoint-app@src/hit.rs` |
 | `design@rootpoint-app@span-selection` | "Alt+↑ or the breadcrumb" becomes Alt+← or the outline | `spec@editor-conveniences@side-panel` | none |
 | `design@rootpoint-protocol@view-state` | `View` gains the preview | `spec@editor-conveniences@preview-mode` | `design@rootpoint-app@node-selection`, `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing` |
@@ -316,9 +330,7 @@ Weighed. Source: the owner's request in round 1, `goal@rootpoint-app@direct-mani
 
 ## Threads
 
-Every thread lives here, since this document's premortem or more than one slice's spec cites it,
-except `thread@editor-conveniences@style-key` and `thread@editor-conveniences@style-kinds`, which
-only `spec@editor-conveniences@styles-model` uses and which live there.
+Every thread lives here, since this document cites each.
 
 ### The side panel shows the slide's whole tree as an indented outline `##tree-outline`
 
@@ -365,6 +377,23 @@ and `thread@editor-conveniences@no-empty-kind`. Final state: approved, in round 
 accepted, this looks convenient." Shape: `spec@editor-conveniences@styles-model`. Harvest: a
 model head, and T4.
 
+### Styles are named in the file and in commands by their name `##style-key`
+
+Proposed by the session in round 1 (`argument@editor-conveniences@arg-22`), as a weighing for the
+owner. Final state: approved, in round 2: "style-key: approved, referral by name is important."
+(`argument@editor-conveniences@arg-32`). The owner chose names over ids. Shape: "Decided design" of
+`spec@editor-conveniences@styles-model`. Harvest: a model head, with the owner's ground; and the
+rewrite of `design@rootpoint-protocol@protocol-addressing`.
+
+### Named styles are for text only, until another kind needs its own `##style-kinds`
+
+Proposed by the session in round 1 (`argument@editor-conveniences@arg-23`), against the owner's
+hedged "Each node kind should probably have its own "Style" object." Final state: approved, in round
+2: "style-kinds: agreed, deferred for when it makes more sense, for images it makes little sense
+right now with a single option." (`argument@editor-conveniences@arg-33`). Shape: "Decided design" of
+`spec@editor-conveniences@styles-model`. Harvest: a sentence of the head on named styles; no issue, since
+`issue@rootpoint@more-content-kinds` is where a new kind is decided.
+
 ### `Content::Empty` is removed: an area holds a text, possibly with no characters, or an image `##no-empty-kind`
 
 Proposed by the owner in round 1 (`argument@editor-conveniences@arg-8`); consequences and rival by
@@ -379,7 +408,9 @@ state: approved, in round 2: "no-empty-kind: accepted." Shape:
 Proposed by the session in round 1 (`argument@editor-conveniences@arg-25`), with Q1. Final state:
 ruled-out, on the owner's answer to Q1 in round 2 (`argument@editor-conveniences@arg-34`): "there
 is not a single existing presentation for now" and "The project does not keep retrocompat at all
-while in initial development". Shape: "Losing alternatives". Harvest: none; the policy is recorded.
+while in initial development". Shape: "Losing alternatives". Harvest: recorded on this milestone's
+branch, as `rejected@rootpoint@format-migration`, which `design@rootpoint@no-compat-in-initial-dev`
+cites.
 
 ### No backward compatibility while the project is in initial development `##no-compat-in-initial-dev`
 
@@ -404,7 +435,9 @@ session (`argument@editor-conveniences@arg-10`, `argument@editor-conveniences@ar
 (`argument@editor-conveniences@arg-35`): "on second thought, I withdraw this proposal. You are right
 that undo covers loss of content." The defeating reason: `Op::Remove` returns a snapshot of the
 slide's tree as its inverse, so undo restores what a removal took. Replaced by
-`issue@rootpoint-protocol@history-browsing`. Shape: "Losing alternatives".
+`issue@rootpoint-protocol@history-browsing`. Shape: "Losing alternatives". Harvest: recorded on this
+milestone's branch, a decision no work implements: `design@rootpoint-app@removal-without-confirmation`,
+a head of absence, and `rejected@rootpoint-app@removal-guard`.
 
 ### A "Preview" button toggles a final-result view inside the editor, and a click on the slide ends it `##final-preview`
 
@@ -425,7 +458,9 @@ use a fallback and give a visible warning, not be a hard error." The session sho
 exception to `design@rootpoint-model@validated-documents` (`argument@editor-conveniences@arg-37`,
 `argument@editor-conveniences@arg-38`). Final state: superseded by
 `thread@editor-conveniences@cosmetic-fallbacks`, which the owner generalized from it in round 3 and
-which carries its shape whole; closed with it in round 4. Shape: `spec@editor-conveniences@styles-model`.
+which carries its shape whole; closed with it in round 4. Its shape is built by
+`spec@editor-conveniences@styles-model`, as a member of `thread@editor-conveniences@cosmetic-fallbacks`.
+Harvest: under the head of `thread@editor-conveniences@cosmetic-fallbacks`.
 
 ### A structural breach of a document is refused; a cosmetic one is drawn with a stand-in and reported `##cosmetic-fallbacks`
 
@@ -455,9 +490,7 @@ Fuzzing and wider testing: `issue@rootpoint@thorough-testing`.
 
 ## Arguments
 
-Every argument lives here, except `argument@editor-conveniences@arg-22`,
-`argument@editor-conveniences@arg-23` and `argument@editor-conveniences@arg-33`, which bear only on
-the threads `spec@editor-conveniences@styles-model` holds, and live there.
+Every argument lives here.
 
 ### The selection is shown as the whole tree, with split rows told from content rows `##arg-1`
 
@@ -599,6 +632,19 @@ covers the red title".
 Round 1, session. Bears on `thread@editor-conveniences@named-styles`. "Named styles also fit with
 later rich text (`issue@rootpoint@rich-text-spans`), where a span would override the area's style."
 
+### Names read in place; ids make a rename touch nothing `##arg-22`
+
+Round 1, session. Bears on `thread@editor-conveniences@style-key`. "`Named("Title")` reads in place,
+where `Named(21)` sends the reader to the table." The rival "ids from the counter (`t21`) … A rename
+then touches nothing else. Both meet the readability criterion … So this is a weighing, and it is
+yours to make. My default is names."
+
+### A named image style would save one click `##arg-23`
+
+Round 1, session. Bears on `thread@editor-conveniences@style-kinds`. "The image kind's only option
+is `fit`, so a named image style would save one click." / "Splitting styles by kind now would be a
+guess. A kind gets named styles when it is added and has options worth sharing."
+
 ### `Empty` differs from an empty text only in one arm of the renderer `##arg-24`
 
 Round 1, session. Bears on `thread@editor-conveniences@no-empty-kind`. "17 lines of Rust name
@@ -654,6 +700,11 @@ do not follow content."
 Round 2, owner. Bears on `thread@editor-conveniences@style-key`,
 `thread@editor-conveniences@missing-style-fallback`. "referral by name is important. Also, a
 missing style should use a fallback and give a visible warning, not be a hard error."
+
+### The owner defers styles of other kinds `##arg-33`
+
+Round 2, owner. Bears on `thread@editor-conveniences@style-kinds`. "deferred for when it makes more
+sense, for images it makes little sense right now with a single option."
 
 ### No presentation exists, and no compatibility is kept in initial development `##arg-34`
 
@@ -712,7 +763,8 @@ file is there so an old file is refused, not misread".
 Round 2, session. Bears on `thread@editor-conveniences@removal-guard`. "The reason that defeats it
 is fact 2: undo already restores what a removal took." The history issue goes "in
 rootpoint-protocol, because the session holds the undo and redo stacks
-(`design@rootpoint-protocol@view-state`)."
+(`design@rootpoint-protocol@view-state`)." Fact 2 is
+`argument@editor-conveniences@arg-10`.
 
 ### The preview's rule lives in the session `##arg-42`
 
@@ -846,7 +898,8 @@ crates/rootpoint-model/src/document.rs
   TextContent::style          becomes a StyleChoice                          (`spec@editor-conveniences@styles-model`)
   Document::resolve_style     the TextStyle a StyleChoice draws with         (`spec@editor-conveniences@styles-model`)
   Document::breaches          the cosmetic breaches of a document            (`spec@editor-conveniences@breach-tiers`)
-  Breach                      enum: MissingAsset { area, asset } | MissingStyle { area, name }
+  Breach                      enum: MissingAsset { area, asset } | UnknownFont { area, name }
+                              | MissingStyle { area, name }
                                                                              (`spec@editor-conveniences@breach-tiers`, `spec@editor-conveniences@styles-model`)
   Content::Empty              removed                                        (`spec@editor-conveniences@empty-text`)
 crates/rootpoint-model/src/ops.rs
@@ -854,7 +907,7 @@ crates/rootpoint-model/src/ops.rs
 crates/rootpoint-model/src/file.rs
   FORMAT_VERSION              existing; 2 at `spec@editor-conveniences@empty-text`, 3 at `spec@editor-conveniences@styles-model`
 crates/rootpoint-render/src/lib.rs
-  RenderReport::missing_styles  text areas drawn with the default style      (`spec@editor-conveniences@styles-model`)
+  Report::missing_styles      (area, name) of each text drawn with the default style (`spec@editor-conveniences@styles-model`)
 crates/rootpoint-protocol/src/command.rs
   Command::Style { .. }       style add | set | rename | remove              (`spec@editor-conveniences@styles-model`)
   Command::Styles             lists the styles                               (`spec@editor-conveniences@styles-model`)
@@ -890,8 +943,6 @@ maps every site of `Content::Empty`, `spec@editor-conveniences@breach-tiers` map
   a slide's removal or a change of kind that discards content. Defeating reason: `Op::Remove`
   returns a snapshot of the slide's tree as its inverse, so undo restores what a removal took.
   Replaced by `issue@rootpoint-protocol@history-browsing`.
-- **`thread@editor-conveniences@missing-style-fallback`**, superseded by
-  `thread@editor-conveniences@cosmetic-fallbacks`, which carries its shape whole.
 - **An org chart of the tree** lost to `thread@editor-conveniences@tree-outline`: it needs one column
   per area, and a 10-area slide does not fit in a 260 pt panel.
 - **Alt with ↑ and ↓ moving one row of the outline** lost to
@@ -944,10 +995,13 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
     `goal@rootpoint@free-slide-division`.
   - Re-entry: the design audit of the next work on the app's keys, or earlier on the owner's word.
 - **T2**, `thread@editor-conveniences@final-preview`: a click meant only to look ends the preview.
-  A tripwire, recorded at the harvest of `spec@editor-conveniences@preview-mode`, guarding the head that records the preview.
+  A tripwire, recorded at the harvest of `spec@editor-conveniences@preview-mode`, guarding
+  `design@rootpoint-protocol@view-state` as that slice rewrites it, with the rule that a click on the
+  slide ends the preview.
   - Fires when: the owner reports, more than once, leaving the preview by a click the owner did not
     mean as an edit.
-  - Response: reopen that head, toward a click in the preview that does nothing.
+  - Response: reopen `design@rootpoint-protocol@view-state`, toward a click in the preview that does
+    nothing.
   - Re-entry: the standing-state review before every merge.
 - **T3**, `thread@editor-conveniences@no-empty-kind`: a second click on a new, empty area enters
   editing, and Delete or the node keys then go to the empty text instead of acting on the area. A
@@ -1038,9 +1092,20 @@ or saves a document that does not load back equal. Response: reopen
 ## Defaults awaiting the owner
 
 - **D1**, the plan's form, all threads: a milestone of seven slices, one branch each, rather than
-  one spec. The session's reason: the work changes four crates, two of them twice, in seven pieces
-  each of which can fail alone, and one pull request of all of it is too large to review. Awaiting
-  the owner.
+  one spec. The session's reason: the work changes rootpoint-app in all seven slices,
+  rootpoint-protocol in five, rootpoint-model in three and rootpoint-render in two, in seven pieces
+  each of which can fail alone, and one branch of all of it is too large to review. Awaiting the
+  owner.
+- **D2**, `thread@editor-conveniences@named-styles`, `thread@editor-conveniences@node-menu`: which
+  states of the window `goal@rootpoint-protocol@commands-drive-everything` counts as a "view it
+  shows". The design-conformance review found that the Styles tab, the style selected in its list,
+  the node menu and the dialog of a style's removal are states only the window holds, while
+  `argument@editor-conveniences@arg-14` applies the goal to the preview. Default, built as written:
+  a view is what the editor shows of the presentation, the slide shown, the selection, presenter
+  mode and the preview; a widget's own state, a tab, a list's selection, an open menu or dialog, a
+  hover, is not, as the outline's hover and the divider highlight are not today. The rival: each of
+  these states becomes view state of the session, with a command. Awaiting the owner, since the
+  goal is the owner's.
 
 ## Harvest
 

@@ -38,8 +38,10 @@ this spec.
   The table of `App::shortcuts` maps each arrow to its `selection::Move`. `selection::Memory` and
   Shift with an arrow are unchanged.
 - **The width.** `Panel::right("selection")` stays resizable by a drag of its edge, starting at
-  260 points, and no row of its content widens it. The rows wrap, cut their text, or sit in a
-  `ScrollArea`.
+  260 points, and no row of its content widens or narrows it. egui starts each frame of a panel from
+  the size its content took in the last one, so a widget fills the available width, a `ScrollArea`
+  or `Ui::take_available_space`, as egui's doc of `Panel::resizable` asks, and the rows wrap or cut
+  their text inside it.
 - **The sample's help text** in `path@rootpoint-protocol@sample/sample.ron` names the new keys and
   the outline in place of the breadcrumb.
 - **The width test**, AC2's instrument, in the states that exist at this slice: the slide alone, a
@@ -113,8 +115,9 @@ confusion, and names the spatial keys as a response.
 
 **The side panel's width never follows its content**, `thread@editor-conveniences@sidebar-width`. A
 width that changes with the selection resizes the slide view at a click
-(`argument@editor-conveniences@arg-3`). egui widens a panel to its widest row
-(`argument@editor-conveniences@arg-12`). So the panel keeps the width its edge was dragged to, and
+(`argument@editor-conveniences@arg-3`). egui sizes a panel from what its content took in the last
+frame, wider or narrower (`argument@editor-conveniences@arg-12`, and the reading of egui's source in
+"What the work is" of the milestone document). So the panel keeps the width its edge was dragged to, and
 its rows fit inside it. The rival, a fixed width with no drag, gives a deep tree or a long style name
 no room (`argument@editor-conveniences@arg-18`).
 

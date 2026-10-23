@@ -45,7 +45,7 @@ function that compiles for the wasm target and fails when called, as `std::fs` d
 
 ## Compatibility
 
-### No saved file, command or API is kept compatible with an earlier version while the project is in initial development `##no-compat-in-initial-dev`
+### Nothing is kept compatible with an earlier version while the project is in initial development `##no-compat-in-initial-dev`
 
 A change of the save format, of the protocol's grammar or of a crate's public API may break the
 files, the scripts and the callers of the version before it, and no migration and no deprecated
@@ -56,8 +56,9 @@ it, `goal@rootpoint@real-presentations`.
 
 On the owner's word: no presentation exists that a change could break, the owner will not use the
 project for real while it is in initial development, and backward compatibility is needed only from
-the owner's ruling. The rival, a migration for each change of format, costs a loader and a test for
-each version with no file to read.
+the owner's ruling. The rival, a migration for each change of format,
+`rejected@rootpoint@format-migration`, costs a loader and a test for each version with no file to
+read.
 
 ## Displays
 

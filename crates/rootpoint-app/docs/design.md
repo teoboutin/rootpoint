@@ -161,6 +161,19 @@ keeps room to move, while a part under the bound would leave a divider that no d
 since the drag's stops would cross. The value is a default: the survey of split editing found
 minimum sizes in Blender, 29 pixels times the interface scale, and egui_tiles, 32.
 
+## Removing
+
+### A removal in the window asks no confirmation, since undo restores what it took `##removal-without-confirmation`
+
+Delete, the side panel's Remove, a slide's removal and a change of a text to an image act at once.
+Each is an operation whose inverse restores what it discarded, `Op::Remove` with a snapshot of the
+slide's former tree, per `design@rootpoint-model@edit-operation-core`, so one `undo` brings the
+content back. The rival, a dialog before an action that discards content,
+`rejected@rootpoint-app@removal-guard`, costs a click on every removal the author meant. On the
+owner's word: the owner proposed the dialog, so that content cannot be lost by mistake, and withdrew
+it because undo covers that loss; what undo leaves unreadable or unreachable is
+`issue@rootpoint-protocol@history-browsing`.
+
 ## Moving content
 
 ### An area is swapped with another, or moved to its edge, by dragging its grip, with a hint of the drop's effect `##swap-gesture`

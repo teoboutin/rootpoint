@@ -12,10 +12,20 @@ this spec.
   `spec@editor-conveniences@styles-model`.
 - `clear <area>` sets the area's text to the empty string. A text area keeps its style; an image area
   becomes an empty text with `TextStyle::default()`.
-- `tree` prints an empty text as `n3 text ""`, which `quote_always` in
-  `path@rootpoint-protocol@src/tree.rs` already gives.
+- `tree` prints an empty text as `n3 text ""`, which `node_tree` in
+  `path@rootpoint-protocol@src/tree.rs` already gives through `quote_always`, defined in
+  `path@rootpoint-protocol@src/command.rs`.
 - The side panel's content row offers "text" and "image" only, in `App::content` of
-  `path@rootpoint-app@src/panels.rs`.
+  `path@rootpoint-app@src/panels.rs`. `App::clear_content` of `path@rootpoint-app@src/actions.rs`,
+  whose only caller is that button, is removed, with its cases in
+  `path@rootpoint-app@tests/actions.rs`, `path@rootpoint-app@tests/control.rs` and
+  `path@rootpoint-app@tests/web.rs`. The protocol's `clear` stays, for agents and scripts.
+- The texts that describe the empty kind state the empty text: the reply of `tree` in
+  `path@rootpoint-protocol@README.md`; "the new empty area" and "empty, text or an image" in
+  `path@rootpoint-app@README.md`; the doc comments of `Op::AddSlide`, `Op::Split` and
+  `OpError::RootNotRemovable` in `path@rootpoint-model@src/ops.rs`, and of `Command::Text` in
+  `path@rootpoint-protocol@src/command.rs`. A search for `empty` in the `.md` files of `crates/`
+  and in the doc comments of the four crates lists them.
 - `FORMAT_VERSION` is 2, and every committed `.ron` file is rewritten in it, per "How the work is
   done" of the milestone document.
 
@@ -32,20 +42,25 @@ this spec.
   in `path@rootpoint-protocol@tests/commands.rs` clears a text area of size 120 and an image area,
   then reads both contents. Shown to fail: against a `clear` that writes `TextStyle::default()` for
   both, the first assertion fails.
-- **A file of version 1 is refused.** Test: a model test loads the fixture's text with `version: 1`
-  and gets `LoadError::Version { found: 1, expected: 2 }`. Shown to fail: with `FORMAT_VERSION` left
-  at 1, it loads.
+- **A file of version 1 is refused.** Test: the existing test `a_file_of_another_version_is_refused`
+  of `path@rootpoint-model@tests/file.rs` gains a case: the text `save_ron` gives for its document,
+  with `version: 1`, gets `LoadError::Version { found: 1, expected: 2 }`. Shown to fail: with
+  `FORMAT_VERSION` left at 1, it loads.
 - **An empty text draws nothing.** Test: `path@rootpoint-render@tests/empty.rs`, whose slide is
   made by `Op::AddSlide`, still finds every sampled pixel white. Shown to fail: against a renderer
   that draws a placeholder in an empty text area, the centre pixel is not white.
 - **A second click on a new area enters editing.** Test: a test of `App::frame` in
   `path@rootpoint-app@tests/editing.rs` adds a slide, clicks its area twice, and finds the window
-  editing that area. Shown to fail: against an entry rule, `editing.rs`, that requires a text with
-  characters, it is not editing.
+  editing that area. Shown to fail: against an `is_text_area` of `path@rootpoint-app@src/editing.rs`
+  that requires a text with characters, it is not editing.
 
 ## Fixtures
 
-The committed `.ron` files are rewritten at version 2. One of them holds `content: Empty`:
+The committed `.ron` files are rewritten at version 2, as "How the work is done" of the milestone
+document says. Two tests write the version as a literal and follow it: the `version: 1` that
+`path@rootpoint-protocol@tests/headless.rs` expects in a saved file, and the text
+`(version: 1, slides: oops)` of `path@rootpoint-model@tests/file.rs`, which must stay a parse error
+rather than become a refusal of its version. One `.ron` file holds `content: Empty`:
 `path@rootpoint-app@tests/data/mixed.ron`, which becomes `content: Text(text: "", style: (…))`
 with the default style. The scripts and the tests that expect the word `empty` in a reply of `tree`
 expect `text ""`. A search for ` empty` in `path@rootpoint-protocol@tests/scripts/` and in the
@@ -69,8 +84,8 @@ protocol, the render and the app crates, each to read for whether it means the c
 
 ## Fails alone on
 
-- A document whose areas held no content before this slice either fails to load at version 2 or
-  loads with areas that are not texts.
+- A committed `.ron` file, rewritten at version 2, fails to load, or loads with an area that holds
+  neither a text nor an image.
 - A click on a new area's second press does not enter editing.
 
 ## Premises that expire
@@ -98,15 +113,19 @@ of writing (17 lines), and what it becomes.
 | `path@rootpoint-app@src/panels.rs`, `App::content`, two lines | the "empty" button | removed |
 | `path@rootpoint-app@src/panels.rs`, `App::content`, the style match | `Content::Empty => {}` | removed |
 | `path@rootpoint-protocol@tests/commands.rs` | an expected `Content::Empty` | the expected empty text |
-| `path@rootpoint-model@tests/ops.rs`, two lines | a new area's `Content::Empty`, and the assertion on it | the empty text |
+| `path@rootpoint-model@tests/ops.rs`, `every_operation_is_undone_by_its_inverse` | the one-area root given to `Op::SetTree` holds `Content::Empty` | `Content::default()` |
+| `path@rootpoint-model@tests/ops.rs`, `splitting_a_child_along_its_parents_axis_merges_into_the_parent` | the assertion that the new area holds `Content::Empty` | the assertion of the empty text |
 | `path@rootpoint-model@tests/invalid.rs` | an area holding `Content::Empty` | `Content::default()` |
 | `path@rootpoint-model@tests/file.rs`, the strategy `content()` | `Just(Content::Empty)` | `Just(Content::default())` |
 
 ## Decided design
 
 **`Content::Empty` is removed**, `thread@editor-conveniences@no-empty-kind`. An area holds a text,
-possibly with no characters, or an image. The kind added nothing an empty text lacks: the renderer's
-`Content::Empty => {}` arm was its only difference (`argument@editor-conveniences@arg-24`). The
+possibly with no characters, or an image. The kind added nothing an empty text lacks
+(`argument@editor-conveniences@arg-24`). In the renderer, an empty text lays out no glyph, as
+`Empty` drew nothing, and it adds an entry to the report's `lines`, as every text does. Outside the renderer,
+the sites that tell the two apart are the editing entry, `is_text_area`, and the side panel's
+buttons, which the mapping table lists. The
 nearest rival, keeping it, has no argument left. The consequence the owner accepted with it: a
 second click on any area that is not an image enters editing, per
 `design@rootpoint-app@edit-entry`, so typing into a new area needs no "text" button first

@@ -5,15 +5,22 @@ this spec.
 
 ## Builds
 
-- `Breach` and `Document::breaches` in the model: the cosmetic breaches of a document. Today one
-  kind, `Breach::MissingAsset { area, asset }`, for an image or a text font that names an asset id
-  the table lacks. `spec@editor-conveniences@styles-model` adds `Breach::MissingStyle`.
+- `Breach` and `Document::breaches` in the model: the cosmetic breaches of a document. Here two
+  kinds: `Breach::MissingAsset { area, asset }`, for an image or a text font that names an asset id
+  the table lacks, and `Breach::UnknownFont { area, name }`, for a `FontRef::Builtin` naming a
+  family the binary does not carry, which the renderer already draws in the built-in sans.
+  `spec@editor-conveniences@styles-model` adds `Breach::MissingStyle`.
 - `Document::validate` checks the structural invariants only. The check of
   `Document::validate_content` moves into `Document::breaches`. So `load_ron` loads a document with
-  a missing asset, and `apply` accepts an operation whose result has one.
+  a missing asset, and `apply` accepts an operation whose result has one. `Op::SetContent` stops
+  refusing an image whose asset the table lacks, with `OpError::UnknownAsset`, in `apply_in` of
+  `path@rootpoint-model@src/ops.rs`: its inverse can bring such an image back, after a file was
+  loaded with one.
 - The commands that name an asset refuse a missing one: `image <area> <asset> …` and the
-  `font=<asset>` option of `text`, each with the reply `err no asset a<n>`. `remove-asset` keeps its
-  refusal while an area uses the asset, in `Op::RemoveAsset`.
+  `font=<asset>` option of `text`, each with the reply `err no asset a<n>`, in
+  `Session::operation`. `Op::RemoveAsset` keeps its refusal of an asset in use: it refuses a removal,
+  no reference, and no undo meets it, since the inverse of `Op::AddAsset` removes an id the counter
+  has just given, which no area loaded with can name.
 - The stand-ins and the reports exist, and are checked on a document with a missing asset: the grey
   image and `missing_images`, the built-in sans and `font_fallbacks`, the status line of the window
   and the reply of `render`.
@@ -35,9 +42,19 @@ this spec.
   includes a line naming `a99`. Shown to fail: against a status that drops the list of missing
   images, no line names it.
 - **A structural breach is still refused.** Test: every refusal of
-  `path@rootpoint-model@tests/invalid.rs` but the one about a missing asset still holds, and that
-  one now asserts the load. Shown to fail: against a `validate` that accepts a split of one child,
+  `path@rootpoint-model@tests/invalid.rs` but the two about a missing asset still holds. Of those
+  two, `a_file_naming_a_missing_asset_is_refused` now asserts the load, and
+  `a_text_whose_font_is_a_missing_asset_is_refused` asserts that the operation applies and that its
+  inverse restores the document. Shown to fail: against a `validate` that accepts a split of one child,
   its test fails.
+- **An undo that brings back a missing asset is not refused.** Test: a protocol test loads a
+  document whose area n3 shows `a99`, absent from the table, runs `text n3 "x"`, then `undo`; the
+  undo replies `ok`, and n3 shows `a99` again. Shown to fail: against an `Op::SetContent` that still
+  refuses `UnknownAsset`, the undo replies `err`.
+- **A reference to an asset at or above the counter is refused.** Test: a model test loads a
+  document whose image names `a<next_id>`; `load_ron` refuses it with a reason naming the id. Shown
+  to fail: against a `validate` that moves the asset check to `Document::breaches` and adds no check
+  of the id, it loads, and the next `Op::AddAsset` gives that id to a new asset.
 - **No command names a missing asset.** Test: protocol tests run `image n<id> a99 fit` and `text
   n<id> "x" font=a99` on a session whose table lacks `a99`; each replies `err` and changes nothing.
   Shown to fail: against a `Session::operation` that passes the id through, the document gains a
@@ -53,7 +70,7 @@ this spec.
   `path@rootpoint-model@src/ops.rs`; `load_ron` in `path@rootpoint-model@src/file.rs`.
 - `Session::operation`, `apply_style` and `Session::asset_bytes` in
   `path@rootpoint-protocol@src/session.rs`.
-- `render_slide` and `RenderReport` in `path@rootpoint-render@src/lib.rs`; the font lookup in
+- `render_slide` and `Report` in `path@rootpoint-render@src/lib.rs`; the font lookup in
   `path@rootpoint-render@src/text.rs`.
 - The asset loading of `path@rootpoint-app@src/assets.rs`; `App::status`.
 - `design@rootpoint-model@validated-documents`, `rejected@rootpoint-model@unvalidated-documents`,
@@ -78,12 +95,15 @@ time of writing, and its kind.
 | --- | --- | --- |
 | the aspect ratio has no zero side | structural | no area rectangle can be computed |
 | an id is below `next_id` | structural | a later operation would reuse it |
+| a reference to an asset names an id below `next_id`: covered today by the check of a missing asset, which leaves for `Document::breaches` | structural | a later `Op::AddAsset` would give that id to a new asset, which the area would then show, and whose removal an undo could not make; a new check of `Document::validate` |
 | an id is used once | structural | a command would name two nodes |
 | a split has two children or more | structural | `design@rootpoint-model@split-tree-arity` is broken; a repair would guess the layout |
 | a split has one divider fewer than its children | structural | `area_rects` panics on a missing divider |
 | dividers strictly increase inside (0, 1), NaN refused | structural | a part has no extent, or a negative one |
 | no child split has its parent's axis | structural | one layout would have two trees |
 | an image or a text font names an asset in the table | cosmetic | the grey image and the built-in sans stand in, inside the area's drawing |
+| `Op::SetContent` refuses an image whose asset the table lacks, in `apply_in` of `path@rootpoint-model@src/ops.rs` | cosmetic | the same check, at the operation; it leaves, and the command `image` refuses instead |
+| no check today: a `FontRef::Builtin` naming a family the binary lacks | cosmetic | the built-in sans stands in; it becomes `Breach::UnknownFont` |
 
 ## Decided design
 
@@ -105,8 +125,9 @@ and stay refused (`argument@editor-conveniences@arg-53`). The renderer already d
 only validation refused what it could draw (`argument@editor-conveniences@arg-50`).
 
 **No command creates a cosmetic breach**, `thread@editor-conveniences@no-new-breach`. The commands
-that name a target refuse one the document lacks. The operations do not check it: an undo can bring
-back a missing target a file was loaded with, and the undo must not be refused
+that name a target refuse one the document lacks. The operations refuse no reference to a missing
+target: an undo can bring back a missing target a file was loaded with, and the undo must not be
+refused. A refusal of a removal in use stays where no undo meets it
 (`argument@editor-conveniences@arg-55`). The two together cover both inputs: a fallback handles a file
 edited by hand, which `goal@rootpoint-model@faithful-readable-file` makes a purpose, and the property
 test shows the editor itself never produces one (`argument@editor-conveniences@arg-51`).

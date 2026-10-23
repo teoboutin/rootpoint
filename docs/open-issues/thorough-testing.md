@@ -40,14 +40,15 @@ Approaches to weigh, as open leads, none chosen:
 - **drive the window's actions at random** through `App::frame` in tests, checking that each action
   equals its commands on a second session, as `path@rootpoint-app@tests/actions.rs` does by hand.
 
-The milestone that adds named styles adds one such test, a property test over protocol commands
-that no command creates a reference to a missing style.
+`milestone@plans@editor-conveniences` adds one such test, in rootpoint-protocol: random sequences
+of commands that never leave a reference to a missing asset or, once named styles exist, to a
+missing style, keep the document valid, and save to a text that loads back equal.
 
 ### Why it matters
 
 The owner wants to be sure no edit of a user can lead to an invalid document. The model's tests
 cover operations, but the protocol and the window add their own checks and their own state, such as
-groups, the view and a command's refusal of an unknown style. A breach found by a user instead of a
+groups and the view. A breach found by a user instead of a
 test costs a talk, against `goal@rootpoint@real-presentations`, and every operation the GUI offers
 is to be checked headless, `goal@rootpoint@headless-core`.
 

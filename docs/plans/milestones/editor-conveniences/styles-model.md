@@ -22,30 +22,38 @@ window's half is `spec@editor-conveniences@styles-window`.
   `render_slide` and `area_text` draw with it. The renderer's text layout takes the resolved style,
   not the `TextContent`.
 - **The missing style.** `Breach::MissingStyle { area, name }` joins `Document::breaches`.
-  `RenderReport::missing_styles` lists the text areas drawn with the default style for that reason.
-  The reply of `render` and `App::status` name them, as they name a missing image.
+  `Report::missing_styles` lists, for each text drawn with the default style for that reason, its
+  area and the missing name. The reply of `render` and `App::status` name both, as they name a
+  missing image's asset.
 - **The operations**, each with its inverse, in `path@rootpoint-model@src/ops.rs`:
-  - `Op::AddStyle { name, style }`, refused when the name exists or is empty;
+  - `Op::AddStyle { name, style }`, refused when the name is in the table or is empty; its inverse
+    is the removal of the style with no replacement;
   - `Op::SetStyle { name, style }`, which replaces a style's values;
   - `Op::RenameStyle { from, to }`, which rewrites every `Named(from)` to `Named(to)`, refused when
-    `to` exists;
-  - `Op::RemoveStyle { name, into }`, refused while an area uses the style and `into` is `None`.
-    `into` names another style, or asks for a custom copy of the removed style for each user.
+    `to` is in the table; its inverse renames back;
+  - `Op::RemoveStyle { name, into }`: `into` names another style, or asks for a custom copy of the
+    removed style for each user, or is `None`, which leaves the users naming the removed style.
 
-  The inverse of a removal restores the style and each user's `Named(name)`. The shape of that
-  inverse is the implementer's.
+  No operation refuses a reference to a missing style, per
+  `thread@editor-conveniences@no-new-breach`: an undo must not be refused. With a file loaded with
+  areas naming a missing "Heading", `style add "Heading"` then `undo` removes Heading again and
+  leaves those areas as they were loaded. The inverse of a removal restores the style and each
+  user's `Named(name)`; the shape of that inverse is the implementer's.
 - **The new area's style**, `thread@editor-conveniences@new-area-style`:
-  - a split of a text area gives its new area that area's `StyleChoice`;
+  - a split of a text area gives its new area that area's `StyleChoice`, when it is `Custom` or names
+    a style the table holds; a name the table lacks is not copied, so no split creates a breach;
   - every other new area takes `Named("Body")` when the table holds "Body", and
     `Custom(TextStyle::default())` otherwise. That covers a split of a split or of an image area, the
-    area of `Op::AddSlide`, and an image area that `clear` empties.
+    area of `Op::AddSlide`, an image area that `clear` empties, and an image area that
+    `text <area> "<text>"` with no style option makes a text, as `App::set_text_content` does.
 - **The commands**, in `path@rootpoint-protocol@src/command.rs` and
   `path@rootpoint-protocol@src/session.rs`:
   - `style add "<name>" <options>`: the options apply to `TextStyle::default()`;
   - `style set "<name>" <options>`: the options apply to the style's current values;
-  - `style rename "<from>" "<to>"`;
-  - `style remove "<name>"`, `style remove "<name>" into="<other>"` and
-    `style remove "<name>" into=custom`;
+  - `style rename "<from>" "<to>"`, refused when `to` is in the table or when an area names `to`,
+    so the rename's inverse restores exactly the areas it rewrote;
+  - `style remove "<name>"`, refused while an area uses the style, with a reply naming its users;
+    `style remove "<name>" into="<other>"` and `style remove "<name>" into=custom`;
   - `styles`, a query, which replies with one line listing each style and its options in the order
     of the table;
   - `text <area> "<text>" style="<name>"` names a style, and is refused when the table lacks it, per
@@ -55,11 +63,19 @@ window's half is `spec@editor-conveniences@styles-window`.
     style's values and that change.
 
   `tree` prints a text as `n2 text "rootpoint" style="Title"` or `n3 text "…" custom`.
+
+  A style's name may hold a space, as "Style 1" does. Today `split_words` of
+  `path@rootpoint-protocol@src/command.rs` reads `key="…"` as one bare word with its quotes, and a
+  space ends it. The grammar gains a quoted value after `key=`, with the escapes of a quoted text,
+  and `Command`'s `Display` prints it back so that the line parses to the same command.
+  The socket's queries are listed twice in `path@rootpoint-app@src/control.rs`, `tree`, `view` and
+  `render`; `styles` joins both lists, so a client without the authority can read the styles.
 - **Fonts in styles.** A style whose font names an asset uses that asset: `asset_in_use` and
   `Breach::MissingAsset` read the style table as well as the areas. A text whose resolved font is a
   missing asset is a `MissingAsset` of that area.
 - **The format.** `FORMAT_VERSION` is 3. The sample, `path@rootpoint-protocol@sample/sample.ron`,
-  holds the four styles. Its title names Title, and its two texts name Body.
+  holds the four styles. Each of its texts whose values equal Title's or Body's names that style:
+  n2 names Title, and n3, n5, n9 and n11 name Body. Its other texts are `Custom`.
 - **The property test** of `planned@rootpoint-protocol@tests/properties.rs`, widened with the style
   commands and with `style=` names that may be missing.
 
@@ -69,23 +85,24 @@ window's half is `spec@editor-conveniences@styles-window`.
   text whose `Custom` style equals Title's values; the two images are equal. Shown to fail: against
   a resolution that ignores the table, the named text draws at size 48.
 - **A style edit changes every area naming it.** Test: a model test applies `Op::SetStyle` to Body
-  and finds both of the sample's Body texts resolving to the new values, and the Title text
+  and finds every text of the sample naming Body resolving to the new values, and the Title text
   unchanged. Shown to fail: against a `SetStyle` that copies into areas, an undo then leaves the
   areas changed.
 - **A rename rewrites the references.** Test: `style rename "Body" "Text"` leaves no `Named("Body")`,
   and its undo restores them. Shown to fail: against a rename of the table's key alone,
   `Document::breaches` names two missing styles.
 - **A removal takes a replacement.** Tests:
-  - `style remove "Body"` on the sample is refused, with a reply naming the users `n3` and `n5`;
-  - with `into="Title"`, both users name Title;
-  - with `into=custom`, both hold `Custom` with Body's values, and their render is unchanged;
+  - `style remove "Body"` on the sample is refused, with a reply naming its users n3, n5, n9 and
+    n11;
+  - with `into="Title"`, every user names Title;
+  - with `into=custom`, every user holds `Custom` with Body's values, and their render is unchanged;
   - an undo of each restores `Named("Body")`.
 
   Shown to fail: against a removal that leaves the users naming Body, `Document::breaches` is not
   empty.
 - **A missing style draws with the default and is reported.** Test: a document loaded with
   `Named("Heading")` and no such style loads. Its text draws as `TextStyle::default()`, the reply of
-  `render` names the area, and `Document::breaches` holds `MissingStyle`. Shown to fail: against a
+  `render` names the area and "Heading", and `Document::breaches` holds `MissingStyle`. Shown to fail: against a
   `validate` that refuses an unknown name, the load fails.
 - **No command names a missing style.** Test: `text n3 "x" style="Heading"` on a document without
   Heading replies `err` and changes nothing. Shown to fail: against a command that passes the name
@@ -97,13 +114,30 @@ window's half is `spec@editor-conveniences@styles-window`.
   gives a new area naming Title; a split of the split n6 gives one naming Body; `Op::AddSlide` on a
   document whose table lacks Body gives `Custom(TextStyle::default())`. Shown to fail: against a
   split that always gives Body, the first test fails.
+- **An undo of a style's addition is not refused.** Test: on a document loaded with n3 naming the
+  missing "Heading", `style add "Heading"` then `undo` replies `ok`, Heading leaves the table, and n3
+  names "Heading" again. Shown to fail: against an `Op::RemoveStyle` that refuses a style in use, the
+  undo replies `err`.
+- **A rename onto a name an area holds is refused.** Test: on the same document,
+  `style rename "Body" "Heading"` replies `err`, and the document is unchanged. Shown to fail:
+  against a rename that checks only the table, n3 is caught by the rename, and its undo turns n3
+  into Body.
+- **A split does not copy a missing name.** Test: on the same document, a split of n3 gives a new
+  area naming Body. Shown to fail: against a split that copies every `StyleChoice`, the new area
+  names "Heading", and the property test of the next claim would not see it, since it starts from a
+  document with no breach.
+- **A name with a space reads and prints back.** Test: `style add "Style 1" size=40` and
+  `text n3 "x" style="Style 1"` parse, run, and print back through `Command`'s `Display` to lines
+  that parse to the same commands. Shown to fail: against today's `split_words`, the second line
+  splits `style="Style` from `1"`.
 - **AC4.** The widened property test passes. Shown to fail: with the refusal of a missing `style=`
   name removed, it finds a sequence leaving a `MissingStyle`.
 
 ## Fixtures
 
-The committed `.ron` files are rewritten at version 3. Each text's `style` becomes
-`Custom((…))` with its former values, except in the sample, where the texts name its styles as
+The committed `.ron` files are rewritten at version 3. Each text's `style` becomes `Custom` with its
+former values, written as `save_ron` writes it, `Custom(font: …, size: …, …)`, since the file
+enables `unwrap_variant_newtypes`, except in the sample, where the texts name its styles as
 "Builds" says. The fixture edited by an agent,
 `path@rootpoint-model@tests/data/fixture-edited-by-agent.ron`, keeps the meaning its test states,
 read at the audit.
@@ -156,45 +190,10 @@ becomes.
 | `path@rootpoint-app@src/panels.rs`, `App::content` and `App::style` | the area's `TextStyle` | the resolved style; a change sends `text` with the option, which forks to custom |
 | `path@rootpoint-app@src/actions.rs`, `App::set_text_content` and `App::set_style` | `text` with no option, or one | unchanged |
 | `path@rootpoint-app@src/editing.rs`, the `text` command of an edit | no option | unchanged |
-
-## Threads
-
-### Styles are named in the file and in commands by their name `##style-key`
-
-Proposed by the session in round 1 (`argument@editor-conveniences@arg-22`), as a weighing for the
-owner. Final state: approved, in round 2: "style-key: approved, referral by name is important."
-(`argument@editor-conveniences@arg-32`). The owner chose names over ids. Shape: "Decided design"
-below. Harvest: a model head, with the owner's ground; and the member of
-`design@rootpoint-protocol@protocol-addressing`.
-
-### Named styles are for text only, until another kind needs its own `##style-kinds`
-
-Proposed by the session in round 1 (`argument@editor-conveniences@arg-23`), against the owner's
-hedged "Each node kind should probably have its own "Style" object." Final state: approved, in round
-2: "style-kinds: agreed, deferred for when it makes more sense, for images it makes little sense
-right now with a single option." (`argument@editor-conveniences@arg-33`). Shape: "Decided design"
-below. Harvest: a sentence of the head on named styles; no issue, since
-`issue@rootpoint@more-content-kinds` is where a new kind is decided.
-
-## Arguments
-
-### Names read in place; ids make a rename touch nothing `##arg-22`
-
-Round 1, session. Bears on `thread@editor-conveniences@style-key`. "`Named("Title")` reads in place,
-where `Named(21)` sends the reader to the table." The rival "ids from the counter (`t21`) … A rename
-then touches nothing else. Both meet the readability criterion … So this is a weighing, and it is
-yours to make. My default is names."
-
-### A named image style would save one click `##arg-23`
-
-Round 1, session. Bears on `thread@editor-conveniences@style-kinds`. "The image kind's only option
-is `fit`, so a named image style would save one click." / "Splitting styles by kind now would be a
-guess. A kind gets named styles when it is added and has options worth sharing."
-
-### The owner defers styles of other kinds `##arg-33`
-
-Round 2, owner. Bears on `thread@editor-conveniences@style-kinds`. "deferred for when it makes more
-sense, for images it makes little sense right now with a single option."
+| `path@rootpoint-model@src/document.rs`, `Document::same_content` | compares the aspect, the slides and the assets | also compares `styles` |
+| `path@rootpoint-model@src/file.rs`, `FileRef`, `File` and the construction in `load_ron` | the document's fields, field by field | gain `styles` |
+| `path@rootpoint-model@tests/ops.rs`, `op_for` of the property test | reaches every `Op` variant, as its comment says | reaches the four style operations |
+| `path@rootpoint-app@src/panels.rs`, `SIZES` | the sizes of the size menu | gains 28, Legend's size |
 
 ## Decided design
 
@@ -255,9 +254,16 @@ landing commit.
 ## Harvest
 
 - `design@rootpoint-model@text-style-per-area` rewritten: a text has one style for all its text,
-  named or custom. The thread items above go to the heads they name. The table, the fork to custom,
+  named or custom. `thread@editor-conveniences@style-key` and `thread@editor-conveniences@style-kinds`
+  go to the heads they name. The table, the fork to custom,
   the replacement on removal and the new area's style are cut into heads by `primer@design-heads`.
-- `design@rootpoint-protocol@protocol-addressing` gains styles, named by name.
+- `design@rootpoint-protocol@protocol-addressing` rewritten: a command names a style by its name. Its
+  argument, an id that names one thing after every edit, does not cover a name a rename changes, so
+  this is a change of the decision, argued by `thread@editor-conveniences@style-key`; the title
+  widens to state both.
+- `design@rootpoint-model@inline-content-assets` rewritten: a text's style may name an entry of the
+  document's style table, the one content shared by name, argued against
+  `rejected@rootpoint-model@content-by-reference` in "Decided design" above.
 - T4, recorded on the owner's word in the tripwires home of the Component that holds the head of the
   new area's style, guarding it, with its label in its text.
 - A `rejected` entry for ids from the counter as style keys, `style-ids`, if a test of

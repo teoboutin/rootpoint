@@ -84,3 +84,12 @@ headless Firefox, an F5 dispatched on the focused canvas ended with its default 
 the test `f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation` of
 `path@rootpoint-app@tests/web.rs` fails with the listener in the bubble phase.
 `design@rootpoint-app@editor-keys-kept-from-browser` listens in the capture phase.
+
+### A dialog before an action of the window that discards content `##removal-guard`
+
+`live`. Undo restores what a removal, a slide's removal or a change of a text to an image took, since
+each is an operation whose inverse restores it. The dialog would cost a click on every removal the
+author meant, and would protect only content whose undo history is gone: a closed window, a reloaded
+page, `issue@rootpoint-app@page-close-loses-edits`, or a redo stack a later edit cleared. The owner,
+who proposed it, withdrew it for that reason, and asked instead for a history that can be read and
+branched, `issue@rootpoint-protocol@history-browsing`.

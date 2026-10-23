@@ -11,7 +11,10 @@ whole before this spec. Its harvest commit also deletes the milestone document.
   - `preview off` clears it;
   - `select n<id>` clears it;
   - `select s<id>`, `present` and `deselect` leave it as it is;
-  - `view` reports it, as `preview=on` or `preview=off` after the fields it prints today.
+  - `view` reports it, as `preview=on` or `preview=off` after the fields it prints today. Every test
+    that asserts the exact reply of `view` gains the field: a search for `presenting=` in the tests
+    and scripts of the protocol and the app lists them: 14 lines in 4 files at the time of writing,
+    by `grep -rn "presenting=" crates/*/tests`.
 
   These are view commands: they apply no operation, and the socket needs the authority to send
   them, as for `select`, `design@rootpoint-app@one-controller-at-a-time`.
@@ -21,7 +24,12 @@ whole before this spec. Its harvest commit also deletes the milestone document.
   - `App::overlay` draws no mark.
   - A press on the slide starts no gesture: no drag, no split at the pointer, no editing.
   - A click on an area sends `select` on it, which ends the preview and selects that area.
-  - Esc sends `preview off`.
+  - Esc sends `preview off`. Esc's other meanings, hiding the line of a split at the pointer,
+    cancelling a drag and leaving editing, do not arise in preview, where no gesture runs.
+  - In the app, the new state and its functions are named for the final view, as `App::final_view`,
+    since "preview" already names the line of a split at the pointer: `hit::Preview`,
+    `Layout::preview`, `Press::Split` and `App::preview_hidden`. The protocol's command keeps the
+    word `preview`, which names nothing else there.
   - The slide's image and its size are the editor's, since the side panel's width does not change.
 - **The node keys and Delete** act on the selection, and there is none in preview, so they do
   nothing until a click selects.
@@ -34,7 +42,8 @@ whole before this spec. Its harvest commit also deletes the milestone document.
   selection, the first `view` names n3.
 - **The preview's image has no mark.** Test: `path@rootpoint-app@tests/presenter.rs` compares the
   editor's image in preview with presenter mode's at the same size. Before this slice it compared
-  the texture only, so it now also checks that the overlay painted no shape. Shown to fail: against
+  the texture only, so it now also checks that the overlay painted no shape but the texture's own
+  image in the slide's rectangle. Shown to fail: against
   an overlay that still draws the divider lines, a shape is painted.
 - **A click ends the preview and selects.** Test: a test of `App::frame` presses Preview, then
   clicks area n3. The view has `preview=off` and n3 selected, and no split happened, with Ctrl held
@@ -98,13 +107,15 @@ criterion of the milestone, as the milestone document leaves.
 
 - `design@rootpoint-protocol@view-state` rewritten: `View` holds the preview, with its rules. The
   texts that cite it are re-read: `design@rootpoint-app@node-selection`,
-  `design@rootpoint-app@one-controller-at-a-time` and `issue@rootpoint-protocol@history-browsing`.
+  `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing`, and
+  the comment of `path@rootpoint-protocol@tests/scripts/view.txt`, which the checker does not read.
 - `design@rootpoint-app@editor-overlay` rewritten: the overlay draws nothing in preview. The texts
   that cite it are re-read: `path@rootpoint-app@CLAUDE.md`, `design@rootpoint-app@edit-in-place`,
   `design@rootpoint-app@take-over-at-once` and the comment of `path@rootpoint-app@tests/presenter.rs`.
-- An app head for the preview's presses, if `primer@design-heads` admits one, the owner's choice
-  attributed to the owner with the owner's hedge, "I'm not fully certain though".
+- The rules of the preview, in the rewritten `design@rootpoint-protocol@view-state`, attributed to the
+  owner with the owner's hedge, "I'm not fully certain though"; the presses of the slide view in
+  preview, in an app head if `primer@design-heads` admits one, or a comment at `App::slide_view`.
 - `design@rootpoint-app@one-controller-at-a-time`: the Preview button joins the view-only inputs.
-- T2, recorded on the owner's word in `register@rootpoint-app@tripwire`, guarding the head that
-  records the preview's presses, with its label in its text.
+- T2, recorded on the owner's word in `register@rootpoint-protocol@tripwire`, guarding
+  `design@rootpoint-protocol@view-state`, with its label in its text.
 - The milestone document leaves, as its "Harvest" says.
