@@ -596,6 +596,18 @@ fn the_node_menu_entries_issue_their_commands() {
             ]
         },
     );
+    // The entry "image" on an image area names the image it holds, and sends nothing, as the side
+    // panel's button does; the menu's own entries are read, not built by the test.
+    check(
+        "menu: image on an image area",
+        &["asset other.png", "image n3 a20 fill"],
+        |a| {
+            a.open_node_menu(NodeId(3), Pos2::ZERO);
+            let item = a.menu_items().into_iter().find(|i| i.label == "image");
+            a.menu_entry(item.unwrap().entry);
+        },
+        |_| vec![c("select n3")],
+    );
     // An entry that names what the node holds sends nothing, as the side panel's does.
     check(
         "menu: the style it names",

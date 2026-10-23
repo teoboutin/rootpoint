@@ -12,10 +12,9 @@ over the toolbar says so beside a button "Take control", which takes it back; th
 change as it is made, and of the actions below it keeps only those that change the view or the
 window's own state: selecting by a click, Alt and the arrows, the outline or the node menu's
 "Select", showing a slide of the list, presenting, switching the side panel's tab, and selecting a
-style in the Styles tab's list. It
-draws no grip, no divider highlight and no preview line, and a click on the selected text area
-only selects it. The toolbar opens a presentation (Ctrl+O), saves it to its
-file (Ctrl+S) or to another, opens the built-in sample, presents, and undoes (Ctrl+Z) and redoes
+style in the Styles tab's list. It draws no grip, no divider highlight and no preview line, and a
+click on the selected text area only selects it. The toolbar opens a presentation (Ctrl+O), saves
+it to its file (Ctrl+S) or to another, opens the built-in sample, presents, and undoes (Ctrl+Z) and redoes
 (Ctrl+Shift+Z or Ctrl+Y). A save copies beside the saved file every asset outside its directory,
 and every embedded one, as the protocol's `save` does. The window shows the
 shown slide, scaled uniformly to the largest size that fits and letterboxed, and, under it, what
@@ -46,7 +45,7 @@ characters no font has, styles the document lacks, and text not drawn.
   on it: "Select" selects the node or one of its ancestors, "Content" makes an area a text or an
   image, "Style" names a text's style or makes it custom, and "Remove" removes the node, as the side
   panel's controls and Delete do. A right-click while editing a text leaves editing first. Esc, or
-  a click outside the menu, closes it.
+  any click, on an entry, elsewhere in the menu or outside it, closes it.
 - The side panel's Styles tab lists the named styles, each with the number of areas that name it,
   and changes the one selected in its list: its name, its values, a new style, a copy, or its
   removal, which asks what the areas naming it take instead, a custom copy first.

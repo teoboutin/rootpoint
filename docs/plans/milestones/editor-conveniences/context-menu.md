@@ -43,8 +43,10 @@ this spec.
 
   Each entry runs the action the side panel's equivalent runs, a function of
   `path@rootpoint-app@src/actions.rs`.
-- **While editing**, a secondary click anywhere ends the editing first, as any press outside the
-  edited area does, `design@rootpoint-app@edit-entry`. It then acts as above.
+- **While editing**, a secondary click in the slide view, the letterbox included, or on a row of the
+  outline ends the editing first, as any press outside the edited area does,
+  `design@rootpoint-app@edit-entry`. It then acts as above. During a divider or a grip drag, a
+  secondary click does nothing, so the menu never opens on a node the drag is changing.
 - **While the socket holds the authority**, the menu opens with only "Select" enabled. The menu
   closes when the socket takes the authority, as a gesture ends.
 - **The menu closes whenever the selection is no longer its node**, as after a key, an undo or the

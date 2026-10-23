@@ -1,9 +1,10 @@
 //! The node menu: a secondary click on an area of the slide, or on a row of the outline, selects
 //! that node and opens a menu on it, which selects one of its ancestors, sets its content and its
-//! style, or removes it.
+//! style, or removes it. Opening it and its entries are actions of
+//! `path@rootpoint-app@src/actions.rs`; this module holds its entries and draws it.
 
 use eframe::egui::{self, Align, Context, Id, LayerId, Layout, Pos2, Rect};
-use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, StyleChoice};
+use rootpoint_model::{AssetId, Axis, Content, Node, NodeId, StyleChoice};
 
 use crate::App;
 use crate::selection;
@@ -12,11 +13,11 @@ use crate::selection;
 /// own state, which no command sets.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct NodeMenu {
-    node: NodeId,
-    at: Pos2,
+    pub(crate) node: NodeId,
+    pub(crate) at: Pos2,
     /// Which opening this is: each opening is a popup of its own, so a secondary click while the
     /// menu is open opens the new one rather than closing the old.
-    serial: u64,
+    pub(crate) serial: u64,
 }
 
 /// An entry of the node menu, and what a click on it does.
@@ -55,24 +56,6 @@ pub struct MenuItem {
 }
 
 impl App {
-    /// A secondary click on `node` at `at`: leave editing, select the node, so the menu and the
-    /// side panel describe one node, and open the menu on it.
-    pub fn open_node_menu(&mut self, node: NodeId, at: Pos2) {
-        // A secondary click inside the edited area ends editing too, before the menu opens.
-        if self.edit.is_some() {
-            self.stop_editing();
-        }
-        self.select_node(node);
-        if self.session.view().selected == Some(node) {
-            self.menu_serial += 1;
-            self.menu = Some(NodeMenu {
-                node,
-                at,
-                serial: self.menu_serial,
-            });
-        }
-    }
-
     /// The node the menu is open on, `None` when it is closed.
     pub fn menu_node(&self) -> Option<NodeId> {
         self.menu.map(|m| m.node)
@@ -147,10 +130,12 @@ impl App {
                 text,
                 editable,
             ));
+            // On an image area, "image" names the image it holds, so it sends nothing, as the
+            // side panel's button does.
             if let Some(first) = images.first() {
                 items.push(item(
                     MenuSection::Content,
-                    MenuEntry::Image(*first),
+                    MenuEntry::Image(image.unwrap_or(*first)),
                     "image".to_owned(),
                     !text,
                     editable,
@@ -199,43 +184,6 @@ impl App {
             ));
         }
         items
-    }
-
-    /// A click on an entry of the open menu: it runs the action of the side panel's equivalent, of
-    /// `path@rootpoint-app@src/actions.rs`, and closes the menu. An entry that names what the node
-    /// holds now sends nothing, as the side panel's does.
-    pub fn menu_entry(&mut self, entry: MenuEntry) {
-        if self.menu.take().is_none() {
-            return;
-        }
-        let content = self.selected_content().cloned();
-        match entry {
-            MenuEntry::Select(node) => self.select_node(node),
-            MenuEntry::Text => {
-                if !matches!(content, Some(Content::Text(_))) {
-                    self.set_text_content();
-                }
-            }
-            MenuEntry::Image(asset) => match content {
-                Some(Content::Image(i)) if i.asset != asset => self.set_image(asset, i.fit),
-                Some(Content::Image(_)) => {}
-                _ => self.set_image(asset, ImageFit::Fit),
-            },
-            MenuEntry::Style(choice) => {
-                let style = match content {
-                    Some(Content::Text(t)) => t.style,
-                    _ => return,
-                };
-                match choice {
-                    Some(name) if style != StyleChoice::Named(name.clone()) => {
-                        self.name_style(name)
-                    }
-                    None if !matches!(style, StyleChoice::Custom(_)) => self.make_custom(),
-                    _ => {}
-                }
-            }
-            MenuEntry::Remove => self.remove_selection(),
-        }
     }
 
     /// Close the node menu.

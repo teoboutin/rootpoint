@@ -82,12 +82,19 @@ impl App {
     /// the secondary click, which opens the node menu.
     fn pointer(&mut self, ui: &Ui, response: &egui::Response, layout: &Layout) {
         // A secondary click opens the menu on the area under the pointer, on a divider's band or
-        // on the grip too, since no drag starts on the secondary button.
+        // on the grip too, since no drag starts on the secondary button; on the letterbox it only
+        // ends a stay in editing, as any press outside the edited area does. During a drag it does
+        // nothing, so the menu never opens on a node the drag is changing.
         if response.secondary_clicked()
+            && self.gesture == Gesture::Idle
+            && !self.text_drag
             && let Some(at) = response.interact_pointer_pos()
-            && let Some(area) = layout.area_at(at)
         {
-            self.open_node_menu(area, at);
+            match layout.area_at(at) {
+                Some(area) => self.open_node_menu(area, at),
+                None if self.edit.is_some() => self.stop_editing(),
+                None => {}
+            }
         }
         let (pressed, origin, down, released, pos, double, esc, alt) = ui.input(|i| {
             (

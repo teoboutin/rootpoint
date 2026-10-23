@@ -4,13 +4,15 @@
 
 use std::path::{Component, Path, PathBuf};
 
+use eframe::egui::Pos2;
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, SlideId, node_rects};
 use rootpoint_model::{Content as C, Replacement, StyleChoice, TextContent};
 use rootpoint_protocol::{Command, Reply, StyleCommand, StyleOption};
 
 use crate::hit::{Edge, MIN_PART, Preview, Zone};
+use crate::menu::NodeMenu;
 use crate::selection::Move;
-use crate::{App, Controller, Gesture, Removal};
+use crate::{App, Controller, Gesture, MenuEntry, Removal};
 
 impl App {
     /// Select a node: a click on an area, or on its row of the outline.
@@ -142,6 +144,61 @@ impl App {
             at: p.at,
             side: p.side,
         });
+    }
+
+    /// A secondary click on `node` at `at`: leave editing, select the node, so the menu and the
+    /// side panel describe one node, and open the menu on it.
+    pub fn open_node_menu(&mut self, node: NodeId, at: Pos2) {
+        // A secondary click inside the edited area ends editing too, before the menu opens.
+        if self.edit.is_some() {
+            self.stop_editing();
+        }
+        self.select_node(node);
+        if self.session.view().selected == Some(node) {
+            self.menu_serial += 1;
+            self.menu = Some(NodeMenu {
+                node,
+                at,
+                serial: self.menu_serial,
+            });
+        }
+    }
+
+    /// A click on an entry of the open node menu: it runs the action of the side panel's
+    /// equivalent and closes the menu. An entry of "Content" or "Style" that names what the node
+    /// holds now sends nothing, as the side panel's does.
+    pub fn menu_entry(&mut self, entry: MenuEntry) {
+        if self.menu.take().is_none() {
+            return;
+        }
+        let content = self.selected_content().cloned();
+        match entry {
+            MenuEntry::Select(node) => self.select_node(node),
+            MenuEntry::Text => {
+                if !matches!(content, Some(Content::Text(_))) {
+                    self.set_text_content();
+                }
+            }
+            MenuEntry::Image(asset) => match content {
+                Some(Content::Image(i)) if i.asset != asset => self.set_image(asset, i.fit),
+                Some(Content::Image(_)) => {}
+                _ => self.set_image(asset, ImageFit::Fit),
+            },
+            MenuEntry::Style(choice) => {
+                let style = match content {
+                    Some(Content::Text(t)) => t.style,
+                    _ => return,
+                };
+                match choice {
+                    Some(name) if style != StyleChoice::Named(name.clone()) => {
+                        self.name_style(name)
+                    }
+                    None if !matches!(style, StyleChoice::Custom(_)) => self.make_custom(),
+                    _ => {}
+                }
+            }
+            MenuEntry::Remove => self.remove_selection(),
+        }
     }
 
     /// Delete: remove the selection.

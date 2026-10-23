@@ -795,3 +795,25 @@ fn a_secondary_click_while_editing_ends_it_and_opens_the_menu() {
     d.frame(vec![], Modifiers::NONE);
     assert_eq!(d.app.menu_node(), Some(n3));
 }
+
+/// While editing, a secondary click on the letterbox ends the editing and opens no menu; during a
+/// divider drag, a secondary click opens none.
+#[test]
+fn a_secondary_click_on_the_letterbox_ends_editing_and_none_opens_a_menu_mid_drag() {
+    let mut d = Driver::new();
+    edit_n3(&mut d);
+    d.pause();
+    let slide = d.app.layout().unwrap().nodes[0].1;
+    d.secondary_click(Pos2::new(slide.center().x, slide.max.y + 5.0));
+    assert_eq!(d.app.editing(), None);
+    assert_eq!(d.app.menu_node(), None);
+    d.pause();
+    let (start, _, _) = d.divider();
+    d.button(start, true);
+    d.move_to(start + Vec2::new(20.0, 20.0));
+    let on = start + Vec2::new(20.0, 20.0);
+    d.secondary_click(on);
+    d.frame(vec![], Modifiers::NONE);
+    assert_eq!(d.app.menu_node(), None, "a menu opened during the drag");
+    d.button(on, false);
+}
