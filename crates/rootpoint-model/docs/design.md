@@ -162,6 +162,7 @@ RON writes enum variants as they read and allows comments and trailing commas, w
 by hand; the rival, JSON, `rejected@rootpoint-model@json-save-format`, is universal and slightly
 better for tools other than rootpoint. The choice is held weakly. The version comes first so a
 file of another version is refused, not misread; no migration reads an older version while the
-project keeps no compatibility, `design@rootpoint@no-compat-in-initial-dev`. It serves
+project keeps no compatibility, `design@rootpoint@no-compat-in-initial-dev`, and a migration of each
+earlier version is `rejected@rootpoint-model@format-migration`. It serves
 `goal@rootpoint@readable-save-file`, and the file is an interface every saved presentation
 consumes.

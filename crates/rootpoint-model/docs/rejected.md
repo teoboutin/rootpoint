@@ -58,3 +58,9 @@ split or removal, so a command written after one edit names another node after t
 `live`. Both readings are common: the direction the children are stacked in, or the direction of
 the divider line, as with vim's `:vsplit`. A fresh agent given only a saved 2×2 slide and asked to
 change its bottom-left area changed the area the other reading puts there.
+
+### A migration of each earlier version of the save format `##format-migration`
+
+`live`. A loader of each earlier version costs code and a test per version, and no presentation
+exists to read: the owner gives no real presentation with the project while it is in initial
+development, and keeps no compatibility until the owner rules that real use has begun.

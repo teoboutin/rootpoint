@@ -51,13 +51,13 @@ A change of the save format, of the protocol's grammar or of a crate's public AP
 files, the scripts and the callers of the version before it, and no migration and no deprecated
 form is written for them. A saved file names its format's version first, so a file of another
 version is refused rather than misread, `design@rootpoint-model@save-format`. This holds until the
-owner rules that the project is in real use, when the owner starts giving real presentations with
-it, `goal@rootpoint@real-presentations`.
+owner rules that the project is in real use, when the owner starts using it for actual
+presentations, `goal@rootpoint@real-presentations`.
 
 On the owner's word: no presentation exists that a change could break, the owner will not use the
 project for real while it is in initial development, and backward compatibility is needed only from
 the owner's ruling. The rival, a migration for each change of format,
-`rejected@rootpoint@format-migration`, costs a loader and a test for each version with no file to
+`rejected@rootpoint-model@format-migration`, costs a loader and a test for each version with no file to
 read.
 
 ## Displays

@@ -106,7 +106,7 @@ in the order of "Implementation sequence".
   `FORMAT_VERSION`.
 - **This milestone's branch** carries this document, the two issues the discussion asked for, and
   the decisions no work implements: `design@rootpoint@no-compat-in-initial-dev` with
-  `rejected@rootpoint@format-migration`, and `design@rootpoint-app@removal-without-confirmation` with
+  `rejected@rootpoint-model@format-migration`, and `design@rootpoint-app@no-discard-confirmation` with
   `rejected@rootpoint-app@removal-guard`. It merges once the owner has ruled on every default awaiting
   the owner, and before
   the slice `spec@editor-conveniences@empty-text` begins, and each slice branches from the main branch.
@@ -197,7 +197,7 @@ in the order of "Implementation sequence".
 **Recorded decisions the design rests on, not argued again.**
 
 - `design@rootpoint@no-compat-in-initial-dev`: no migration for the format changes of this work.
-- `design@rootpoint-app@removal-without-confirmation`: no slice adds a confirmation before a removal;
+- `design@rootpoint-app@no-discard-confirmation`: no slice adds a confirmation before a removal;
   undo restores it.
 - `design@rootpoint-model@edit-operation-core`: every new change is an `Op` with an inverse.
 - `design@rootpoint-app@actions-are-commands`: every new window action is protocol commands.
@@ -409,7 +409,7 @@ Proposed by the session in round 1 (`argument@editor-conveniences@arg-25`), with
 ruled-out, on the owner's answer to Q1 in round 2 (`argument@editor-conveniences@arg-34`): "there
 is not a single existing presentation for now" and "The project does not keep retrocompat at all
 while in initial development". Shape: "Losing alternatives". Harvest: recorded on this milestone's
-branch, as `rejected@rootpoint@format-migration`, which `design@rootpoint@no-compat-in-initial-dev`
+branch, as `rejected@rootpoint-model@format-migration`, which `design@rootpoint@no-compat-in-initial-dev`
 cites.
 
 ### No backward compatibility while the project is in initial development `##no-compat-in-initial-dev`
@@ -436,7 +436,7 @@ session (`argument@editor-conveniences@arg-10`, `argument@editor-conveniences@ar
 that undo covers loss of content." The defeating reason: `Op::Remove` returns a snapshot of the
 slide's tree as its inverse, so undo restores what a removal took. Replaced by
 `issue@rootpoint-protocol@history-browsing`. Shape: "Losing alternatives". Harvest: recorded on this
-milestone's branch, a decision no work implements: `design@rootpoint-app@removal-without-confirmation`,
+milestone's branch, a decision no work implements: `design@rootpoint-app@no-discard-confirmation`,
 a head of absence, and `rejected@rootpoint-app@removal-guard`.
 
 ### A "Preview" button toggles a final-result view inside the editor, and a click on the slide ends it `##final-preview`

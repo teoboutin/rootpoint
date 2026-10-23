@@ -163,16 +163,17 @@ minimum sizes in Blender, 29 pixels times the interface scale, and egui_tiles, 3
 
 ## Removing
 
-### A removal in the window asks no confirmation, since undo restores what it took `##removal-without-confirmation`
+### No action of the window that discards content asks a confirmation, since undo restores what it took `##no-discard-confirmation`
 
 Delete, the side panel's Remove, a slide's removal and a change of a text to an image act at once.
 Each is an operation whose inverse restores what it discarded, `Op::Remove` with a snapshot of the
 slide's former tree, per `design@rootpoint-model@edit-operation-core`, so one `undo` brings the
 content back. The rival, a dialog before an action that discards content,
 `rejected@rootpoint-app@removal-guard`, costs a click on every removal the author meant. On the
-owner's word: the owner proposed the dialog, so that content cannot be lost by mistake, and withdrew
-it because undo covers that loss; what undo leaves unreadable or unreachable is
-`issue@rootpoint-protocol@history-browsing`.
+owner's word: the owner chose undo over a dialog to keep content from being lost by mistake. Undo
+does not reach content whose history is gone, after a closed window or a reloaded page,
+`issue@rootpoint-app@page-close-loses-edits`, nor a step a later edit cleared from the redo stack,
+nor a step the author cannot find, `issue@rootpoint-protocol@history-browsing`.
 
 ## Moving content
 

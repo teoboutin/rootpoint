@@ -91,5 +91,7 @@ the test `f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation` of
 each is an operation whose inverse restores it. The dialog would cost a click on every removal the
 author meant, and would protect only content whose undo history is gone: a closed window, a reloaded
 page, `issue@rootpoint-app@page-close-loses-edits`, or a redo stack a later edit cleared. The owner,
-who proposed it, withdrew it for that reason, and asked instead for a history that can be read and
-branched, `issue@rootpoint-protocol@history-browsing`.
+who proposed it, withdrew it for that reason. In its place the owner named, as leads for later
+work and not for now: more detail on what the history holds, fetching a step from it and applying
+it again or at least trying to, and maybe keeping the branches of the history,
+`issue@rootpoint-protocol@history-browsing`.
