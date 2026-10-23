@@ -70,7 +70,9 @@ are part of every saved file.
 
 ### An area holds its content, and heavy data is an asset the content refers to by id `##inline-content-assets`
 
-An area holds one content: empty, a text with its style, or an image. Image data and font files
+An area holds one content: a text with its style, or an image. A text may hold no characters,
+which draws nothing, and a new area holds one in the default style; no kind of content stands for
+an area with nothing in it. Image data and font files
 live once in the document's asset table, keyed by asset id, so a slide's text is read in the file
 where it is shown, as `goal@rootpoint@readable-save-file` asks, and an image placed on many slides
 is stored once.

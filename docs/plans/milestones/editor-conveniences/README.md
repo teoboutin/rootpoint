@@ -108,9 +108,9 @@ in the order of "Implementation sequence".
 - **This milestone's branch** carries this document, the two issues the discussion asked for, and
   the decisions no work implements: `design@rootpoint@no-compat-in-initial-dev` with
   `rejected@rootpoint-model@format-migration`, and `design@rootpoint-app@no-discard-confirmation` with
-  `rejected@rootpoint-app@removal-guard`. It merges once the owner has ruled on every default awaiting
-  the owner, and before
-  the slice `spec@editor-conveniences@empty-text` begins, and each slice branches from the main branch.
+  `rejected@rootpoint-app@removal-guard`. It merged once the owner had ruled on every default
+  awaiting the owner, before the first slice, #empty-text, began; each slice branches from the main
+  branch.
 
 ## Names
 
@@ -141,12 +141,11 @@ in the order of "Implementation sequence".
 
 **What exists today, at each site the work touches.**
 
-- **Content.** `Content` in `path@rootpoint-model@src/document.rs` is `Empty`, `Text(TextContent)`
-  or `Image(ImageContent)`, and `TextContent` holds a `text` and a `TextStyle`. A new area, made by
-  `Op::Split` or by `Op::AddSlide`, holds `Content::Empty`, in `apply_in` and `empty_area` of
-  `path@rootpoint-model@src/ops.rs`. 17 lines of Rust match `Empty`, by
-  `grep -rn Empty crates --include=*.rs`: 16 name `Content::Empty`, and one is the variant itself; "Mapping tables" in `spec@editor-conveniences@empty-text`
-  lists each.
+- **Content.** `Content` in `path@rootpoint-model@src/document.rs` is `Text(TextContent)` or
+  `Image(ImageContent)`, and `TextContent` holds a `text` and a `TextStyle`. A new area, made by
+  `Op::Split` or by `Op::AddSlide`, holds `Content::default()`, an empty text in
+  `TextStyle::default()`, in `apply_in` and `empty_area` of `path@rootpoint-model@src/ops.rs`. The
+  slice #empty-text removed `Content::Empty` and set `FORMAT_VERSION` to 2.
 - **Validation.** `Document::validate` in `path@rootpoint-model@src/validate.rs` refuses every
   breach it finds, a missing asset included: an area whose image or font names an asset id the
   table lacks, in `Document::validate_content`. `load_ron` and `apply` call it, per
@@ -220,10 +219,10 @@ updated.** The texts are those `cargo klarch show` lists.
 
 | decision | change | slice | citing texts, judged at that slice's harvest |
 | --- | --- | --- | --- |
-| `design@rootpoint-model@inline-content-assets` | "empty" leaves its list of contents | `spec@editor-conveniences@empty-text` | none |
+| `design@rootpoint-model@inline-content-assets` | "empty" leaves its list of contents | #empty-text, landed | none |
 | `design@rootpoint-model@inline-content-assets` | a text's style may name an entry of the document's style table, by name: shared data held apart from the area, argued against `rejected@rootpoint-model@content-by-reference` below | `spec@editor-conveniences@styles-model` | none |
-| `design@rootpoint-app@selection-actions` | "the new empty area" becomes the new area, an empty text | `spec@editor-conveniences@empty-text` | `design@rootpoint-app@edit-entry` |
-| `design@rootpoint-app@edit-entry` | a second click enters editing on any area that is not an image, since every such area is a text | `spec@editor-conveniences@empty-text` | none |
+| `design@rootpoint-app@selection-actions` | "the new empty area" becomes the new area, an empty text | #empty-text, landed | `design@rootpoint-app@edit-entry` |
+| `design@rootpoint-app@edit-entry` | a second click enters editing on any area that is not an image, since every such area is a text | #empty-text, landed | none |
 | `design@rootpoint-app@edit-entry` | a secondary click, inside the edited area too, ends editing before it opens the node menu, as the owner approved with `thread@editor-conveniences@node-menu` | `spec@editor-conveniences@context-menu` | none |
 | `design@rootpoint-model@validated-documents` | a cosmetic breach is accepted, reported and drawn with a stand-in; a structural breach is still refused | `spec@editor-conveniences@breach-tiers` | the comments of `path@rootpoint-model@src/ops.rs` and `path@rootpoint-model@src/validate.rs` |
 | `design@rootpoint-model@text-style-per-area` | a text's style is named or custom | `spec@editor-conveniences@styles-model` | `issue@rootpoint@rich-text-spans` |
@@ -263,7 +262,7 @@ T1 takes its place, and keeps the rival the issue named.
 - `tripwire@rootpoint-model@grouping-lost-to-merge`: the outline shows the merged tree, which is
   where the owner would meet a lost grouping; `spec@editor-conveniences@side-panel` reads it at its audit.
 - `tripwire@rootpoint-render@render-within-bounds`: its re-entry is the design audit of work that
-  adds a content kind or changes the renderer; `spec@editor-conveniences@empty-text`, `spec@editor-conveniences@styles-model` and `spec@editor-conveniences@preview-mode` read it
+  adds a content kind or changes the renderer; #empty-text read it at its audit, and `spec@editor-conveniences@styles-model` and `spec@editor-conveniences@preview-mode` read it
   at their audits.
 - `tripwire@rootpoint-app@control-ends-a-gesture`: the node menu and the dialog of a style's removal
   are open states of the window; a socket's `control` closes them as it ends a gesture.
@@ -399,10 +398,10 @@ right now with a single option." (`argument@editor-conveniences@arg-33`). Shape:
 
 Proposed by the owner in round 1 (`argument@editor-conveniences@arg-8`); consequences and rival by
 the session (`argument@editor-conveniences@arg-15`, `argument@editor-conveniences@arg-24`). Final
-state: approved, in round 2: "no-empty-kind: accepted." Shape:
-`spec@editor-conveniences@empty-text`. Harvest: the rewrites of
-`design@rootpoint-model@inline-content-assets`, `design@rootpoint-app@selection-actions` and
-`design@rootpoint-app@edit-entry`, and T3.
+state: approved, in round 2: "no-empty-kind: accepted." Built by the slice #empty-text. Harvested:
+the rewrites of `design@rootpoint-model@inline-content-assets`,
+`design@rootpoint-app@selection-actions` and `design@rootpoint-app@edit-entry`, and T3 as
+`tripwire@rootpoint-app@empty-text-takes-the-keys`.
 
 ### Format version 1 is migrated on load `##format-migration`
 
@@ -902,11 +901,11 @@ crates/rootpoint-model/src/document.rs
   Breach                      enum: MissingAsset { area, asset } | UnknownFont { area, name }
                               | MissingStyle { area, name }
                                                                              (`spec@editor-conveniences@breach-tiers`, `spec@editor-conveniences@styles-model`)
-  Content::Empty              removed                                        (`spec@editor-conveniences@empty-text`)
+  Content::Empty              removed                                        (#empty-text, landed)
 crates/rootpoint-model/src/ops.rs
   Op::AddStyle, Op::SetStyle, Op::RenameStyle, Op::RemoveStyle               (`spec@editor-conveniences@styles-model`)
 crates/rootpoint-model/src/file.rs
-  FORMAT_VERSION              existing; 2 at `spec@editor-conveniences@empty-text`, 3 at `spec@editor-conveniences@styles-model`
+  FORMAT_VERSION              existing; 2 since #empty-text, 3 at `spec@editor-conveniences@styles-model`
 crates/rootpoint-render/src/lib.rs
   Report::missing_styles      (area, name) of each text drawn with the default style (`spec@editor-conveniences@styles-model`)
 crates/rootpoint-protocol/src/command.rs
@@ -930,10 +929,9 @@ in "Threads" says. `thread@editor-conveniences@no-compat-in-initial-dev` is reco
 
 ## Mapping tables
 
-Each mapping table is in the spec of the slice that needs it: `spec@editor-conveniences@empty-text`
-maps every site of `Content::Empty`, `spec@editor-conveniences@breach-tiers` maps every check of
-`Document::validate`, and `spec@editor-conveniences@styles-model` maps every site of
-`TextContent::style`.
+Each mapping table is in the spec of the slice that needs it:
+`spec@editor-conveniences@breach-tiers` maps every check of `Document::validate`, and
+`spec@editor-conveniences@styles-model` maps every site of `TextContent::style`.
 
 ## Losing alternatives
 
@@ -1006,7 +1004,8 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
   - Re-entry: the standing-state review before every merge.
 - **T3**, `thread@editor-conveniences@no-empty-kind`: a second click on a new, empty area enters
   editing, and Delete or the node keys then go to the empty text instead of acting on the area. A
-  tripwire, recorded at the harvest of `spec@editor-conveniences@empty-text`, guarding `design@rootpoint-app@edit-entry`.
+  tripwire, recorded at the harvest of #empty-text as `tripwire@rootpoint-app@empty-text-takes-the-keys`,
+  guarding `design@rootpoint-app@edit-entry`.
   - Fires when: the owner reports this more than once.
   - Response: reopen `design@rootpoint-app@edit-entry`, toward an empty text that enters editing
     only when the author types.
@@ -1069,7 +1068,7 @@ or saves a document that does not load back equal. Response: reopen
 
 ## Implementation sequence
 
-1. [Content::Empty removed](empty-text.md)
+1. Content::Empty removed, #empty-text: landed.
 2. [Structural and cosmetic breaches](breach-tiers.md)
 3. [Named styles in the model and the protocol](styles-model.md)
 4. [The outline, the node keys and the panel's width](side-panel.md)
@@ -1079,7 +1078,7 @@ or saves a document that does not load back equal. Response: reopen
 
 ## Order rationale
 
-- `spec@editor-conveniences@empty-text` before `spec@editor-conveniences@breach-tiers`: the breaches are defined over the content kinds that remain.
+- #empty-text before `spec@editor-conveniences@breach-tiers`: the breaches are defined over the content kinds that remain.
 - `spec@editor-conveniences@breach-tiers` before `spec@editor-conveniences@styles-model`: a missing style is a cosmetic breach, and `spec@editor-conveniences@styles-model`
   widens the property test `spec@editor-conveniences@breach-tiers` lands.
 - `spec@editor-conveniences@styles-model` before `spec@editor-conveniences@side-panel`: the outline shows each text's style name.

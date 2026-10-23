@@ -115,7 +115,7 @@ them would build the grouping that `tripwire@rootpoint-model@grouping-lost-to-me
 Four buttons of the side panel, and Shift with an arrow, split the selection at its middle, the
 new area left, right, above or below: `split <node> beside|stacked 0.5 before|after`. With Ctrl
 held over the selection, a click splits it beside at the pointer, and with Shift, stacked; the new
-empty area takes the smaller part, `after` when the two are equal. Delete removes the selection.
+area, an empty text, takes the smaller part, `after` when the two are equal. Delete removes the selection.
 None of these acts while the control socket holds the authority to edit,
 `design@rootpoint-app@one-controller-at-a-time`.
 
@@ -240,7 +240,10 @@ Outside editing, the node keys, Shift with an arrow, Delete and Alt with an arro
 selected text area, per `design@rootpoint-app@selection-actions` and
 `design@rootpoint-app@node-selection`; while editing, the keys go to the text, where Shift with an
 arrow selects. While the control socket holds the authority to edit, a click on the selected text
-area only selects it, `design@rootpoint-app@one-controller-at-a-time`.
+area only selects it, `design@rootpoint-app@one-controller-at-a-time`. Every area that holds no
+image holds a text, per `design@rootpoint-model@inline-content-assets`, a new area an empty one, so
+a second click enters editing on a new area too, and typing into it needs no step that makes it a
+text first.
 
 On the owner's word: the owner chose this shape over a single click that selects a text area and
 edits it at once, which saves a click before typing in an area not yet selected, but leaves the

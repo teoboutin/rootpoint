@@ -24,3 +24,15 @@ owner's to reset.
 **Response:** reopen `design@rootpoint-app@control-passing`, toward a button "Give control" the
 author clicks to hand back, `rejected@rootpoint-app@give-control-button`.
 **Re-entry:** the first real talk prepared with an agent.
+
+## Guarding `design@rootpoint-app@edit-entry`: a second click on a new, empty area enters editing, and the keys go to its text `##empty-text-takes-the-keys`
+
+T3 of the premortem of the milestone on the conveniences of the editor, recorded on the owner's
+word.
+
+**Fires when:** the owner reports, more than once, that a second click on a new area, whose text is
+empty, entered editing, and that Delete or the node keys then went to the empty text instead of
+acting on the area.
+**Response:** reopen `design@rootpoint-app@edit-entry`, toward an empty text that enters editing
+only when the author types.
+**Re-entry:** the standing-state review before every merge.
