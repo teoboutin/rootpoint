@@ -10,8 +10,9 @@ authority to edit at start; `control` gives it to the socket, `release` gives it
 queries `tree`, `view`, `styles` and `render` need none. While the socket holds control, a banner
 over the toolbar says so beside a button "Take control", which takes it back; the window shows each
 change as it is made, and of the actions below it keeps only those that change the view or the
-window's own state: selecting by a click, Alt and the arrows or the outline, showing a slide of the
-list, presenting, switching the side panel's tab, and selecting a style in the Styles tab's list. It
+window's own state: selecting by a click, Alt and the arrows, the outline or the node menu's
+"Select", showing a slide of the list, presenting, switching the side panel's tab, and selecting a
+style in the Styles tab's list. It
 draws no grip, no divider highlight and no preview line, and a click on the selected text area
 only selects it. The toolbar opens a presentation (Ctrl+O), saves it to its
 file (Ctrl+S) or to another, opens the built-in sample, presents, and undoes (Ctrl+Z) and redoes
@@ -41,6 +42,11 @@ characters no font has, styles the document lacks, and text not drawn.
   named style or "custom", its size, weight, slant, colour, alignment and font, and the image's
   fit, and adds an image asset. A change of a value of a text that names a style makes the text
   custom: the Selection tab changes no named style.
+- A right-click on an area, or on a row of the outline, selects that node and opens the node menu
+  on it: "Select" selects the node or one of its ancestors, "Content" makes an area a text or an
+  image, "Style" names a text's style or makes it custom, and "Remove" removes the node, as the side
+  panel's controls and Delete do. A right-click while editing a text leaves editing first. Esc, or
+  a click outside the menu, closes it.
 - The side panel's Styles tab lists the named styles, each with the number of areas that name it,
   and changes the one selected in its list: its name, its values, a new style, a copy, or its
   removal, which asks what the areas naming it take instead, a custom copy first.

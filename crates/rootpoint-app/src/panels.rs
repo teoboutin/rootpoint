@@ -227,7 +227,7 @@ impl App {
 
     /// The shown slide's whole tree, one row per node in depth-first order, after a row for the slide
     /// itself, per `design@rootpoint-app@tree-outline`. A click on a row selects its node, the
-    /// slide's row selecting none; the selected node's row is highlighted, and the overlay outlines
+    /// slide's row selecting none, and a secondary click also opens the node menu on it; the selected node's row is highlighted, and the overlay outlines
     /// the node of the row under the pointer. A row's text is cut at the panel's edge, never wrapped.
     /// The outline stays expanded, since a slide's tree is small and collapsing would add state.
     fn outline(&mut self, ui: &mut Ui) {
@@ -307,6 +307,7 @@ impl App {
         let selected = self.session.view().selected;
         let visuals = ui.visuals().clone();
         let mut clicked = None;
+        let mut secondary = None;
         for (node, depth, label) in rows {
             let (rect, response) =
                 ui.allocate_exact_size(Vec2::new(ui.available_width(), 20.0), Sense::click());
@@ -338,10 +339,21 @@ impl App {
             if response.clicked() {
                 clicked = Some(node);
             }
+            if response.secondary_clicked() {
+                let at = response.interact_pointer_pos().unwrap_or(rect.center());
+                secondary = Some((node, at));
+            }
         }
         match clicked {
             Some(Some(node)) => self.select_node(node),
             Some(None) => self.show_slide(slide),
+            None => {}
+        }
+        // A secondary click on a node's row opens the node menu on it; the slide's row names no
+        // node, and shows its slide as its click does.
+        match secondary {
+            Some((Some(node), at)) => self.open_node_menu(node, at),
+            Some((None, _)) => self.show_slide(slide),
             None => {}
         }
     }
@@ -674,7 +686,7 @@ impl App {
     }
 
     /// The assets that are not font files, which the image menu offers.
-    fn image_assets(&self) -> Vec<AssetId> {
+    pub(crate) fn image_assets(&self) -> Vec<AssetId> {
         let fonts: Vec<AssetId> = self.font_assets().into_iter().map(|f| f.0).collect();
         self.session
             .document()
@@ -706,7 +718,7 @@ impl App {
     }
 
     /// An asset's file name, or "embedded".
-    fn asset_name(&self, id: AssetId) -> String {
+    pub(crate) fn asset_name(&self, id: AssetId) -> String {
         match self.session.document().assets.get(&id).map(|a| &a.source) {
             Some(AssetSource::Path(p)) => p.rsplit('/').next().unwrap_or(p).to_owned(),
             Some(AssetSource::Embedded(_)) => "embedded".to_owned(),

@@ -470,6 +470,57 @@ fn the_socket_s_control_closes_the_dialog_of_a_removal() {
     assert_eq!(app.session().document(), &before);
 }
 
+/// While the socket holds control, a secondary click still selects and opens the node menu, whose
+/// "Select" works and whose other entries are disabled; the socket's `control` closes the menu, as
+/// it ends a gesture.
+#[test]
+fn while_the_socket_holds_control_the_node_menu_only_selects() {
+    let (mut app, path) = sample("frozen-menu");
+    let (ctx, mut time) = (Context::default(), 0.0);
+    for _ in 0..3 {
+        frame_with(&mut app, &ctx, &mut time, vec![]);
+    }
+    let at = app.layout().unwrap().rect(NodeId(3)).unwrap().center();
+    let secondary = |pressed| {
+        vec![
+            eframe::egui::Event::PointerMoved(at),
+            eframe::egui::Event::PointerButton {
+                pos: at,
+                button: eframe::egui::PointerButton::Secondary,
+                pressed,
+                modifiers: eframe::egui::Modifiers::NONE,
+            },
+        ]
+    };
+    // The window's menu closes when the socket takes control.
+    frame_with(&mut app, &ctx, &mut time, secondary(true));
+    frame_with(&mut app, &ctx, &mut time, secondary(false));
+    assert_eq!(app.menu_node(), Some(NodeId(3)));
+    assert_eq!(one(&mut app, &path, "control"), "ok");
+    assert_eq!(app.menu_node(), None, "control leaves the menu open");
+    let before = app.session().document().clone();
+    frame_with(&mut app, &ctx, &mut time, secondary(true));
+    frame_with(&mut app, &ctx, &mut time, secondary(false));
+    frame_with(&mut app, &ctx, &mut time, vec![]);
+    assert_eq!(app.menu_node(), Some(NodeId(3)));
+    for item in app.menu_items() {
+        let select = item.section == rootpoint_app::MenuSection::Select;
+        assert_eq!(item.enabled, select, "{}", item.label);
+    }
+    let remove = app.menu_entry_rect("Remove n3").unwrap().center();
+    frame_with(&mut app, &ctx, &mut time, press(remove, true));
+    frame_with(&mut app, &ctx, &mut time, press(remove, false));
+    assert_eq!(app.session().document(), &before);
+    frame_with(&mut app, &ctx, &mut time, secondary(true));
+    frame_with(&mut app, &ctx, &mut time, secondary(false));
+    frame_with(&mut app, &ctx, &mut time, vec![]);
+    let parent = app.menu_entry_rect("n6 beside").unwrap().center();
+    frame_with(&mut app, &ctx, &mut time, press(parent, true));
+    frame_with(&mut app, &ctx, &mut time, press(parent, false));
+    assert_eq!(app.session().view().selected, Some(NodeId(6)));
+    assert_eq!(app.session().document(), &before);
+}
+
 /// A frame of the app with input events, and the cursor it asks for.
 fn frame_with(
     app: &mut App,

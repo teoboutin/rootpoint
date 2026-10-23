@@ -2,8 +2,9 @@
 //! a click selects an area, a divider drag is one undo step that Esc cancels, a double-click
 //! resets a divider, Alt and the arrows move the selection, a row of the slide list is shown by a
 //! click and moved by a drag, a grip drag swaps or moves an area, a click with Ctrl splits at the
-//! pointer, and the keys undo, redo, split and remove; and the side panel's outline, whose rows list
-//! the slide's tree, select a node by a click and outline it on the slide under the pointer.
+//! pointer, and the keys undo, redo, split and remove; the side panel's outline, whose rows list
+//! the slide's tree, select a node by a click and outline it on the slide under the pointer; and
+//! the node menu, which a secondary click on an area or a row opens.
 
 use eframe::egui::{Context, Event, Key, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
 use rootpoint_app::App;
@@ -101,6 +102,35 @@ impl Driver {
     fn click(&mut self, pos: Pos2) {
         self.button(pos, true);
         self.button(pos, false);
+    }
+
+    /// A click of the secondary button, as a right-click is.
+    fn secondary_click(&mut self, pos: Pos2) {
+        for pressed in [true, false] {
+            self.frame(
+                vec![
+                    Event::PointerMoved(pos),
+                    Event::PointerButton {
+                        pos,
+                        button: PointerButton::Secondary,
+                        pressed,
+                        modifiers: Modifiers::NONE,
+                    },
+                ],
+                Modifiers::NONE,
+            );
+        }
+    }
+
+    /// The middle of the outline's row of `node`, `None` for the slide's row.
+    fn row(&self, node: Option<NodeId>) -> Pos2 {
+        self.app
+            .outline_rows()
+            .iter()
+            .find(|r| r.node == node)
+            .unwrap()
+            .rect
+            .center()
     }
 
     fn key(&mut self, key: Key, modifiers: Modifiers) {
@@ -676,4 +706,92 @@ fn a_slide_list_button_pressed_while_a_text_is_edited_is_a_step_of_its_own() {
     assert_eq!(text(&d, n3), typed);
     assert!(matches!(undo(&mut d.app), Reply::Ok(_)));
     assert_eq!(text(&d, n3), before);
+}
+
+/// AC3 of `milestone@plans@editor-conveniences`: a secondary click on an area of the slide selects
+/// it, and the node menu is open on it on the next frame.
+#[test]
+fn a_secondary_click_on_an_area_selects_it_and_opens_the_node_menu() {
+    let mut d = Driver::new();
+    let n5 = NodeId(5);
+    let at = d.app.layout().unwrap().rect(n5).unwrap().center();
+    d.secondary_click(at);
+    assert_eq!(d.selected(), Some(n5));
+    d.frame(vec![], Modifiers::NONE);
+    assert_eq!(d.app.menu_node(), Some(n5));
+    assert!(
+        d.app.menu_entry_rect("Remove n5").is_some(),
+        "no menu drawn"
+    );
+    // A secondary click on the letterbox, which names no node, opens no menu.
+    let slide = d.app.layout().unwrap().nodes[0].1;
+    d.key(Key::Escape, Modifiers::NONE);
+    assert_eq!(d.app.menu_node(), None, "Esc leaves the menu open");
+    d.secondary_click(Pos2::new(slide.center().x, slide.max.y + 5.0));
+    d.frame(vec![], Modifiers::NONE);
+    assert_eq!(d.app.menu_node(), None);
+}
+
+/// AC3 of `milestone@plans@editor-conveniences`: a secondary click on a row of the outline selects
+/// its node, and the node menu is open on it on the next frame; on the slide's row, it opens none.
+#[test]
+fn a_secondary_click_on_an_outline_row_selects_it_and_opens_the_node_menu() {
+    let mut d = Driver::new();
+    let n6 = NodeId(6);
+    d.secondary_click(d.row(Some(n6)));
+    assert_eq!(d.selected(), Some(n6));
+    d.frame(vec![], Modifiers::NONE);
+    assert_eq!(d.app.menu_node(), Some(n6));
+    assert!(
+        d.app.menu_entry_rect("n4 stacked").is_some(),
+        "no menu drawn"
+    );
+    d.secondary_click(d.row(None));
+    d.frame(vec![], Modifiers::NONE);
+    assert_eq!(d.app.menu_node(), None);
+    assert_eq!(d.selected(), None);
+}
+
+/// The menu's "Select" lists the node's ancestors, and a click on one selects it and closes the
+/// menu; a click elsewhere closes it and acts as it would.
+#[test]
+fn the_node_menu_selects_an_ancestor() {
+    let mut d = Driver::new();
+    let (n3, n4) = (NodeId(3), NodeId(4));
+    let at = d.app.layout().unwrap().rect(n3).unwrap().center();
+    d.secondary_click(at);
+    d.frame(vec![], Modifiers::NONE);
+    let labels: Vec<String> = d
+        .app
+        .menu_items()
+        .into_iter()
+        .filter(|i| i.section == rootpoint_app::MenuSection::Select)
+        .map(|i| i.label)
+        .collect();
+    assert_eq!(labels, ["n4 stacked", "n6 beside", "n3 text"]);
+    let entry = d.app.menu_entry_rect("n4 stacked").unwrap().center();
+    d.click(entry);
+    assert_eq!(d.selected(), Some(n4));
+    assert_eq!(d.app.menu_node(), None);
+    d.secondary_click(at);
+    d.frame(vec![], Modifiers::NONE);
+    assert_eq!(d.app.menu_node(), Some(n3));
+    let other = d.app.layout().unwrap().rect(NodeId(2)).unwrap().center();
+    d.click(other);
+    assert_eq!(d.app.menu_node(), None);
+    assert_eq!(d.selected(), Some(NodeId(2)));
+}
+
+/// While editing, a secondary click inside the edited area ends the editing, then opens the menu.
+#[test]
+fn a_secondary_click_while_editing_ends_it_and_opens_the_menu() {
+    let mut d = Driver::new();
+    let n3 = NodeId(3);
+    edit_n3(&mut d);
+    d.pause();
+    let at = d.app.layout().unwrap().rect(n3).unwrap().center();
+    d.secondary_click(at);
+    assert_eq!(d.app.editing(), None);
+    d.frame(vec![], Modifiers::NONE);
+    assert_eq!(d.app.menu_node(), Some(n3));
 }

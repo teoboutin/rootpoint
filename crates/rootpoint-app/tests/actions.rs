@@ -14,9 +14,9 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use eframe::egui::{Pos2, Rect, Vec2};
-use rootpoint_app::App;
 use rootpoint_app::hit::{Edge, Layout, Preview, Zone};
 use rootpoint_app::selection::Move;
+use rootpoint_app::{App, MenuEntry};
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, Side, SlideId};
 use rootpoint_protocol::{
     Command, Files, Reply, Session, StyleCommand, StyleOption, parse_command,
@@ -523,6 +523,85 @@ fn the_menu_actions_issue_their_commands() {
         &["clear n3"],
         App::open_sample,
         |_| vec![c("sample")],
+    );
+}
+
+/// Open the node menu on `node`, as a secondary click does, then click `entry`.
+fn menu(node: u64, entry: MenuEntry) -> impl FnOnce(&mut App) {
+    move |a| {
+        a.open_node_menu(NodeId(node), Pos2::ZERO);
+        a.menu_entry(entry);
+    }
+}
+
+/// Each entry of the node menu runs the side panel's action on the node the menu was opened on,
+/// which the secondary click selected first.
+#[test]
+fn the_node_menu_entries_issue_their_commands() {
+    check(
+        "menu: open",
+        &["select n5"],
+        menu(3, MenuEntry::Select(NodeId(3))),
+        |_| vec![c("select n3")],
+    );
+    check(
+        "menu: select an ancestor",
+        &[],
+        menu(3, MenuEntry::Select(NodeId(4))),
+        |_| vec![c("select n3"), c("select n4")],
+    );
+    check("menu: remove", &[], menu(3, MenuEntry::Remove), |_| {
+        vec![c("select n3"), c("remove n3")]
+    });
+    check(
+        "menu: content text",
+        &["image n3 a19 fill"],
+        menu(3, MenuEntry::Text),
+        |_| vec![c("select n3"), c("text n3 \"\"")],
+    );
+    check(
+        "menu: content image",
+        &[],
+        menu(3, MenuEntry::Image(AssetId(19))),
+        |_| vec![c("select n3"), c("image n3 a19 fit")],
+    );
+    check(
+        "menu: another image keeps the fit",
+        &["asset other.png", "image n3 a19 fill"],
+        menu(3, MenuEntry::Image(AssetId(20))),
+        |_| vec![c("select n3"), c("image n3 a20 fill")],
+    );
+    check(
+        "menu: name a style",
+        &[],
+        menu(3, MenuEntry::Style(Some("Title".to_owned()))),
+        |s| {
+            vec![
+                c("select n3"),
+                c(&format!(
+                    "text n3 {:?} style=\"Title\"",
+                    text_of(s, NodeId(3))
+                )),
+            ]
+        },
+    );
+    check(
+        "menu: make a style custom",
+        &[],
+        menu(3, MenuEntry::Style(None)),
+        |s| {
+            vec![
+                c("select n3"),
+                c(&format!("text n3 {:?} custom", text_of(s, NodeId(3)))),
+            ]
+        },
+    );
+    // An entry that names what the node holds sends nothing, as the side panel's does.
+    check(
+        "menu: the style it names",
+        &[],
+        menu(3, MenuEntry::Style(Some("Body".to_owned()))),
+        |_| vec![c("select n3")],
     );
 }
 

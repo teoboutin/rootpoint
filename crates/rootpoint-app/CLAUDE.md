@@ -39,9 +39,10 @@ control socket opened is closed only by the socket or by the take-over, `App::ta
 
 ## The tests find widgets by the places the last frame recorded
 
-`App::layout`, `App::slide_rows`, `App::outline_rows` and `App::button_rect` return where the last
-frame put the slide, the list's rows, the outline's rows and each button or tab the window records
-by its label, so a test of `App::frame` places its synthetic pointer on them;
+`App::layout`, `App::slide_rows`, `App::outline_rows`, `App::button_rect` and
+`App::menu_entry_rect` return where the last frame put the slide, the list's rows, the outline's
+rows, each button or tab the window records by its label and each entry of the node menu, so a test
+of `App::frame` places its synthetic pointer on them;
 `rootpoint_render::area_text` gives where a text's characters are, in slide units, which
 `App::layout` carries to the view.
 

@@ -11,6 +11,7 @@ pub mod control;
 pub mod editing;
 pub mod hit;
 mod memory;
+mod menu;
 mod panels;
 pub mod selection;
 mod view;
@@ -32,6 +33,7 @@ use hit::{Edge, Layout, Press};
 use selection::{Memory, Move};
 
 pub use memory::MemoryFiles;
+pub use menu::{MenuEntry, MenuItem, MenuSection};
 #[cfg(target_arch = "wasm32")]
 pub use web::keep_f5;
 
@@ -82,6 +84,10 @@ pub struct App {
     tab: SideTab,
     /// The Styles tab's own state, the window's and not the session's.
     styles_tab: StylesTab,
+    /// The node menu, while it is open: the window's own state, not the session's.
+    menu: Option<menu::NodeMenu>,
+    /// How many times the node menu was opened.
+    menu_serial: u64,
 }
 
 /// The tabs of the side panel.
@@ -172,6 +178,8 @@ struct SlideView {
     /// Where the last frame placed each button and tab it records, by label: the side panel's tabs,
     /// the Styles tab's controls and the removal dialog's buttons.
     buttons: Vec<(String, Rect)>,
+    /// Where the last frame placed each entry of the node menu, by label.
+    menu_entries: Vec<(String, Rect)>,
 }
 
 /// A row of the side panel's outline, as the last frame placed it: the node it names, `None` for
@@ -213,6 +221,8 @@ impl App {
             web: web::Web::default(),
             tab: SideTab::default(),
             styles_tab: StylesTab::default(),
+            menu: None,
+            menu_serial: 0,
         }
     }
 
@@ -416,6 +426,8 @@ impl App {
             self.release_drag();
         }
         if self.session.view().presenting.is_some() {
+            // Presenter mode shows no menu, and leaves none open behind it.
+            self.close_node_menu();
             self.presenter(ui);
         } else {
             self.editor(ui);
@@ -497,6 +509,7 @@ impl App {
         CentralPanel::no_frame().show(ui, |ui| self.slide_view(ui));
         let ctx = ui.ctx().clone();
         self.removal_dialog(&ctx);
+        self.node_menu(&ctx);
     }
 
     /// Presenter mode: the presented slide alone, scaled uniformly to the largest size that fits

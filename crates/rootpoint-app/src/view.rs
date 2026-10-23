@@ -78,8 +78,17 @@ impl App {
         axis.filter(|_| !self.preview_hidden).map(|a| (a, m.alt))
     }
 
-    /// The press, the drag and the release of the primary button in the slide view, and Esc.
+    /// The press, the drag and the release of the primary button in the slide view, and Esc; and
+    /// the secondary click, which opens the node menu.
     fn pointer(&mut self, ui: &Ui, response: &egui::Response, layout: &Layout) {
+        // A secondary click opens the menu on the area under the pointer, on a divider's band or
+        // on the grip too, since no drag starts on the secondary button.
+        if response.secondary_clicked()
+            && let Some(at) = response.interact_pointer_pos()
+            && let Some(area) = layout.area_at(at)
+        {
+            self.open_node_menu(area, at);
+        }
         let (pressed, origin, down, released, pos, double, esc, alt) = ui.input(|i| {
             (
                 i.pointer.primary_pressed(),
