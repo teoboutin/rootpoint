@@ -100,8 +100,9 @@ it again or at least trying to, and maybe keeping the branches of the history,
 
 `live`. Alt with ↑ and ↓ would select the row above and below, whatever its depth, and Alt with ←
 the parent. Alt with → then does what Alt with ↓ does from a split, so it is redundant, and no key
-moves at one depth, to the next sibling over the children between. The owner found it possibly a bit
-more natural, and chose the keys at one depth for now.
+moves at one depth, to the next sibling over the children between. The owner, who had a hard time
+deciding, thought the keys at one depth could be kept for now, and found this rival possibly a bit
+more natural.
 
 ### Alt with an arrow selecting the neighbouring area in that direction on the slide `##spatial-keys`
 
