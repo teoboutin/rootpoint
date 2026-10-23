@@ -224,8 +224,8 @@ its slice.
 - `design@rootpoint-model@split-tree-arity`: the outline shows the merged tree, where a split has two
   children or more and no child split of its own axis.
 - `design@rootpoint-model@stable-ids` and `design@rootpoint-protocol@protocol-addressing`: nodes,
-  slides and assets keep their ids; styles are named by name, a change of
-  `design@rootpoint-protocol@protocol-addressing` that the table below lists.
+  slides and assets keep their ids; styles are named by name, `design@rootpoint-model@style-key`,
+  which #styles-model wrote.
 - `design@rootpoint-model@save-format`: RON, with the version first.
 - `design@rootpoint-app@editor-overlay`: the marks are drawn over the texture, never into it.
 
@@ -241,7 +241,7 @@ updated.** The texts are those `cargo klarch show` lists.
 | `design@rootpoint-app@edit-entry` | a secondary click, inside the edited area too, ends editing before it opens the node menu, as the owner approved with `thread@editor-conveniences@node-menu` | `spec@editor-conveniences@context-menu` | none |
 | `design@rootpoint-model@validated-documents` | a cosmetic breach is accepted, reported and drawn with a stand-in, `design@rootpoint-model@cosmetic-fallbacks`; a structural breach is still refused | #breach-tiers, landed | the comments of `path@rootpoint-model@src/ops.rs` and `path@rootpoint-model@src/validate.rs` |
 | `design@rootpoint-model@text-style-per-area` | a text's style is named or custom | #styles-model, landed | `issue@rootpoint@rich-text-spans` |
-| `design@rootpoint-protocol@protocol-addressing` | a change of the decision, argued by `thread@editor-conveniences@style-key`: a command names a style by its name, which a rename changes, so the head's argument, an id that names one thing after every edit, does not cover it; its title widens to state both | #styles-model, landed | `design@rootpoint-app@one-controller-at-a-time` |
+| `design@rootpoint-protocol@protocol-addressing` | planned as a widening to names of styles, argued by `thread@editor-conveniences@style-key`; as landed, the head keeps ids alone and points at `design@rootpoint-model@style-key`, which holds the names, since the two lose to different rivals | #styles-model, landed | `design@rootpoint-app@one-controller-at-a-time` |
 | `design@rootpoint-app@node-selection` | the outline replaces the breadcrumb; the node keys follow the outline | `spec@editor-conveniences@side-panel` | `design@rootpoint-app@edit-entry`, `design@rootpoint-app@editor-keys-kept-from-browser`, the comment of `path@rootpoint-app@src/hit.rs` |
 | `design@rootpoint-app@span-selection` | "Alt+↑ or the breadcrumb" becomes Alt+← or the outline | `spec@editor-conveniences@side-panel` | none |
 | `design@rootpoint-protocol@view-state` | `View` gains the preview | `spec@editor-conveniences@preview-mode` | `design@rootpoint-app@node-selection`, `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing` |
@@ -391,7 +391,8 @@ Proposed by the session in round 1, as a consequence of `thread@editor-convenien
 and `thread@editor-conveniences@no-empty-kind`. Final state: approved, in round 2: "new-area-style:
 accepted, this looks convenient." Built by #styles-model. Harvested: the head
 `design@rootpoint-model@new-area-style`, and T4 as `tripwire@rootpoint-model@inherited-style-in-the-way`.
-D3 awaits the owner's word on a condition of it.
+D3 and D5 await the owner's word on two conditions of it,
+`issue@rootpoint-model@new-area-style-awaits-rulings`.
 
 ### Styles are named in the file and in commands by their name `##style-key`
 
@@ -1132,7 +1133,8 @@ not that node after the click, or when the menu is not open on the next frame. R
   default values otherwise. The review of the work of #styles-model found
   that a file edited by hand, whose Body names a font asset the table lacks and which no text uses,
   got a breach from `add-slide`, against `design@rootpoint-protocol@no-new-breach`. The condition
-  narrows the rule the owner approved, "every other new area takes Body", for that case alone, so it
+  narrows the rule the owner approved, "A new area holds an empty text, with the style of the area it
+was split from, or Body", for that case alone, so it
   is a scope change. Default, built as written: the condition. The rival: Body always, and a breach
   a command makes from such a file. Awaiting the owner. Until the ruling, the head
   `design@rootpoint-model@new-area-style` states the rule as approved, and the code builds the
