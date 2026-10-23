@@ -618,6 +618,22 @@ fn the_node_menu_entries_issue_their_commands() {
 }
 
 #[test]
+fn the_final_view_actions_issue_their_commands() {
+    check(
+        "enter the final view",
+        &["select n3"],
+        App::toggle_final_view,
+        |_| vec![c("preview on")],
+    );
+    check(
+        "leave the final view",
+        &["preview on"],
+        App::toggle_final_view,
+        |_| vec![c("preview off")],
+    );
+}
+
+#[test]
 fn the_presenter_actions_issue_their_commands() {
     check("present", &["select s7"], App::present, |_| {
         vec![c("present s7")]

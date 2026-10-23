@@ -53,6 +53,12 @@ impl App {
                 self.open_sample();
             }
             ui.separator();
+            // The final view changes only the view, so it works while the socket holds control.
+            let preview = ui.selectable_label(self.final_view(), "Preview");
+            self.view.buttons.push(("Preview".to_owned(), preview.rect));
+            if preview.clicked() {
+                self.toggle_final_view();
+            }
             if ui
                 .add_enabled(self.shown_slide().is_some(), egui::Button::new("Present"))
                 .clicked()
@@ -176,7 +182,6 @@ impl App {
     /// list of styles, which change only what the window shows, still work, per
     /// `design@rootpoint-app@one-controller-at-a-time`.
     pub(crate) fn side_panel(&mut self, ui: &mut Ui) {
-        self.view.buttons.clear();
         ui.horizontal(|ui| {
             self.tab(ui, SideTab::Selection, "Selection");
             self.tab(ui, SideTab::Styles, "Styles");

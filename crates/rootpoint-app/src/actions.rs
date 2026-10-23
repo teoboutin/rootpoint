@@ -203,6 +203,15 @@ impl App {
         }
     }
 
+    /// The button "Preview": enter the final view, which deselects, or leave it. It changes only
+    /// the view, so it runs while the socket holds control; it ends the window's gestures first, as
+    /// any action that does not join them.
+    pub fn toggle_final_view(&mut self) {
+        self.end_gestures();
+        let on = !self.final_view();
+        self.run(Command::Preview { on });
+    }
+
     /// Delete: remove the selection.
     pub fn remove_selection(&mut self) {
         if self.socket_holds() {

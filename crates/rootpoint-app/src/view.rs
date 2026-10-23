@@ -47,7 +47,10 @@ impl App {
             ui.painter().image(texture.id(), rect, uv, Color32::WHITE);
         }
         self.view.layout = Layout::new(self.session.document(), slide, rect, size);
-        if let Some(layout) = self.view.layout.clone() {
+        // The final view draws no mark over the slide.
+        if !self.final_view()
+            && let Some(layout) = self.view.layout.clone()
+        {
             self.overlay(ui, &layout);
         }
     }
@@ -57,7 +60,7 @@ impl App {
     /// with neither key held, after Esc until both are released, while a text is edited, or while
     /// the socket holds control.
     fn split_keys(&mut self, ui: &Ui) -> Option<(Axis, bool)> {
-        if self.socket_holds() {
+        if self.socket_holds() || self.final_view() {
             return None;
         }
         let m = ui.input(|i| i.modifiers);
@@ -109,6 +112,19 @@ impl App {
                 i.modifiers.alt,
             )
         });
+        // In the final view a press starts no gesture, since the author did not see where it would
+        // act: a click on an area selects it, which ends the final view, and Esc leaves it.
+        if self.final_view() {
+            if esc {
+                self.toggle_final_view();
+            } else if response.clicked()
+                && let Some(at) = pos
+                && let Some(area) = layout.area_at(at)
+            {
+                self.select_node(area);
+            }
+            return;
+        }
         let split = self.split_keys(ui);
         if esc && split.is_some() && self.gesture == Gesture::Idle {
             self.preview_hidden = true;

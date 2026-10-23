@@ -97,7 +97,10 @@ fn each_line_reaches_a_frame_and_gets_a_reply_and_wakes_the_window_once() {
             .collect::<Vec<_>>()
     });
     for (reply, woken) in seen {
-        assert_eq!(reply.as_deref(), Some("ok selected=- shown=- presenting=-"));
+        assert_eq!(
+            reply.as_deref(),
+            Some("ok selected=- shown=- presenting=- preview=off")
+        );
         assert_eq!(woken, 1);
     }
 }
@@ -519,6 +522,25 @@ fn while_the_socket_holds_control_the_node_menu_only_selects() {
     frame_with(&mut app, &ctx, &mut time, press(parent, false));
     assert_eq!(app.session().view().selected, Some(NodeId(6)));
     assert_eq!(app.session().document(), &before);
+}
+
+/// While the socket holds control, the button "Preview" still enters and leaves the final view,
+/// which changes only the view.
+#[test]
+fn while_the_socket_holds_control_the_preview_button_works() {
+    let (mut app, path) = sample("frozen-preview");
+    assert_eq!(one(&mut app, &path, "control"), "ok");
+    let (ctx, mut time) = (Context::default(), 0.0);
+    for _ in 0..3 {
+        frame_with(&mut app, &ctx, &mut time, vec![]);
+    }
+    let button = app.button_rect("Preview").unwrap().center();
+    frame_with(&mut app, &ctx, &mut time, press(button, true));
+    frame_with(&mut app, &ctx, &mut time, press(button, false));
+    assert!(app.final_view());
+    frame_with(&mut app, &ctx, &mut time, press(button, true));
+    frame_with(&mut app, &ctx, &mut time, press(button, false));
+    assert!(!app.final_view());
 }
 
 /// A frame of the app with input events, and the cursor it asks for.

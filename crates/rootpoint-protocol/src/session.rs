@@ -41,13 +41,16 @@ impl fmt::Display for Reply {
 }
 
 /// What the session shows besides the document: the selected node, the slide the editor shows,
-/// and the slide presenter mode shows, if it is on. With no slide shown, the editor shows the
-/// first.
+/// the slide presenter mode shows, if it is on, and whether the editor shows the final result, the
+/// preview. With no slide shown, the editor shows the first.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct View {
     pub selected: Option<NodeId>,
     pub shown: Option<SlideId>,
     pub presenting: Option<SlideId>,
+    /// The preview: the editor shows the slide with no mark, and no node is selected in it, so
+    /// `preview on` deselects and `select n<id>` ends it.
+    pub preview: bool,
 }
 
 /// The rule for one line of commands, as bytes, shared by every host that reads lines:
@@ -272,6 +275,7 @@ impl Session {
                     .ok_or(format!("no node {node}"))?;
                 self.view.shown = Some(slide.id);
                 self.view.selected = Some(node);
+                self.view.preview = false;
                 Ok(String::new())
             }
             Command::SelectSlide { slide } => {
@@ -282,6 +286,13 @@ impl Session {
             }
             Command::Deselect => {
                 self.view.selected = None;
+                Ok(String::new())
+            }
+            Command::Preview { on } => {
+                self.view.preview = on;
+                if on {
+                    self.view.selected = None;
+                }
                 Ok(String::new())
             }
             Command::Present { slide } => {
@@ -329,10 +340,11 @@ impl Session {
             Command::View => {
                 let show = |id: Option<String>| id.unwrap_or_else(|| "-".to_owned());
                 Ok(format!(
-                    "selected={} shown={} presenting={}",
+                    "selected={} shown={} presenting={} preview={}",
                     show(self.view.selected.map(|n| n.to_string())),
                     show(self.view.shown.map(|s| s.to_string())),
-                    show(self.view.presenting.map(|s| s.to_string()))
+                    show(self.view.presenting.map(|s| s.to_string())),
+                    if self.view.preview { "on" } else { "off" }
                 ))
             }
             editing => {

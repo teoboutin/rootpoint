@@ -235,6 +235,13 @@ impl App {
         app
     }
 
+    /// Whether the editor shows the final result, the session's preview: the slide with no mark,
+    /// and no gesture on it. "Preview" names the line of a split at the pointer in the window, so
+    /// the window names this the final view.
+    pub fn final_view(&self) -> bool {
+        self.session.view().preview
+    }
+
     /// Who holds the authority to edit.
     pub fn controller(&self) -> Controller {
         self.controller
@@ -464,6 +471,7 @@ impl App {
 
     /// The editor: the toolbar, the status, the slide list, the side panel and the slide view.
     fn editor(&mut self, ui: &mut Ui) {
+        self.view.buttons.clear();
         // Editing in place ends when its area is no longer the selection, as after a click on
         // another node, an undo that removed it, or another slide shown.
         if self.edit.is_some() && self.editing() != self.selected_area() {

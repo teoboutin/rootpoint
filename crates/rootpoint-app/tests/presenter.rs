@@ -1,12 +1,13 @@
 //! Presenter mode, with no window: at the same pixel size its image equals the image the editor
 //! hands to its texture for the same slide, so no editor mark is in the slide's image, per
-//! `design@rootpoint-app@editor-overlay`; its keys move through the slides and leave it; it asks
+//! `design@rootpoint-app@editor-overlay`, and the final view hands its texture that image too and
+//! paints nothing over it; presenter mode's keys move through the slides and leave it; it asks
 //! for full screen. And the timing of a divider drag, run by hand in a release build.
 
 use std::time::Instant;
 
 use eframe::egui::{
-    Color32, Context, Event, ImageData, Key, Modifiers, PointerButton, Pos2, RawInput, Rect,
+    Color32, Context, Event, ImageData, Key, Modifiers, PointerButton, Pos2, RawInput, Rect, Shape,
     TextureId, Vec2, ViewportCommand, ViewportId,
 };
 use rootpoint_app::App;
@@ -35,6 +36,8 @@ impl Files for NativeFiles {
 struct Output {
     image: Option<([usize; 2], Vec<Color32>)>,
     fullscreen: Option<bool>,
+    /// The shapes the frame painted.
+    shapes: Vec<eframe::epaint::ClippedShape>,
 }
 
 /// An app and the frames it is shown in, in a window of a given size at one pixel per point.
@@ -90,7 +93,23 @@ impl Driver {
                 _ => None,
             })
         });
-        Output { image, fullscreen }
+        Output {
+            image,
+            fullscreen,
+            shapes: out.shapes,
+        }
+    }
+
+    /// A frame with no input, and the shapes it painted over the slide's rectangle but the
+    /// texture's own image.
+    fn marks(&mut self) -> usize {
+        let slide = self.app.layout().unwrap().nodes[0].1;
+        let out = self.frame(vec![], Modifiers::NONE);
+        out.shapes
+            .iter()
+            .filter(|c| c.shape.visual_bounding_rect().intersects(slide.shrink(1.0)))
+            .filter(|c| !matches!(&c.shape, Shape::Mesh(m) if m.texture_id != TextureId::default()))
+            .count()
     }
 
     /// Frames with no input until one uploads nothing, and the last image uploaded.
@@ -144,6 +163,26 @@ fn the_presenter_shows_the_image_the_editor_hands_its_texture() {
     assert_eq!(presented, size);
     assert_eq!(d.presenting(), Some(SlideId(1)));
     assert!(editor == presenter, "the two images differ");
+}
+
+/// The final view, the session's preview, hands its texture the image presenter mode shows, and
+/// paints nothing over it, where the editor paints its marks.
+#[test]
+fn the_final_view_paints_no_mark_over_the_presenter_s_image() {
+    let mut d = Driver::new(sample(), Vec2::new(1000.0, 700.0));
+    d.settle();
+    d.app.select_node(NodeId(3));
+    d.settle();
+    assert!(d.marks() > 0, "the editor paints no mark to compare with");
+    d.app.toggle_final_view();
+    assert!(d.app.final_view());
+    let (size, preview) = d.settle().expect("the final view draws the slide again");
+    assert_eq!(d.marks(), 0, "the final view paints a mark");
+    d.size = Vec2::new(size[0] as f32, size[1] as f32);
+    d.app.present();
+    let (presented, presenter) = d.settle().expect("the presenter draws the slide");
+    assert_eq!(presented, size);
+    assert!(preview == presenter, "the two images differ");
 }
 
 #[test]

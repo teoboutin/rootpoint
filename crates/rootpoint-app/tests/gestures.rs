@@ -4,7 +4,8 @@
 //! click and moved by a drag, a grip drag swaps or moves an area, a click with Ctrl splits at the
 //! pointer, and the keys undo, redo, split and remove; the side panel's outline, whose rows list
 //! the slide's tree, select a node by a click and outline it on the slide under the pointer; and
-//! the node menu, which a secondary click on an area or a row opens.
+//! the node menu, which a secondary click on an area or a row opens; and the final view, where a
+//! press starts no gesture.
 
 use eframe::egui::{Context, Event, Key, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
 use rootpoint_app::App;
@@ -817,4 +818,49 @@ fn a_secondary_click_on_the_letterbox_ends_editing_and_none_opens_a_menu_mid_dra
     d.frame(vec![], Modifiers::NONE);
     assert_eq!(d.app.menu_node(), None, "a menu opened during the drag");
     d.button(on, false);
+}
+
+/// The button "Preview" enters the final view, which deselects; a drag of a divider moves nothing;
+/// a click on an area, with Ctrl held, splits nothing, selects the area and ends the final view;
+/// Esc leaves it too.
+#[test]
+fn a_click_in_the_final_view_ends_it_and_selects() {
+    let mut d = Driver::new();
+    let n3 = NodeId(3);
+    d.select(n3);
+    let button = d.app.button_rect("Preview").unwrap().center();
+    d.click(button);
+    assert!(d.app.final_view());
+    assert_eq!(d.selected(), None);
+    let before = d.doc();
+    // A drag of a divider moves nothing, and leaves the final view on.
+    let (start, _, _) = d.divider();
+    d.button(start, true);
+    d.move_to(start + Vec2::new(40.0, 40.0));
+    d.button(start + Vec2::new(40.0, 40.0), false);
+    assert_eq!(d.doc(), before, "a drag in the final view moved a divider");
+    assert!(d.app.final_view());
+    d.pause();
+    let at = d.app.layout().unwrap().rect(n3).unwrap().center();
+    d.button_with(at, true, Modifiers::COMMAND);
+    d.button_with(at, false, Modifiers::COMMAND);
+    assert!(!d.app.final_view());
+    assert_eq!(d.selected(), Some(n3));
+    assert_eq!(d.doc(), before, "a Ctrl-click in the final view split");
+    assert_eq!(d.app.editing(), None);
+    d.pause();
+    let button = d.app.button_rect("Preview").unwrap().center();
+    d.click(button);
+    assert!(d.app.final_view());
+    d.key(Key::Escape, Modifiers::NONE);
+    assert!(!d.app.final_view());
+    // A secondary click in the final view selects, which ends it, and opens the node menu.
+    d.pause();
+    let button = d.app.button_rect("Preview").unwrap().center();
+    d.click(button);
+    assert!(d.app.final_view());
+    d.secondary_click(at);
+    d.frame(vec![], Modifiers::NONE);
+    assert!(!d.app.final_view());
+    assert_eq!(d.app.menu_node(), Some(n3));
 }

@@ -106,6 +106,10 @@ pub enum Command {
         slide: SlideId,
     },
     Deselect,
+    /// Show the final result in the editor, with no mark and no selection, or leave it.
+    Preview {
+        on: bool,
+    },
     /// Enter presenter mode on a slide, the first when none is named.
     Present {
         slide: Option<SlideId>,
@@ -288,6 +292,13 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
             }
         }
         "deselect" => Command::Deselect,
+        "preview" => Command::Preview {
+            on: match args.word("`on` or `off`")?.as_str() {
+                "on" => true,
+                "off" => false,
+                other => return Err(ParseError(format!("`{other}` is not `on` or `off`"))),
+            },
+        },
         "present" => Command::Present {
             slide: args.optional(parse_slide)?,
         },
@@ -394,6 +405,7 @@ impl fmt::Display for Command {
             Command::Select { node } => write!(f, "select {node}"),
             Command::SelectSlide { slide } => write!(f, "select {slide}"),
             Command::Deselect => f.write_str("deselect"),
+            Command::Preview { on } => f.write_str(if *on { "preview on" } else { "preview off" }),
             Command::Present { slide: None } => f.write_str("present"),
             Command::Present { slide: Some(s) } => write!(f, "present {s}"),
             Command::Next => f.write_str("next"),
