@@ -18,13 +18,16 @@ this spec.
 - The side panel's content row offers "text" and "image" only, in `App::content` of
   `path@rootpoint-app@src/panels.rs`. `App::clear_content` of `path@rootpoint-app@src/actions.rs`,
   whose only caller is that button, is removed, with its cases in
-  `path@rootpoint-app@tests/actions.rs`, `path@rootpoint-app@tests/control.rs` and
-  `path@rootpoint-app@tests/web.rs`. The protocol's `clear` stays, for agents and scripts.
+  `path@rootpoint-app@tests/actions.rs` and `path@rootpoint-app@tests/control.rs`. The test
+  `a_refused_directory_keeps_the_open_presentation_s_files` of `path@rootpoint-app@tests/web.rs`
+  calls it to change the assets in use, and calls `App::set_text_content` instead, which takes the
+  image's area out of use as `clear` did. The protocol's `clear` stays, for agents and scripts.
 - The texts that describe the empty kind state the empty text: the reply of `tree` in
   `path@rootpoint-protocol@README.md`; "the new empty area" and "empty, text or an image" in
   `path@rootpoint-app@README.md`; the doc comments of `Op::AddSlide`, `Op::Split` and
-  `OpError::RootNotRemovable` in `path@rootpoint-model@src/ops.rs`, and of `Command::Text` in
-  `path@rootpoint-protocol@src/command.rs`. A search for `empty` in the `.md` files of `crates/`
+  `OpError::RootNotRemovable` in `path@rootpoint-model@src/ops.rs`, of `Command::Text` in
+  `path@rootpoint-protocol@src/command.rs`, and of `Preview::side` in
+  `path@rootpoint-app@src/hit.rs`. A search for `empty` in the `.md` files of `crates/`
   and in the doc comments of the four crates lists them.
 - `FORMAT_VERSION` is 2, and every committed `.ron` file is rewritten in it, per "How the work is
   done" of the milestone document.
