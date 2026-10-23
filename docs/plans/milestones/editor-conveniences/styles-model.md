@@ -24,7 +24,10 @@ window's half is `spec@editor-conveniences@styles-window`.
 - **The missing style.** `Breach::MissingStyle { area, name }` joins `Document::breaches`.
   `Report::missing_styles` lists, for each text drawn with the default style for that reason, its
   area and the missing name. The reply of `render` and `App::status` name both, as they name a
-  missing image's asset.
+  missing image's asset: the reply gains a fourth word, `styles=<area>:<name>,…`, or `styles=-`,
+  each name written as `quote` of `path@rootpoint-protocol@src/command.rs` writes a word, bare
+  unless it holds a space, a quote or a backslash; the status gains the line
+  `missing styles, drawn in the default style: n3 Heading, …`.
 - **The operations**, each with its inverse, in `path@rootpoint-model@src/ops.rs`:
   - `Op::AddStyle { name, style }`, refused when the name is in the table or is empty; its inverse
     is the removal of the style with no replacement;
@@ -52,12 +55,18 @@ window's half is `spec@editor-conveniences@styles-window`.
   - `style set "<name>" <options>`: the options apply to the style's current values;
   - `style rename "<from>" "<to>"`, refused when `to` is in the table or when an area names `to`,
     so the rename's inverse restores exactly the areas it rewrote;
-  - `style remove "<name>"`, refused while an area uses the style, with a reply naming its users;
+  - `style remove "<name>"`, refused while an area uses the style, with a reply naming its users,
+    `err "<name>" is used by n3 n5 n9`;
     `style remove "<name>" into="<other>"` and `style remove "<name>" into=custom`;
   - `styles`, a query, which replies with one line listing each style and its options in the order
-    of the table;
-  - `text <area> "<text>" style="<name>"` names a style, and is refused when the table lacks it, per
-    `thread@editor-conveniences@no-new-breach`;
+    of the table: `"<name>" <options>`, joined by `; ` as `tree` joins its slides, each style with
+    every option, `size`, `bold` or `bold=off`, `italic` or `italic=off`, `colour`, `align`,
+    `valign` and `font`, so that the line reads as the options `style add` takes;
+  - `text <area> "<text>" style="<name>"` names a style, and is refused when the table lacks it, or
+    when the style's font names an asset the table lacks or a family outside `BUILTIN_FAMILIES`,
+    per `design@rootpoint-protocol@no-new-breach`, since the area would then draw with a stand-in;
+  - `style add` and `style set` refuse a `font=` asset the table lacks, as `text` does, and take
+    neither `style=` nor `custom`, which the parser refuses there;
   - `text <area> "<text>" custom` copies the resolved values into `Custom`;
   - any other style option on an area whose style is `Named` makes it `Custom`, with the named
     style's values and that change.
@@ -72,10 +81,13 @@ window's half is `spec@editor-conveniences@styles-window`.
   `render`; `styles` joins both lists, so a client without the authority can read the styles.
 - **Fonts in styles.** A style whose font names an asset uses that asset: `asset_in_use` and
   `Breach::MissingAsset` read the style table as well as the areas. A text whose resolved font is a
-  missing asset is a `MissingAsset` of that area.
+  missing asset is a `MissingAsset` of that area. A style of the table whose font names an asset at
+  or above the id counter is structural, as an area's is, per
+  `design@rootpoint-model@validated-documents`, and `Document::validate` refuses it.
 - **The format.** `FORMAT_VERSION` is 3. The sample, `path@rootpoint-protocol@sample/sample.ron`,
   holds the four styles. Each of its texts whose values equal Title's or Body's names that style:
-  n2 names Title, and n3, n5, n9 and n11 name Body. Its other texts are `Custom`.
+  n2 names Title, and n3, n5 and n9 name Body. Its other texts are `Custom`, n11 among them, which
+  is italic and coloured.
 - **The property test** of `path@rootpoint-protocol@tests/properties.rs`, widened with the style
   commands and with `style=` names that may be missing.
 
@@ -92,8 +104,7 @@ window's half is `spec@editor-conveniences@styles-window`.
   and its undo restores them. Shown to fail: against a rename of the table's key alone,
   `Document::breaches` names two missing styles.
 - **A removal takes a replacement.** Tests:
-  - `style remove "Body"` on the sample is refused, with a reply naming its users n3, n5, n9 and
-    n11;
+  - `style remove "Body"` on the sample is refused, with a reply naming its users n3, n5 and n9;
   - with `into="Title"`, every user names Title;
   - with `into=custom`, every user holds `Custom` with Body's values, and their render is unchanged;
   - an undo of each restores `Named("Body")`.
@@ -105,8 +116,9 @@ window's half is `spec@editor-conveniences@styles-window`.
   `render` names the area and "Heading", and `Document::breaches` holds `MissingStyle`. Shown to fail: against a
   `validate` that refuses an unknown name, the load fails.
 - **No command names a missing style.** Test: `text n3 "x" style="Heading"` on a document without
-  Heading replies `err` and changes nothing. Shown to fail: against a command that passes the name
-  through, the document gains a breach.
+  Heading replies `err` and changes nothing; so does `style="Odd"` where a file's style Odd names a
+  missing font asset. Shown to fail: against a command that passes the name through, the document
+  gains a breach.
 - **A style option on a named area makes it custom.** Test: `text n3 "x" size=64` on a Body area
   gives `Custom` with Body's values and size 64; Body itself is unchanged. Shown to fail: against an
   option applied to the named style, Body's size becomes 64.
