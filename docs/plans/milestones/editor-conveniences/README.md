@@ -26,8 +26,9 @@ that completes the harvest of its last slice, `spec@editor-conveniences@preview-
   the owner's message that opens "I have a bunch of small to less small items I want to implement
   to improve the convenience of use of this project".
 
-**The owner's messages in the session**, verbatim, in order. Round n is the owner's message n and
-the session's reply to it. Round 5 was typed while the session worked on the hand-off.
+**The owner's messages of the discussion**, verbatim, in order, up to its convergence. Round n is the
+owner's message n and the session's reply to it. Round 5 was typed while the session worked on the
+hand-off. The owner's later rulings on D1 and D2 are in "Defaults awaiting the owner".
 
 **Round 1**
 
@@ -209,8 +210,8 @@ in the order of "Implementation sequence".
 - `design@rootpoint-model@split-tree-arity`: the outline shows the merged tree, where a split has two
   children or more and no child split of its own axis.
 - `design@rootpoint-model@stable-ids` and `design@rootpoint-protocol@protocol-addressing`: nodes,
-  slides and assets keep their ids; styles are named by name, which
-  `design@rootpoint-protocol@protocol-addressing` gains as a member, below.
+  slides and assets keep their ids; styles are named by name, a change of
+  `design@rootpoint-protocol@protocol-addressing` that the table below lists.
 - `design@rootpoint-model@save-format`: RON, with the version first.
 - `design@rootpoint-app@editor-overlay`: the marks are drawn over the texture, never into it.
 
@@ -292,7 +293,7 @@ outcome.** The goals are the criteria below. Beyond the decisions listed above:
 ### Every new edit is an operation of the model with an inverse, and a command of the protocol `##c-headless-commands`
 
 Binding. Source: `goal@rootpoint@headless-core`, `goal@rootpoint-protocol@commands-drive-everything`
-("every view it shows, is a command"). Met by `thread@editor-conveniences@named-styles` (the style
+("every view of the presentation it shows (which slide, which node and which mode), is a command"). Met by `thread@editor-conveniences@named-styles` (the style
 operations and commands), `thread@editor-conveniences@no-empty-kind`,
 `thread@editor-conveniences@final-preview` (`preview`), `thread@editor-conveniences@node-menu` and
 `thread@editor-conveniences@selection-keys`, which use existing commands.
@@ -1121,5 +1122,5 @@ on, and that T1 to T4 are written. Each slice's row is in its spec.
 - A new content kind, `issue@rootpoint@more-content-kinds`, decides whether it shares the text
   styles, by `thread@editor-conveniences@style-kinds`.
 - Rich text, `issue@rootpoint@rich-text-spans`, puts spans over an area's named or custom style.
-- Once the owner rules that real use has begun, a change of format needs a migration,
-  `design@rootpoint@no-compat-in-initial-dev`.
+- Compatibility is needed from the owner's ruling that real use has begun,
+  `design@rootpoint@no-compat-in-initial-dev`; how it is kept then is not decided.

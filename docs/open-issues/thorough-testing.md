@@ -46,7 +46,8 @@ missing style, keep the document valid, and save to a text that loads back equal
 
 ### Why it matters
 
-The owner wants to be sure no edit of a user can lead to an invalid document. The model's tests
+The owner wants to be sure that no edit of a user can lead to an invalid document, and asked for
+the testing of the whole project to be set up, not fuzzing alone. The model's tests
 cover operations, but the protocol and the window add their own checks and their own state, such as
 groups and the view. A breach found by a user instead of a
 test costs a talk, against `goal@rootpoint@real-presentations`, and every operation the GUI offers

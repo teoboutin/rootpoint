@@ -102,7 +102,9 @@ tab is a tab of the side panel, so the panel's width stays as
 The window's half of `thread@editor-conveniences@style-removal`: **a removal in use opens a choice of
 replacement, with a custom copy first**. A custom copy is the only replacement that changes no
 slide (`argument@editor-conveniences@arg-54`). The dialog is a choice the removal needs, not a
-confirmation, so it does not bring back `thread@editor-conveniences@removal-guard`.
+confirmation, so it does not bring back `thread@editor-conveniences@removal-guard`. A removal of a
+style discards no content of a slide, so `design@rootpoint-app@no-discard-confirmation` does not
+cover it.
 
 ## Implementation sequence
 
