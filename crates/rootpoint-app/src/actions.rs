@@ -147,9 +147,11 @@ impl App {
     }
 
     /// A secondary click on `node` at `at`: leave editing, select the node, so the menu and the
-    /// side panel describe one node, and open the menu on it.
+    /// side panel describe one node, and open the menu on it, `design@rootpoint-app@node-menu`.
     pub fn open_node_menu(&mut self, node: NodeId, at: Pos2) {
-        // A secondary click inside the edited area ends editing too, before the menu opens.
+        // A secondary click inside the edited area ends editing too, before the menu opens, so
+        // the keys, which go to the text while editing, act on the node the menu names: D7 of
+        // `milestone@plans@editor-conveniences`, a default awaiting the owner.
         if self.edit.is_some() {
             self.stop_editing();
         }

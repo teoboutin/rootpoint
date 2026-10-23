@@ -143,7 +143,7 @@ its slice.
   `thread@editor-conveniences@new-area-style`.
 - **T1 to T4, AC1 to AC4**: the labels under which the premortem's tripwires and acceptance
   criteria were put to the owner, "Premortem" below.
-- **D1 to D6**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
+- **D1 to D7**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
 
 ## What the work is
 
@@ -185,9 +185,8 @@ its slice.
   `design@rootpoint-app@sidebar-width`, which holds the reading of egui 0.37.0's panel sizing. The
   width test of `path@rootpoint-app@tests/panel.rs` measures it in each state. The slice
   #side-panel built these.
-- **Right-click.** No widget of the app reads a secondary click; a search of
-  `path@rootpoint-app@src/` for `secondary_clicked` and `context_menu` returns nothing. In the
-  browser, eframe 0.37.0 stops the browser's own context menu on the canvas, in
+- **Right-click.** The slide view and the outline's rows read a secondary click, and open the node
+  menu, `design@rootpoint-app@node-menu`; the slice #context-menu built these. In the browser, eframe 0.37.0 stops the browser's own context menu on the canvas, in
   `install_event_handlers` of eframe's `path@elsewhere@src/web/events.rs`.
 - **The view.** `View` in `path@rootpoint-protocol@src/session.rs` holds `selected`, `shown` and
   `presenting`, per `design@rootpoint-protocol@view-state`.
@@ -241,7 +240,7 @@ updated.** The texts are those `cargo klarch show` lists.
 | `design@rootpoint-model@inline-content-assets` | a text's style may name an entry of the document's style table, by name: shared data held apart from the area, argued against `rejected@rootpoint-model@content-by-reference` below | #styles-model, landed | none |
 | `design@rootpoint-app@selection-actions` | "the new empty area" becomes the new area, an empty text | #empty-text, landed | `design@rootpoint-app@edit-entry` |
 | `design@rootpoint-app@edit-entry` | a second click enters editing on any area that is not an image, since every such area is a text | #empty-text, landed | none |
-| `design@rootpoint-app@edit-entry` | a secondary click, inside the edited area too, ends editing before it opens the node menu, as the owner approved with `thread@editor-conveniences@node-menu` | #context-menu, landed | none |
+| `design@rootpoint-app@edit-entry` | a secondary click, inside the edited area too, ends editing before it opens the node menu; built as D7, a default awaiting the owner, and recorded in the head once the owner rules | #context-menu, landed | none |
 | `design@rootpoint-model@validated-documents` | a cosmetic breach is accepted, reported and drawn with a stand-in, `design@rootpoint-model@cosmetic-fallbacks`; a structural breach is still refused | #breach-tiers, landed | the comments of `path@rootpoint-model@src/ops.rs` and `path@rootpoint-model@src/validate.rs` |
 | `design@rootpoint-model@text-style-per-area` | a text's style is named or custom | #styles-model, landed | `issue@rootpoint@rich-text-spans` |
 | `design@rootpoint-protocol@protocol-addressing` | planned as a widening to names of styles, argued by `thread@editor-conveniences@style-key`; as landed, the head keeps ids alone and points at `design@rootpoint-model@style-key`, which holds the names, since the two lose to different rivals | #styles-model, landed | `design@rootpoint-app@one-controller-at-a-time` |
@@ -947,6 +946,7 @@ crates/rootpoint-protocol/tests/properties.rs   the property test of #no-new-bre
 crates/rootpoint-app/src/panels.rs
   App::outline                the side panel's tree                          (#side-panel, landed)
   App::styles_tab             the Styles tab                                 (#styles-window, landed)
+crates/rootpoint-app/src/menu.rs
   App::node_menu              the menu of a right-click                      (#context-menu, landed)
 ```
 
@@ -1175,6 +1175,16 @@ not that node after the click, or when the menu is not open on the next frame. R
   loss of work. Awaiting the owner; until the ruling, the tripwire states the clause as the owner
   ruled it, since it is recorded on the owner's word, as the head of D3 and D5 states the rule as
   approved.
+- **D7**, `thread@editor-conveniences@node-menu`: a secondary click inside the area being edited.
+  `design@rootpoint-app@edit-entry` states, on the owner's word, that a press outside the edited
+  area leaves editing and acts as it does outside editing; a press of the secondary button inside
+  the area is in no ruling, and the thread's approval did not name it. Default, built as written by
+  #context-menu: the click leaves editing, then selects and opens the node menu. While editing, the
+  keys go to the text, so with the stay open Delete would delete characters while the menu names
+  the area. The rival: the stay stays open under the menu, so that closing the menu with no entry
+  returns to the text where it was; any entry would still end the stay, since every action of the
+  window ends the gestures first. Awaiting the owner; until the ruling,
+  `design@rootpoint-app@edit-entry` does not state the case.
 
 ## Harvest
 

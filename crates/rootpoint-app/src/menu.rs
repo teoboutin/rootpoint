@@ -61,7 +61,8 @@ impl App {
         self.menu.map(|m| m.node)
     }
 
-    /// Where the last frame put the entry of the open menu with this label.
+    /// Where the last frame put the entry of the open menu with this label; of two entries with one
+    /// label, as a style named "custom" and the entry "custom", the first.
     pub fn menu_entry_rect(&self, label: &str) -> Option<Rect> {
         self.view
             .menu_entries
@@ -71,9 +72,9 @@ impl App {
     }
 
     /// The entries of the open menu, in order: "Select" with the node's ancestors from the root
-    /// down and the node itself; on an area, "Content" with text, image and, on an image area, each
-    /// image asset; on a text area, "Style" with the table's styles and custom; and "Remove",
-    /// except on the slide's root.
+    /// down and the node itself; on an area, "Content" with text, image while the document holds an
+    /// image asset and, on an image area, each image asset; on a text area, "Style" with the
+    /// table's styles and custom; and "Remove", except on the slide's root.
     pub fn menu_items(&self) -> Vec<MenuItem> {
         let Some(menu) = self.menu else {
             return Vec::new();
@@ -217,6 +218,11 @@ impl App {
         )
         .kind(egui::PopupKind::Menu)
         .layout(Layout::top_down_justified(Align::Min))
+        // The open state is the window's, not egui's memory, which `Popup::context_menu` uses:
+        // egui 0.37.0 keeps one popup per viewport there and closes one a frame does not show,
+        // and the socket's `control` and a test close the menu by clearing `App::menu`. Its
+        // `Popup::show` closes a popup on a click only when the press began while it was open,
+        // so the release of the secondary click that opens the menu does not close it.
         .open_bool(&mut open)
         .show(|ui| {
             let mut section = None;

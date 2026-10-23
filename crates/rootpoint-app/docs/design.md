@@ -82,14 +82,14 @@ and the hint's label, editor text that is no slide content, so they are not the 
 
 ## Selecting
 
-### A click on the slide selects an area, and a split is reached by ways the slide does not hold `##node-selection`
+### A click on the slide selects an area, and a split is reached by other ways than a click `##node-selection`
 
-A click on an area sends `select`. A click lands in an area, so a pointer on the slide alone reaches
-no split, and a split is what a spanning split needs, as `goal@rootpoint@free-slide-division` asks.
-So the window has ways to reach a split that the slide does not hold: today a click on the node's
+A click on an area sends `select`. A click lands in an area, so a click on the slide reaches no
+split, and a split is what a spanning split needs, as `goal@rootpoint@free-slide-division` asks.
+So the window has other ways to reach a split than a click: today a click on the node's
 row of the outline, `design@rootpoint-app@tree-outline`, the slide's own row selecting none, Alt
-with an arrow, `design@rootpoint-app@selection-keys`, and the node menu's "Select",
-`design@rootpoint-app@node-menu`. A click on a divider grabs it rather than
+with an arrow, `design@rootpoint-app@selection-keys`, and the "Select" of the node menu that a
+secondary click on the slide opens, `design@rootpoint-app@node-menu`. A click on a divider grabs it rather than
 selecting its split, since a drag starts there. The selection is the session's view, per
 `design@rootpoint-protocol@view-state`.
 
@@ -108,13 +108,13 @@ highlighted, and maybe the splits told from the areas.
 
 A secondary click on an area of the slide, on a divider's band or the grip too, or on a row of the
 outline, sends `select` for that node, then opens the node menu at the click: "Select", with the
-node's ancestors from the slide's root down and the node itself; on an area, "Content", text or
-image, and on an image area each image asset; on a text area, "Style", the table's styles and
+node's ancestors from the slide's root down and the node itself; on an area, "Content", text, image
+while the document holds an image asset, and on an image area each image asset; on a text area, "Style", the table's styles and
 custom; and "Remove", except on the slide's root. Each entry runs the action of the side panel's
 equivalent or of Delete, `design@rootpoint-app@actions-are-commands`, and the menu closes as soon as
 the selection is no longer its node, so an entry acts on the node the menu names. A secondary click
 on the letterbox, or on the slide's row of the outline, names no node and opens no menu; during a
-divider or a grip drag it does nothing. The menu is the window's own state, not a view of the
+drag of a divider, of the grip or of a text selection it does nothing. The menu is the window's own state, not a view of the
 session, `goal@rootpoint-protocol@commands-drive-everything`.
 
 The click selects first, so the menu and the side panel describe one node. The nearest rival, a menu
@@ -123,7 +123,10 @@ its entries would act on a node that is not the selection, which no action of th
 menu has no entry that splits, since the side panel's buttons and Shift with an arrow do that. The
 menu works in the browser build: eframe 0.37.0 cancels the browser's own context menu on the canvas,
 in `install_event_handlers` of its `path@elsewhere@src/web/events.rs`, which passes "contextmenu" to
-`prevent_default_and_stop_propagation`.
+`prevent_default_and_stop_propagation`. That is read in eframe's source, and no test checks it: the
+harness of `path@rootpoint-app@tests/web.rs` runs no `WebRunner`. The browser build has the
+window's actions, `goal@rootpoint-app@browser-window`, so a menu the browser's own covered would
+fail it.
 
 On the owner's word: the owner asked for a menu on a right-click of a node that selects among its
 parents, removes the node, and changes its content kind and its style.
@@ -319,13 +322,8 @@ area leaves it and acts as it does outside editing: a click on another area sele
 Outside editing, the node keys, Shift with an arrow, Delete and Alt with an arrow, act on a
 selected text area, per `design@rootpoint-app@selection-actions` and
 `design@rootpoint-app@selection-keys`; while editing, the keys go to the text, where Shift with an
-arrow selects. A secondary click in the slide view or on a row of the outline, inside the edited
-area too, leaves editing before it opens the node menu, `design@rootpoint-app@node-menu`: the
-secondary button places no caret and selects no text, so its click is no gesture of the stay, and
-once the stay ends, Delete and the node keys act on the area the menu names rather than on its
-text. While the control socket holds the
-authority to edit, a click on the selected text area only selects it,
-`design@rootpoint-app@one-controller-at-a-time`. Every area that holds no
+arrow selects. While the control socket holds the authority to edit, a click on the selected text
+area only selects it, `design@rootpoint-app@one-controller-at-a-time`. Every area that holds no
 image holds a text, a new area an empty one, per `design@rootpoint-model@no-empty-kind`, so a
 second click enters editing on a new area too, and typing into it needs no step that makes it a
 text first.
