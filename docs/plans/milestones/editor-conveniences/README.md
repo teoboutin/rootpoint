@@ -241,7 +241,7 @@ updated.** The texts are those `cargo klarch show` lists.
 | `design@rootpoint-model@inline-content-assets` | a text's style may name an entry of the document's style table, by name: shared data held apart from the area, argued against `rejected@rootpoint-model@content-by-reference` below | #styles-model, landed | none |
 | `design@rootpoint-app@selection-actions` | "the new empty area" becomes the new area, an empty text | #empty-text, landed | `design@rootpoint-app@edit-entry` |
 | `design@rootpoint-app@edit-entry` | a second click enters editing on any area that is not an image, since every such area is a text | #empty-text, landed | none |
-| `design@rootpoint-app@edit-entry` | a secondary click, inside the edited area too, ends editing before it opens the node menu, as the owner approved with `thread@editor-conveniences@node-menu` | `spec@editor-conveniences@context-menu` | none |
+| `design@rootpoint-app@edit-entry` | a secondary click, inside the edited area too, ends editing before it opens the node menu, as the owner approved with `thread@editor-conveniences@node-menu` | #context-menu, landed | none |
 | `design@rootpoint-model@validated-documents` | a cosmetic breach is accepted, reported and drawn with a stand-in, `design@rootpoint-model@cosmetic-fallbacks`; a structural breach is still refused | #breach-tiers, landed | the comments of `path@rootpoint-model@src/ops.rs` and `path@rootpoint-model@src/validate.rs` |
 | `design@rootpoint-model@text-style-per-area` | a text's style is named or custom | #styles-model, landed | `issue@rootpoint@rich-text-spans` |
 | `design@rootpoint-protocol@protocol-addressing` | planned as a widening to names of styles, argued by `thread@editor-conveniences@style-key`; as landed, the head keeps ids alone and points at `design@rootpoint-model@style-key`, which holds the names, since the two lose to different rivals | #styles-model, landed | `design@rootpoint-app@one-controller-at-a-time` |
@@ -249,7 +249,7 @@ updated.** The texts are those `cargo klarch show` lists.
 | `design@rootpoint-app@span-selection` | "Alt+↑ or the breadcrumb" becomes Alt+← or the outline | #side-panel, landed | none |
 | `design@rootpoint-protocol@view-state` | `View` gains the preview | `spec@editor-conveniences@preview-mode` | `design@rootpoint-app@node-selection`, `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing` |
 | `design@rootpoint-app@editor-overlay` | the overlay draws nothing while the preview is on | `spec@editor-conveniences@preview-mode` | `path@rootpoint-app@CLAUDE.md`, `design@rootpoint-app@edit-in-place`, `design@rootpoint-app@take-over-at-once`, the comment of `path@rootpoint-app@tests/presenter.rs` |
-| `design@rootpoint-app@one-controller-at-a-time` | the outline, the node menu's "Select" and the Preview button join the window's view-only inputs | #side-panel, landed for the outline; `spec@editor-conveniences@context-menu`, `spec@editor-conveniences@preview-mode` | the 15 texts `cargo klarch show` lists; each slice reads the ones its change makes false |
+| `design@rootpoint-app@one-controller-at-a-time` | the outline, the node menu's "Select" and the Preview button join the window's view-only inputs | #side-panel, landed for the outline; #context-menu, landed for the menu; `spec@editor-conveniences@preview-mode` | the 15 texts `cargo klarch show` lists; each slice reads the ones its change makes false |
 
 The design issue `alt-arrows-follow-the-tree` of rootpoint-app, which asked for this discussion of the
 node keys, is closed by the commit that adds this document, since the document schedules its work.
@@ -284,7 +284,7 @@ T1 takes its place, and keeps the rival the issue named.
   at their audits, and `spec@editor-conveniences@preview-mode` reads it at its audit.
 - `tripwire@rootpoint-app@control-ends-a-gesture`: the node menu and the dialog of a style's removal
   are open states of the window; a socket's `control` closes them as it ends a gesture.
-  `spec@editor-conveniences@context-menu` and #styles-window read it at their audits.
+  #context-menu and #styles-window read it at their audits.
 
 **The design and `rejected` entries the design-entry searches graded as bearing, and their
 outcome.** The goals are the criteria below. Beyond the decisions listed above:
@@ -449,7 +449,7 @@ milestone's branch as `design@rootpoint@no-compat-in-initial-dev`, with the poin
 Proposed by the owner in round 1 (`argument@editor-conveniences@arg-5`); shaped by the session
 (`argument@editor-conveniences@arg-13`, `argument@editor-conveniences@arg-26`). Final state:
 approved, in round 2: "node-menu: accepted, select is good." Shape:
-`spec@editor-conveniences@context-menu`. Harvest: an app head, and AC3 reported.
+#context-menu, landed. Harvest: `design@rootpoint-app@node-menu`, and AC3 reported.
 
 ### A dialog before any action of the window that discards content `##removal-guard`
 
@@ -947,7 +947,7 @@ crates/rootpoint-protocol/tests/properties.rs   the property test of #no-new-bre
 crates/rootpoint-app/src/panels.rs
   App::outline                the side panel's tree                          (#side-panel, landed)
   App::styles_tab             the Styles tab                                 (#styles-window, landed)
-  App::node_menu              the menu of a right-click                      (`spec@editor-conveniences@context-menu`)
+  App::node_menu              the menu of a right-click                      (#context-menu, landed)
 ```
 
 ## Decided design
@@ -1085,7 +1085,7 @@ when any two widths differ. The six states are the ones the owner approved. Resp
 ### A secondary click on an area or an outline row selects it and opens the node menu `##ac-right-click-menu`
 
 AC3. Guards `thread@editor-conveniences@node-menu`. Judged by
-`spec@editor-conveniences@context-menu`. Observable: two tests of `App::frame`, one with a secondary
+#context-menu, and not fired there. Observable: two tests of `App::frame`, one with a secondary
 click on an area of the slide, one on a row of the outline; each fires when the view's selection is
 not that node after the click, or when the menu is not open on the next frame. Response: reopen
 `thread@editor-conveniences@node-menu`.
@@ -1097,7 +1097,7 @@ not that node after the click, or when the menu is not open on the next frame. R
 3. Named styles in the model and the protocol, #styles-model: landed.
 4. The outline, the node keys and the panel's width, #side-panel: landed.
 5. Named styles in the window, #styles-window: landed.
-6. [The node menu](context-menu.md)
+6. The node menu, #context-menu: landed.
 7. [The preview](preview-mode.md)
 
 ## Order rationale
@@ -1108,9 +1108,9 @@ not that node after the click, or when the menu is not open on the next frame. R
 - #styles-model before #side-panel: the outline shows each text's style name.
 - #side-panel before #styles-window: the Styles tab is a tab of the side panel whose width
   #side-panel fixes, and AC1 needs the outline's rows.
-- #styles-window before `spec@editor-conveniences@context-menu`: the menu's "Style" entry offers the named styles the window
+- #styles-window before #context-menu: the menu's "Style" entry offers the named styles the window
   shows.
-- `spec@editor-conveniences@context-menu` before `spec@editor-conveniences@preview-mode`: the two are independent; the preview goes last, since it changes
+- #context-menu before `spec@editor-conveniences@preview-mode`: the two are independent; the preview goes last, since it changes
   the view state every other slice reads.
 
 ## Defaults awaiting the owner
@@ -1169,7 +1169,7 @@ not that node after the click, or when the menu is not open on the next frame. R
   firing clause of `tripwire@rootpoint-app@control-ends-a-gesture`, T6 of the first prototype,
   recorded on the owner's word, named a stay in editing and a drag. The socket's `control` now also
   closes the dialog of a style's removal as a gesture ends, and closes the node menu of
-  `spec@editor-conveniences@context-menu` the same way, so a report that `control` closed one of
+  #context-menu the same way, so a report that `control` closed one of
   them in the middle of a choice would not fire it. Default: the clause names a dialog or a menu of
   the window too. The rival: the clause as the owner ruled it, a dialog or a menu closed being no
   loss of work. Awaiting the owner; until the ruling, the tripwire states the clause as the owner

@@ -84,7 +84,8 @@ impl App {
         // A secondary click opens the menu on the area under the pointer, on a divider's band or
         // on the grip too, since no drag starts on the secondary button; on the letterbox it only
         // ends a stay in editing, as any press outside the edited area does. During a drag it does
-        // nothing, so the menu never opens on a node the drag is changing.
+        // nothing, so the menu never opens on a node the drag is changing,
+        // `design@rootpoint-app@node-menu`.
         if response.secondary_clicked()
             && self.gesture == Gesture::Idle
             && !self.text_drag

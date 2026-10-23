@@ -82,13 +82,14 @@ and the hint's label, editor text that is no slide content, so they are not the 
 
 ## Selecting
 
-### A click on the slide selects an area, and a split is reached by the side panel's outline or by keys `##node-selection`
+### A click on the slide selects an area, and a split is reached by ways the slide does not hold `##node-selection`
 
 A click on an area sends `select`. A click lands in an area, so a pointer on the slide alone reaches
 no split, and a split is what a spanning split needs, as `goal@rootpoint@free-slide-division` asks.
 So the window has ways to reach a split that the slide does not hold: today a click on the node's
-row of the outline, `design@rootpoint-app@tree-outline`, the slide's own row selecting none, and Alt
-with an arrow, `design@rootpoint-app@selection-keys`. A click on a divider grabs it rather than
+row of the outline, `design@rootpoint-app@tree-outline`, the slide's own row selecting none, Alt
+with an arrow, `design@rootpoint-app@selection-keys`, and the node menu's "Select",
+`design@rootpoint-app@node-menu`. A click on a divider grabs it rather than
 selecting its split, since a drag starts there. The selection is the session's view, per
 `design@rootpoint-protocol@view-state`.
 
@@ -102,6 +103,30 @@ an organization chart, needs a column per area, and a slide of 10 areas does not
 points. The keys move as the outline reads, `design@rootpoint-app@selection-keys`, so a change of
 the drawing reopens them. On the owner's word: the owner asked for the whole tree with the selection
 highlighted, and maybe the splits told from the areas.
+
+### A secondary click selects the node under it, then opens the node menu on that node `##node-menu`
+
+A secondary click on an area of the slide, on a divider's band or the grip too, or on a row of the
+outline, sends `select` for that node, then opens the node menu at the click: "Select", with the
+node's ancestors from the slide's root down and the node itself; on an area, "Content", text or
+image, and on an image area each image asset; on a text area, "Style", the table's styles and
+custom; and "Remove", except on the slide's root. Each entry runs the action of the side panel's
+equivalent or of Delete, `design@rootpoint-app@actions-are-commands`, and the menu closes as soon as
+the selection is no longer its node, so an entry acts on the node the menu names. A secondary click
+on the letterbox, or on the slide's row of the outline, names no node and opens no menu; during a
+divider or a grip drag it does nothing. The menu is the window's own state, not a view of the
+session, `goal@rootpoint-protocol@commands-drive-everything`.
+
+The click selects first, so the menu and the side panel describe one node. The nearest rival, a menu
+that leaves the selection where it was, would describe another node than the side panel does, and
+its entries would act on a node that is not the selection, which no action of the window does. The
+menu has no entry that splits, since the side panel's buttons and Shift with an arrow do that. The
+menu works in the browser build: eframe 0.37.0 cancels the browser's own context menu on the canvas,
+in `install_event_handlers` of its `path@elsewhere@src/web/events.rs`, which passes "contextmenu" to
+`prevent_default_and_stop_propagation`.
+
+On the owner's word: the owner asked for a menu on a right-click of a node that selects among its
+parents, removes the node, and changes its content kind and its style.
 
 ### Alt with ↑ and ↓ moves at one depth, and Alt with ← and → changes depth `##selection-keys`
 
@@ -294,8 +319,13 @@ area leaves it and acts as it does outside editing: a click on another area sele
 Outside editing, the node keys, Shift with an arrow, Delete and Alt with an arrow, act on a
 selected text area, per `design@rootpoint-app@selection-actions` and
 `design@rootpoint-app@selection-keys`; while editing, the keys go to the text, where Shift with an
-arrow selects. While the control socket holds the authority to edit, a click on the selected text
-area only selects it, `design@rootpoint-app@one-controller-at-a-time`. Every area that holds no
+arrow selects. A secondary click in the slide view or on a row of the outline, inside the edited
+area too, leaves editing before it opens the node menu, `design@rootpoint-app@node-menu`: the
+secondary button places no caret and selects no text, so its click is no gesture of the stay, and
+once the stay ends, Delete and the node keys act on the area the menu names rather than on its
+text. While the control socket holds the
+authority to edit, a click on the selected text area only selects it,
+`design@rootpoint-app@one-controller-at-a-time`. Every area that holds no
 image holds a text, a new area an empty one, per `design@rootpoint-model@no-empty-kind`, so a
 second click enters editing on a new area too, and typing into it needs no step that makes it a
 text first.
@@ -381,9 +411,10 @@ replies `err the window has control`, or the refusal of a take-over.
 Two exceptions keep looking free. The socket's queries, `tree`, `view`, `styles` and `render`, need
 no authority, since they apply no operation and join no group. The window's inputs that change only
 the view need none either: a click selects, and never enters editing; Alt with an arrow, a row of
-the outline and the outline of its node under the pointer, a row of the slide list, presenting and
-presenter mode's keys; and the window's own state, the side panel's tab and a style selected in the
-list of the Styles tab. The view stays the session's one view,
+the outline and the outline of its node under the pointer, the node menu's "Select", whose other
+entries are disabled, a row of the slide list, presenting and presenter mode's keys; and the
+window's own state, the side panel's tab, a style selected in the list of the Styles tab and the
+node menu itself. The view stays the session's one view,
 `design@rootpoint-protocol@view-state`: an author inspects any slide while the agent edits another,
 since an editing command names its nodes by id and reads no view,
 `design@rootpoint-protocol@protocol-addressing`. The socket's view commands still need the
@@ -426,8 +457,8 @@ under an agent's control, so the button costs a talk nothing.
 
 The socket's `control` is granted at once: it ends the window's gestures as any edit of the
 window does, a stay with its edits one undo step, a divider drag as at its release, a grip drag
-cancelled, since its edits are made only at its drop, and the dialog of a style's removal closed,
-removing nothing. Right after a take-over it is granted too,
+cancelled, since its edits are made only at its drop, the dialog of a style's removal closed,
+removing nothing, and the node menu closed. Right after a take-over it is granted too,
 and the refusal of the agent's edits, `design@rootpoint-app@take-over-at-once`, is what tells a
 well-behaved agent to stop and wait. `release` gives the authority back as
 `design@rootpoint-protocol@control-commands` says, while the socket holds it; while the socket

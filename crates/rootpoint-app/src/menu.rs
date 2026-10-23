@@ -1,7 +1,7 @@
 //! The node menu: a secondary click on an area of the slide, or on a row of the outline, selects
 //! that node and opens a menu on it, which selects one of its ancestors, sets its content and its
-//! style, or removes it. Opening it and its entries are actions of
-//! `path@rootpoint-app@src/actions.rs`; this module holds its entries and draws it.
+//! style, or removes it, `design@rootpoint-app@node-menu`. Opening it and its entries are actions
+//! of `path@rootpoint-app@src/actions.rs`; this module holds its entries and draws it.
 
 use eframe::egui::{self, Align, Context, Id, LayerId, Layout, Pos2, Rect};
 use rootpoint_model::{AssetId, Axis, Content, Node, NodeId, StyleChoice};
@@ -204,6 +204,8 @@ impl App {
             return;
         }
         let items = self.menu_items();
+        // One column, each section under its heading, with no submenu: egui opens a submenu on the
+        // pointer's hover, which a test of `App::frame` would have to imitate frame by frame.
         let mut open = true;
         let mut clicked = None;
         let mut places = Vec::new();

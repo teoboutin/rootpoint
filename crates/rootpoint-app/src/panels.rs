@@ -351,7 +351,7 @@ impl App {
             None => {}
         }
         // A secondary click on a node's row opens the node menu on it; the slide's row names no
-        // node, and shows its slide as its click does.
+        // node, and shows its slide as its click does, `design@rootpoint-app@node-menu`.
         match secondary {
             Some((Some(node), at)) => self.open_node_menu(node, at),
             Some((None, _)) => self.show_slide(slide),
