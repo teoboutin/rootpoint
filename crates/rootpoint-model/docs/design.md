@@ -85,11 +85,11 @@ slides is left to templates, which `issue@rootpoint-model@slide-templates` keeps
 
 A text may hold no characters, and a new area, of `Op::AddSlide` or of a split, holds one in the
 default style. An empty text draws nothing, so a kind for an area with nothing in it adds nothing
-an empty text lacks: in the renderer, it differs from an empty text only by an arm that draws
-nothing, `rejected@rootpoint-model@empty-content-kind`. Outside the renderer, the editor has one
-kind to enter for typing, the text, per `design@rootpoint-app@edit-entry`. On the
-owner's word: the owner proposed removing the kind, which in the owner's view was noise in both
-the GUI and the implementation.
+an empty text lacks: in what the renderer draws, it differs from an empty text only by an arm that
+draws nothing, `rejected@rootpoint-model@empty-content-kind`. Outside the renderer, the editor has
+one kind to enter for typing, the text, per `design@rootpoint-app@edit-entry`. On the owner's word:
+the owner proposed that no kind stand for an area with nothing in it, a kind that in the owner's
+view is noise in both the GUI and the implementation.
 
 ### Images and other assets are files beside the presentation file `##image-storage`
 

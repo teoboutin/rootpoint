@@ -927,7 +927,8 @@ crates/rootpoint-app/src/panels.rs
 
 The shape of each decided thread is in the spec of the slice that builds it, as each thread's item
 in "Threads" says; the shape of a thread whose slice landed is in the design heads its harvest
-wrote, which the thread's item names. `thread@editor-conveniences@no-compat-in-initial-dev` is recorded already.
+wrote, which the thread's item names. `thread@editor-conveniences@no-compat-in-initial-dev` is
+recorded already.
 
 ## Mapping tables
 

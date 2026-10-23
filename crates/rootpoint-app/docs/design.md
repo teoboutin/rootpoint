@@ -115,9 +115,9 @@ them would build the grouping that `tripwire@rootpoint-model@grouping-lost-to-me
 Four buttons of the side panel, and Shift with an arrow, split the selection at its middle, the
 new area left, right, above or below: `split <node> beside|stacked 0.5 before|after`. With Ctrl
 held over the selection, a click splits it beside at the pointer, and with Shift, stacked; the new
-area, an empty text, takes the smaller part, `after` when the two are equal. Delete removes the
-selection. None of these acts while the control socket holds the authority to edit,
-`design@rootpoint-app@one-controller-at-a-time`.
+area, an empty text, `design@rootpoint-model@no-empty-kind`, takes the smaller part, `after` when
+the two are equal. Delete removes the selection. None of these acts while the control socket
+holds the authority to edit, `design@rootpoint-app@one-controller-at-a-time`.
 
 The pointer split saves a drag per split, and `split` takes `at` as a fraction of the node, so the
 pointer maps straight onto it; both ways serve `goal@rootpoint@free-slide-division` and
