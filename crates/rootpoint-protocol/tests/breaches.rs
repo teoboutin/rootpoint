@@ -81,6 +81,7 @@ fn no_command_names_a_missing_asset() {
     for (line, asset) in [
         ("image n2 a3 fit", "a3"),
         ("text n2 \"x\" font=a3", "a3"),
+        ("text n2 \"x\" font=a99", "a99"),
         ("image n2 a99 fit", "a99"),
     ] {
         let doc = s.document().clone();

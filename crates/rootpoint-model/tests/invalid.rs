@@ -208,8 +208,15 @@ fn a_file_naming_a_missing_asset_loads_and_names_the_breach() {
 #[test]
 fn a_file_naming_an_asset_at_or_above_the_counter_is_refused() {
     let text = fixture_text();
-    load_refused(&text.replacen("asset: 7,", "asset: 8,", 1));
-    load_refused(&text.replacen("asset: 7,", "asset: 70,", 1));
+    for id in [8, 70] {
+        match load_ron(&text.replacen("asset: 7,", &format!("asset: {id},"), 1)) {
+            Err(LoadError::Invalid(reason)) => assert!(
+                reason.contains(&format!("asset {id}")),
+                "the reason names the id: {reason}"
+            ),
+            other => panic!("asset {id} loaded as {other:?}, not refused as invalid"),
+        }
+    }
 }
 
 #[test]

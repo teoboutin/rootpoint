@@ -47,7 +47,7 @@ before either.
 
 `image` and the `font` option of `text` refuse an asset the document does not hold, with
 `err no asset a<n>`, so no command makes an area name a missing asset. A file edited by hand that
-names one still loads: `render` draws the image grey, or the text in the built-in sans, and its
+names one, by an id below its `next_id`, still loads: `render` draws the image grey, or the text in the built-in sans, and its
 reply names the asset after `missing=`, or the area after `fallback=`.
 
 `sample` opens the built-in sample, a presentation of three slides that says how the editor's

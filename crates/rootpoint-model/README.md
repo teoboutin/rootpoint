@@ -7,6 +7,7 @@ window and needs no GUI, so every editing operation runs headless. It also build
 Its public API: the types of `Document`, `apply` with the operations of `Op`, `area_rects` and
 `node_rects`, the rectangles of a slide's areas and of all its nodes in slide units, and `save_ron`
 and `load_ron` for the RON save file. A file or an operation that would break a structural
-invariant of the document is refused, which `Document::validate` checks. A reference to an asset
-the table lacks, or to a built-in family the binary does not carry, is a cosmetic breach: the file
+invariant of the document is refused, which `Document::validate` checks, an area naming an asset
+id at or above the id counter included. A reference to an asset the table lacks, below the
+counter, or to a built-in family the binary does not carry, is a cosmetic breach: the file
 loads and the operation applies, the renderer draws a stand-in, and `Document::breaches` names it.

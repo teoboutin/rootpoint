@@ -9,7 +9,7 @@ use parley::{
     Alignment, AlignmentOptions, FontContext, FontFamily, FontFamilyName, FontStyle, FontWeight,
     Layout, LayoutContext, PositionedLayoutItem, StyleProperty,
 };
-use rootpoint_model::{AssetId, FontRef, HAlign, TextContent};
+use rootpoint_model::{AssetId, BUILTIN_FAMILIES, FontRef, HAlign, TextContent};
 use vello_cpu::kurbo::{Affine, Diagonal2};
 
 /// The family of the built-in sans, which `FontRef::Builtin("sans")` names.
@@ -87,15 +87,15 @@ impl FontSet {
     }
 
     /// The family a font reference resolves to, or `None` when no font of the set has it and the
-    /// built-in sans stands in. The binary carries one family, which `Builtin("sans")` names; the
-    /// model's `BUILTIN_FAMILIES` lists the same names, so that a family it reports as unknown is
-    /// one drawn here in the built-in sans.
+    /// built-in sans stands in. A built-in name is resolved by the model's `BUILTIN_FAMILIES`, so
+    /// that a family the model reports as unknown is one drawn here in the built-in sans. The
+    /// binary carries one family, which `Builtin("sans")` names.
     fn family(&self, font: &FontRef) -> Option<String> {
         match font {
-            FontRef::Builtin(name) => match name.as_str() {
-                "sans" => Some(BUILTIN_SANS.to_owned()),
-                _ => None,
-            },
+            FontRef::Builtin(name) if BUILTIN_FAMILIES.contains(&name.as_str()) => {
+                Some(BUILTIN_SANS.to_owned())
+            }
+            FontRef::Builtin(_) => None,
             FontRef::Asset(id) => self.assets.get(id).cloned(),
         }
     }
@@ -231,18 +231,16 @@ mod tests {
         assert_eq!(names, vec![BUILTIN_SANS.to_owned()]);
     }
 
-    /// The families the model accepts are the ones the set resolves, and no other: a name only one
-    /// side knows would be drawn in the built-in sans with no breach reported, or reported while
-    /// drawn as asked.
+    /// The binary carries one family, so `family` resolves every built-in name to it: a second
+    /// name in the model's list would need a family of its own here, and this test then fails.
     #[test]
-    fn the_set_resolves_exactly_the_model_s_built_in_families() {
+    fn the_model_lists_the_one_built_in_family_the_set_carries() {
+        assert_eq!(BUILTIN_FAMILIES, ["sans"]);
         let set = FontSet::new();
-        for name in rootpoint_model::BUILTIN_FAMILIES {
-            assert!(
-                set.family(&FontRef::Builtin((*name).to_owned())).is_some(),
-                "{name}"
-            );
-        }
+        assert_eq!(
+            set.family(&FontRef::Builtin("sans".to_owned())),
+            Some(BUILTIN_SANS.to_owned())
+        );
         assert_eq!(set.family(&FontRef::Builtin("serif".to_owned())), None);
     }
 }

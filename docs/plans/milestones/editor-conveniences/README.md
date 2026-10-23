@@ -85,8 +85,13 @@ hand-off. The owner's later rulings on D1 and D2 are in "Defaults awaiting the o
 ## How the work is done
 
 Before each slice, read `skill@knowledge-architect-planning@working-a-slice` whole, and follow it.
-Each slice is one branch, merged as `instructions@git-workflow` says before the next slice begins,
-in the order of "Implementation sequence".
+The slices are built in the order of "Implementation sequence". #empty-text was one branch, merged
+as `instructions@git-workflow` says. On the owner's word, every later slice is built on one branch:
+each slice is audited, built, reviewed and harvested in turn, and the branch is reviewed as before
+a merge after each harvest, with no merge between slices. The owner asked: "implement all the
+remaining slices of the editor-conveniences milestone, in a single branch. Proceed with the normal
+workflow, audit, implementation, harvest, review (as if you were going to merge), then back to
+audit for the next slice."
 
 - **Gates.** `cargo x gates` runs every check a branch owes before it merges,
   `instructions@merge-gates`. Every slice keeps them
@@ -109,8 +114,8 @@ in the order of "Implementation sequence".
   the decisions no work implements: `design@rootpoint@no-compat-in-initial-dev` with
   `rejected@rootpoint-model@format-migration`, and `design@rootpoint-app@no-discard-confirmation` with
   `rejected@rootpoint-app@removal-guard`. It merged once the owner had ruled on every default
-  awaiting the owner, before the first slice, #empty-text, began; each slice branches from the main
-  branch.
+  awaiting the owner, before the first slice, #empty-text, began. #empty-text branched from the
+  main branch; every later slice is on one branch, as above.
 
 ## Names
 

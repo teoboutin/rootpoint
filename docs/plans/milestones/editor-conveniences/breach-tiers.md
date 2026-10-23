@@ -62,10 +62,10 @@ An id at or above the counter is the structural breach of the sixth claim.
   document whose image names `a<next_id>`; `load_ron` refuses it with a reason naming the id. Shown
   to fail: against a `validate` that moves the asset check to `Document::breaches` and adds no check
   of the id, it loads, and the next `Op::AddAsset` gives that id to a new asset.
-- **No command names a missing asset.** Test: protocol tests run `image n<id> a99 fit` and `text
-  n<id> "x" font=a99` on a session whose table lacks `a99`; each replies `err` and changes nothing.
-  Shown to fail: against a `Session::operation` that passes the id through, the document gains a
-  breach.
+- **No command names a missing asset.** Test: protocol tests run `image n<id> a3 fit` and `text
+  n<id> "x" font=a3` on a session where `a3` is an asset added then removed, below the counter, and
+  the same with `a99`; each replies `err no asset a<n>` and changes nothing. Shown to fail: against a
+  `Session::operation` that passes the id through, the document gains a breach.
 - **No sequence of commands creates a breach.** Test: the property test above, at 256 cases a run,
   proptest's default. Shown to fail: with the refusal of `image` for a missing asset removed, the
   property test finds a sequence and shrinks it to one `image` command.
@@ -90,7 +90,7 @@ An id at or above the counter is the structural breach of the sixth claim.
 
 ## Premises that expire
 
-- `Breach` has one kind here. `spec@editor-conveniences@styles-model` adds the missing style, and
+- `Breach` has two kinds here. `spec@editor-conveniences@styles-model` adds the missing style, and
   widens the property test with the style commands. Guard: AC4, judged at that slice.
 
 ## Mapping tables
