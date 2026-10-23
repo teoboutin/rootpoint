@@ -11,6 +11,11 @@ The maintenance tool of the project. It is never published.
   `wasm-bindgen-cli` at the version of the `wasm-bindgen` crate in `Cargo.lock`,
   `cargo install wasm-bindgen-cli --version <version> --locked`; and Firefox and geckodriver on the
   `PATH`.
+- `cargo x wasm-test` runs the gate `wasm-test` alone. It first looks for the programs the gate
+  needs, and fails with each one missing and how to install it. It hands the runner the
+  geckodriver it found, the one `GECKODRIVER` names or the first on the `PATH`, so the tests run in
+  Firefox even where another driver is on the `PATH`; with `GECKODRIVER_REMOTE` set, it looks for
+  neither geckodriver nor Firefox.
 - `cargo x web [--out <dir>]` builds the browser build of the editor into a static directory,
   `web/` under cargo's target directory by default, `target/web/` unless cargo is told another,
   emptied first: the page of `path@rootpoint-app@web/index.html`, the editor built for the wasm

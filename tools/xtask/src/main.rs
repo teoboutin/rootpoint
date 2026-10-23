@@ -25,6 +25,9 @@ enum Command {
         #[arg(long)]
         out: Option<PathBuf>,
     },
+    /// Run the app's tests in a headless Firefox, as the gate `wasm-test` does, once the programs
+    /// they need are found.
+    WasmTest,
     /// The knowledge-architect checker, at the version this crate pins.
     Klarch {
         #[command(subcommand)]
@@ -62,6 +65,20 @@ fn main() -> ExitCode {
                 }
                 Err(e) => {
                     eprintln!("xtask web: {e}");
+                    ExitCode::FAILURE
+                }
+            }
+        }
+        Command::WasmTest => {
+            let cwd = std::env::current_dir().expect("a working directory");
+            let Some(root) = project_root(&cwd, knowledge_architect::MANIFEST_NAME) else {
+                eprintln!("xtask: not inside the project");
+                return ExitCode::FAILURE;
+            };
+            match wasm_test(&root) {
+                Ok(()) => ExitCode::SUCCESS,
+                Err(e) => {
+                    eprintln!("error: {e}");
                     ExitCode::FAILURE
                 }
             }
@@ -127,31 +144,98 @@ fn wasm_gate() -> Gate {
     }
 }
 
-/// The app's tests that run in a browser, per `design@xtask@browser-tests-gated`.
-/// `wasm-bindgen-test-runner` runs them in a headless Firefox, through geckodriver, both found on
-/// the `PATH`.
+/// The app's tests that run in a browser, per `design@xtask@browser-tests-gated`, run by
+/// `cargo x wasm-test`. Under `--locked`, `cargo run` checks the workspace's lock, so the tests
+/// it then runs resolve nothing new.
 fn wasm_test_gate() -> Gate {
     Gate {
         name: "wasm-test".to_owned(),
         program: "cargo".to_owned(),
-        args: [
-            "test",
-            "--target",
-            "wasm32-unknown-unknown",
-            "-p",
-            "rootpoint-app",
-            "--test",
-            "actions",
-            "--test",
-            "web",
-        ]
-        .map(str::to_owned)
-        .to_vec(),
+        args: ["run", "-q", "-p", "xtask", "--", "wasm-test"]
+            .map(str::to_owned)
+            .to_vec(),
         envs: Vec::new(),
         resolves: true,
         rebased_only: false,
         distiller: Distiller::Tests,
     }
+}
+
+/// Run the app's browser tests through `wasm-bindgen-test-runner`, in a headless Firefox through
+/// geckodriver, once every program they need is found: a missing one fails the run with how to
+/// install it, where the runner would only say that it could not execute a process.
+fn wasm_test(root: &Path) -> Result<(), String> {
+    let locked = locked_version(root, "wasm-bindgen")?;
+    let mut missing = Vec::new();
+    if let Err(e) = require_version("wasm-bindgen-test-runner", &locked) {
+        missing.push(e);
+    }
+    let mut tests = Process::new(env!("CARGO"));
+    tests.current_dir(root).args([
+        "test",
+        "--target",
+        "wasm32-unknown-unknown",
+        "-p",
+        "rootpoint-app",
+        "--test",
+        "actions",
+        "--test",
+        "web",
+    ]);
+    // A remote driver brings its own browser. Otherwise the runner takes the first driver it finds
+    // on the `PATH`, chromedriver among them, so the geckodriver found is handed to it by name.
+    if std::env::var_os("GECKODRIVER_REMOTE").is_none() {
+        match std::env::var_os("GECKODRIVER")
+            .map(PathBuf::from)
+            .or_else(|| on_path("geckodriver"))
+        {
+            Some(driver) => {
+                tests.env("GECKODRIVER", driver);
+            }
+            None => missing.push(
+                "geckodriver: not on the PATH, nor named by GECKODRIVER; install it with \
+                 `cargo install geckodriver --locked`"
+                    .to_owned(),
+            ),
+        }
+        // geckodriver starts the `firefox` it finds on the `PATH`.
+        if on_path("firefox").is_none() {
+            missing.push("firefox: not on the PATH".to_owned());
+        }
+    }
+    if !missing.is_empty() {
+        return Err(format!(
+            "the browser tests need what is missing:\n  {}",
+            missing.join("\n  ")
+        ));
+    }
+    run(&mut tests)
+}
+
+/// The file `program` names in the first directory of the `PATH` that holds it.
+fn on_path(program: &str) -> Option<PathBuf> {
+    std::env::split_paths(&std::env::var_os("PATH")?)
+        .map(|dir| dir.join(program))
+        .find(|path| path.is_file())
+}
+
+/// Fail unless `program --version` says `<name> <locked>`, as every program of wasm-bindgen-cli
+/// does, which `design@xtask@one-tool-binds-and-tests` ties to the crate's version.
+fn require_version(program: &str, locked: &str) -> Result<(), String> {
+    let install =
+        format!("install it with `cargo install wasm-bindgen-cli --version {locked} --locked`");
+    let found = Process::new(program)
+        .arg("--version")
+        .output()
+        .map_err(|e| format!("{program}: {e}; {install}"))?;
+    let found = String::from_utf8_lossy(&found.stdout);
+    if found.split_whitespace().nth(1) != Some(locked) {
+        return Err(format!(
+            "{program} is {}, and Cargo.lock has {locked}; {install}",
+            found.trim()
+        ));
+    }
+    Ok(())
 }
 
 /// Build the editor's binary for the wasm target, bind it with `wasm-bindgen` for a page that
@@ -161,22 +245,7 @@ fn wasm_test_gate() -> Gate {
 fn build_web(root: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
     let target = target_directory(root)?;
     let out = out.unwrap_or_else(|| target.join("web"));
-    let locked = locked_version(root, "wasm-bindgen")?;
-    let found = Process::new("wasm-bindgen")
-        .arg("--version")
-        .output()
-        .map_err(|e| {
-            format!(
-                "wasm-bindgen: {e}; install it with `cargo install wasm-bindgen-cli --version {locked} --locked`"
-            )
-        })?;
-    let found = String::from_utf8_lossy(&found.stdout);
-    if found.split_whitespace().nth(1) != Some(locked.as_str()) {
-        return Err(format!(
-            "wasm-bindgen is {}, and Cargo.lock has {locked}; install it with `cargo install wasm-bindgen-cli --version {locked} --locked`",
-            found.trim()
-        ));
-    }
+    require_version("wasm-bindgen", &locked_version(root, "wasm-bindgen")?)?;
     run(Process::new(env!("CARGO")).current_dir(root).args([
         "build",
         "--release",
