@@ -689,8 +689,9 @@ fn value_options(args: &mut Args) -> Result<Vec<StyleOption>, ParseError> {
     Ok(options)
 }
 
-/// `into=custom`, or `into="<name>"`: what the texts naming a removed style name instead. Only a
-/// bare `custom` asks for a copy, so a style named "custom" is `into="custom"`.
+/// `into=custom`, or `into="<name>"`, a name bare or quoted: what the texts naming a removed style
+/// name instead. Only a bare `custom` asks for a copy, so a style named "custom" is
+/// `into="custom"`.
 fn parse_into(text: &str) -> Result<Replacement, ParseError> {
     match text.strip_prefix("into=") {
         Some("custom") => Ok(Replacement::Custom),

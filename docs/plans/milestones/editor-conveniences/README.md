@@ -143,7 +143,7 @@ its slice.
   `thread@editor-conveniences@new-area-style`.
 - **T1 to T4, AC1 to AC4**: the labels under which the premortem's tripwires and acceptance
   criteria were put to the owner, "Premortem" below.
-- **D1**: the label of the default awaiting the owner, "Defaults awaiting the owner" below.
+- **D1 to D5**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
 
 ## What the work is
 
@@ -277,8 +277,8 @@ T1 takes its place, and keeps the rival the issue named.
 - `tripwire@rootpoint-model@grouping-lost-to-merge`: the outline shows the merged tree, which is
   where the owner would meet a lost grouping; `spec@editor-conveniences@side-panel` reads it at its audit.
 - `tripwire@rootpoint-render@render-within-bounds`: its re-entry is the design audit of work that
-  adds a content kind or changes the renderer; #empty-text read it at its audit, and #styles-model and `spec@editor-conveniences@preview-mode` read it
-  at their audits.
+  adds a content kind or changes the renderer; #empty-text, #breach-tiers and #styles-model read it
+  at their audits, and `spec@editor-conveniences@preview-mode` reads it at its audit.
 - `tripwire@rootpoint-app@control-ends-a-gesture`: the node menu and the dialog of a style's removal
   are open states of the window; a socket's `control` closes them as it ends a gesture.
   `spec@editor-conveniences@context-menu` and `spec@editor-conveniences@styles-window` read it at their audits.
@@ -507,7 +507,7 @@ Proposed by the owner in round 3 (`argument@editor-conveniences@arg-45`,
 the session (`argument@editor-conveniences@arg-49`, `argument@editor-conveniences@arg-55`). Final
 state: approved, in round 4: "Approved all three". Built by the slice #breach-tiers, and widened by
 #styles-model. Harvested: the protocol head
-`design@rootpoint-protocol@no-new-breach`. AC4 was reported at #styles-model, not fired.
+`design@rootpoint-protocol@no-new-breach`. AC4 fired at #styles-model, D4.
 Fuzzing and wider testing: `issue@rootpoint@thorough-testing`.
 
 ## Arguments
@@ -1049,7 +1049,7 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
 - **AC3**, `thread@editor-conveniences@node-menu`: a right-click that does not select, or opens no
   menu. An acceptance criterion, `acceptance@editor-conveniences@ac-right-click-menu`.
 - **AC4**, `thread@editor-conveniences@no-new-breach`: a command that leaves a reference to a missing
-  target. An acceptance criterion, `acceptance@editor-conveniences@ac-no-command-breach`.
+  target. An acceptance criterion; it fired at #styles-model and left the document, D4.
 
 ## Acceptance criteria
 
@@ -1081,15 +1081,6 @@ click on an area of the slide, one on a row of the outline; each fires when the 
 not that node after the click, or when the menu is not open on the next frame. Response: reopen
 `thread@editor-conveniences@node-menu`.
 
-### No sequence of commands creates a cosmetic breach `##ac-no-command-breach`
-
-AC4. Guards `thread@editor-conveniences@no-new-breach`. Judged by #styles-model, once style
-commands exist, and not fired there; #breach-tiers landed the test. Observable: a proptest in `path@rootpoint-protocol@tests/properties.rs` runs random
-sequences of commands, `undo` and `redo` included, from a document with no breach, on a headless
-`Session`; it fires when a sequence leaves `Document::breaches` non-empty, breaks `Document::validate`,
-or saves a document that does not load back equal. Response: reopen
-`thread@editor-conveniences@no-new-breach`, and open a defect for the command that created it.
-
 ## Implementation sequence
 
 1. Content::Empty removed, #empty-text: landed.
@@ -1118,7 +1109,8 @@ or saves a document that does not load back equal. Response: reopen
 - **D1**, the plan's form, all threads: a milestone of seven slices, one branch each, rather than
   one spec. The session's reason: the work changes rootpoint-app in all seven slices,
   rootpoint-protocol in five, rootpoint-model in three and rootpoint-render in two, in seven pieces
-  each of which can fail alone, and one branch of all of it is too large to review. Ruled: the
+  each of which can fail alone, and one branch of all of it is too large to review. In the event,
+  rootpoint-render changed in #empty-text, #breach-tiers and #styles-model. Ruled: the
   owner approved it. The owner later ruled that every slice after #empty-text is built on one
   branch, which "How the work is done" states: the slices stay, and share one branch. Each slice's
   work and harvest are still reviewed apart, so no review reads the whole branch at once but the
@@ -1142,7 +1134,25 @@ or saves a document that does not load back equal. Response: reopen
   got a breach from `add-slide`, against `design@rootpoint-protocol@no-new-breach`. The condition
   narrows the rule the owner approved, "every other new area takes Body", for that case alone, so it
   is a scope change. Default, built as written: the condition. The rival: Body always, and a breach
-  a command makes from such a file. Awaiting the owner.
+  a command makes from such a file. Awaiting the owner. Until the ruling, the head
+  `design@rootpoint-model@new-area-style` states the rule as approved, and the code builds the
+  condition; the ruling is harvested into the head, or the code follows the head.
+- **D4**, `thread@editor-conveniences@no-new-breach`: AC4 fired. Its observable, a sequence of
+  commands from a document with no breach that leaves a breach, was reproduced by the review of the
+  work of #styles-model: `add-slide` on a file whose unused Body names a missing font asset. The
+  landing of #styles-model had reported AC4 as not fired, from its property test, which starts from
+  an empty document and never meets such a file; that report is superseded. AC4 left the
+  document. Its response, reopening #no-new-breach and opening a defect for the command, stands on
+  the owner's word. Default: the response is spent, since the decision holds and the command is
+  repaired by D3; the instrument's gap, no property test starting from a file edited by hand, is
+  named in `issue@rootpoint@thorough-testing`. The rival: reopen #no-new-breach. Awaiting the
+  owner.
+- **D5**, `thread@editor-conveniences@new-area-style`: a split of a text area naming a style the
+  table lacks does not copy the name; its new area takes the style a new area takes. The owner
+  approved "the style of the area it was split from"; the spec added the condition, so that no
+  split spreads a breach a file brought, which narrows the approved rule. Default, built as
+  written: the condition. The rival: the name copied, as `duplicate-slide` copies a breach.
+  Awaiting the owner; until the ruling, the head states the rule as approved.
 
 ## Harvest
 

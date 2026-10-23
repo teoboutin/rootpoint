@@ -71,7 +71,8 @@ impl Default for Document {
     }
 }
 
-/// The style a new area takes when it copies none, by name, while the table holds it.
+/// The name of the predefined style a new area takes when it copies none, as
+/// `Document::new_area_style` says.
 pub const BODY: &str = "Body";
 
 /// The styles a new document holds: Title, Subtitle, Body and Legend, each a change of

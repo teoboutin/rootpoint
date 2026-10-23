@@ -251,7 +251,8 @@ impl App {
         }
         match content {
             // The values drawn, a named style's or the text's own; a change sends one option, which
-            // makes a named style custom, so the panel changes no shared style.
+            // makes a named style custom, so the panel changes no shared style,
+            // `design@rootpoint-model@named-styles`.
             Content::Text(t) => {
                 let values = self.session.document().resolve_style(&t.style);
                 self.style(ui, &values);

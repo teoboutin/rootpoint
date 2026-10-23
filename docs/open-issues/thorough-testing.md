@@ -6,8 +6,8 @@ kind: todo
 ## Summary
 
 Property tests exist in rootpoint-model, and one in rootpoint-protocol drives the commands at
-random. Nothing is fuzzed, and the window's actions are tested by hand only. A systematic approach
-to testing, chosen for the whole project, is not set up.
+random. Nothing is fuzzed, and the window's actions are tested only with fixed inputs written by
+hand. A systematic approach to testing, chosen for the whole project, is not set up.
 
 ## Details
 
@@ -45,12 +45,12 @@ Approaches to weigh, as open leads, none chosen:
 
 ### Why it matters
 
-The owner wants to be sure that no edit of a user can lead to an invalid document, and asked for
-the testing of the whole project to be set up, not fuzzing alone. The model's tests
-cover operations, but the protocol and the window add their own checks and their own state, such as
-groups and the view. A breach found by a user instead of a
-test costs a talk, against `goal@rootpoint@real-presentations`, and every operation the GUI offers
-is to be checked headless, `goal@rootpoint@headless-core`.
+The owner wants to be sure that no edit of a user can lead to an invalid document, and asked for the
+testing of the whole project to be set up, not fuzzing alone. The model's tests cover operations,
+and the protocol's cover its commands and groups from an empty document, but not an undo's result,
+nor a document loaded from a file edited by hand, nor the window's own state. A breach found by a
+user instead of a test costs a talk, against `goal@rootpoint@real-presentations`, and every
+operation the GUI offers is to be checked headless, `goal@rootpoint@headless-core`.
 
 ### What would close it
 

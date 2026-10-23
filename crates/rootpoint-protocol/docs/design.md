@@ -24,36 +24,31 @@ and reads one line per reply. The rival, JSON-RPC, `rejected@rootpoint-protocol@
 is easier to parse and harder to type. The grammar and the replies are this crate's interface to
 every program that drives rootpoint.
 
-### Commands name slides, nodes and assets by their stored ids, and styles by their names `##protocol-addressing`
+### Commands name slides, nodes and assets by their stored ids `##protocol-addressing`
 
 Every argument that names a slide, a node or an asset is its id, `s<n>`, `n<n>` or `a<n>`, as the
 model stores it and `tree` prints it, never a position. An id names the same slide, node or asset
 after every later edit, and across a save and a load, since the model stores ids in the file and
 never reuses one, `design@rootpoint-model@stable-ids`. A position shifts at every split or
 removal, so a script's later command would name another area,
-`rejected@rootpoint-model@addressing-by-position`.
-
-A style is named by its name, always quoted, `style="Title"`, as the file names it,
-`design@rootpoint-model@style-key`. A name does not name one style after every edit: a rename
-changes it, so a script's later command names the style by its new name. The rename is one command
-that rewrites every text naming the style, so no text is left naming the old name. On the owner's
-word: the owner chose names over ids for styles, judging that referring by name is important.
+`rejected@rootpoint-model@addressing-by-position`. A style is named by its name instead,
+`design@rootpoint-model@style-key`.
 
 ### A command refuses a target the document lacks, so no command creates a cosmetic breach `##no-new-breach`
 
 A command that names a target the document lacks is refused before any operation: `image` and the
 `font` option of `text`, `style add` and `style set` reply `err no asset a<n>` for an asset the
 table does not hold, and `text … style="<name>"` and `style remove … into="<name>"` refuse a style
-the table lacks, or one whose font is a missing target. The refusal
-is the command's, since the operations accept a reference to a missing target,
-`design@rootpoint-model@cosmetic-fallbacks`. So a breach reaches a document only through a file: a
-command that copies or moves an area, as `duplicate-slide` and `swap` do, carries the breach a file
-brought, and creates none in a document that has none. The property test of
+the table lacks, or one whose font is a missing target. The refusal is the command's, since the
+operations accept a reference to a missing target but for the exceptions
+`design@rootpoint-model@cosmetic-fallbacks` names. So a breach reaches a document only through a
+file: a command that copies or moves an area, as `duplicate-slide` and `swap` do, carries the breach
+a file brought, and creates none in a document that has none. The property test of
 `path@rootpoint-protocol@tests/properties.rs` runs random sequences of commands from an empty
 document, `undo`, `redo` and the groups included, and checks that none leaves a breach. The nearest
-rival, a command that passes the target through and leaves the breach to the fallback, would hide
-an editor's bug behind a warning; the refusal makes that bug a test's failure. It is a reason
-respected at every command that names a target.
+rival, a command that passes the target through and leaves the breach to the fallback, would hide an
+editor's bug behind a warning; the refusal makes that bug a test's failure. It is a reason respected
+at every command that names a target.
 
 ### A split's axis is typed as a short word for where its children go `##protocol-axis-words`
 

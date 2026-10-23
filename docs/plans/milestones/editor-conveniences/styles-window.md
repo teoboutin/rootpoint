@@ -73,6 +73,10 @@ the protocol are #styles-model.
 
 ## Audit subjects
 
+- The replacement dialog offers every other style, and the command `style remove … into=` refuses
+  one that would draw with a stand-in, `Session::usable_style` of
+  `path@rootpoint-protocol@src/session.rs`, since #styles-model; found by the review before the
+  merge of that slice.
 - `App::side_panel`, `App::content`, `App::style` and the outline in
   `path@rootpoint-app@src/panels.rs`; `path@rootpoint-app@src/actions.rs`;
   `path@rootpoint-app@tests/actions.rs`, which also runs on the wasm target.

@@ -82,18 +82,20 @@ The rival, every content stored apart and referenced by areas,
 editing that changes every slide sharing a content, a file read by following ids, and content ids
 beside node ids; the owner weighed those costs above the reuse it gives. A shared style answers
 each: a style no text names is an entry of a library, not an orphan; changing every text that names
-it is its purpose, done only by `style set`; the file reads the name in place; and the name is no id. Reuse of text across
-slides is left to templates, which `issue@rootpoint-model@slide-templates` keeps open.
+it is its purpose, done only by `style set`; the file reads the name in place; and the name is no
+id. Reuse of text across slides is left to templates, which `issue@rootpoint-model@slide-templates`
+keeps open.
 
 ### An area with nothing in it holds an empty text, and no kind of content of its own `##no-empty-kind`
 
 A text may hold no characters, and a new area, of `Op::AddSlide` or of a split, holds one, in the
-style `design@rootpoint-model@new-area-style` gives. An empty text draws nothing, so a kind for an area with nothing in it adds nothing
-an empty text lacks: in what the renderer draws, it differs from an empty text only by an arm that
-draws nothing, `rejected@rootpoint-model@empty-content-kind`. Outside the renderer, the editor has
-one kind to enter for typing, the text, per `design@rootpoint-app@edit-entry`. On the owner's word:
-the owner proposed that no kind stand for an area with nothing in it, a kind that in the owner's
-view is noise in both the GUI and the implementation.
+style `design@rootpoint-model@new-area-style` gives. An empty text draws nothing, so a kind for an
+area with nothing in it adds nothing an empty text lacks: in what the renderer draws, it differs
+from an empty text only by an arm that draws nothing, `rejected@rootpoint-model@empty-content-kind`.
+Outside the renderer, the editor has one kind to enter for typing, the text, per
+`design@rootpoint-app@edit-entry`. On the owner's word: the owner proposed that no kind stand for an
+area with nothing in it, a kind that in the owner's view is noise in both the GUI and the
+implementation.
 
 ### Images and other assets are files beside the presentation file `##image-storage`
 
@@ -152,33 +154,30 @@ that referring by name is important.
 The style table holds text styles; an image's one option, how it fits its area, is chosen per area
 with no name. A kind of content added later, `issue@rootpoint@more-content-kinds`, decides then
 whether its options earn named styles. The rival, a style object per kind from the start, splits
-styles by kind before any kind but text has options worth sharing. On the owner's word: the owner,
-who first thought each kind should probably have its own style object, deferred it, judging that
-for images it makes little sense with a single option.
+styles by kind before any kind but text has options worth sharing: an image has one option, so a
+named image style would save one click.
 
 ### Removing a style that texts name takes a replacement for them `##style-removal`
 
-`Op::RemoveStyle` gives the texts naming the removed style another style of the table, or each a
-custom copy of the removed values, which changes no slide; with no replacement they keep naming the
-removed style, a cosmetic breach, `design@rootpoint-model@cosmetic-fallbacks`, so that the inverse
-of `Op::AddStyle` removes a style that texts loaded from a file name. The command refuses a removal
-with no replacement while a text names the style, and names those texts,
-`design@rootpoint-protocol@no-new-breach`. Its inverse puts the style back and makes its former
-users name it again. The rival, a removal that leaves its users drawn with the default values,
-leaves a warning to clear after a deliberate act. On the owner's word: the owner proposed that the
-author name the style that replaces a removed one; the custom copy is the session's, the one
-replacement that changes no slide.
+`Op::RemoveStyle` gives the texts naming the removed style another style, which the command requires
+the table to hold, or each a custom copy of the removed values, which changes no slide; with no
+replacement they keep naming the removed style, a cosmetic breach,
+`design@rootpoint-model@cosmetic-fallbacks`, so that the inverse of `Op::AddStyle` removes a style
+that texts loaded from a file name. The command refuses a removal with no replacement while a text
+names the style, and names those texts, `design@rootpoint-protocol@no-new-breach`. Its inverse puts
+the style back and makes its former users name it again. The rival, a removal that leaves its users
+drawn with the default values, leaves a warning to clear after a deliberate act. On the owner's
+word: the owner proposed that the author name the style that replaces a removed one; the custom copy
+is the session's, the one replacement that changes no slide.
 
 ### A new area takes the style of the text area it was split from, or Body `##new-area-style`
 
-A split of a text area gives its new area that area's style, when it is custom or names a style the
-table holds; every other new area, of a split of a split or of an image, of `Op::AddSlide`, or of
-an image area emptied or given a text with no style, takes Body while the table holds it, and the
-default values otherwise. Splitting a body text for a second column gives a body text with no
-further step, which `goal@rootpoint-app@direct-manipulation` asks of common tasks. A name the table
-lacks is not copied, so no split creates a breach, `design@rootpoint-protocol@no-new-breach`. The
-rival, a new area that always takes Body, costs a style change after a split of a styled text;
-whether inheriting gets in the way instead is watched by
+A split of a text area gives its new area that area's style; every other new area, of a split of a
+split or of an image, of `Op::AddSlide`, or of an image area emptied or given a text with no style,
+takes Body while the table holds it, and the default values otherwise. Splitting a body text for a
+second column gives a body text with no further step, which `goal@rootpoint-app@direct-manipulation`
+asks of common tasks. The rival, a new area that always takes Body, costs a style change after a
+split of a styled text; whether inheriting gets in the way instead is watched by
 `tripwire@rootpoint-model@inherited-style-in-the-way`.
 
 ## Changes
@@ -198,41 +197,44 @@ document.
 
 ### A document is validated when it is loaded and after every operation, and a structural breach is refused `##validated-documents`
 
-`Document::validate` checks every structural invariant: unique ids below the counter, every
-asset an area or a style of the table names below the counter too, splits of two children or more with ordered dividers
-strictly inside (0, 1) and no child split of their own axis, no zero side in the aspect ratio.
-`load_ron` refuses a file that breaks one, and `apply` refuses an operation whose result breaks
-one, leaving the document unchanged. A breach is structural when, with it, the layout or the
-identity of the nodes is undefined: no area rectangle can be computed, an operation could panic or
-reuse an id, or a repair would have to guess the author's layout. An asset id at or above the
-counter is one, since a later `Op::AddAsset` would give it to a new asset, which the area would
+`Document::validate` checks every structural invariant: unique ids below the counter, every asset an
+area or a style of the table names below the counter too, splits of two children or more with
+ordered dividers strictly inside (0, 1) and no child split of their own axis, no zero side in the
+aspect ratio. `load_ron` refuses a file that breaks one, and `apply` refuses an operation whose
+result breaks one, leaving the document unchanged. A breach is structural when, with it, the layout
+or the identity of the nodes is undefined: no area rectangle can be computed, an operation could
+panic or reuse an id, or a repair would have to guess the author's layout. An asset id at or above
+the counter is one, since a later `Op::AddAsset` would give it to a new asset, which the area would
 then show. What is not structural is `design@rootpoint-model@cosmetic-fallbacks`.
 
 The rival, trusting a loaded file and the result of every operation,
 `rejected@rootpoint-model@unvalidated-documents`, was refuted by counterexamples built at review: a
 hand-edited file with a missing divider made `area_rects` and `apply` panic, a lowered id counter
 made a later operation reuse ids, and rounding in a split or a merge made dividers equal, 0 or 1.
-Each is structural. A file edited by hand is a purpose, `goal@rootpoint-model@faithful-readable-file`,
-so a breach is reachable.
+Each is structural. A file edited by hand is a purpose,
+`goal@rootpoint-model@faithful-readable-file`, so a breach is reachable.
 
 ### A cosmetic breach of a document is accepted, drawn with a stand-in, and named `##cosmetic-fallbacks`
 
 A breach is cosmetic when it is a reference to a missing target that has a defined stand-in, whose
 effect stays inside one area's drawing: an image or a text font naming an asset the table lacks,
-drawn grey or in the built-in sans, a `FontRef::Builtin` naming a family outside
-`BUILTIN_FAMILIES`, drawn in the built-in sans, and a text naming a style the table lacks, drawn
-with `TextStyle::default()`. `load_ron` loads it and `apply` accepts an
-operation whose result holds one, so the inverse of an edit of such an area, which brings back what
-a file was loaded with, is never refused. `Op::RemoveAsset` still refuses an asset an area or a style of the table uses: it
-refuses a removal, not a reference, and no undo meets it, since the inverse of `Op::AddAsset`
-removes an id the counter has just given, which no area can name;
-`Document::breaches` names each, as `Breach`, and the renderer's report, the window's status line
-and the reply of `render` name what was drawn with a stand-in. No command creates one,
+drawn grey or in the built-in sans, a `FontRef::Builtin` naming a family outside `BUILTIN_FAMILIES`,
+drawn in the built-in sans, and a text naming a style the table lacks, drawn with
+`TextStyle::default()`. `Document::breaches` names each, as `Breach`, and the renderer's report, the
+window's status line and the reply of `render` name what was drawn with a stand-in. `load_ron` loads
+such a file, and `apply` accepts an operation whose result holds a breach, so the inverse of an edit
+of such an area, which brings back what a file was loaded with, is never refused. Two operations
+refuse what no undo meets. `Op::RemoveAsset` refuses an asset an area or a style of the table uses:
+it refuses a removal, not a reference, and the inverse of `Op::AddAsset` removes an id the counter
+has just given, which no area can name. `Op::RenameStyle` refuses a rename while a text names the
+new name, a style the table lacks, since its inverse would rename that text back with the others;
+after a rename from a name, no text names it. No command creates a breach,
 `design@rootpoint-protocol@no-new-breach`. Which files load is part of the save format.
 
 The renderer draws each stand-in already, an image it was not given grey, which
 `Report::missing_images` names, and a font it does not have in the built-in sans,
-`design@rootpoint-render@font-sources`, so refusing such a file refuses one the renderer could draw, and a file edited by hand is a purpose,
+`design@rootpoint-render@font-sources`, so refusing such a file refuses one the renderer could
+draw, and a file edited by hand is a purpose,
 `goal@rootpoint-model@faithful-readable-file`. The rival, refusing every breach and relying on tests
 to keep the editor from making one, `rejected@rootpoint-model@every-breach-refused`, leaves a file
 edited by hand with no way to open it. On the owner's word: the owner set the principle that a

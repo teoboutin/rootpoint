@@ -390,7 +390,8 @@ impl Session {
                         }
                         StyleOption::Custom => StyleChoice::Custom(self.doc.resolve_style(&choice)),
                         // Any other option changes the values drawn, so a named style forks to a
-                        // custom copy: no command but `style set` changes a shared style.
+                        // custom copy: no command but `style set` changes a shared style,
+                        // `design@rootpoint-model@named-styles`.
                         value => {
                             self.usable_option(&value)?;
                             let mut values = self.doc.resolve_style(&choice);

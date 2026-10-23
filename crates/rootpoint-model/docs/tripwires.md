@@ -16,7 +16,7 @@ every merge.
 
 ## Guarding `design@rootpoint-model@new-area-style`: inheriting the split area's style mostly gets in the way `##inherited-style-in-the-way`
 
-T4 of the premortem of `milestone@plans@editor-conveniences`, recorded on the owner's word.
+T4 of the premortem of the milestone on the conveniences of the editor, recorded on the owner's word.
 
 **Fires when:** the owner reports changing the new area's style right after most splits of a
 styled area, as when a Title is split to add a logo.
