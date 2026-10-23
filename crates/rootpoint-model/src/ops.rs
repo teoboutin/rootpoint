@@ -235,12 +235,10 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             area_mut(doc, a)?.content = content_b;
             Ok(Op::Swap { a, b })
         }
+        // An image whose asset the table lacks is not refused: it is a cosmetic breach, and the
+        // inverse of an edit of an area loaded with one brings it back. The commands refuse to
+        // name a missing asset instead.
         Op::SetContent { area, content } => {
-            if let Content::Image(image) = &content
-                && !doc.assets.contains_key(&image.asset)
-            {
-                return Err(OpError::UnknownAsset(image.asset));
-            }
             let old = std::mem::replace(&mut area_mut(doc, area)?.content, content);
             Ok(Op::SetContent { area, content: old })
         }

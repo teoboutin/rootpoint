@@ -27,7 +27,7 @@ this spec.
 - The stand-ins and the reports exist, and are checked on a document with a missing asset: the grey
   image and `missing_images`, the built-in sans and `font_fallbacks`, the status line of the window
   and the reply of `render`.
-- `planned@rootpoint-protocol@tests/properties.rs`, with proptest added as a dev-dependency of
+- `path@rootpoint-protocol@tests/properties.rs`, with proptest added as a dev-dependency of
   rootpoint-protocol: random sequences of commands on a headless `Session` keep `Document::validate`,
   leave `Document::breaches` empty, and save to a text that loads back equal. It is AC4's instrument.
 

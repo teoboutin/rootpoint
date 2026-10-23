@@ -3202,6 +3202,7 @@ name = "rootpoint-protocol"
 version = "0.0.0"
 dependencies = [
  "image",
+ "proptest",
  "rootpoint-model",
  "rootpoint-render",
 ]

@@ -76,7 +76,7 @@ window's half is `spec@editor-conveniences@styles-window`.
 - **The format.** `FORMAT_VERSION` is 3. The sample, `path@rootpoint-protocol@sample/sample.ron`,
   holds the four styles. Each of its texts whose values equal Title's or Body's names that style:
   n2 names Title, and n3, n5, n9 and n11 name Body. Its other texts are `Custom`.
-- **The property test** of `planned@rootpoint-protocol@tests/properties.rs`, widened with the style
+- **The property test** of `path@rootpoint-protocol@tests/properties.rs`, widened with the style
   commands and with `style=` names that may be missing.
 
 ## Claims

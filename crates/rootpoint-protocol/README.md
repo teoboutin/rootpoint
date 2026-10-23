@@ -45,6 +45,11 @@ The paths of `save`, `load` and `render` are relative to the working directory. 
 relative to the directory of the presentation last saved or loaded, or to the working directory
 before either.
 
+`image` and the `font` option of `text` refuse an asset the document does not hold, with
+`err no asset a<n>`, so no command makes an area name a missing asset. A file edited by hand that
+names one still loads: `render` draws the image grey, or the text in the built-in sans, and its
+reply names the asset after `missing=`, or the area after `fallback=`.
+
 `sample` opens the built-in sample, a presentation of three slides that says how the editor's
 gestures work; the crate holds its RON text and its image, in `sample/`, so it opens in every host
 with no file.

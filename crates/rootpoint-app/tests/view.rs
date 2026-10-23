@@ -161,3 +161,39 @@ fn the_status_names_an_image_the_render_could_not_draw() {
     ));
     assert_eq!(app.status()[0], "missing.ron: no such file");
 }
+
+/// A file edited by hand to name an asset the table lacks, below its counter, opens: the image is
+/// drawn grey, and the status names it.
+#[test]
+fn a_file_naming_a_missing_asset_opens_and_the_status_names_it() {
+    let files = MemoryFiles::default();
+    let mut app = App::new(Box::new(files.clone()));
+    for line in [
+        "add-slide",
+        "split n2 beside 0.5",
+        "asset cat.png",
+        "image n3 a5 fit",
+        "save deck.ron",
+    ] {
+        ok(&mut app, line);
+    }
+    let saved = String::from_utf8(files.0.borrow()["deck.ron"].clone()).unwrap();
+    let table =
+        "    assets: {\n        5: (\n            source: Path(\"cat.png\"),\n        ),\n    },";
+    let edited = saved
+        .replacen("asset: 5,", "asset: 99,", 1)
+        .replacen("next_id: 6,", "next_id: 100,", 1)
+        .replacen(table, "    assets: {},", 1);
+    assert!(
+        !edited.contains("asset: 5,") && !edited.contains("next_id: 6,") && !edited.contains(table),
+        "the saved file changed shape:\n{saved}"
+    );
+    files
+        .0
+        .borrow_mut()
+        .insert("deck.ron".into(), edited.into_bytes());
+    ok(&mut app, "load deck.ron");
+    let ctx = Context::default();
+    frame(&ctx, &mut app);
+    assert_eq!(app.status(), ["missing images: a99"]);
+}

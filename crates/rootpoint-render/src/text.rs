@@ -87,11 +87,15 @@ impl FontSet {
     }
 
     /// The family a font reference resolves to, or `None` when no font of the set has it and the
-    /// built-in sans stands in. The binary carries one family, which `Builtin("sans")` names.
+    /// built-in sans stands in. The binary carries one family, which `Builtin("sans")` names; the
+    /// model's `BUILTIN_FAMILIES` lists the same names, so that a family it reports as unknown is
+    /// one drawn here in the built-in sans.
     fn family(&self, font: &FontRef) -> Option<String> {
         match font {
-            FontRef::Builtin(name) if name == "sans" => Some(BUILTIN_SANS.to_owned()),
-            FontRef::Builtin(_) => None,
+            FontRef::Builtin(name) => match name.as_str() {
+                "sans" => Some(BUILTIN_SANS.to_owned()),
+                _ => None,
+            },
             FontRef::Asset(id) => self.assets.get(id).cloned(),
         }
     }
@@ -225,5 +229,20 @@ mod tests {
             .map(str::to_owned)
             .collect();
         assert_eq!(names, vec![BUILTIN_SANS.to_owned()]);
+    }
+
+    /// The families the model accepts are the ones the set resolves, and no other: a name only one
+    /// side knows would be drawn in the built-in sans with no breach reported, or reported while
+    /// drawn as asked.
+    #[test]
+    fn the_set_resolves_exactly_the_model_s_built_in_families() {
+        let set = FontSet::new();
+        for name in rootpoint_model::BUILTIN_FAMILIES {
+            assert!(
+                set.family(&FontRef::Builtin((*name).to_owned())).is_some(),
+                "{name}"
+            );
+        }
+        assert_eq!(set.family(&FontRef::Builtin("serif".to_owned())), None);
     }
 }

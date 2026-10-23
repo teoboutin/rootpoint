@@ -1,5 +1,7 @@
-//! A file or an operation that would break an invariant of the document is refused. The cases are
-//! the counterexamples the review of the model found before validation existed.
+//! A file or an operation that would make a structural breach of the document is refused. The
+//! cases are the counterexamples the review of the model found before validation existed. A
+//! cosmetic breach, a reference to a missing target the renderer draws a stand-in for, is accepted
+//! and named by `Document::breaches`.
 
 use rootpoint_model::*;
 
@@ -188,8 +190,39 @@ fn a_file_with_a_zero_side_is_refused() {
 }
 
 #[test]
-fn a_file_naming_a_missing_asset_is_refused() {
-    load_refused(&fixture_text().replacen("asset: 7,", "asset: 70,", 1));
+fn a_file_naming_a_missing_asset_loads_and_names_the_breach() {
+    // a99 is below the raised counter, so only the table lacks it.
+    let text = fixture_text()
+        .replacen("asset: 7,", "asset: 99,", 1)
+        .replacen("next_id: 8,", "next_id: 100,", 1);
+    let doc = load_ron(&text).expect("a missing asset is a cosmetic breach");
+    assert_eq!(
+        doc.breaches(),
+        vec![Breach::MissingAsset {
+            area: NodeId(2),
+            asset: AssetId(99)
+        }]
+    );
+}
+
+#[test]
+fn a_file_naming_an_asset_at_or_above_the_counter_is_refused() {
+    let text = fixture_text();
+    load_refused(&text.replacen("asset: 7,", "asset: 8,", 1));
+    load_refused(&text.replacen("asset: 7,", "asset: 70,", 1));
+}
+
+#[test]
+fn a_file_naming_an_unknown_built_in_family_loads_and_names_the_breach() {
+    let text = fixture_text().replacen("Builtin(\"sans\")", "Builtin(\"serif\")", 1);
+    let doc = load_ron(&text).expect("an unknown family is a cosmetic breach");
+    assert_eq!(
+        doc.breaches(),
+        vec![Breach::UnknownFont {
+            area: NodeId(3),
+            name: "serif".to_owned()
+        }]
+    );
 }
 
 #[test]
@@ -245,21 +278,45 @@ fn a_tree_breaking_the_split_invariants_is_refused() {
 }
 
 #[test]
-fn a_text_whose_font_is_a_missing_asset_is_refused() {
+fn a_text_whose_font_is_a_missing_asset_is_applied_and_undone() {
     let (mut doc, root) = one_slide();
-    refused(
+    // An asset added then removed leaves an id below the counter that the table lacks.
+    let Op::RemoveAsset { id: gone } = apply(
+        &mut doc,
+        Op::AddAsset {
+            asset: Asset {
+                source: AssetSource::Path("font.ttf".into()),
+            },
+        },
+    )
+    .unwrap() else {
+        panic!("AddAsset returned another inverse");
+    };
+    apply(&mut doc, Op::RemoveAsset { id: gone }).unwrap();
+    let before = doc.clone();
+    let inverse = apply(
         &mut doc,
         Op::SetContent {
             area: root,
             content: Content::Text(TextContent {
                 text: "x".into(),
                 style: TextStyle {
-                    font: FontRef::Asset(AssetId(999)),
+                    font: FontRef::Asset(gone),
                     ..TextStyle::default()
                 },
             }),
         },
+    )
+    .expect("a missing font asset is a cosmetic breach");
+    assert_eq!(
+        doc.breaches(),
+        vec![Breach::MissingAsset {
+            area: root,
+            asset: gone
+        }]
     );
+    apply(&mut doc, inverse).unwrap();
+    assert_eq!(doc, before);
 }
 
 #[test]

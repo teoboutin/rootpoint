@@ -18,3 +18,4 @@ path = "src/bin/rootpoint-ctl.rs"
 
 [dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["png"] }
+proptest = "1"

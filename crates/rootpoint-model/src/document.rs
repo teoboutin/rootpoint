@@ -256,6 +256,10 @@ impl Default for TextStyle {
     }
 }
 
+/// The built-in families a `FontRef::Builtin` may name, the ones the binary carries. The renderer
+/// draws each, and a text naming another is drawn in the built-in sans, a cosmetic breach.
+pub const BUILTIN_FAMILIES: &[&str] = &["sans"];
+
 /// A font: one the binary carries, by name, or a font file of the asset table.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum FontRef {

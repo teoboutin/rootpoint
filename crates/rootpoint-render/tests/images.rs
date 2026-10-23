@@ -115,3 +115,47 @@ fn fit_and_fill_match_their_golden_image() {
     .unwrap();
     assert_golden(out.pixmap, "fit-and-fill.png");
 }
+
+/// A document whose areas name an asset its table lacks, a cosmetic breach, draws the stand-ins:
+/// the image grey and the text in the built-in sans, each named by the report.
+#[test]
+fn an_asset_the_table_lacks_draws_its_stand_ins_and_is_reported() {
+    let (mut doc, left) = one_slide();
+    split(&mut doc, left, Axis::LeftToRight, 0.5);
+    let right = doc.slides[0].root.areas()[1].id;
+    let gone = add_asset(&mut doc, "gone.png");
+    apply(&mut doc, Op::RemoveAsset { id: gone }).unwrap();
+    set(
+        &mut doc,
+        left,
+        Content::Image(ImageContent {
+            asset: gone,
+            fit: ImageFit::Fill,
+        }),
+    );
+    set(
+        &mut doc,
+        right,
+        text(
+            "x",
+            TextStyle {
+                font: FontRef::Asset(gone),
+                ..TextStyle::default()
+            },
+        ),
+    );
+    assert_eq!(doc.breaches().len(), 2);
+    let out = render_slide(
+        &doc,
+        doc.slides[0].id,
+        384,
+        216,
+        &mut FontSet::new(),
+        &ImageSet::new(),
+        Precision::Portable,
+    )
+    .unwrap();
+    assert_eq!(rgba(&out.pixmap, 96, 108), [224, 224, 224, 255]);
+    assert_eq!(out.report.missing_images, vec![gone]);
+    assert_eq!(out.report.font_fallbacks, vec![right]);
+}

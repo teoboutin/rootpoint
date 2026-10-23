@@ -374,6 +374,11 @@ impl Session {
                 {
                     return Err("a text size is a number above 0".to_owned());
                 }
+                for option in &style {
+                    if let StyleOption::Font(Some(asset)) = option {
+                        self.existing_asset(*asset)?;
+                    }
+                }
                 let mut current = self.text_style(area);
                 for option in style {
                     apply_style(&mut current, option);
@@ -386,10 +391,13 @@ impl Session {
                     }),
                 }
             }
-            Command::Image { area, asset, fit } => Op::SetContent {
-                area,
-                content: Content::Image(ImageContent { asset, fit }),
-            },
+            Command::Image { area, asset, fit } => {
+                self.existing_asset(asset)?;
+                Op::SetContent {
+                    area,
+                    content: Content::Image(ImageContent { asset, fit }),
+                }
+            }
             Command::Clear { area } => Op::SetContent {
                 area,
                 content: Content::Text(TextContent {
@@ -405,6 +413,16 @@ impl Session {
             Command::RemoveAsset { asset } => Op::RemoveAsset { id: asset },
             other => return Err(format!("`{other}` applies no operation")),
         })
+    }
+
+    /// Refuse a command that names an asset the table lacks, so that no command creates a cosmetic
+    /// breach; the operation accepts one, since an undo may bring back what a file was loaded with.
+    fn existing_asset(&self, asset: AssetId) -> Result<(), String> {
+        if self.doc.assets.contains_key(&asset) {
+            Ok(())
+        } else {
+            Err(format!("no asset {asset}"))
+        }
     }
 
     /// The style of the text `area` holds, or the default style when it holds none.

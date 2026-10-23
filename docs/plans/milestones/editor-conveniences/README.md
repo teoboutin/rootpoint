@@ -1063,7 +1063,7 @@ not that node after the click, or when the menu is not open on the next frame. R
 
 AC4. Guards `thread@editor-conveniences@no-new-breach`. Judged by
 `spec@editor-conveniences@styles-model`, once style commands exist; `spec@editor-conveniences@breach-tiers`
-lands the test. Observable: a proptest in `planned@rootpoint-protocol@tests/properties.rs` runs random
+lands the test. Observable: a proptest in `path@rootpoint-protocol@tests/properties.rs` runs random
 sequences of commands, `undo` and `redo` included, from a document with no breach, on a headless
 `Session`; it fires when a sequence leaves `Document::breaches` non-empty, breaks `Document::validate`,
 or saves a document that does not load back equal. Response: reopen
