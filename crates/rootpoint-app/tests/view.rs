@@ -123,8 +123,9 @@ fn the_shown_slide_is_uploaded_as_rendered_and_only_when_it_changes() {
     assert_eq!(last.len(), 1, "one slide texture is set");
     let (id, size, pixels) = &last[0];
     assert!(uploads.iter().flatten().all(|u| u.0 == *id));
-    // The view is the window less its panels, in physical pixels: less than 960×600.
-    assert!(size[0] > 300 && size[0] < 960, "{size:?}");
+    // The view is the window less its panels, in physical pixels: less than 960×600. The side panel
+    // keeps its 260 points with nothing selected, so the view is under 300 pixels wide here.
+    assert!(size[0] > 200 && size[0] < 960, "{size:?}");
     assert!(size[1] > 400 && size[1] < 600, "{size:?}");
     let slide = app.session().document().slides[0].id;
     assert_eq!(*pixels, expected(&app, &mut files, slide, *size));

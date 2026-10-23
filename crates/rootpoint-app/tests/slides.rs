@@ -1,4 +1,4 @@
-//! The slide list's actions and the breadcrumb's path, with no window.
+//! The slide list's actions and a node's path from the slide's root, with no window.
 
 use rootpoint_app::App;
 use rootpoint_app::selection::path;
@@ -76,7 +76,7 @@ fn a_slide_dropped_on_a_row_takes_its_place() {
 }
 
 #[test]
-fn the_breadcrumb_runs_from_the_root_to_the_selection() {
+fn a_node_s_path_runs_from_the_root_to_it() {
     let app = sample();
     let slide = &app.session().document().slides[0];
     let Node::Split(top) = &slide.root else {

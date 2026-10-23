@@ -12,13 +12,13 @@ use crate::selection::Move;
 use crate::{App, Controller, Gesture};
 
 impl App {
-    /// Select a node: a click on an area, or on a breadcrumb entry.
+    /// Select a node: a click on an area, or on its row of the outline.
     pub fn select_node(&mut self, node: NodeId) {
         self.run(Command::Select { node });
     }
 
-    /// Show a slide and select no node: a click on a slide in the list, or on the breadcrumb's
-    /// first entry.
+    /// Show a slide and select no node: a click on a slide in the list, or on the outline's row of
+    /// the slide.
     pub fn show_slide(&mut self, slide: SlideId) {
         self.run(Command::SelectSlide { slide });
     }

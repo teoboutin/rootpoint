@@ -291,9 +291,9 @@ fn a_click_on_the_selected_text_area_enters_editing_and_a_first_click_only_selec
     d.key(Key::Escape);
     assert_eq!(d.app.editing(), None);
     assert_eq!(d.app.session().view().selected, Some(n3));
-    // While not editing, the keys act on the node again: Alt+Up selects the parent.
+    // While not editing, the keys act on the node again: Alt+Left selects the parent.
     d.frame(vec![Event::Key {
-        key: Key::ArrowUp,
+        key: Key::ArrowLeft,
         physical_key: None,
         pressed: true,
         repeat: false,

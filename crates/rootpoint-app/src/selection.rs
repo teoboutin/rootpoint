@@ -1,5 +1,5 @@
-//! The selection's place in the slide's tree: the path from the root to it, which the breadcrumb
-//! shows, and the node each move of Alt and an arrow selects.
+//! The selection's place in the slide's tree: the path from the root to it, and the node each move
+//! of Alt and an arrow selects.
 
 use std::collections::HashMap;
 

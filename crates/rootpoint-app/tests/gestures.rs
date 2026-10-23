@@ -31,6 +31,8 @@ struct Driver {
     app: App,
     ctx: Context,
     time: f64,
+    /// The shapes the last frame drew.
+    shapes: Vec<eframe::epaint::ClippedShape>,
 }
 
 impl Driver {
@@ -41,6 +43,7 @@ impl Driver {
             app,
             ctx: Context::default(),
             time: 0.0,
+            shapes: Vec::new(),
         };
         // egui sizes its panels again on the second frame.
         d.frame(vec![], Modifiers::NONE);
@@ -59,11 +62,10 @@ impl Driver {
             ..Default::default()
         };
         let app = &mut self.app;
+        let mut out = self.ctx.run_ui(input, |ui| app.frame(ui));
         // No painter applies the texture deltas, and egui refuses to drop them unapplied.
-        self.ctx
-            .run_ui(input, |ui| app.frame(ui))
-            .textures_delta
-            .clear();
+        out.textures_delta.clear();
+        self.shapes = out.shapes;
     }
 
     fn button(&mut self, pos: Pos2, pressed: bool) {
@@ -245,44 +247,113 @@ fn a_double_click_sets_a_divider_halfway_between_its_neighbours() {
     assert_eq!(d.doc(), moved);
 }
 
+/// The outline lists the shown slide's every node, in depth-first order under the slide's row, each
+/// at its depth, and highlights the selection's row.
 #[test]
-fn alt_and_the_arrows_move_the_selection_through_the_tree() {
+fn the_outline_lists_every_node_with_the_selection_highlighted() {
     let mut d = Driver::new();
-    // The deepest area of the first slide: a child of a split that is itself a child.
-    let slide = d.app.shown_slide().unwrap();
-    let doc = d.doc();
-    let root = &doc.slide(slide).unwrap().root;
-    let Node::Split(top) = root else {
-        panic!("the sample's first slide is split");
-    };
-    let (inner, child) = top
-        .children
+    d.app.select_node(NodeId(3));
+    d.frame(vec![], Modifiers::NONE);
+    d.frame(vec![], Modifiers::NONE);
+    let rows = d.app.outline_rows();
+    let nodes: Vec<_> = rows
         .iter()
-        .find_map(|c| match c {
-            Node::Split(s) => Some((s.id, s.children[1].id())),
-            Node::Area(_) => None,
-        })
-        .unwrap();
-    d.app.select_node(child);
-    let alt = Modifiers::ALT;
-    d.key(Key::ArrowUp, alt);
-    assert_eq!(d.selected(), Some(inner));
-    // Down returns to the child selected last, not the first.
-    d.key(Key::ArrowDown, alt);
-    assert_eq!(d.selected(), Some(child));
-    d.key(Key::ArrowLeft, alt);
-    let Some(Node::Split(s)) = root.find(inner) else {
-        panic!("{inner} is a split");
+        .map(|r| (r.node.map(|n| n.0), r.depth))
+        .collect();
+    assert_eq!(
+        nodes,
+        [
+            (None, 0),
+            (Some(4), 1),
+            (Some(2), 2),
+            (Some(6), 2),
+            (Some(3), 3),
+            (Some(5), 3)
+        ]
+    );
+    let highlighted: Vec<_> = rows.iter().filter(|r| r.selected).map(|r| r.node).collect();
+    assert_eq!(highlighted, [Some(NodeId(3))]);
+}
+
+/// A click on a row selects its node, and a click on the slide's row selects none.
+#[test]
+fn a_click_on_an_outline_row_selects_its_node() {
+    let mut d = Driver::new();
+    let row = |d: &Driver, node: Option<NodeId>| {
+        d.app
+            .outline_rows()
+            .iter()
+            .find(|r| r.node == node)
+            .unwrap()
+            .rect
+            .center()
     };
-    assert_eq!(d.selected(), Some(s.children[0].id()));
-    // Nothing before the first sibling, nothing below an area, nothing above the root.
-    d.key(Key::ArrowLeft, alt);
-    assert_eq!(d.selected(), Some(s.children[0].id()));
+    let slide = d.app.shown_slide();
+    d.click(row(&d, Some(NodeId(6))));
+    assert_eq!(d.selected(), Some(NodeId(6)));
+    d.frame(vec![], Modifiers::NONE);
+    d.click(row(&d, None));
+    assert_eq!(d.selected(), None);
+    assert_eq!(d.app.session().view().shown, slide);
+}
+
+/// With the pointer on a row, the overlay outlines that row's node on the slide.
+#[test]
+fn hovering_an_outline_row_outlines_its_node() {
+    let mut d = Driver::new();
+    let n6 = NodeId(6);
+    let outlined = |d: &Driver| {
+        let r = d.app.layout().unwrap().rect(n6).unwrap();
+        d.shapes.iter().any(|c| match &c.shape {
+            eframe::egui::Shape::Rect(s) => s.rect == r && s.stroke.width > 0.0,
+            _ => false,
+        })
+    };
+    assert!(!outlined(&d), "n6 is outlined before any hover");
+    let at = d
+        .app
+        .outline_rows()
+        .iter()
+        .find(|r| r.node == Some(n6))
+        .unwrap()
+        .rect
+        .center();
+    d.move_to(at);
+    assert!(outlined(&d), "n6 is not outlined while its row is hovered");
+}
+
+/// Alt with an arrow moves as the outline reads: ↑ and ↓ to the sibling above and below, ← to the
+/// parent, → to the child selected last in it, or its first. The sample's first slide is
+/// n4 stacked [n2, n6 beside [n3, n5]].
+#[test]
+fn alt_and_the_arrows_move_the_selection_as_the_outline_reads() {
+    let mut d = Driver::new();
+    let alt = Modifiers::ALT;
+    let n = NodeId;
+    d.app.select_node(n(2));
     d.key(Key::ArrowDown, alt);
-    assert_eq!(d.selected(), Some(s.children[0].id()));
-    d.app.select_node(root.id());
+    assert_eq!(d.selected(), Some(n(6)));
+    d.key(Key::ArrowRight, alt);
+    assert_eq!(d.selected(), Some(n(3)));
+    // Nothing above the first sibling.
     d.key(Key::ArrowUp, alt);
-    assert_eq!(d.selected(), Some(root.id()));
+    assert_eq!(d.selected(), Some(n(3)));
+    d.key(Key::ArrowDown, alt);
+    assert_eq!(d.selected(), Some(n(5)));
+    // Nothing below the last sibling, and nothing to the right of an area.
+    d.key(Key::ArrowDown, alt);
+    assert_eq!(d.selected(), Some(n(5)));
+    d.key(Key::ArrowRight, alt);
+    assert_eq!(d.selected(), Some(n(5)));
+    d.key(Key::ArrowLeft, alt);
+    assert_eq!(d.selected(), Some(n(6)));
+    // Right returns to the child selected last, not the first.
+    d.key(Key::ArrowRight, alt);
+    assert_eq!(d.selected(), Some(n(5)));
+    // Nothing to the left of the root.
+    d.app.select_node(n(4));
+    d.key(Key::ArrowLeft, alt);
+    assert_eq!(d.selected(), Some(n(4)));
 }
 
 #[test]

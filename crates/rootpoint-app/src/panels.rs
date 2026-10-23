@@ -1,15 +1,16 @@
 //! The panels around the slide view: the toolbar, the slide list, and the side panel with the
-//! breadcrumb, the actions on the selection, and the selected area's content and style.
+//! outline of the shown slide's tree, the actions on the selection, and the selected area's content
+//! and style.
 
 use eframe::egui::{self, Align2, Color32, FontId, Sense, Stroke, Ui, Vec2};
 use rootpoint_model::{
-    AssetId, AssetSource, Axis, Content, FontRef, HAlign, ImageFit, Node, Rgba, SlideId, VAlign,
+    AssetId, AssetSource, Axis, Breach, Content, FontRef, HAlign, ImageFit, Node, NodeId, Rgba,
+    SlideId, StyleChoice, VAlign,
 };
 use rootpoint_protocol::StyleOption;
 
-use crate::App;
 use crate::hit::Edge;
-use crate::selection;
+use crate::{App, OutlineRow};
 
 /// The sizes of the size menu, in slide units. A menu, not a drag field: each choice is one
 /// `text` command and one undo step, where a drag field would send one each frame of its drag.
@@ -152,16 +153,16 @@ impl App {
         }
     }
 
-    /// The side panel: the breadcrumb, the actions on the selection, and the selected area's
+    /// The side panel: the outline, the actions on the selection, and the selected area's
     /// content.
     pub(crate) fn side_panel(&mut self, ui: &mut Ui) {
-        self.breadcrumb(ui);
+        self.outline(ui);
         if self.session.view().selected.is_none() {
             return;
         }
         ui.separator();
         ui.label("Split, the new area:");
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             for (edge, text) in [
                 (Edge::Left, "left"),
                 (Edge::Right, "right"),
@@ -183,38 +184,119 @@ impl App {
         }
     }
 
-    /// The path from the shown slide's root to the selection, for instance
-    /// `s1 › n4 beside › n8 stacked › n7 area`; a click on an entry selects it.
-    fn breadcrumb(&mut self, ui: &mut Ui) {
+    /// The shown slide's whole tree, one row per node in depth-first order, each indented by its
+    /// depth and always expanded, after a row for the slide itself, per
+    /// `design@rootpoint-app@node-selection`. A click on a row selects its node, the slide's row
+    /// selecting none; the selected node's row is highlighted, and the overlay outlines the node
+    /// of the row under the pointer. A row's text is cut at the panel's edge, never wrapped.
+    fn outline(&mut self, ui: &mut Ui) {
         ui.heading("Selection");
+        self.view.outline.clear();
+        self.view.hovered_row = None;
         let Some(slide) = self.shown_slide() else {
             return;
         };
-        let mut entries = vec![(None, slide.to_string())];
-        if let Some(node) = self.session.view().selected
-            && let Some(s) = self.session.document().slide(slide)
-            && let Some(path) = selection::path(s, node)
-        {
-            entries.extend(path.iter().map(|n| {
-                let kind = match n {
-                    Node::Split(s) if s.axis == Axis::LeftToRight => "beside",
-                    Node::Split(_) => "stacked",
-                    Node::Area(_) => "area",
-                };
-                (Some(n.id()), format!("{} {kind}", n.id()))
-            }));
-        }
-        let mut clicked = None;
-        ui.horizontal_wrapped(|ui| {
-            for (i, (node, text)) in entries.iter().enumerate() {
-                if i > 0 {
-                    ui.label("›");
+        let doc = self.session.document();
+        let Some(the_slide) = doc.slide(slide) else {
+            return;
+        };
+        let missing: Vec<(NodeId, String)> = doc
+            .breaches()
+            .into_iter()
+            .filter_map(|b| match b {
+                Breach::MissingStyle { area, name } => Some((area, name)),
+                _ => None,
+            })
+            .collect();
+        let mut rows = vec![(None, 0, format!("Slide {slide}"))];
+        fn walk(
+            node: &Node,
+            depth: usize,
+            doc: &rootpoint_model::Document,
+            missing: &[(NodeId, String)],
+            rows: &mut Vec<(Option<NodeId>, usize, String)>,
+        ) {
+            let label = match node {
+                Node::Split(s) => {
+                    let (mark, axis) = match s.axis {
+                        Axis::TopToBottom => ("[=]", "stacked"),
+                        Axis::LeftToRight => ("[|]", "beside"),
+                    };
+                    format!("{mark} {}  {axis}", s.id)
                 }
-                if ui.link(text).clicked() {
-                    clicked = Some(*node);
+                Node::Area(a) => match &a.content {
+                    Content::Text(t) => {
+                        let style = match &t.style {
+                            StyleChoice::Custom(_) => "custom".to_owned(),
+                            StyleChoice::Named(name) if missing.iter().any(|m| m.0 == a.id) => {
+                                format!("\u{26a0} {name}")
+                            }
+                            StyleChoice::Named(name) => name.clone(),
+                        };
+                        let start: String = t
+                            .text
+                            .lines()
+                            .next()
+                            .unwrap_or("")
+                            .chars()
+                            .take(40)
+                            .collect();
+                        format!("T  {}  {style}  \"{start}\"", a.id)
+                    }
+                    Content::Image(i) => {
+                        let name = match doc.assets.get(&i.asset).map(|a| &a.source) {
+                            Some(AssetSource::Path(p)) => {
+                                p.rsplit('/').next().unwrap_or(p).to_owned()
+                            }
+                            Some(AssetSource::Embedded(_)) => format!("{} embedded", i.asset),
+                            None => format!("\u{26a0} {}", i.asset),
+                        };
+                        format!("I  {}  {name}", a.id)
+                    }
+                },
+            };
+            rows.push((Some(node.id()), depth, label));
+            if let Node::Split(s) = node {
+                for child in &s.children {
+                    walk(child, depth + 1, doc, missing, rows);
                 }
             }
-        });
+        }
+        walk(&the_slide.root, 1, doc, &missing, &mut rows);
+        let selected = self.session.view().selected;
+        let visuals = ui.visuals().clone();
+        let mut clicked = None;
+        for (node, depth, label) in rows {
+            let (rect, response) =
+                ui.allocate_exact_size(Vec2::new(ui.available_width(), 20.0), Sense::click());
+            let here = node == selected;
+            if here {
+                ui.painter()
+                    .rect_filled(rect, 2.0, visuals.selection.bg_fill);
+            } else if response.hovered() {
+                ui.painter()
+                    .rect_filled(rect, 2.0, visuals.widgets.hovered.weak_bg_fill);
+            }
+            if response.hovered() {
+                self.view.hovered_row = node;
+            }
+            ui.painter().with_clip_rect(rect).text(
+                rect.left_center() + Vec2::new(4.0 + 14.0 * depth as f32, 0.0),
+                Align2::LEFT_CENTER,
+                label,
+                FontId::proportional(13.0),
+                visuals.text_color(),
+            );
+            self.view.outline.push(OutlineRow {
+                node,
+                depth,
+                rect,
+                selected: here,
+            });
+            if response.clicked() {
+                clicked = Some(node);
+            }
+        }
         match clicked {
             Some(Some(node)) => self.select_node(node),
             Some(None) => self.show_slide(slide),
@@ -225,7 +307,7 @@ impl App {
     /// The selected area's content: its kind, then the text's style, or the image and its fit; the
     /// text itself is edited in place, on the slide.
     fn content(&mut self, ui: &mut Ui, content: &Content) {
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             ui.label("Content:");
             if ui
                 .selectable_label(matches!(content, Content::Text(_)), "text")
@@ -264,7 +346,7 @@ impl App {
     /// The style of the selected text: each change sends one option.
     fn style(&mut self, ui: &mut Ui, style: &rootpoint_model::TextStyle) {
         let mut chosen = None;
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             egui::ComboBox::from_label("size")
                 .selected_text(format!("{}", style.size))
                 .show_ui(ui, |ui| {
@@ -286,7 +368,7 @@ impl App {
                 chosen = Some(StyleOption::Italic(italic));
             }
         });
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             for (r, g, b) in COLOURS {
                 let colour = Rgba { r, g, b, a: 255 };
                 let (rect, response) = ui.allocate_exact_size(Vec2::splat(18.0), Sense::click());
@@ -305,7 +387,7 @@ impl App {
                 }
             }
         });
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             for (align, text) in [
                 (HAlign::Left, "left"),
                 (HAlign::Center, "centre"),
@@ -370,7 +452,7 @@ impl App {
                     }
                 }
             });
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             for (f, text) in [(ImageFit::Fit, "fit"), (ImageFit::Fill, "fill")] {
                 if ui.selectable_label(fit == f, text).clicked() && fit != f {
                     chosen = Some((asset, f));

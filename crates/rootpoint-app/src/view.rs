@@ -216,8 +216,9 @@ impl App {
     }
 
     /// The editor's marks, drawn with egui over the slide's texture and never into its image: a
-    /// line on each divider, a highlight on the divider under the pointer or being dragged, an
-    /// outline and a grip on the selection, the preview line of a split, and the hint of a drop.
+    /// line on each divider, a highlight on the divider under the pointer or being dragged, a thin
+    /// outline on the node of the outline's row under the pointer, an outline and a grip on the
+    /// selection, the preview line of a split, and the hint of a drop.
     fn overlay(&mut self, ui: &Ui, layout: &Layout) {
         let painter = ui.painter();
         let accent = ui.visuals().selection.stroke.color;
@@ -248,6 +249,13 @@ impl App {
                 Axis::LeftToRight => CursorIcon::ResizeHorizontal,
                 Axis::TopToBottom => CursorIcon::ResizeVertical,
             });
+        }
+        // The node of the outline's row under the pointer, so the author sees which part of the
+        // slide a row names.
+        if let Some(node) = self.view.hovered_row
+            && let Some(r) = layout.rect(node)
+        {
+            painter.rect_stroke(r, 0.0, Stroke::new(1.0, accent), StrokeKind::Inside);
         }
         if let Some(node) = selected
             && let Some(r) = layout.rect(node)

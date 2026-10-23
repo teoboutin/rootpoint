@@ -10,7 +10,7 @@ authority to edit at start; `control` gives it to the socket, `release` gives it
 queries `tree`, `view`, `styles` and `render` need none. While the socket holds control, a banner
 over the toolbar says so beside a button "Take control", which takes it back; the window shows each
 change as it is made, and of the actions below it keeps only those that change the view: selecting by a
-click, Alt and the arrows or the breadcrumb, showing a slide of the list, and presenting. It
+click, Alt and the arrows or the outline, showing a slide of the list, and presenting. It
 draws no grip, no divider highlight and no preview line, and a click on the selected text area
 only selects it. The toolbar opens a presentation (Ctrl+O), saves it to its
 file (Ctrl+S) or to another, opens the built-in sample, presents, and undoes (Ctrl+Z) and redoes
@@ -20,9 +20,11 @@ shown slide, scaled uniformly to the largest size that fits and letterboxed, and
 the slide's render could not draw as the document asks: missing images, fonts not found,
 characters no font has, styles the document lacks, and text not drawn.
 
-- A click on an area selects it, and the side panel shows the path from the slide's root to the
-  selection, each entry a link that selects it. Alt+↑ selects the parent, Alt+↓ a child, the one
-  selected last in it, and Alt+← and Alt+→ the siblings.
+- A click on an area selects it. The side panel's outline shows the slide's whole tree, one row per
+  node, indented by its depth, with the selection's row highlighted; a click on a row selects its
+  node, and the node of the row under the pointer is outlined on the slide. Alt+↑ and Alt+↓ select
+  the sibling above and below, Alt+← the parent and Alt+→ a child, the one selected last in it, as
+  the outline reads. The side panel keeps the width its edge is dragged to, whatever it shows.
 - A divider is grabbed within 4 points of it, and dragged; each child keeps 40 slide units or
   more along the split's axis. The whole drag is one undo step, and Esc cancels it. A
   double-click sets a divider halfway between its neighbours.

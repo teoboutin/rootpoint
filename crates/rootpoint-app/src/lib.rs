@@ -129,6 +129,23 @@ struct SlideView {
     rows: Vec<(SlideId, Rect)>,
     /// Where the last frame placed the button "Take control", while the socket held control.
     take_control: Option<Rect>,
+    /// Where the last frame placed the side panel, in points.
+    side_panel: Option<Rect>,
+    /// Where the last frame placed each row of the outline.
+    outline: Vec<OutlineRow>,
+    /// The node of the outline's row under the pointer in this frame, which the overlay outlines.
+    hovered_row: Option<NodeId>,
+}
+
+/// A row of the side panel's outline, as the last frame placed it: the node it names, `None` for
+/// the slide's own row, its depth in the tree, its place in points, and whether it is the
+/// selection's.
+#[derive(Clone, Debug, PartialEq)]
+pub struct OutlineRow {
+    pub node: Option<NodeId>,
+    pub depth: usize,
+    pub rect: Rect,
+    pub selected: bool,
 }
 
 impl App {
@@ -193,6 +210,16 @@ impl App {
     /// Where the last frame placed each row of the slide list, in points.
     pub fn slide_rows(&self) -> &[(SlideId, Rect)] {
         &self.view.rows
+    }
+
+    /// Where the last frame placed each row of the outline, in points.
+    pub fn outline_rows(&self) -> &[OutlineRow] {
+        &self.view.outline
+    }
+
+    /// Where the last frame placed the side panel, in points.
+    pub fn side_panel_rect(&self) -> Option<Rect> {
+        self.view.side_panel
     }
 
     /// Where the last frame placed the button "Take control", in points: shown while the socket
@@ -371,9 +398,20 @@ impl App {
             }
         });
         Panel::left("slides").show(ui, |ui| self.slide_list(ui));
-        Panel::right("selection")
+        // egui sizes a panel from the size its content took in the last frame, wider or narrower,
+        // so a click that changed the selection resized the slide view. The content is a scroll
+        // area the size of the panel, which neither shrinks to its content nor grows with it: the
+        // panel keeps the width its edge was dragged to. A vertical scroll area alone took the
+        // width of its widest row, 357 points against 260 on a text area, measured by
+        // `path@rootpoint-app@tests/panel.rs`. The rows wrap or cut their text to fit.
+        let side = Panel::right("selection")
             .default_size(260.0)
-            .show(ui, |ui| self.side_panel(ui));
+            .show(ui, |ui| {
+                egui::ScrollArea::both()
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| self.side_panel(ui));
+            });
+        self.view.side_panel = Some(side.response.rect);
         CentralPanel::no_frame().show(ui, |ui| self.slide_view(ui));
     }
 
@@ -453,11 +491,13 @@ impl App {
         if shortcut(ui, Modifiers::NONE, Key::F5) {
             self.present();
         }
+        // Alt with an arrow moves as the outline reads, `design@rootpoint-app@node-selection`: ↑ and ↓
+        // to the sibling above and below, ← to the parent, → to a child. Shift with an arrow splits.
         for (key, m, edge) in [
-            (Key::ArrowUp, Move::Parent, Edge::Up),
-            (Key::ArrowDown, Move::Child, Edge::Down),
-            (Key::ArrowLeft, Move::Previous, Edge::Left),
-            (Key::ArrowRight, Move::Next, Edge::Right),
+            (Key::ArrowUp, Move::Previous, Edge::Up),
+            (Key::ArrowDown, Move::Next, Edge::Down),
+            (Key::ArrowLeft, Move::Parent, Edge::Left),
+            (Key::ArrowRight, Move::Child, Edge::Right),
         ] {
             if ui.input_mut(|i| i.consume_key(Modifiers::ALT, key)) {
                 self.move_selection(m);

@@ -97,7 +97,7 @@
                             Area(
                                 id: 5,
                                 content: Text(
-                                    text: "Click an area to select it. Alt+Up selects its parent, Alt+Down a child, Alt+Left and Alt+Right its siblings. The breadcrumb in the side panel shows the path from the slide\'s root.",
+                                    text: "Click an area, or its row in the outline of the side panel, to select it. Alt+Up and Alt+Down select its siblings, Alt+Left its parent and Alt+Right a child, as the outline reads.",
                                     style: Named("Body"),
                                 ),
                             ),
