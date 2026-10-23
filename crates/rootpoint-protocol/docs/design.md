@@ -95,26 +95,37 @@ ran as done, nor one it ran as none.
 
 Besides its document and its undo and redo stacks, a `Session` holds a `View`: the selected node,
 if any, the slide the editor shows, if one is named, the slide presenter mode shows, if it is on,
-and the preview, in which the editor shows the final result, with no mark. `select n<id>` selects a
-node and shows its slide; `select s<id>` shows a slide and selects no node; with no slide named the
-editor shows the first. `preview on` deselects, and `select n<id>` ends the preview, so the view
-never holds a preview and a selection at once; `preview off` ends it too, and `select s<id>`,
-`deselect` and `present` leave it as it is. The view commands, `select`, `deselect`, `preview`,
+and the preview, in which the editor shows the final result, with no mark, under the rules of
+`design@rootpoint-protocol@final-preview`. `select n<id>` selects a node and shows its slide;
+`select s<id>` shows a slide and selects no node; with no slide named the editor shows the first.
+The view commands, `select`, `deselect`, `preview`,
 `present`, `next`, `prev` and `stop`, change it and apply no operation; `view` reports it. Since
 they apply no operation, `undo` and `redo` do not step through them: an `undo` after a `select`
 reverts the last edit, not the selection. An operation that removes the selected node, the
 shown slide or the presented slide drops it from the view, so the view never names what the
-document does not hold. Selection, the slide shown, presenter mode and the preview then run headless, in a test or a
-script, as `goal@rootpoint@headless-core` asks of every operation the GUI offers, and
-`goal@rootpoint-protocol@commands-drive-everything` asks of every view of the presentation the
-editor shows. The rival, a view state the GUI alone holds, would leave them out of every headless
-test, and an agent could not show the author the final result. The preview's rules are the
-session's, so an agent and a headless test meet what the window does.
+document does not hold. Selection, the slide shown, presenter mode and the preview then run
+headless, in a test or a script, as `goal@rootpoint@headless-core` asks of every operation the GUI
+offers, and `goal@rootpoint-protocol@commands-drive-everything` asks of every view of the
+presentation the editor shows. The rival, a view state the GUI alone holds, would leave them out of
+every headless test, and an agent could not show the author the final result.
+
+### Entering the preview deselects, and a selection of a node ends it `##final-preview`
+
+`preview on` sets the preview and deselects, and `select n<id>` ends it and selects, so the view
+never holds a preview and a selection at once; `preview off` ends it too, and `select s<id>`,
+`deselect` and `present` leave it as it is. In the editor, a click on an area sends that `select`,
+so a click on the slide leaves the preview and selects. The rules are the session's, part of
+`design@rootpoint-protocol@view-state`, so an agent and a headless test meet what the window does.
+
+The nearest rival, a click in the preview that does nothing,
+`rejected@rootpoint-protocol@click-does-nothing-in-preview`, costs a click each time the author
+leaves the preview. What the rules give up: a text's own custom style cannot be tuned while the
+preview shows its result, since tuning it needs it selected, which ends the preview; a named style
+is still tuned live in the window's Styles tab.
 
 On the owner's word: the owner proposed that entering the preview clears the selection and that a
 click on the slide leaves it and selects, intuitively the way the owner would use it, while not
-fully certain; the rival, a click in the preview that does nothing, costs a click each time the
-author leaves it. `tripwire@rootpoint-protocol@click-ends-the-preview` watches the choice.
+fully certain. `tripwire@rootpoint-protocol@click-ends-the-preview` watches the choice.
 
 ### The session opens no file: its host gives it a `Files` `##session-files`
 

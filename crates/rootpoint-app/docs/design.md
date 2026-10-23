@@ -68,17 +68,17 @@ first, `design@rootpoint-app@one-controller-at-a-time`.
 ### The editor's marks are drawn over the slide's texture with egui, never into the slide's image `##editor-overlay`
 
 The divider lines, the highlight of the divider under the pointer, the selection's outline and its
-grip, the preview line of a split, the hint of a drop, and the caret, the selection and the
-composition's underline of a text edited in place are drawn with egui's painter over the texture,
-in `App::overlay`; the marks of a gesture are not drawn while the control socket holds the
-authority to edit, `design@rootpoint-app@one-controller-at-a-time`, and no mark is drawn in the
-final view, the session's preview, `design@rootpoint-protocol@view-state`. The banner of the control
-socket and its button "Take control", `design@rootpoint-app@take-over-at-once`, are egui widgets, in
-presenter mode over the texture and never in its image. `render_slide` draws only the slide, so the
-image presenter mode shows
-is the editor's, pixel for pixel at one size, in the final view with nothing painted over it,
-which `path@rootpoint-app@tests/presenter.rs` compares, and which `goal@rootpoint-app@faithful-slide-view` asks. The marks are lines, rectangles
-and the hint's label, editor text that is no slide content, so they are not the slide text that
+grip, the line of a split at the pointer, the hint of a drop, and the caret, the selection and the
+composition's underline of a text edited in place are drawn with egui's painter over the texture, in
+`App::overlay`; the marks of a gesture are not drawn while the control socket holds the authority to
+edit, `design@rootpoint-app@one-controller-at-a-time`, and no mark is drawn in the final view, the
+session's preview, `design@rootpoint-protocol@view-state`. The banner of the control socket and its
+button "Take control", `design@rootpoint-app@take-over-at-once`, are egui widgets, in presenter mode
+over the texture and never in its image. `render_slide` draws only the slide, so the image presenter
+mode shows is the editor's, pixel for pixel at one size, in the final view with nothing painted over
+it, which `path@rootpoint-app@tests/presenter.rs` compares, and which
+`goal@rootpoint-app@faithful-slide-view` asks. The marks are lines, rectangles and the hint's label,
+editor text that is no slide content, so they are not the slide text that
 `rejected@rootpoint-render@toolkit-painter` keeps out of the toolkit.
 
 ## Selecting
@@ -86,12 +86,12 @@ and the hint's label, editor text that is no slide content, so they are not the 
 ### A click on the slide selects an area, and a split is reached by other ways than a click on the slide `##node-selection`
 
 A click on an area sends `select`. A click lands in an area, so a click on the slide reaches no
-split, and a split is what a spanning split needs, as `goal@rootpoint@free-slide-division` asks.
-So the window has other ways to reach a split than a click on the slide: today a click on the node's
+split, and a split is what a spanning split needs, as `goal@rootpoint@free-slide-division` asks. So
+the window has other ways to reach a split than a click on the slide: today a click on the node's
 row of the outline, `design@rootpoint-app@tree-outline`, the slide's own row selecting none, Alt
 with an arrow, `design@rootpoint-app@selection-keys`, and the "Select" of the node menu that a
-secondary click on the slide opens, `design@rootpoint-app@node-menu`. A click on a divider grabs it rather than
-selecting its split, since a drag starts there. The selection is the session's view, per
+secondary click on the slide opens, `design@rootpoint-app@node-menu`. A click on a divider grabs it
+rather than selecting its split, since a drag starts there. The selection is the session's view, per
 `design@rootpoint-protocol@view-state`.
 
 ### The side panel shows the shown slide's whole tree as an outline, one row per node `##tree-outline`
@@ -110,13 +110,14 @@ highlighted, and maybe the splits told from the areas.
 A secondary click on an area of the slide, on a divider's band or the grip too, or on a row of the
 outline, sends `select` for that node, then opens the node menu at the click: "Select", with the
 node's ancestors from the slide's root down and the node itself; on an area, "Content", text, image
-while the document holds an image asset, and on an image area each image asset; on a text area, "Style", the table's styles and
-custom; and "Remove", except on the slide's root. Each entry runs the action of the side panel's
-equivalent or of Delete, `design@rootpoint-app@actions-are-commands`, and the menu closes as soon as
-the selection is no longer its node, so an entry acts on the node the menu names. A secondary click
-on the letterbox, or on the slide's row of the outline, names no node and opens no menu; during a
-drag of a divider, of the grip or of a text selection it does nothing. The menu is the window's own state, not a view of the
-session, `goal@rootpoint-protocol@commands-drive-everything`.
+while the document holds an image asset, and on an image area each image asset; on a text area,
+"Style", the table's styles and custom; and "Remove", except on the slide's root. Each entry runs
+the action of the side panel's equivalent or of Delete, `design@rootpoint-app@actions-are-commands`,
+and the menu closes as soon as the selection is no longer its node, so an entry acts on the node the
+menu names. A secondary click on the letterbox, or on the slide's row of the outline, names no node
+and opens no menu; during a drag of a divider, of the grip or of a text selection it does nothing.
+The menu is the window's own state, not a view of the session,
+`goal@rootpoint-protocol@commands-drive-everything`.
 
 The click selects first, so the menu and the side panel describe one node. The nearest rival, a menu
 that leaves the selection where it was, would describe another node than the side panel does, and
@@ -172,15 +173,16 @@ changes at a click resizes the slide view.
 
 The Selection tab's style row names a style of the table, or makes the text's values its own; its
 other controls change only the text's own values, so a change of a value of a text naming a style
-makes that text custom, with the named values and that change, `design@rootpoint-model@named-styles`.
-The Styles tab is the one part of the window that sends `style set`, `style rename`, `style add` and
-`style remove`, and it lists, for each style, the number of areas that name it. A change to a style
-that slides out of view use is then made only from the view that lists those uses, which answers the
-cost `rejected@rootpoint-model@content-by-reference` names, that editing a shared content changes
-every slide that shows it. The rival, controls of the selection that change the named style the
-text names, would change slides out of view with a click meant for one text. It is a reason
-respected by every control of both tabs, and the Styles tab, a tab of the side panel, keeps the
-panel's width, `design@rootpoint-app@sidebar-width`.
+makes that text custom, with the named values and that change,
+`design@rootpoint-model@named-styles`. The Styles tab is the one part of the window that sends
+`style set`, `style rename`, `style add` and `style remove`, and it lists, for each style, the
+number of areas that name it. A change to a style that slides out of view use is then made only from
+the view that lists those uses, which answers the cost
+`rejected@rootpoint-model@content-by-reference` names, that editing a shared content changes every
+slide that shows it. The rival, controls of the selection that change the named style the text
+names, would change slides out of view with a click meant for one text. It is a reason respected by
+every control of both tabs, and the Styles tab, a tab of the side panel, keeps the panel's width,
+`design@rootpoint-app@sidebar-width`.
 
 ### A subtree is selected for a spanning split by moving up to its node, and no rectangle selects `##span-selection`
 
@@ -316,18 +318,19 @@ the text out, `rejected@rootpoint-app@plain-editor`.
 ### A first click on a text area selects it, and a click on the selected text area edits it `##edit-entry`
 
 A click on an area selects it. A click on the selected text area, so a double-click on any text
-area, enters editing with the caret at the click, wherever no other gesture takes the press: a
-press on the grip, `design@rootpoint-app@swap-gesture`, or on a divider's band keeps its own
-gesture and never enters editing; Esc leaves it, the area still selected, and a press outside the
-area leaves it and acts as it does outside editing: a click on another area selects that area.
-Outside editing, the node keys, Shift with an arrow, Delete and Alt with an arrow, act on a
-selected text area, per `design@rootpoint-app@selection-actions` and
-`design@rootpoint-app@selection-keys`; while editing, the keys go to the text, where Shift with an
-arrow selects. While the control socket holds the authority to edit, a click on the selected text
-area only selects it, `design@rootpoint-app@one-controller-at-a-time`. Every area that holds no
-image holds a text, a new area an empty one, per `design@rootpoint-model@no-empty-kind`, so a
-second click enters editing on a new area too, and typing into it needs no step that makes it a
-text first.
+area, enters editing with the caret at the click, wherever no other gesture takes the press: a press
+on the grip, `design@rootpoint-app@swap-gesture`, or on a divider's band keeps its own gesture and
+never enters editing; Esc leaves it, the area still selected, and a press outside the area leaves it
+and acts as it does outside editing: a click on another area selects that area. Outside editing, the
+node keys, Shift with an arrow, Delete and Alt with an arrow, act on a selected text area, per
+`design@rootpoint-app@selection-actions` and `design@rootpoint-app@selection-keys`; while editing,
+the keys go to the text, where Shift with an arrow selects. While the control socket holds the
+authority to edit, a click on the selected text area only selects it,
+`design@rootpoint-app@one-controller-at-a-time`. In the final view a click selects and enters no
+editing, nor does the second click of a double-click that began there, since a press there starts no
+gesture, `design@rootpoint-protocol@final-preview`. Every area that holds no image holds a text, a
+new area an empty one, per `design@rootpoint-model@no-empty-kind`, so a second click enters editing
+on a new area too, and typing into it needs no step that makes it a text first.
 
 On the owner's word: the owner chose this shape over a single click that selects a text area and
 edits it at once, which saves a click before typing in an area not yet selected, but leaves the
@@ -403,9 +406,9 @@ connection of its own, as `rootpoint-ctl <socket> <words>…` does, and between 
 `rejected@rootpoint-app@control-per-connection`. While the socket holds it, every action of
 `path@rootpoint-app@src/actions.rs` that changes the document returns at once, `App::edit_at` with
 them, the side panel disables its controls that send one, and the window draws no mark of a gesture:
-no divider highlight, no resize cursor, no grip, no preview line, no drop line in the slide list.
-While the window holds it, every command of the socket but the queries, `control` and `release`
-replies `err the window has control`, or the refusal of a take-over.
+no divider highlight, no resize cursor, no grip, no line of a split at the pointer, no drop line in
+the slide list. While the window holds it, every command of the socket but the queries, `control`
+and `release` replies `err the window has control`, or the refusal of a take-over.
 
 Two exceptions keep looking free. The socket's queries, `tree`, `view`, `styles` and `render`, need
 no authority, since they apply no operation and join no group. The window's inputs that change only

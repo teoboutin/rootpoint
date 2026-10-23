@@ -54,3 +54,10 @@ drives rootpoint, and a script holding them would not run headless.
 protocol's clients consume, and when only the window closed the group and a headless session
 changed nothing, a script's replies differed between the two hosts.
 `design@rootpoint-protocol@control-commands` refuses a `release` while a group is open.
+
+### A click in the preview that does nothing `##click-does-nothing-in-preview`
+
+`live`. The preview would stay on until its button or Esc ends it, at the cost of one more click
+each time the author leaves it to change something seen. The owner proposed the click that leaves
+it and selects while not fully certain, so doubt remains that the rule kept serves the author
+better, `design@rootpoint-protocol@final-preview`; its tripwire brings this design back.

@@ -189,8 +189,9 @@ its slice.
 - **Right-click.** The slide view and the outline's rows read a secondary click, and open the node
   menu, `design@rootpoint-app@node-menu`; the slice #context-menu built these. In the browser, eframe 0.37.0 stops the browser's own context menu on the canvas, in
   `install_event_handlers` of eframe's `path@elsewhere@src/web/events.rs`.
-- **The view.** `View` in `path@rootpoint-protocol@src/session.rs` holds `selected`, `shown` and
-  `presenting`, per `design@rootpoint-protocol@view-state`.
+- **The view.** `View` in `path@rootpoint-protocol@src/session.rs` holds `selected`, `shown`,
+  `presenting` and `preview`, per `design@rootpoint-protocol@view-state`; the slice #preview-mode
+  added `preview`.
 - **Property tests.** proptest runs in rootpoint-model, in `path@rootpoint-model@tests/ops.rs`,
   `path@rootpoint-model@tests/file.rs` and `path@rootpoint-model@tests/geometry.rs`, and in
   rootpoint-protocol, in `path@rootpoint-protocol@tests/properties.rs`, which #breach-tiers added:
@@ -1030,9 +1031,8 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
   - Re-entry: the design audit of the next work on the app's keys, or earlier on the owner's word.
 - **T2**, `thread@editor-conveniences@final-preview`: a click meant only to look ends the preview.
   A tripwire, recorded at the harvest of #preview-mode as
-  `tripwire@rootpoint-protocol@click-ends-the-preview`, guarding
-  `design@rootpoint-protocol@view-state` as that slice rewrites it, with the rule that a click on the
-  slide ends the preview.
+  `tripwire@rootpoint-protocol@click-ends-the-preview`, guarding the head that holds the rule that a
+  click on the slide ends the preview, `design@rootpoint-protocol@final-preview`.
   - Fires when: the owner reports, more than once, leaving the preview by a click the owner did not
     mean as an edit.
   - Response: reopen `design@rootpoint-protocol@view-state`, toward a click in the preview that does
@@ -1193,10 +1193,13 @@ not that node after the click, or when the menu is not open on the next frame. R
 ## Harvest
 
 This document's own row: every slice has landed, and its row with it. The commit that records the
-owner's rulings on D3 to D7 deletes this document, after checking that each acceptance criterion
-was reported on once more in that commit, that T1 to T4 are written, that each later consequence
-below has its issue entry, and that the texts citing D7, the comment at `App::open_node_menu` and
-the test `a_secondary_click_while_editing_ends_it_and_opens_the_menu`, cite the ruling's home.
+owner's rulings on D3 to D7 deletes this document, after checking that each acceptance criterion was
+reported on once more in that commit, that T1 to T4 are written, that each later consequence below
+has its issue entry, compatibility a `deferred` one whose trigger is the owner's ruling that real
+use has begun, and that every text outside this document that cites it, a test, a comment or an
+issue entry, `cargo klarch show` lists, states the present without it; the texts citing D7, the
+comment at `App::open_node_menu` and the test
+`a_secondary_click_while_editing_ends_it_and_opens_the_menu`, cite the ruling's home.
 
 ## Later consequences
 

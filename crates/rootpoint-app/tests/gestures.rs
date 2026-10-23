@@ -894,3 +894,16 @@ fn a_double_click_in_the_final_view_only_selects() {
     assert_eq!(d.selected(), Some(n3));
     assert_eq!(d.app.editing(), None, "the double-click entered editing");
 }
+
+/// Esc leaves the final view with no slide shown, where the slide view reads no key.
+#[test]
+fn esc_leaves_the_final_view_with_no_slide_shown() {
+    let mut d = Driver::new();
+    assert!(matches!(d.app.run(Command::New), Reply::Ok(_)));
+    d.frame(vec![], Modifiers::NONE);
+    d.app.toggle_final_view();
+    d.frame(vec![], Modifiers::NONE);
+    assert!(d.app.final_view());
+    d.key(Key::Escape, Modifiers::NONE);
+    assert!(!d.app.final_view());
+}

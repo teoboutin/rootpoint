@@ -113,11 +113,9 @@ impl App {
             )
         });
         // In the final view a press starts no gesture, since the author did not see where it would
-        // act: a click on an area selects it, which ends the final view, and Esc leaves it.
+        // act: a click on an area selects it, which ends the final view.
         if self.final_view() {
-            if esc {
-                self.toggle_final_view();
-            } else if response.clicked()
+            if response.clicked()
                 && let Some(at) = pos
                 && let Some(area) = layout.area_at(at)
             {

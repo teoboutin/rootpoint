@@ -240,8 +240,8 @@ impl App {
     }
 
     /// Whether the editor shows the final result, the session's preview: the slide with no mark,
-    /// and no gesture on it. "Preview" names the line of a split at the pointer in the window, so
-    /// the window names this the final view.
+    /// and no gesture on it. "Preview" names the line of a split at the pointer in the window's
+    /// code, as `hit::Preview`, so the code names this the final view.
     pub fn final_view(&self) -> bool {
         self.session.view().preview
     }
@@ -484,7 +484,10 @@ impl App {
         // While a text is edited its keys go to it. During a drag only Esc acts, which the slide
         // view takes; a key whose edit joined the drag's group would make the drag's step hold
         // another edit.
-        if self.edit.is_some() {
+        if self.final_view() && ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
+            // Esc leaves the final view, with or without a slide shown.
+            self.toggle_final_view();
+        } else if self.edit.is_some() {
             self.editing_keys(ui);
         } else if !ui.ctx().egui_wants_keyboard_input() && self.gesture == Gesture::Idle {
             self.shortcuts(ui);
