@@ -2,7 +2,8 @@
 //! a click selects an area, a divider drag is one undo step that Esc cancels, a double-click
 //! resets a divider, Alt and the arrows move the selection, a row of the slide list is shown by a
 //! click and moved by a drag, a grip drag swaps or moves an area, a click with Ctrl splits at the
-//! pointer, and the keys undo, redo, split and remove.
+//! pointer, and the keys undo, redo, split and remove; and the side panel's outline, whose rows list
+//! the slide's tree, select a node by a click and outline it on the slide under the pointer.
 
 use eframe::egui::{Context, Event, Key, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
 use rootpoint_app::App;
@@ -114,10 +115,9 @@ impl Driver {
         self.frame(vec![event(false)], modifiers);
     }
 
-    /// Select a node, and let the side panel, which then shows the selection's actions, settle.
+    /// Select a node, and let one frame record the places the selection's marks and rows take.
     fn select(&mut self, node: NodeId) {
         self.app.select_node(node);
-        self.frame(vec![], Modifiers::NONE);
         self.frame(vec![], Modifiers::NONE);
     }
 

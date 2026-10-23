@@ -37,16 +37,15 @@ acting on the area.
 only when the author types.
 **Re-entry:** the standing-state review before every merge.
 
-## Guarding `design@rootpoint-app@node-selection`: the node keys still confuse the owner with the outline in view `##keys-confuse-with-the-outline`
+## Guarding `design@rootpoint-app@selection-keys`: the node keys still confuse the owner with the outline in view `##keys-confuse-with-the-outline`
 
 T1 of the premortem of the milestone on the conveniences of the editor, recorded on the owner's
 word.
 
 **Fires when:** the owner reports, more than once after the outline landed, that Alt with an arrow
 moved the selection where the owner did not expect.
-**Response:** reopen `design@rootpoint-app@node-selection`, toward the spatial keys, Alt with an
+**Response:** reopen `design@rootpoint-app@selection-keys`, toward the spatial keys, Alt with an
 arrow selecting the neighbouring area in that direction, as i3's `focus left`, `focus right`,
 `focus up` and `focus down` do, with the parent and the child on other keys such as Alt+Page Up and
 Alt+Page Down; or toward Alt with ↑ and ↓ moving one row of the outline.
-**Re-entry:** the design audit of the next work on the app's keys, or earlier on the owner's word;
-and the standing-state review before every merge.
+**Re-entry:** the design audit of the next work on the app's keys, or earlier on the owner's word.

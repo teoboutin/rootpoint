@@ -66,7 +66,7 @@ the protocol are #styles-model.
   that changes the table only, the second session's areas name a missing style.
 - **Removing a style in use asks for a replacement.** Test: a test of `App::frame` clicks Remove on
   Body in the sample. The dialog is open, and no command has run. "Remove" with "a custom copy" then
-  leaves both users custom with Body's values, and one `undo` restores Body. Shown to fail: against
+  leaves its three users, n3, n5 and n9, custom with Body's values, and one `undo` restores Body. Shown to fail: against
   a Remove that sends `style remove` at once, the session replies `err` and the dialog never opens.
 - **AC1.** The test of `acceptance@editor-conveniences@ac-missing-style-warned`.
 - **AC2.** The width test, with the Styles tab.

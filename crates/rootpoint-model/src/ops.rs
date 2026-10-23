@@ -445,7 +445,7 @@ fn new_text(style: StyleChoice) -> Content {
 /// The style of the new area of a split of `node`: a text area's own style, so that splitting a body
 /// text gives a body text, `design@rootpoint-model@new-area-style`; otherwise the style
 /// `Document::new_area_style` gives. A name the table lacks is not copied, so that no split spreads
-/// a breach, a default the owner has yet to rule on.
+/// a breach, a condition awaiting the owner, `issue@rootpoint-model@new-area-style-awaits-rulings`.
 fn split_style(doc: &Document, node: NodeId) -> StyleChoice {
     match doc.node(node) {
         Some(Node::Area(Area {

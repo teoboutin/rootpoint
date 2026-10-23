@@ -140,7 +140,8 @@ impl Document {
     }
 
     /// The style of a new area that copies no other: Body while the table holds it and it draws
-    /// with no stand-in, the default values otherwise, so that no new area holds a breach.
+    /// with no stand-in, the default values otherwise, so that no new area holds a breach; a
+    /// condition awaiting the owner, `issue@rootpoint-model@new-area-style-awaits-rulings`.
     pub fn new_area_style(&self) -> StyleChoice {
         match self.styles.get(BODY) {
             Some(body) if self.draws_as_asked(body) => StyleChoice::Named(BODY.to_owned()),

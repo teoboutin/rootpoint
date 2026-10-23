@@ -406,12 +406,8 @@ impl App {
             }
         });
         Panel::left("slides").show(ui, |ui| self.slide_list(ui));
-        // egui sizes a panel from the size its content took in the last frame, wider or narrower,
-        // so a click that changed the selection resized the slide view. The content is a scroll
-        // area the size of the panel, which neither shrinks to its content nor grows with it: the
-        // panel keeps the width its edge was dragged to. A vertical scroll area alone took the
-        // width of its widest row, 357 points against 260 on a text area, measured by
-        // `path@rootpoint-app@tests/panel.rs`. The rows wrap or cut their text to fit.
+        // The content is a scroll area the size of the panel, so the panel keeps the width its edge
+        // was dragged to, whatever it shows, `design@rootpoint-app@sidebar-width`.
         let side = Panel::right("selection")
             .default_size(260.0)
             .show(ui, |ui| {
@@ -501,7 +497,7 @@ impl App {
         if shortcut(ui, Modifiers::NONE, Key::F5) {
             self.present();
         }
-        // Alt with an arrow moves as the outline reads, `design@rootpoint-app@node-selection`: ↑ and ↓
+        // Alt with an arrow moves as the outline reads, `design@rootpoint-app@selection-keys`: ↑ and ↓
         // to the sibling above and below, ← to the parent, → to a child. Shift with an arrow splits.
         for (key, m, edge) in [
             (Key::ArrowUp, Move::Previous, Edge::Up),

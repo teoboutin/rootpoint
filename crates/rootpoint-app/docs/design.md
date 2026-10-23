@@ -82,17 +82,15 @@ and the hint's label, editor text that is no slide content, so they are not the 
 
 ## Selecting
 
-### A node is selected by a click, and its parent, children and siblings by keys that move as the side panel's outline reads `##node-selection`
+### A node is selected by a click on the slide, by a click on its row of the side panel's outline, or by Alt with an arrow `##node-selection`
 
-A click on an area sends `select`. The side panel shows the shown slide's whole tree as an outline,
-one row per node indented by its depth, the selection's row highlighted, and a click on a row
-selects its node, the slide's own row selecting none. Alt with ↑ and ↓ selects the sibling above
-and below, and nothing at the first or the last; Alt with ← the parent, and nothing at the root;
-Alt with → the child of the selection selected last, or its first child, and nothing on an area.
-The app keeps for each split the child last selected in it, which only chooses the node a `select`
-names. The selection is the session's view, per `design@rootpoint-protocol@view-state`.
+A click on an area sends `select`; a click on a node's row of the outline,
+`design@rootpoint-app@tree-outline`, selects it, the slide's own row selecting none; Alt with an
+arrow moves the selection through the tree, `design@rootpoint-app@selection-keys`. The app keeps
+for each split the child last selected in it, which only chooses the node a `select` names. The
+selection is the session's view, per `design@rootpoint-protocol@view-state`.
 
-A click lands in an area, so a pointer alone reaches no split on the slide, and a split is what a
+A click lands in an area, so a pointer on the slide alone reaches no split, and a split is what a
 spanning split needs, as `goal@rootpoint@free-slide-division` asks; the keys and the outline's rows
 are the ways up and back down. Shipped tools do the same in the survey of split editing,
 `path@rootpoint@docs/grounding/split-editing.md`: i3's `focus parent`, `focus child` to the child
@@ -100,20 +98,54 @@ last focused and its sibling steps, and Figma's Shift+Enter and Enter. A click o
 it rather than selecting its split, since a drag starts there. On the owner's desktop every one of
 these keys reaches the app, by the owner's report on the built editor.
 
-On the owner's word: the owner chose these keys, which move at one depth with ↑ and ↓ and change
-depth with ← and →, as the outline reads, over Alt with ↑ and ↓ moving one row of the outline,
-which the owner found possibly a bit more natural; the owner chose them for now, finding them
-relatively consistent with the outline, and judged them not very hard to change. On the slide, Alt
-with ↓ then moves down in a stacked split and right in a beside split. Whether the keys still
-confuse is watched by `tripwire@rootpoint-app@keys-confuse-with-the-outline`.
+### The side panel shows the shown slide's whole tree as an outline, one row per node, always expanded `##tree-outline`
+
+Under a row for the slide, each node has a row in depth-first order, indented by its depth: a split
+with its axis, a text with its style's name and the start of its text, an image with its file's
+name. The selection's row is highlighted, and the overlay outlines the node of the row under the
+pointer. An outline grows downward, one row per node; the nearest rival, a tree drawn top-down like
+an organization chart, needs a column per area, and a slide of 10 areas does not fit a panel of 260
+points. It stays expanded, since a slide's tree is small and collapsing would add state. The keys
+move as the outline reads, `design@rootpoint-app@selection-keys`, so a change of the drawing reopens
+them. On the owner's word: the owner asked for the whole tree with the selection highlighted, and
+maybe the splits told from the areas, and judged the outline the look the owner wanted.
+
+### Alt with ↑ and ↓ moves at one depth, and Alt with ← and → changes depth `##selection-keys`
+
+Alt with ↑ and ↓ selects the sibling above and below, and nothing at the first or the last; Alt
+with ← the parent, and nothing at the root; Alt with → the child of the selection selected last,
+or its first child, and nothing on an area. In the outline, `design@rootpoint-app@tree-outline`,
+siblings are the rows above and below at one depth, and the parent and the children a step left
+and right. On the slide, Alt with ↓ moves down in a stacked split and right in a beside split.
+
+The nearest rival, Alt with ↑ and ↓ moving one row of the outline, makes Alt with → redundant and
+drops the move at one depth. On the owner's word: the owner had a hard time deciding, and thought
+these keys could be kept for now, as relatively consistent with the outline, though the rival might
+be a bit more natural; the owner judged them not very hard to change. Whether the keys still confuse
+is watched by `tripwire@rootpoint-app@keys-confuse-with-the-outline`.
+
+### The side panel keeps the width its edge is dragged to, whatever it shows `##sidebar-width`
+
+The side panel starts at 260 points and is resizable by a drag of its edge; no content widens or
+narrows it, so a click that changes the selection does not resize the slide view. egui 0.37.0 starts
+each frame of a panel from the size its content took in the last one, wider or narrower, read in
+`Panel::show_inside_dyn` of egui's `path@elsewhere@src/containers/panel.rs`, where `default_size` is
+only "the initial wrapping width". So the rows wrap or cut their text to fit: the style rows of a
+text area, laid out in `ui.horizontal`, widened the panel from 260 to 357 points. And the content is
+a scroll area the size of the panel, which neither shrinks to its content nor grows with it, so that
+a row too wide to wrap scrolls instead of widening the panel. `path@rootpoint-app@tests/panel.rs`
+checks the width in each state of the content, and that the content fits. The rival, a fixed width
+with no drag, would give a deep tree or a long style name no room. On the owner's word: the owner
+asked for a side panel whose width does not follow its content, and that it stay draggable.
 
 ### A subtree is selected for a spanning split by moving up to its node, and no rectangle selects `##span-selection`
 
 To split across several areas, the author selects the split that holds them, with Alt+← or its row
-of the outline, and splits it. No rectangle drawn across areas selects anything. A rectangle selection
-is a second way to select, and its result surprises: the smallest node holding the rectangle can be
-much larger than it, and two of three children of a split are no node of their own, so selecting
-them would build the grouping that `tripwire@rootpoint-model@grouping-lost-to-merge` watches.
+of the outline, and splits it. No rectangle drawn across areas selects anything. A rectangle
+selection is a second way to select, and its result surprises: the smallest node holding the
+rectangle can be much larger than it, and two of three children of a split are no node of their own,
+so selecting them would build the grouping that `tripwire@rootpoint-model@grouping-lost-to-merge`
+watches.
 
 ## Splitting and resizing
 
@@ -330,13 +362,13 @@ grip, no preview line, no drop line in the slide list. While the window holds it
 the socket but the queries, `control` and `release` replies `err the window has control`, or the
 refusal of a take-over.
 
-Two exceptions keep looking free. The socket's queries, `tree`, `view`, `styles` and `render`, need no
-authority, since they apply no operation and join no group. The window's inputs that change only
+Two exceptions keep looking free. The socket's queries, `tree`, `view`, `styles` and `render`, need
+no authority, since they apply no operation and join no group. The window's inputs that change only
 the view need none either: a click selects, and never enters editing; Alt with an arrow, a row of
 the outline and the outline of its node under the pointer, a row of the slide list, presenting and
-presenter mode's keys. The view stays the
-session's one view, `design@rootpoint-protocol@view-state`: an author inspects any slide while the
-agent edits another, since an editing command names its nodes by id and reads no view,
+presenter mode's keys. The view stays the session's one view,
+`design@rootpoint-protocol@view-state`: an author inspects any slide while the agent edits another,
+since an editing command names its nodes by id and reads no view,
 `design@rootpoint-protocol@protocol-addressing`. The socket's view commands still need the
 authority, since a `select` of another node ends a stay of the window, its area no longer the
 selection.

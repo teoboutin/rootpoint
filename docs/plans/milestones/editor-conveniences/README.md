@@ -178,10 +178,10 @@ its slice.
   `design@rootpoint-app@node-selection`; the key table is in `App::shortcuts`. The slice
   #side-panel built these.
 - **The side panel's width.** `Panel::right("selection").default_size(260.0)`, its content a scroll
-  area the size of the panel, so no content changes the width, as the comment of `App::editor` says;
-  egui starts each frame of a panel from the size its content took in the last one. The width test
-  of `path@rootpoint-app@tests/panel.rs` measures it in each state. The slice #side-panel built
-  these.
+  area the size of the panel, so no content changes the width, per
+  `design@rootpoint-app@sidebar-width`, which holds the reading of egui 0.37.0's panel sizing. The
+  width test of `path@rootpoint-app@tests/panel.rs` measures it in each state. The slice
+  #side-panel built these.
 - **Right-click.** No widget of the app reads a secondary click; a search of
   `path@rootpoint-app@src/` for `secondary_clicked` and `context_menu` returns nothing. In the
   browser, eframe 0.37.0 stops the browser's own context menu on the canvas, in
@@ -351,9 +351,9 @@ Every thread lives here, since this document cites each.
 
 Proposed by the owner in round 1 (`argument@editor-conveniences@arg-1`); shaped by the session in
 round 1 (`argument@editor-conveniences@arg-16`). Final state: approved, in round 2: "tree-outline
-approved, this is the look I wanted." Built by #side-panel. Harvested: the outline is a way of
-selecting in the rewritten `design@rootpoint-app@node-selection`, and its shape, with the rival it
-beat, in the doc comment of `App::outline`, since its argument is about that one site.
+approved, this is the look I wanted." Built by #side-panel. Harvested: `design@rootpoint-app@tree-outline`,
+since the keys rely on its shape too, and the outline's rows as a way of selecting in
+`design@rootpoint-app@node-selection`.
 
 ### Alt with ↑ and ↓ selects a sibling, and Alt with ← and → the parent and a child `##selection-keys`
 
@@ -363,17 +363,17 @@ it changes the current keys (`argument@editor-conveniences@arg-9`) and gave the 
 a hard time deciding on that. I think we can go with my proposal for now, at least it would be
 relatively consistent with the tre view (though your up/down moving one line might be a bit more
 natural). This is not very hard to change anyway." The owner chose among the argued rivals, for
-now, and hedged. Built by #side-panel. Harvested: the rewrite of
-`design@rootpoint-app@node-selection`, attributed to the owner with the hedge, and T1 as
-`tripwire@rootpoint-app@keys-confuse-with-the-outline`.
+now, and hedged. Built by #side-panel. Harvested: `design@rootpoint-app@selection-keys`, attributed
+to the owner with the hedges, cut out of the rewritten `design@rootpoint-app@node-selection`, and
+T1 as `tripwire@rootpoint-app@keys-confuse-with-the-outline`.
 
 ### The side panel's width never follows its content `##sidebar-width`
 
 Proposed by the owner in round 1 (`argument@editor-conveniences@arg-3`); mechanism and rival by the
 session (`argument@editor-conveniences@arg-12`, `argument@editor-conveniences@arg-18`). Final
 state: approved, in round 2: "sidebar-width: accepted, draggable and width do not follow content."
-Built by #side-panel. Harvested: the comment at `App::editor`. AC2 is judged at
-`spec@editor-conveniences@styles-window`.
+Built by #side-panel. Harvested: `design@rootpoint-app@sidebar-width`, since its argument turns on
+egui's behaviour. AC2 is judged at `spec@editor-conveniences@styles-window`.
 
 ### A table of named text styles in the document, and each text names one or holds its own `##named-styles`
 
@@ -995,7 +995,8 @@ Each mapping table is in the spec of the slice that needs it. The map of every c
 ## Readings
 
 Empty: the work reads no external specification. The behaviours of egui 0.37.0 and eframe 0.37.0
-it relies on are in "What the work is", read in their sources.
+it relies on, read in their sources, are in "What the work is", and the panel's sizing, since
+#side-panel, in `design@rootpoint-app@sidebar-width`.
 
 ## Premortem
 
@@ -1004,7 +1005,8 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
 
 - **T1**, `thread@editor-conveniences@selection-keys`: the keys still confuse the owner with the
   tree in view. A tripwire, recorded on the owner's word at the harvest of #side-panel as
-  `tripwire@rootpoint-app@keys-confuse-with-the-outline`, guarding the rewritten
+  `tripwire@rootpoint-app@keys-confuse-with-the-outline`, guarding
+  `design@rootpoint-app@selection-keys`, the head of the keys the harvest cut out of
   `design@rootpoint-app@node-selection`.
   - Fires when: the owner reports, more than once after the outline lands, that Alt with an arrow
     moved the selection where the owner did not expect.

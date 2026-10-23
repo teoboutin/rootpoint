@@ -1,5 +1,6 @@
-//! The side panel: its width is the same in every state of its content, the instrument of AC2 of
-//! the milestone on the conveniences of the editor.
+//! The side panel: its width is the same in every state of its content,
+//! `design@rootpoint-app@sidebar-width`, the instrument of AC2 of
+//! `milestone@plans@editor-conveniences`.
 
 use eframe::egui::{Context, Pos2, RawInput, Rect, Vec2};
 use rootpoint_app::{App, MemoryFiles};
@@ -23,7 +24,8 @@ fn frame(ctx: &Context, app: &mut App) {
     out.textures_delta.clear();
 }
 
-/// The side panel's width, two frames after a change, as a test that reads a place waits; and that
+/// The side panel's width two frames after a change: egui sizes a panel from what its content took
+/// in the frame before, so a width that followed the content would change in the second; and that
 /// its content fits the scroll area's width, its rows wrapped or cut rather than scrolling sideways.
 fn width(ctx: &Context, app: &mut App) -> f32 {
     frame(ctx, app);
@@ -59,7 +61,7 @@ fn the_side_panel_s_width_is_the_same_in_every_state_of_its_content() {
     ok(&mut app, &format!("text n3 \"{long}\""));
     ok(&mut app, "select n3");
     widths.push(("a text of 200 characters", width(&ctx, &mut app)));
-    // A tree deeper than the 6 levels AC2 names, 9: n5, at depth 3, split six times, each split of
+    // A tree deeper than the 6 levels AC2 of `milestone@plans@editor-conveniences` names, 9: n5, at depth 3, split six times, each split of
     // the deepest area wrapping it in a split of the other axis.
     let mut node = "n5".to_owned();
     for depth in 0..6 {

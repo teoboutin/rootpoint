@@ -184,14 +184,10 @@ impl App {
         }
     }
 
-    /// The shown slide's whole tree, one row per node in depth-first order, each indented by its
-    /// depth and always expanded, after a row for the slide itself, per
-    /// `design@rootpoint-app@node-selection`. A click on a row selects its node, the slide's row
-    /// selecting none; the selected node's row is highlighted, and the overlay outlines the node
-    /// of the row under the pointer. A row's text is cut at the panel's edge, never wrapped. An
-    /// outline grows downward, one row per node, where a tree drawn top-down needs a column per
-    /// area, and a slide of 10 areas does not fit a panel of 260 points; it stays expanded, since a
-    /// slide's tree is small and collapsing would add state.
+    /// The shown slide's whole tree, one row per node in depth-first order, after a row for the slide
+    /// itself, per `design@rootpoint-app@tree-outline`. A click on a row selects its node, the
+    /// slide's row selecting none; the selected node's row is highlighted, and the overlay outlines
+    /// the node of the row under the pointer. A row's text is cut at the panel's edge, never wrapped.
     fn outline(&mut self, ui: &mut Ui) {
         ui.heading("Selection");
         self.view.outline.clear();
