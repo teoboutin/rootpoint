@@ -13,14 +13,13 @@ change as it is made, and of the actions below it keeps only those that change t
 window's own state: selecting by a click, Alt and the arrows, the outline or the node menu's
 "Select", showing a slide of the list, presenting, the button "Preview", switching the side panel's
 tab, and selecting a style in the Styles tab's list. It draws no grip, no divider highlight and no
-preview line, and a click on the selected text area only selects it. The toolbar opens a
-presentation (Ctrl+O), saves it to its file (Ctrl+S) or to another, opens the built-in sample,
-previews, presents, and undoes (Ctrl+Z) and redoes (Ctrl+Shift+Z or Ctrl+Y). A save copies
+line of a split at the pointer, and a click on the selected text area only selects it. The toolbar
+opens a presentation (Ctrl+O), saves it to its file (Ctrl+S) or to another, opens the built-in
+sample, previews, presents, and undoes (Ctrl+Z) and redoes (Ctrl+Shift+Z or Ctrl+Y). A save copies
 beside the saved file every asset outside its directory, and every embedded one, as the protocol's
-`save` does. The window shows the
-shown slide, scaled uniformly to the largest size that fits and letterboxed, and, under it, what
-the slide's render could not draw as the document asks: missing images, fonts not found,
-characters no font has, styles the document lacks, and text not drawn.
+`save` does. The window shows the shown slide, scaled uniformly to the largest size that fits and
+letterboxed, and, under it, what the slide's render could not draw as the document asks: missing
+images, fonts not found, characters no font has, styles the document lacks, and text not drawn.
 
 - A click on an area selects it. The side panel's outline shows the slide's whole tree, one row per
   node, indented by its depth, with the selection's row highlighted; a click on a row selects its
@@ -58,7 +57,8 @@ characters no font has, styles the document lacks, and text not drawn.
   it. The edits of one stay in editing are one undo step.
 - Preview, in the toolbar, shows the shown slide as it will be presented, inside the editor: no
   mark is drawn over it, no area is selected, and a press on it starts no gesture. A click on an
-  area selects it and leaves the preview, and Esc or the button leaves it too.
+  area selects it and leaves the preview, a double-click acting as that one click, and Esc or the
+  button leaves it too.
 - Present (F5) shows the shown slide full screen, alone, as the editor's slide view renders it
   with no mark over it, but for a frame in a corner, with the label "The text protocol has
   control" and the button "Take control", while the control socket holds control. →, Space and Page Down show the next slide, ← and Page Up the previous,

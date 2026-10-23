@@ -57,8 +57,8 @@ impl App {
 
     /// The axis of the split at the pointer that the held keys ask for, Ctrl a vertical line, which
     /// splits beside, and Shift a horizontal one, which stacks, and whether Alt snaps it; `None`
-    /// with neither key held, after Esc until both are released, while a text is edited, or while
-    /// the socket holds control.
+    /// with neither key held, after Esc until both are released, while a text is edited, while the
+    /// socket holds control, or in the final view.
     fn split_keys(&mut self, ui: &Ui) -> Option<(Axis, bool)> {
         if self.socket_holds() || self.final_view() {
             return None;
@@ -122,8 +122,18 @@ impl App {
                 && let Some(area) = layout.area_at(at)
             {
                 self.select_node(area);
+                self.left_final_view = Some(ui.input(|i| i.time));
             }
             return;
+        }
+        // The second press of a double-click whose first click left the final view starts
+        // nothing: the author double-clicked with no mark in view, so neither half resets a
+        // divider, enters editing or splits.
+        if pressed && let Some(left) = self.left_final_view.take() {
+            let delay = ui.ctx().options(|o| o.input_options.max_double_click_delay);
+            if ui.input(|i| i.time) - left < delay {
+                return;
+            }
         }
         let split = self.split_keys(ui);
         if esc && split.is_some() && self.gesture == Gesture::Idle {

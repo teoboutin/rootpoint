@@ -33,7 +33,7 @@ const COLOURS: [(u8, u8, u8); 8] = [
 ];
 
 impl App {
-    /// The toolbar: the file actions, the sample, undo and redo.
+    /// The toolbar: the file actions, the sample, the final view, presenting, undo and redo.
     pub(crate) fn toolbar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             if ui.button("Open…").clicked() {

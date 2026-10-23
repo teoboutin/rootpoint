@@ -864,3 +864,33 @@ fn a_click_in_the_final_view_ends_it_and_selects() {
     assert!(!d.app.final_view());
     assert_eq!(d.app.menu_node(), Some(n3));
 }
+
+/// A double-click in the final view acts once: its first click selects and leaves the final view,
+/// and its second press starts nothing, so it resets no divider and enters no editing.
+#[test]
+fn a_double_click_in_the_final_view_only_selects() {
+    let mut d = Driver::new();
+    let (start, split, index) = d.divider();
+    let pos = d.position(split, index);
+    let button = d.app.button_rect("Preview").unwrap().center();
+    d.click(button);
+    d.pause();
+    d.click(start);
+    d.click(start);
+    assert!(!d.app.final_view());
+    assert_eq!(
+        d.position(split, index),
+        pos,
+        "the double-click reset the divider"
+    );
+    d.pause();
+    let button = d.app.button_rect("Preview").unwrap().center();
+    d.click(button);
+    d.pause();
+    let n3 = NodeId(3);
+    let at = d.app.layout().unwrap().rect(n3).unwrap().center();
+    d.click(at);
+    d.click(at);
+    assert_eq!(d.selected(), Some(n3));
+    assert_eq!(d.app.editing(), None, "the double-click entered editing");
+}

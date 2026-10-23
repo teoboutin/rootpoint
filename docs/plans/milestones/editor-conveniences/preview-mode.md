@@ -48,7 +48,9 @@ whole before this spec. Its harvest commit also deletes the milestone document.
   does, `design@rootpoint-app@gesture-groups`: the button's action ends a stay in editing, with its
   edits one undo step, before it sends `preview on`, and no drag is open when the button is
   clicked. The socket's `preview on` needs the authority, whose `control` already ended them.
-- **A double-click on a divider** resets nothing in preview, since its press starts no gesture.
+- **A double-click on a divider** resets nothing in preview, since its press starts no gesture; its
+  second press, which comes after its first click left the preview, starts nothing either, so a
+  double-click on a text area enters no editing.
 - **The node keys and Delete** act on the selection, and there is none in preview, so they do
   nothing until a click selects.
 

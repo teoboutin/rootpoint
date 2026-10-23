@@ -106,6 +106,8 @@ fn every_command_prints_back_as_it_parses() {
         Command::Select { node: NodeId(2) },
         Command::SelectSlide { slide: SlideId(3) },
         Command::Deselect,
+        Command::Preview { on: true },
+        Command::Preview { on: false },
         Command::Present { slide: None },
         Command::Present {
             slide: Some(SlideId(4)),
@@ -460,6 +462,9 @@ fn a_refused_command_changes_nothing() {
         "present s9",
         "next",
         "prev",
+        "preview",
+        "preview maybe",
+        "preview on now",
         "render s9 out.png",
         "render s1 out.png",
         "save deck.ron",

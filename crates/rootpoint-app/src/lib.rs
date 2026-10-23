@@ -69,6 +69,9 @@ pub struct App {
     edit_on_click: Option<Pos2>,
     /// Whether the primary button, pressed inside the edited text, drags a selection.
     text_drag: bool,
+    /// When a click on the slide last left the final view, in egui's seconds: the next press, if
+    /// it comes within egui's delay of a double-click, is that double-click's second half.
+    left_final_view: Option<f64>,
     /// The control socket, when the window listens on one.
     #[cfg(unix)]
     listener: Option<control::Listener>,
@@ -175,8 +178,8 @@ struct SlideView {
     outline: Vec<OutlineRow>,
     /// The node of the outline's row under the pointer in this frame, which the overlay outlines.
     hovered_row: Option<NodeId>,
-    /// Where the last frame placed each button and tab it records, by label: the side panel's tabs,
-    /// the Styles tab's controls and the removal dialog's buttons.
+    /// Where the last frame placed each button and tab it records, by label: the toolbar's
+    /// "Preview", the side panel's tabs, the Styles tab's controls and the removal dialog's buttons.
     buttons: Vec<(String, Rect)>,
     /// Where the last frame placed each entry of the node menu, by label.
     menu_entries: Vec<(String, Rect)>,
@@ -213,6 +216,7 @@ impl App {
             edit: None,
             edit_on_click: None,
             text_drag: false,
+            left_final_view: None,
             #[cfg(unix)]
             listener: None,
             controller: Controller::Window,
