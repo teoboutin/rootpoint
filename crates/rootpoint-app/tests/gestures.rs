@@ -866,7 +866,8 @@ fn a_click_in_the_final_view_ends_it_and_selects() {
 }
 
 /// A double-click in the final view acts once: its first click selects and leaves the final view,
-/// and its second press starts nothing, so it resets no divider and enters no editing.
+/// and its second press starts nothing, so it resets no divider and enters no editing,
+/// `design@rootpoint-app@edit-entry`.
 #[test]
 fn a_double_click_in_the_final_view_only_selects() {
     let mut d = Driver::new();

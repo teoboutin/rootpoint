@@ -180,14 +180,13 @@ takes Body. Splitting a body text for a second column gives a body text with no 
 takes Body, costs a style change after a split of a styled text; whether inheriting gets in the way
 instead is watched by `tripwire@rootpoint-model@inherited-style-in-the-way`.
 
-Two conditions keep a new area from holding a breach,
-`design@rootpoint-protocol@no-new-breach`: Body is taken only while the table holds it and it draws
-with no stand-in, its font an asset of the table or a family of `BUILTIN_FAMILIES`, and otherwise
-the default values; and a split does not copy a style name the table lacks, its new area taking the
-style any other new area takes. They are reached from a file edited by hand, or after
-`style remove "Body"`. On the owner's word: the owner chose both conditions, over Body taken always
-and over the missing name copied, each of which lets a command make a breach in a document that has
-none.
+Body is taken only while the table holds it and it draws with no stand-in, its font an asset of the
+table or a family of `BUILTIN_FAMILIES`, and otherwise the default values: Body taken always would
+let `add-slide` make a breach in a document that has none, after `style remove "Body"` or from a
+file edited by hand, which `design@rootpoint-protocol@no-new-breach` refuses. A split does not copy
+a style name the table lacks, its new area taking the style any other new area takes, so that no
+split spreads a breach a file brought, where `duplicate-slide` copies one. On the owner's word: the
+owner chose that a split does not copy the missing name, over copying it as `duplicate-slide` does.
 
 ## Changes
 

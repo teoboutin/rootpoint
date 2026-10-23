@@ -14,8 +14,7 @@ of a crate's public API must keep what came before working, and how is not decid
 ### What
 
 A saved file names its format's version first, and a file of another version is refused,
-`design@rootpoint-model@save-format`; the format is at version 3 after the named styles. The
-protocol's commands and the crates' public API carry no version. Nothing reads an older format,
+`design@rootpoint-model@save-format`. The protocol's commands and the crates' public API carry no version. Nothing reads an older format,
 accepts an older command or keeps an older function, by that decision.
 
 ### Why it matters
