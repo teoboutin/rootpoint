@@ -94,16 +94,27 @@ ran as done, nor one it ran as none.
 ### The view state lives in the session, outside the document's operations `##view-state`
 
 Besides its document and its undo and redo stacks, a `Session` holds a `View`: the selected node,
-if any, the slide the editor shows, if one is named, and the slide presenter mode shows, if it is
-on. `select n<id>` selects a node and shows its slide; `select s<id>` shows a slide and selects no
-node; with no slide named the editor shows the first. The view commands, `select`, `deselect`,
+if any, the slide the editor shows, if one is named, the slide presenter mode shows, if it is on,
+and the preview, in which the editor shows the final result, with no mark. `select n<id>` selects a
+node and shows its slide; `select s<id>` shows a slide and selects no node; with no slide named the
+editor shows the first. `preview on` deselects, and `select n<id>` ends the preview, so the view
+never holds a preview and a selection at once; `preview off` ends it too, and `select s<id>`,
+`deselect` and `present` leave it as it is. The view commands, `select`, `deselect`, `preview`,
 `present`, `next`, `prev` and `stop`, change it and apply no operation; `view` reports it. Since
 they apply no operation, `undo` and `redo` do not step through them: an `undo` after a `select`
 reverts the last edit, not the selection. An operation that removes the selected node, the
 shown slide or the presented slide drops it from the view, so the view never names what the
-document does not hold. Selection, the slide shown and presenter mode then run headless, in a test or a script, as
-`goal@rootpoint@headless-core` asks of every operation the GUI offers. The rival, a view state the
-GUI alone holds, would leave all three out of every headless test.
+document does not hold. Selection, the slide shown, presenter mode and the preview then run headless, in a test or a
+script, as `goal@rootpoint@headless-core` asks of every operation the GUI offers, and
+`goal@rootpoint-protocol@commands-drive-everything` asks of every view of the presentation the
+editor shows. The rival, a view state the GUI alone holds, would leave them out of every headless
+test, and an agent could not show the author the final result. The preview's rules are the
+session's, so an agent and a headless test meet what the window does.
+
+On the owner's word: the owner proposed that entering the preview clears the selection and that a
+click on the slide leaves it and selects, intuitively the way the owner would use it, while not
+fully certain; the rival, a click in the preview that does nothing, costs a click each time the
+author leaves it. `tripwire@rootpoint-protocol@click-ends-the-preview` watches the choice.
 
 ### The session opens no file: its host gives it a `Files` `##session-files`
 

@@ -71,12 +71,13 @@ The divider lines, the highlight of the divider under the pointer, the selection
 grip, the preview line of a split, the hint of a drop, and the caret, the selection and the
 composition's underline of a text edited in place are drawn with egui's painter over the texture,
 in `App::overlay`; the marks of a gesture are not drawn while the control socket holds the
-authority to edit, `design@rootpoint-app@one-controller-at-a-time`. The banner of the control
+authority to edit, `design@rootpoint-app@one-controller-at-a-time`, and no mark is drawn in the
+final view, the session's preview, `design@rootpoint-protocol@view-state`. The banner of the control
 socket and its button "Take control", `design@rootpoint-app@take-over-at-once`, are egui widgets, in
 presenter mode over the texture and never in its image. `render_slide` draws only the slide, so the
 image presenter mode shows
-is the editor's, pixel for pixel at one size, which `path@rootpoint-app@tests/presenter.rs`
-compares, and which `goal@rootpoint-app@faithful-slide-view` asks. The marks are lines, rectangles
+is the editor's, pixel for pixel at one size, in the final view with nothing painted over it,
+which `path@rootpoint-app@tests/presenter.rs` compares, and which `goal@rootpoint-app@faithful-slide-view` asks. The marks are lines, rectangles
 and the hint's label, editor text that is no slide content, so they are not the slide text that
 `rejected@rootpoint-render@toolkit-painter` keeps out of the toolkit.
 
@@ -410,9 +411,9 @@ Two exceptions keep looking free. The socket's queries, `tree`, `view`, `styles`
 no authority, since they apply no operation and join no group. The window's inputs that change only
 the view need none either: a click selects, and never enters editing; Alt with an arrow, a row of
 the outline and the outline of its node under the pointer, the node menu's "Select", whose other
-entries are disabled, a row of the slide list, presenting and presenter mode's keys; and the
-window's own state, the side panel's tab, a style selected in the list of the Styles tab and the
-node menu itself. The view stays the session's one view,
+entries are disabled, a row of the slide list, presenting and presenter mode's keys, and the button
+"Preview"; and the window's own state, the side panel's tab, a style selected in the list of the
+Styles tab and the node menu itself. The view stays the session's one view,
 `design@rootpoint-protocol@view-state`: an author inspects any slide while the agent edits another,
 since an editing command names its nodes by id and reads no view,
 `design@rootpoint-protocol@protocol-addressing`. The socket's view commands still need the

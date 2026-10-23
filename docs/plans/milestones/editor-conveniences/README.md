@@ -13,8 +13,9 @@ This is the milestone document of a set of conveniences of the editor:
   is drawn with a stand-in and reported.
 
 It is written for the sessions that implement its slices, which did not witness the discussion that
-produced it. Each slice's spec leaves when that slice lands. This document leaves in the commit
-that completes the harvest of its last slice, `spec@editor-conveniences@preview-mode`.
+produced it. Each slice's spec leaves when that slice lands. Every slice has landed; this document
+leaves once the owner has ruled on the defaults D3 to D7 below, in the commit that records the
+rulings.
 
 - Where this document, or a slice's spec, and a design home disagree on a point that "What is
   already decided" does not list as reversed or rewritten, the design home wins.
@@ -247,9 +248,9 @@ updated.** The texts are those `cargo klarch show` lists.
 | `design@rootpoint-app@node-selection` | the outline replaces the breadcrumb; the node keys follow the outline | #side-panel, landed | `design@rootpoint-app@edit-entry`, `design@rootpoint-app@editor-keys-kept-from-browser`, the comment of `path@rootpoint-app@src/hit.rs` |
 | `design@rootpoint-app@node-selection` | the node menu's "Select" joins the ways to reach a split; its premise and title say a click on the slide reaches none, since a secondary click on the slide opens the menu | #context-menu, landed | none |
 | `design@rootpoint-app@span-selection` | "Alt+↑ or the breadcrumb" becomes Alt+← or the outline | #side-panel, landed | none |
-| `design@rootpoint-protocol@view-state` | `View` gains the preview | `spec@editor-conveniences@preview-mode` | `design@rootpoint-app@node-selection`, `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing` |
-| `design@rootpoint-app@editor-overlay` | the overlay draws nothing while the preview is on | `spec@editor-conveniences@preview-mode` | `path@rootpoint-app@CLAUDE.md`, `design@rootpoint-app@edit-in-place`, `design@rootpoint-app@take-over-at-once`, the comment of `path@rootpoint-app@tests/presenter.rs` |
-| `design@rootpoint-app@one-controller-at-a-time` | the outline, the node menu's "Select" and the Preview button join the window's view-only inputs | #side-panel, landed for the outline; #context-menu, landed for the menu; `spec@editor-conveniences@preview-mode` | the 15 texts `cargo klarch show` lists; each slice reads the ones its change makes false |
+| `design@rootpoint-protocol@view-state` | `View` gains the preview | #preview-mode, landed | `design@rootpoint-app@node-selection`, `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing` |
+| `design@rootpoint-app@editor-overlay` | the overlay draws nothing while the preview is on | #preview-mode, landed | `path@rootpoint-app@CLAUDE.md`, `design@rootpoint-app@edit-in-place`, `design@rootpoint-app@take-over-at-once`, the comment of `path@rootpoint-app@tests/presenter.rs` |
+| `design@rootpoint-app@one-controller-at-a-time` | the outline, the node menu's "Select" and the Preview button join the window's view-only inputs | #side-panel, landed for the outline; #context-menu, landed for the menu; #preview-mode, landed for the button | the 15 texts `cargo klarch show` lists; each slice reads the ones its change makes false |
 
 The design issue `alt-arrows-follow-the-tree` of rootpoint-app, which asked for this discussion of the
 node keys, is closed by the commit that adds this document, since the document schedules its work.
@@ -281,7 +282,7 @@ T1 takes its place, and keeps the rival the issue named.
   where the owner would meet a lost grouping; #side-panel read it at its audit.
 - `tripwire@rootpoint-render@render-within-bounds`: its re-entry is the design audit of work that
   adds a content kind or changes the renderer; #empty-text, #breach-tiers and #styles-model read it
-  at their audits, and `spec@editor-conveniences@preview-mode` reads it at its audit.
+  at their audits, and #preview-mode read it at its audit, not fired.
 - `tripwire@rootpoint-app@control-ends-a-gesture`: the node menu and the dialog of a style's removal
   are open states of the window; a socket's `control` closes them as it ends a gesture.
   #context-menu and #styles-window read it at their audits.
@@ -472,7 +473,7 @@ the session's view state (`argument@editor-conveniences@arg-14`) and first propo
 slide exits Preview and selects. Intuitively, I think I would use it this way. I'm not fully
 certain though." The session adopted it as a rule of the session
 (`argument@editor-conveniences@arg-42`). Final state: approved, in round 5: "final-preview accepted
-too". Shape: `spec@editor-conveniences@preview-mode`. Harvest: the rewrites of
+too". Shape: #preview-mode, landed. Harvest: the rewrites of
 `design@rootpoint-protocol@view-state` and `design@rootpoint-app@editor-overlay`, and T2.
 
 ### A text naming a missing style draws with the default style and is reported `##missing-style-fallback`
@@ -939,10 +940,10 @@ crates/rootpoint-render/src/lib.rs
 crates/rootpoint-protocol/src/command.rs
   Command::Style(StyleCommand) style add | set | rename | remove             (#styles-model, landed)
   Command::Styles             lists the styles                               (#styles-model, landed)
-  Command::Preview { on }     preview on | off                               (`spec@editor-conveniences@preview-mode`)
+  Command::Preview { on }     preview on | off                               (#preview-mode, landed)
   StyleOption::Named, StyleOption::Custom   text n3 style="Title" | custom   (#styles-model, landed)
 crates/rootpoint-protocol/src/session.rs
-  View::preview               bool                                           (`spec@editor-conveniences@preview-mode`)
+  View::preview               bool                                           (#preview-mode, landed)
 crates/rootpoint-protocol/tests/properties.rs   the property test of #no-new-breach (#breach-tiers, landed)
 crates/rootpoint-app/src/panels.rs
   App::outline                the side panel's tree                          (#side-panel, landed)
@@ -1028,7 +1029,8 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
     `goal@rootpoint@free-slide-division`.
   - Re-entry: the design audit of the next work on the app's keys, or earlier on the owner's word.
 - **T2**, `thread@editor-conveniences@final-preview`: a click meant only to look ends the preview.
-  A tripwire, recorded at the harvest of `spec@editor-conveniences@preview-mode`, guarding
+  A tripwire, recorded at the harvest of #preview-mode as
+  `tripwire@rootpoint-protocol@click-ends-the-preview`, guarding
   `design@rootpoint-protocol@view-state` as that slice rewrites it, with the rule that a click on the
   slide ends the preview.
   - Fires when: the owner reports, more than once, leaving the preview by a click the owner did not
@@ -1099,7 +1101,7 @@ not that node after the click, or when the menu is not open on the next frame. R
 4. The outline, the node keys and the panel's width, #side-panel: landed.
 5. Named styles in the window, #styles-window: landed.
 6. The node menu, #context-menu: landed.
-7. [The preview](preview-mode.md)
+7. The preview, #preview-mode: landed.
 
 ## Order rationale
 
@@ -1111,7 +1113,7 @@ not that node after the click, or when the menu is not open on the next frame. R
   #side-panel fixes, and AC1 needs the outline's rows.
 - #styles-window before #context-menu: the menu's "Style" entry offers the named styles the window
   shows.
-- #context-menu before `spec@editor-conveniences@preview-mode`: the two are independent; the preview goes last, since it changes
+- #context-menu before #preview-mode: the two are independent; the preview goes last, since it changes
   the view state every other slice reads.
 
 ## Defaults awaiting the owner
@@ -1190,10 +1192,11 @@ not that node after the click, or when the menu is not open on the next frame. R
 
 ## Harvest
 
-This document's own row: when the last slice, `spec@editor-conveniences@preview-mode`, lands, its harvest commit deletes this
-document, after checking that every slice's row is done, that each acceptance criterion was reported
-on, and that T1 to T4 are written. Each slice's row is in its spec, and is done once the slice's
-spec leaves.
+This document's own row: every slice has landed, and its row with it. The commit that records the
+owner's rulings on D3 to D7 deletes this document, after checking that each acceptance criterion
+was reported on once more in that commit, that T1 to T4 are written, that each later consequence
+below has its issue entry, and that the texts citing D7, the comment at `App::open_node_menu` and
+the test `a_secondary_click_while_editing_ends_it_and_opens_the_menu`, cite the ruling's home.
 
 ## Later consequences
 
