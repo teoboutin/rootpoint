@@ -424,6 +424,18 @@ fn while_the_socket_holds_control_no_window_action_edits() {
         rootpoint_model::ImageFit::Fill,
     );
     app.drop_grip(Some((NodeId(5), rootpoint_app::hit::Zone::Swap)));
+    app.name_style("Title".to_owned());
+    app.make_custom();
+    app.add_style();
+    // A selection in the list of styles is the window's own state, and acts.
+    app.select_style("Body");
+    assert_eq!(app.selected_style(), Some("Body"));
+    app.duplicate_style();
+    app.rename_style("Text".to_owned());
+    app.set_selected_style(rootpoint_protocol::StyleOption::Size(64.0));
+    app.remove_style();
+    assert!(app.removal().is_none(), "a removal opened its dialog");
+    app.confirm_removal();
     let layout = app.layout().unwrap().clone();
     app.edit_at(n3, layout.rect(n3).unwrap().center(), &layout);
     assert_eq!(app.editing(), None);
@@ -442,6 +454,20 @@ fn while_the_socket_holds_control_no_window_action_edits() {
     // The view actions act.
     app.show_slide(rootpoint_model::SlideId(7));
     assert_eq!(app.shown_slide(), Some(rootpoint_model::SlideId(7)));
+}
+
+/// The socket's `control` closes the dialog of a style's removal, as it ends a gesture, and the
+/// removal sends nothing.
+#[test]
+fn the_socket_s_control_closes_the_dialog_of_a_removal() {
+    let (mut app, path) = sample("removal-dialog");
+    let before = app.session().document().clone();
+    app.select_style("Body");
+    app.remove_style();
+    assert!(app.removal().is_some(), "the dialog is open");
+    assert_eq!(one(&mut app, &path, "control"), "ok");
+    assert!(app.removal().is_none(), "the dialog is still open");
+    assert_eq!(app.session().document(), &before);
 }
 
 /// A frame of the app with input events, and the cursor it asks for.

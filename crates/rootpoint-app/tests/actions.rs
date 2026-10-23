@@ -420,6 +420,26 @@ fn the_style_actions_issue_their_commands() {
         |_| vec![c("style rename \"Legend\" \"Caption\"")],
     );
     check(
+        "rename a style texts name",
+        &[],
+        |a| {
+            a.select_style("Body");
+            a.rename_style("Text".to_owned());
+        },
+        |_| vec![c("style rename \"Body\" \"Text\"")],
+    );
+    check(
+        "remove a style texts name, into another",
+        &[],
+        |a| {
+            a.select_style("Body");
+            a.remove_style();
+            a.choose_replacement(Some("Title".to_owned()));
+            a.confirm_removal();
+        },
+        |_| vec![c("style remove \"Body\" into=\"Title\"")],
+    );
+    check(
         "change a value of a style",
         &[],
         |a| {

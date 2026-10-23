@@ -117,6 +117,79 @@ fn removing_a_style_in_use_asks_for_a_replacement() {
     assert_eq!(app.session().document().styles, before.styles);
 }
 
+/// The style of the text of area `id`.
+fn style_of(app: &App, id: u64) -> rootpoint_model::StyleChoice {
+    match app.session().document().node(rootpoint_model::NodeId(id)) {
+        Some(rootpoint_model::Node::Area(a)) => match &a.content {
+            rootpoint_model::Content::Text(t) => t.style.clone(),
+            other => panic!("n{id} holds {other:?}"),
+        },
+        other => panic!("n{id} is {other:?}"),
+    }
+}
+
+/// A click on "bold" in the Selection tab makes the text custom and leaves its named style as it
+/// was; the same click in the Styles tab changes the named style, and its texts keep naming it.
+#[test]
+fn only_the_styles_tab_changes_a_named_style() {
+    let mut app = App::new(Box::new(MemoryFiles::default()));
+    let ctx = Context::default();
+    ok(&mut app, "sample");
+    ok(&mut app, "select n3");
+    frame(&ctx, &mut app);
+    frame(&ctx, &mut app);
+    let body = app.session().document().styles["Body"].clone();
+    click(&ctx, &mut app, "bold");
+    assert_eq!(app.session().document().styles["Body"], body);
+    assert_eq!(
+        style_of(&app, 3),
+        rootpoint_model::StyleChoice::Custom(rootpoint_model::TextStyle {
+            bold: true,
+            ..body.clone()
+        })
+    );
+    click(&ctx, &mut app, "Styles");
+    click(&ctx, &mut app, "style Body");
+    click(&ctx, &mut app, "bold");
+    assert!(app.session().document().styles["Body"].bold);
+    assert_eq!(
+        style_of(&app, 5),
+        rootpoint_model::StyleChoice::Named("Body".to_owned())
+    );
+}
+
+/// The dialog offers no style that would draw with a stand-in: here Legend, whose built-in family
+/// a file edited by hand names, and which the binary does not carry.
+#[test]
+fn the_dialog_offers_only_styles_a_text_may_name() {
+    /// One file, the presentation, which the test writes and the app reads.
+    struct Deck(String);
+    impl rootpoint_protocol::Files for Deck {
+        fn read(&mut self, _: &str) -> Result<Vec<u8>, String> {
+            Ok(self.0.clone().into_bytes())
+        }
+        fn write(&mut self, path: &str, _: &[u8]) -> Result<(), String> {
+            Err(format!("{path}: read only"))
+        }
+        fn exists(&mut self, _: &str) -> Result<bool, String> {
+            Ok(true)
+        }
+    }
+    let mut sample = App::new(Box::new(MemoryFiles::default()));
+    ok(&mut sample, "sample");
+    let text = rootpoint_model::save_ron(sample.session().document());
+    let legend = "        \"Legend\": (\n            font: Builtin(\"sans\"),";
+    let edited = text.replacen(
+        legend,
+        "        \"Legend\": (\n            font: Builtin(\"serif\"),",
+        1,
+    );
+    assert_ne!(edited, text, "the saved sample changed shape");
+    let mut app = App::new(Box::new(Deck(edited)));
+    ok(&mut app, "load deck.ron");
+    assert_eq!(app.replacements("Body"), ["Subtitle", "Title"]);
+}
+
 /// The new area of a split, read from its reply.
 fn new_area(reply: &str) -> String {
     reply.split_whitespace().next().unwrap()["new=".len()..].to_owned()

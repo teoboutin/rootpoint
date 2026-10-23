@@ -344,20 +344,7 @@ impl App {
 
     /// Set one option of the selected text's style.
     pub fn set_style(&mut self, option: StyleOption) {
-        if self.socket_holds() {
-            return;
-        }
-        self.end_gestures();
-        if let (Some(area), Some(Content::Text(t))) =
-            (self.selected_area(), self.selected_content())
-        {
-            let text = t.text.clone();
-            self.run(Command::Text {
-                area,
-                text,
-                style: vec![option],
-            });
-        }
+        self.send_text_option(option);
     }
 
     /// Make the selected text name the style `name`.
@@ -513,6 +500,18 @@ impl App {
         })) {
             self.styles_tab.selected = None;
         }
+    }
+
+    /// The styles the texts naming `name` may take instead, when it is removed: each other style a
+    /// text may name, one whose font draws with no stand-in, since the command refuses any other,
+    /// `design@rootpoint-protocol@no-new-breach`.
+    pub fn replacements(&self, name: &str) -> Vec<String> {
+        let doc = self.session.document();
+        doc.styles
+            .iter()
+            .filter(|(other, style)| *other != name && doc.draws_as_asked(style))
+            .map(|(other, _)| other.clone())
+            .collect()
     }
 
     /// Close the dialog of a removal, removing nothing.

@@ -501,13 +501,7 @@ impl App {
         let Some(removal) = self.styles_tab.removal.clone() else {
             return;
         };
-        let doc = self.session.document();
-        let others: Vec<String> = doc
-            .styles
-            .iter()
-            .filter(|(name, style)| **name != removal.name && doc.draws_as_asked(style))
-            .map(|(name, _)| name.clone())
-            .collect();
+        let others = self.replacements(&removal.name);
         let users = self.style_users(&removal.name);
         let mut choice = None;
         let mut confirm = false;
@@ -572,7 +566,9 @@ impl App {
                     }
                 });
             let mut bold = style.bold;
-            if ui.checkbox(&mut bold, "bold").changed() {
+            let response = ui.checkbox(&mut bold, "bold");
+            self.view.buttons.push(("bold".to_owned(), response.rect));
+            if response.changed() {
                 chosen = Some(StyleOption::Bold(bold));
             }
             let mut italic = style.italic;
