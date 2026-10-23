@@ -95,3 +95,17 @@ who proposed it, withdrew it for that reason. In its place the owner named, as l
 work and not for now: more detail on what the history holds, fetching a step from it and applying
 it again or at least trying to, and maybe keeping the branches of the history,
 `issue@rootpoint-protocol@history-browsing`.
+
+### Alt with ↑ and ↓ moving one row of the side panel's outline `##outline-row-keys`
+
+`live`. Alt with ↑ and ↓ would select the row above and below, whatever its depth, and Alt with ←
+the parent. Alt with → then does what Alt with ↓ does from a split, so it is redundant, and no key
+moves at one depth, to the next sibling over the children between. The owner found it possibly a bit
+more natural, and chose the keys at one depth for now.
+
+### Alt with an arrow selecting the neighbouring area in that direction on the slide `##spatial-keys`
+
+`live`. As i3's `focus left` and `focus right` do, with the parent and the child on other keys, such
+as Alt+Page Up and Alt+Page Down. It moves on the slide, not in the tree the side panel's outline
+shows, so the outline would not read as the keys move; and it needs keys for the parent and the child
+beside the arrows.

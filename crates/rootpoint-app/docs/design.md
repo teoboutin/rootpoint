@@ -82,47 +82,47 @@ and the hint's label, editor text that is no slide content, so they are not the 
 
 ## Selecting
 
-### A node is selected by a click on the slide, by a click on its row of the side panel's outline, or by Alt with an arrow `##node-selection`
+### A click on the slide selects an area, and a split is reached by the side panel's outline or by keys `##node-selection`
 
-A click on an area sends `select`; a click on a node's row of the outline,
-`design@rootpoint-app@tree-outline`, selects it, the slide's own row selecting none; Alt with an
-arrow moves the selection through the tree, `design@rootpoint-app@selection-keys`. The app keeps
-for each split the child last selected in it, which only chooses the node a `select` names. The
-selection is the session's view, per `design@rootpoint-protocol@view-state`.
+A click on an area sends `select`. A click lands in an area, so a pointer on the slide alone reaches
+no split, and a split is what a spanning split needs, as `goal@rootpoint@free-slide-division` asks.
+So the window has ways to reach a split that the slide does not hold: today a click on the node's
+row of the outline, `design@rootpoint-app@tree-outline`, the slide's own row selecting none, and Alt
+with an arrow, `design@rootpoint-app@selection-keys`. A click on a divider grabs it rather than
+selecting its split, since a drag starts there. The selection is the session's view, per
+`design@rootpoint-protocol@view-state`.
 
-A click lands in an area, so a pointer on the slide alone reaches no split, and a split is what a
-spanning split needs, as `goal@rootpoint@free-slide-division` asks; the keys and the outline's rows
-are the ways up and back down. Shipped tools do the same in the survey of split editing,
-`path@rootpoint@docs/grounding/split-editing.md`: i3's `focus parent`, `focus child` to the child
-last focused and its sibling steps, and Figma's Shift+Enter and Enter. A click on a divider grabs
-it rather than selecting its split, since a drag starts there. On the owner's desktop every one of
-these keys reaches the app, by the owner's report on the built editor.
-
-### The side panel shows the shown slide's whole tree as an outline, one row per node, always expanded `##tree-outline`
+### The side panel shows the shown slide's whole tree as an outline, one row per node `##tree-outline`
 
 Under a row for the slide, each node has a row in depth-first order, indented by its depth: a split
 with its axis, a text with its style's name and the start of its text, an image with its file's
 name. The selection's row is highlighted, and the overlay outlines the node of the row under the
 pointer. An outline grows downward, one row per node; the nearest rival, a tree drawn top-down like
 an organization chart, needs a column per area, and a slide of 10 areas does not fit a panel of 260
-points. It stays expanded, since a slide's tree is small and collapsing would add state. The keys
-move as the outline reads, `design@rootpoint-app@selection-keys`, so a change of the drawing reopens
-them. On the owner's word: the owner asked for the whole tree with the selection highlighted, and
-maybe the splits told from the areas, and judged the outline the look the owner wanted.
+points. The keys move as the outline reads, `design@rootpoint-app@selection-keys`, so a change of
+the drawing reopens them. On the owner's word: the owner asked for the whole tree with the selection
+highlighted, and maybe the splits told from the areas.
 
 ### Alt with ↑ and ↓ moves at one depth, and Alt with ← and → changes depth `##selection-keys`
 
-Alt with ↑ and ↓ selects the sibling above and below, and nothing at the first or the last; Alt
-with ← the parent, and nothing at the root; Alt with → the child of the selection selected last,
-or its first child, and nothing on an area. In the outline, `design@rootpoint-app@tree-outline`,
-siblings are the rows above and below at one depth, and the parent and the children a step left
-and right. On the slide, Alt with ↓ moves down in a stacked split and right in a beside split.
+Alt with ↑ and ↓ selects the sibling above and below, and nothing at the first or the last; Alt with
+← the parent, and nothing at the root; Alt with → the child of the selection selected last, or its
+first child, and nothing on an area. The app keeps for each split the child last selected in it,
+which only chooses the node a `select` names. In the outline, `design@rootpoint-app@tree-outline`,
+siblings are the rows above and below at one depth, and the parent and the children a step left and
+right. On the slide, Alt with ↓ moves down in a stacked split and right in a beside split. Shipped
+tools move the same way in the survey of split editing,
+`path@rootpoint@docs/grounding/split-editing.md`: i3's `focus parent`, `focus child` to the child
+last focused and its sibling steps, and Figma's Shift+Enter and Enter. On the owner's desktop every
+one of these keys reaches the app, by the owner's report on the built editor.
 
-The nearest rival, Alt with ↑ and ↓ moving one row of the outline, makes Alt with → redundant and
-drops the move at one depth. On the owner's word: the owner had a hard time deciding, and thought
-these keys could be kept for now, as relatively consistent with the outline, though the rival might
-be a bit more natural; the owner judged them not very hard to change. Whether the keys still confuse
-is watched by `tripwire@rootpoint-app@keys-confuse-with-the-outline`.
+The nearest rival, Alt with ↑ and ↓ moving one row of the outline,
+`rejected@rootpoint-app@outline-row-keys`, makes Alt with → redundant and drops the move at one
+depth. Spatial keys, `rejected@rootpoint-app@spatial-keys`, move on the slide rather than in the
+tree. On the owner's word: the owner had a hard time deciding, and thought these keys could be kept
+for now, as relatively consistent with the outline, though the row moves might be a bit more
+natural; the owner judged them not very hard to change. Whether the keys still confuse is watched by
+`tripwire@rootpoint-app@keys-confuse-with-the-outline`.
 
 ### The side panel keeps the width its edge is dragged to, whatever it shows `##sidebar-width`
 
@@ -130,13 +130,14 @@ The side panel starts at 260 points and is resizable by a drag of its edge; no c
 narrows it, so a click that changes the selection does not resize the slide view. egui 0.37.0 starts
 each frame of a panel from the size its content took in the last one, wider or narrower, read in
 `Panel::show_inside_dyn` of egui's `path@elsewhere@src/containers/panel.rs`, where `default_size` is
-only "the initial wrapping width". So the rows wrap or cut their text to fit: the style rows of a
-text area, laid out in `ui.horizontal`, widened the panel from 260 to 357 points. And the content is
-a scroll area the size of the panel, which neither shrinks to its content nor grows with it, so that
-a row too wide to wrap scrolls instead of widening the panel. `path@rootpoint-app@tests/panel.rs`
-checks the width in each state of the content, and that the content fits. The rival, a fixed width
-with no drag, would give a deep tree or a long style name no room. On the owner's word: the owner
-asked for a side panel whose width does not follow its content, and that it stay draggable.
+only "the initial wrapping width". So the rows wrap or cut their text to fit, since a row laid out
+in `ui.horizontal` takes its whole width, as the style rows of a text area would, wider than 260
+points. And the content is a scroll area the size of the panel, which neither shrinks to its content
+nor grows with it, so that a row too wide to wrap scrolls instead of widening the panel.
+`path@rootpoint-app@tests/panel.rs` checks the width in each state of the content, and that the
+content fits. The rival, a fixed width with no drag, would give a deep tree or a long style name no
+room. On the owner's word: the owner asked for a side panel of a constant width, since a width that
+changes at a click resizes the slide view.
 
 ### A subtree is selected for a spanning split by moving up to its node, and no rectangle selects `##span-selection`
 
@@ -277,7 +278,7 @@ gesture and never enters editing; Esc leaves it, the area still selected, and a 
 area leaves it and acts as it does outside editing: a click on another area selects that area.
 Outside editing, the node keys, Shift with an arrow, Delete and Alt with an arrow, act on a
 selected text area, per `design@rootpoint-app@selection-actions` and
-`design@rootpoint-app@node-selection`; while editing, the keys go to the text, where Shift with an
+`design@rootpoint-app@selection-keys`; while editing, the keys go to the text, where Shift with an
 arrow selects. While the control socket holds the authority to edit, a click on the selected text
 area only selects it, `design@rootpoint-app@one-controller-at-a-time`. Every area that holds no
 image holds a text, a new area an empty one, per `design@rootpoint-model@no-empty-kind`, so a
@@ -487,7 +488,7 @@ A key's default action in the browser, a reload or a step back in the history, l
 loses every edit held in memory, `design@rootpoint-app@browser-load-only`. eframe 0.37.0 prevents
 the default of some keys itself, in `should_prevent_default_for_key` of
 `path@elsewhere@src/web/events.rs`: every arrow key, so Alt with an arrow,
-`design@rootpoint-app@node-selection`, never goes back in the history, and Ctrl with O or S. It
+`design@rootpoint-app@selection-keys`, never goes back in the history, and Ctrl with O or S. It
 never prevents F5's, which starts presenter mode, and its listener on the canvas stops the
 propagation of every key, `WebOptions::should_stop_propagation` being true by default. So a
 listener of the window in the capture phase prevents F5's default before the canvas has the key,

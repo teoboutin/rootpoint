@@ -175,7 +175,8 @@ its slice.
   The slice #styles-model built these.
 - **Selection.** The side panel's outline shows the slide's tree, a click on a row selects its node,
   and Alt with ↑ and ↓ selects a sibling, with ← the parent and with → a child, per
-  `design@rootpoint-app@node-selection`; the key table is in `App::shortcuts`. The slice
+  `design@rootpoint-app@node-selection` and `design@rootpoint-app@selection-keys`; the key table
+  is in `App::shortcuts`. The slice
   #side-panel built these.
 - **The side panel's width.** `Panel::right("selection").default_size(260.0)`, its content a scroll
   area the size of the panel, so no content changes the width, per
@@ -1006,11 +1007,11 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
 - **T1**, `thread@editor-conveniences@selection-keys`: the keys still confuse the owner with the
   tree in view. A tripwire, recorded on the owner's word at the harvest of #side-panel as
   `tripwire@rootpoint-app@keys-confuse-with-the-outline`, guarding
-  `design@rootpoint-app@selection-keys`, the head of the keys the harvest cut out of
-  `design@rootpoint-app@node-selection`.
+  `design@rootpoint-app@selection-keys`, the head of the keys the repair of the slice's review
+  before the merge cut out of `design@rootpoint-app@node-selection`.
   - Fires when: the owner reports, more than once after the outline lands, that Alt with an arrow
     moved the selection where the owner did not expect.
-  - Response: reopen `design@rootpoint-app@node-selection`, toward the spatial keys, or toward Alt
+  - Response: reopen `design@rootpoint-app@selection-keys`, toward the spatial keys, or toward Alt
     with ↑ and ↓ moving one row of the outline. The spatial keys, as the closed issue named them:
     Alt with an arrow selects the neighbouring area in that direction, as i3's `focus left`,
     `focus right`, `focus up` and `focus down` do, with the parent and the child on other keys, such

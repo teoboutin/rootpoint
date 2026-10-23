@@ -61,8 +61,9 @@ fn the_side_panel_s_width_is_the_same_in_every_state_of_its_content() {
     ok(&mut app, &format!("text n3 \"{long}\""));
     ok(&mut app, "select n3");
     widths.push(("a text of 200 characters", width(&ctx, &mut app)));
-    // A tree deeper than the 6 levels AC2 of `milestone@plans@editor-conveniences` names, 9: n5, at depth 3, split six times, each split of
-    // the deepest area wrapping it in a split of the other axis.
+    // A tree deeper than the 6 levels AC2 of `milestone@plans@editor-conveniences` names, 9: n5,
+    // at depth 3, split six times, each split of the deepest area wrapping it in a split of the
+    // other axis.
     let mut node = "n5".to_owned();
     for depth in 0..6 {
         let axis = if depth % 2 == 0 { "stacked" } else { "beside" };

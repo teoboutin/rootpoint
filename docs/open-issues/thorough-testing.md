@@ -34,16 +34,18 @@ Approaches to weigh, as open leads, none chosen:
 
 - **check in the protocol's property test that an undo restores the document** as it was before
   the step it reverts, which the test above does not check yet;
--  **start the property sequences from documents loaded from files edited by hand**, as one whose
+- **start the property sequences from documents loaded from files edited by hand**, as one whose
   unused Body names a missing font asset, where the test above starts from an empty document only:
   the breach a review of the milestone's named styles found, `add-slide` on such a file, was out of
-  its reach; - **fuzz the protocol's parser** with arbitrary bytes, checking that no line panics and
-  that each line either parses or is refused with a reason; - **fuzz command sequences guided by
-  coverage**, with cargo-fuzz and libFuzzer, which need a nightly toolchain, or a stable
-  alternative; - **fuzz the loader** with mutated RON files, checking that `load_ron` refuses or
-  loads, and never panics; - **drive the window's actions at random** through `App::frame` in tests,
-  checking that each action equals its commands on a second session, as
-  `path@rootpoint-app@tests/actions.rs` does by hand.
+  its reach;
+- **fuzz the protocol's parser** with arbitrary bytes, checking that no line panics and that each
+  line either parses or is refused with a reason;
+- **fuzz command sequences guided by coverage**, with cargo-fuzz and libFuzzer, which need a
+  nightly toolchain, or a stable alternative;
+- **fuzz the loader** with mutated RON files, checking that `load_ron` refuses or loads, and never
+  panics;
+- **drive the window's actions at random** through `App::frame` in tests, checking that each action
+  equals its commands on a second session, as `path@rootpoint-app@tests/actions.rs` does by hand.
 
 ### Why it matters
 
