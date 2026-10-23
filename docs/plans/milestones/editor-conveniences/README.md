@@ -125,8 +125,8 @@ its slice.
 - **The side panel**: the right panel of the editor, `Panel::right("selection")` in `App::editor`,
   `path@rootpoint-app@src/lib.rs`, drawn by `App::side_panel` in
   `path@rootpoint-app@src/panels.rs`.
-- **The breadcrumb**: `App::breadcrumb` in `path@rootpoint-app@src/panels.rs`, which the outline
-  replaces.
+- **The outline**: `App::outline` in `path@rootpoint-app@src/panels.rs`, the side panel's rows of
+  the shown slide's tree, which replaced the breadcrumb at #side-panel.
 - **The overlay**: `App::overlay` in `path@rootpoint-app@src/view.rs`, which draws the editor's
   marks over the slide's texture.
 - **The node keys**: Alt with an arrow, read in `App::shortcuts` in `path@rootpoint-app@src/lib.rs`,
@@ -173,15 +173,15 @@ its slice.
   command per change, with a `StyleOption`, which makes a named text custom. The protocol's
   `style add`, `style set`, `style rename`, `style remove` and `styles` change and list the table.
   The slice #styles-model built these.
-- **Selection.** The side panel shows the breadcrumb. Alt+↑ selects the parent, Alt+↓ a child,
-  Alt+← and Alt+→ the siblings, per `design@rootpoint-app@node-selection`; the key table is in
-  `App::shortcuts`.
-- **The side panel's width.** `Panel::right("selection").default_size(260.0)`. egui 0.37.0 reads
-  `default_size` as "the initial wrapping width" (`Panel::default_size` in egui's
-  `path@elsewhere@src/containers/panel.rs`). Each frame starts from the size the content took in the
-  last one, so the width follows the content, wider or narrower, unless a widget fills the width, as
-  egui's doc of `Panel::resizable` says. That the style rows of a text area widen it was read in the
-  code, not measured.
+- **Selection.** The side panel's outline shows the slide's tree, a click on a row selects its node,
+  and Alt with ↑ and ↓ selects a sibling, with ← the parent and with → a child, per
+  `design@rootpoint-app@node-selection`; the key table is in `App::shortcuts`. The slice
+  #side-panel built these.
+- **The side panel's width.** `Panel::right("selection").default_size(260.0)`, its content a scroll
+  area the size of the panel, so no content changes the width, as the comment of `App::editor` says;
+  egui starts each frame of a panel from the size its content took in the last one. The width test
+  of `path@rootpoint-app@tests/panel.rs` measures it in each state. The slice #side-panel built
+  these.
 - **Right-click.** No widget of the app reads a secondary click; a search of
   `path@rootpoint-app@src/` for `secondary_clicked` and `context_menu` returns nothing. In the
   browser, eframe 0.37.0 stops the browser's own context menu on the canvas, in
@@ -242,11 +242,11 @@ updated.** The texts are those `cargo klarch show` lists.
 | `design@rootpoint-model@validated-documents` | a cosmetic breach is accepted, reported and drawn with a stand-in, `design@rootpoint-model@cosmetic-fallbacks`; a structural breach is still refused | #breach-tiers, landed | the comments of `path@rootpoint-model@src/ops.rs` and `path@rootpoint-model@src/validate.rs` |
 | `design@rootpoint-model@text-style-per-area` | a text's style is named or custom | #styles-model, landed | `issue@rootpoint@rich-text-spans` |
 | `design@rootpoint-protocol@protocol-addressing` | planned as a widening to names of styles, argued by `thread@editor-conveniences@style-key`; as landed, the head keeps ids alone and points at `design@rootpoint-model@style-key`, which holds the names, since the two lose to different rivals | #styles-model, landed | `design@rootpoint-app@one-controller-at-a-time` |
-| `design@rootpoint-app@node-selection` | the outline replaces the breadcrumb; the node keys follow the outline | `spec@editor-conveniences@side-panel` | `design@rootpoint-app@edit-entry`, `design@rootpoint-app@editor-keys-kept-from-browser`, the comment of `path@rootpoint-app@src/hit.rs` |
-| `design@rootpoint-app@span-selection` | "Alt+↑ or the breadcrumb" becomes Alt+← or the outline | `spec@editor-conveniences@side-panel` | none |
+| `design@rootpoint-app@node-selection` | the outline replaces the breadcrumb; the node keys follow the outline | #side-panel, landed | `design@rootpoint-app@edit-entry`, `design@rootpoint-app@editor-keys-kept-from-browser`, the comment of `path@rootpoint-app@src/hit.rs` |
+| `design@rootpoint-app@span-selection` | "Alt+↑ or the breadcrumb" becomes Alt+← or the outline | #side-panel, landed | none |
 | `design@rootpoint-protocol@view-state` | `View` gains the preview | `spec@editor-conveniences@preview-mode` | `design@rootpoint-app@node-selection`, `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing` |
 | `design@rootpoint-app@editor-overlay` | the overlay draws nothing while the preview is on | `spec@editor-conveniences@preview-mode` | `path@rootpoint-app@CLAUDE.md`, `design@rootpoint-app@edit-in-place`, `design@rootpoint-app@take-over-at-once`, the comment of `path@rootpoint-app@tests/presenter.rs` |
-| `design@rootpoint-app@one-controller-at-a-time` | the outline, the node menu's "Select" and the Preview button join the window's view-only inputs | `spec@editor-conveniences@side-panel`, `spec@editor-conveniences@context-menu`, `spec@editor-conveniences@preview-mode` | the 14 texts `cargo klarch show` lists; each slice reads the ones its change makes false |
+| `design@rootpoint-app@one-controller-at-a-time` | the outline, the node menu's "Select" and the Preview button join the window's view-only inputs | #side-panel, landed for the outline; `spec@editor-conveniences@context-menu`, `spec@editor-conveniences@preview-mode` | the 14 texts `cargo klarch show` lists; each slice reads the ones its change makes false |
 
 The design issue `alt-arrows-follow-the-tree` of rootpoint-app, which asked for this discussion of the
 node keys, is closed by the commit that adds this document, since the document schedules its work.
@@ -275,7 +275,7 @@ T1 takes its place, and keeps the rival the issue named.
 - `issue@rootpoint-app@changed-asset-not-read-again` and `issue@rootpoint-app@wider-lock`: bear on
   nothing.
 - `tripwire@rootpoint-model@grouping-lost-to-merge`: the outline shows the merged tree, which is
-  where the owner would meet a lost grouping; `spec@editor-conveniences@side-panel` reads it at its audit.
+  where the owner would meet a lost grouping; #side-panel read it at its audit.
 - `tripwire@rootpoint-render@render-within-bounds`: its re-entry is the design audit of work that
   adds a content kind or changes the renderer; #empty-text, #breach-tiers and #styles-model read it
   at their audits, and `spec@editor-conveniences@preview-mode` reads it at its audit.
@@ -351,9 +351,9 @@ Every thread lives here, since this document cites each.
 
 Proposed by the owner in round 1 (`argument@editor-conveniences@arg-1`); shaped by the session in
 round 1 (`argument@editor-conveniences@arg-16`). Final state: approved, in round 2: "tree-outline
-approved, this is the look I wanted." Shape: "Decided design" of
-`spec@editor-conveniences@side-panel`. Harvest: the rewrite of
-`design@rootpoint-app@node-selection`.
+approved, this is the look I wanted." Built by #side-panel. Harvested: the outline is a way of
+selecting in the rewritten `design@rootpoint-app@node-selection`, and its shape, with the rival it
+beat, in the doc comment of `App::outline`, since its argument is about that one site.
 
 ### Alt with ↑ and ↓ selects a sibling, and Alt with ← and → the parent and a child `##selection-keys`
 
@@ -363,15 +363,17 @@ it changes the current keys (`argument@editor-conveniences@arg-9`) and gave the 
 a hard time deciding on that. I think we can go with my proposal for now, at least it would be
 relatively consistent with the tre view (though your up/down moving one line might be a bit more
 natural). This is not very hard to change anyway." The owner chose among the argued rivals, for
-now, and hedged. Shape: `spec@editor-conveniences@side-panel`. Harvest: the rewrite of
-`design@rootpoint-app@node-selection`, attributed to the owner with the hedge, and T1.
+now, and hedged. Built by #side-panel. Harvested: the rewrite of
+`design@rootpoint-app@node-selection`, attributed to the owner with the hedge, and T1 as
+`tripwire@rootpoint-app@keys-confuse-with-the-outline`.
 
 ### The side panel's width never follows its content `##sidebar-width`
 
 Proposed by the owner in round 1 (`argument@editor-conveniences@arg-3`); mechanism and rival by the
 session (`argument@editor-conveniences@arg-12`, `argument@editor-conveniences@arg-18`). Final
 state: approved, in round 2: "sidebar-width: accepted, draggable and width do not follow content."
-Shape: `spec@editor-conveniences@side-panel`. Harvest: a comment at `App::editor`, and AC2 reported.
+Built by #side-panel. Harvested: the comment at `App::editor`. AC2 is judged at
+`spec@editor-conveniences@styles-window`.
 
 ### A table of named text styles in the document, and each text names one or holds its own `##named-styles`
 
@@ -940,7 +942,7 @@ crates/rootpoint-protocol/src/session.rs
   View::preview               bool                                           (`spec@editor-conveniences@preview-mode`)
 crates/rootpoint-protocol/tests/properties.rs   the property test of #no-new-breach (#breach-tiers, landed)
 crates/rootpoint-app/src/panels.rs
-  App::outline                the side panel's tree                          (`spec@editor-conveniences@side-panel`)
+  App::outline                the side panel's tree                          (#side-panel, landed)
   App::styles_tab             the Styles tab                                 (`spec@editor-conveniences@styles-window`)
   App::node_menu              the menu of a right-click                      (`spec@editor-conveniences@context-menu`)
 ```
@@ -1001,8 +1003,9 @@ The premortem assumed the work shipped and failed. Each cause, the thread it str
 verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
 
 - **T1**, `thread@editor-conveniences@selection-keys`: the keys still confuse the owner with the
-  tree in view. A tripwire, recorded on the owner's word at the harvest of `spec@editor-conveniences@side-panel`, guarding
-  the rewritten `design@rootpoint-app@node-selection`.
+  tree in view. A tripwire, recorded on the owner's word at the harvest of #side-panel as
+  `tripwire@rootpoint-app@keys-confuse-with-the-outline`, guarding the rewritten
+  `design@rootpoint-app@node-selection`.
   - Fires when: the owner reports, more than once after the outline lands, that Alt with an arrow
     moved the selection where the owner did not expect.
   - Response: reopen `design@rootpoint-app@node-selection`, toward the spatial keys, or toward Alt
@@ -1068,7 +1071,7 @@ lacks; it fires when the document is refused, when the text draws with any style
 
 AC2. Guards `thread@editor-conveniences@sidebar-width`. Judged by
 `spec@editor-conveniences@styles-window`, the last slice that adds content to the side panel;
-`spec@editor-conveniences@side-panel` lands the test. Observable: a test of `App::frame` reads the
+#side-panel landed the test, in `path@rootpoint-app@tests/panel.rs`. Observable: a test of `App::frame` reads the
 side panel's width, two frames after each change, in six states: the slide alone selected, a text
 area, an image area, the Styles tab, a text of 200 characters, and a tree 6 levels deep. It fires
 when any two widths differ. The six states are the ones the owner approved. Response: reopen
@@ -1087,7 +1090,7 @@ not that node after the click, or when the menu is not open on the next frame. R
 1. Content::Empty removed, #empty-text: landed.
 2. Structural and cosmetic breaches, #breach-tiers: landed.
 3. Named styles in the model and the protocol, #styles-model: landed.
-4. [The outline, the node keys and the panel's width](side-panel.md)
+4. The outline, the node keys and the panel's width, #side-panel: landed.
 5. [Named styles in the window](styles-window.md)
 6. [The node menu](context-menu.md)
 7. [The preview](preview-mode.md)
@@ -1097,9 +1100,9 @@ not that node after the click, or when the menu is not open on the next frame. R
 - #empty-text before #breach-tiers: the breaches are defined over the content kinds that remain.
 - #breach-tiers before #styles-model: a missing style is a cosmetic breach, and #styles-model
   widens the property test #breach-tiers landed.
-- #styles-model before `spec@editor-conveniences@side-panel`: the outline shows each text's style name.
-- `spec@editor-conveniences@side-panel` before `spec@editor-conveniences@styles-window`: the Styles tab is a tab of the side panel whose width
-  `spec@editor-conveniences@side-panel` fixes, and AC1 needs the outline's rows.
+- #styles-model before #side-panel: the outline shows each text's style name.
+- #side-panel before `spec@editor-conveniences@styles-window`: the Styles tab is a tab of the side panel whose width
+  #side-panel fixes, and AC1 needs the outline's rows.
 - `spec@editor-conveniences@styles-window` before `spec@editor-conveniences@context-menu`: the menu's "Style" entry offers the named styles the window
   shows.
 - `spec@editor-conveniences@context-menu` before `spec@editor-conveniences@preview-mode`: the two are independent; the preview goes last, since it changes
