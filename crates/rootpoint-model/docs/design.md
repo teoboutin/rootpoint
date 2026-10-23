@@ -160,13 +160,17 @@ A breach is cosmetic when it is a reference to a missing target that has a defin
 effect stays inside one area's drawing: an image or a text font naming an asset the table lacks,
 drawn grey or in the built-in sans, and a `FontRef::Builtin` naming a family outside
 `BUILTIN_FAMILIES`, drawn in the built-in sans. `load_ron` loads it and `apply` accepts an
-operation whose result holds one, so the inverse of an edit of such an area is never refused;
+operation whose result holds one, so the inverse of an edit of such an area, which brings back what
+a file was loaded with, is never refused. `Op::RemoveAsset` still refuses an asset an area uses: it
+refuses a removal, not a reference, and no undo meets it, since the inverse of `Op::AddAsset`
+removes an id the counter has just given, which no area can name;
 `Document::breaches` names each, as `Breach`, and the renderer's report, the window's status line
 and the reply of `render` name what was drawn with a stand-in. No command creates one,
 `design@rootpoint-protocol@no-new-breach`. Which files load is part of the save format.
 
-The renderer draws each stand-in already, `design@rootpoint-render@font-sources`, so refusing such
-a file refuses one the renderer could draw, and a file edited by hand is a purpose,
+The renderer draws each stand-in already, an image it was not given grey, which
+`Report::missing_images` names, and a font it does not have in the built-in sans,
+`design@rootpoint-render@font-sources`, so refusing such a file refuses one the renderer could draw, and a file edited by hand is a purpose,
 `goal@rootpoint-model@faithful-readable-file`. The rival, refusing every breach and relying on tests
 to keep the editor from making one, `rejected@rootpoint-model@every-breach-refused`, leaves a file
 edited by hand with no way to open it. On the owner's word: the owner set the principle that a

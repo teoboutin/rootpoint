@@ -110,7 +110,8 @@ impl Document {
     }
 
     /// An area's reference to an asset at or above the id counter is structural: a later
-    /// `Op::AddAsset` would give that id to a new asset, which the area would then show.
+    /// `Op::AddAsset` would give that id to a new asset, which the area would then show,
+    /// `design@rootpoint-model@validated-documents`.
     fn validate_content(&self, area: &Area) -> Result<(), Invalid> {
         match asset_named(area) {
             Some(id) if id.0 >= self.next_id => Err(Invalid(format!(

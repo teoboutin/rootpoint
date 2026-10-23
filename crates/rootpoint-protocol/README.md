@@ -46,7 +46,8 @@ relative to the directory of the presentation last saved or loaded, or to the wo
 before either.
 
 `image` and the `font` option of `text` refuse an asset the document does not hold, with
-`err no asset a<n>`, so no command makes an area name a missing asset. A file edited by hand that
+`err no asset a<n>`, so no command makes an area name a missing asset; `duplicate-slide` and `swap`
+copy or move one that a file brought. A file edited by hand that
 names one, by an id below its `next_id`, still loads: `render` draws the image grey, or the text in the built-in sans, and its
 reply names the asset after `missing=`, or the area after `fallback=`.
 

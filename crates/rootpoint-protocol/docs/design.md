@@ -33,17 +33,18 @@ never reuses one, `design@rootpoint-model@stable-ids`. A position shifts at ever
 removal, so a script's later command would name another area,
 `rejected@rootpoint-model@addressing-by-position`.
 
-### No command creates a cosmetic breach: a command refuses a missing target, and the operations accept one `##no-new-breach`
+### A command refuses a target the document lacks, so no command creates a cosmetic breach `##no-new-breach`
 
 A command that names a target the document lacks is refused before any operation: `image` and the
-`font` option of `text` reply `err no asset a<n>` for an asset the table does not hold. The
-operations themselves refuse no reference to a missing target, a cosmetic breach,
-`design@rootpoint-model@cosmetic-fallbacks`, since an undo can bring back what a file edited by
-hand was loaded with, and that undo must not be refused. So a breach reaches a document only
-through a file, never through the editor: the property test of
-`path@rootpoint-protocol@tests/properties.rs` runs random sequences of commands, `undo`, `redo`
-and the groups included, and checks that none leaves a breach. A fallback alone would hide an
-editor's bug behind a warning; the refusal makes that bug a test's failure. It is a reason
+`font` option of `text` reply `err no asset a<n>` for an asset the table does not hold. The refusal
+is the command's, since the operations accept a reference to a missing target,
+`design@rootpoint-model@cosmetic-fallbacks`. So a breach reaches a document only through a file: a
+command that copies or moves an area, as `duplicate-slide` and `swap` do, carries the breach a file
+brought, and creates none in a document that has none. The property test of
+`path@rootpoint-protocol@tests/properties.rs` runs random sequences of commands from an empty
+document, `undo`, `redo` and the groups included, and checks that none leaves a breach. The nearest
+rival, a command that passes the target through and leaves the breach to the fallback, would hide
+an editor's bug behind a warning; the refusal makes that bug a test's failure. It is a reason
 respected at every command that names a target.
 
 ### A split's axis is typed as a short word for where its children go `##protocol-axis-words`

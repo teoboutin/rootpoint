@@ -236,8 +236,9 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             Ok(Op::Swap { a, b })
         }
         // An image whose asset the table lacks is not refused: it is a cosmetic breach, and the
-        // inverse of an edit of an area loaded with one brings it back. The commands refuse to
-        // name a missing asset instead, `design@rootpoint-protocol@no-new-breach`.
+        // inverse of an edit of an area loaded with one brings it back,
+        // `design@rootpoint-model@cosmetic-fallbacks`. The commands refuse to name a missing asset
+        // instead, `design@rootpoint-protocol@no-new-breach`.
         Op::SetContent { area, content } => {
             let old = std::mem::replace(&mut area_mut(doc, area)?.content, content);
             Ok(Op::SetContent { area, content: old })
@@ -251,6 +252,8 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             if !doc.assets.contains_key(&id) {
                 return Err(OpError::UnknownAsset(id));
             }
+            // A removal is refused, not a reference, and no undo meets it,
+            // `design@rootpoint-model@cosmetic-fallbacks`.
             if asset_in_use(doc, id) {
                 return Err(OpError::AssetInUse(id));
             }

@@ -1109,7 +1109,8 @@ or saves a document that does not load back equal. Response: reopen
   one spec. The session's reason: the work changes rootpoint-app in all seven slices,
   rootpoint-protocol in five, rootpoint-model in three and rootpoint-render in two, in seven pieces
   each of which can fail alone, and one branch of all of it is too large to review. Ruled: the
-  owner approved it.
+  owner approved it. The owner later ruled that every slice after #empty-text is built on one
+  branch, which "How the work is done" states: the slices stay, and share one branch.
 - **D2**, `thread@editor-conveniences@named-styles`, `thread@editor-conveniences@node-menu`: which
   states of the window `goal@rootpoint-protocol@commands-drive-everything` counts as a "view it
   shows". The design-conformance review found that the Styles tab, the style selected in its list,

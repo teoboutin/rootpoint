@@ -31,10 +31,8 @@ What exists, read in the tree:
 
 Approaches to weigh, as open leads, none chosen:
 
-- **widen the property tests** to the protocol: random sequences of commands, `undo`, `redo`,
-  `begin`, `end` and `cancel` included, run on a headless `Session`, checking that the document
-  stays valid, that an undo restores the document before, and that a save loads back equal. The
-  text protocol makes a command sequence easy to generate and to print as a reproducing script;
+- **check in the protocol's property test that an undo restores the document** as it was before
+  the step it reverts, which the test above does not check yet;
 - **fuzz the protocol's parser** with arbitrary bytes, checking that no line panics and that each
   line either parses or is refused with a reason;
 - **fuzz command sequences guided by coverage**, with cargo-fuzz and libFuzzer, which need a
