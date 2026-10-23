@@ -17,6 +17,11 @@ The project's own skills, agents and workflows are named with the prefix `rootpo
 | --- | --- | --- |
 | a survey of prior art or of outside tools, run as grounding for a design discussion | one file per survey in `path@rootpoint@docs/grounding/`, linked from its `README.md` | never: the owner keeps them as material for later design |
 
+## No backward compatibility `##no-backward-compat`
+
+A change of the save format, of the protocol's grammar or of a crate's API writes no migration and
+keeps no old form, per `design@rootpoint@no-compat-in-initial-dev`.
+
 ## Git workflow `##git-workflow`
 
 - Run the gates before merge `cargo x gates`

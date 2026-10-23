@@ -161,6 +161,7 @@ node reads `Split(id: 4, ...)`.
 RON writes enum variants as they read and allows comments and trailing commas, which helps editing
 by hand; the rival, JSON, `rejected@rootpoint-model@json-save-format`, is universal and slightly
 better for tools other than rootpoint. The choice is held weakly. The version comes first so a
-later change of format is met by a migration, not by a misreading. It serves
+file of another version is refused, not misread; no migration reads an older version while the
+project keeps no compatibility, `design@rootpoint@no-compat-in-initial-dev`. It serves
 `goal@rootpoint@readable-save-file`, and the file is an interface every saved presentation
 consumes.
