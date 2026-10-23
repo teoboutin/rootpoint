@@ -8,8 +8,17 @@ this spec.
 - **A secondary click on an area of the slide, or on a row of the outline,** selects that node, with
   `select`. It then opens the node menu, `App::node_menu`, on that node. A secondary click on a
   divider's band or on the grip does the same for the area under the pointer, since no drag starts
-  on a secondary button.
-- **The menu**, an egui popup at the pointer. An illustration of the shape the owner approved, not
+  on a secondary button. A secondary click on the letterbox, or on the outline's row of the slide,
+  which names no node, opens no menu; the slide's row shows its slide, as its click does.
+- **The menu is a state of the window**, `NodeMenu` in `App::menu`: the node it was opened on and
+  the point of the click. `App::menu_node` returns its node, `None` when it is closed, and
+  `App::menu_entry_rect` where the last frame put an entry, by its label, as `App::button_rect` does
+  for the side panel. It is drawn after the central panel, as the dialog of a style's removal is,
+  with an `egui::Popup` whose open state is the window's, `Popup::open_bool`, never egui's memory, so
+  that the socket's `control` and a test close it by clearing `App::menu`.
+- **The menu**, an egui popup at the pointer, its entries in one column, each section under its
+  name, with no submenu: egui opens a submenu on the pointer's hover, which a test of `App::frame`
+  would have to imitate frame by frame. An illustration of the shape the owner approved, not
   authority:
 
   ```
@@ -23,12 +32,13 @@ this spec.
   ```
 
   - "Select" lists the node's ancestors from the root down, then the node itself, each with its
-    kind, and a click selects it.
+    kind, as `selection::path` of `path@rootpoint-app@src/selection.rs` gives them, and a click
+    selects it.
   - "Content", on an area, offers text and image, as the side panel's content row does, image taking
     the first image asset as its button does; on an image area, it also offers each image asset, as
     the list of `App::image` does.
-  - "Style", on a text area, offers the table's styles and custom, as the style row of
-    #styles-window does.
+  - "Style", on a text area, offers the table's styles and custom, as the side panel's
+    `App::style_choice` does.
   - "Remove" removes the node, as Delete does. It is absent on the slide's root.
 
   Each entry runs the action the side panel's equivalent runs, a function of
@@ -37,6 +47,14 @@ this spec.
   edited area does, `design@rootpoint-app@edit-entry`. It then acts as above.
 - **While the socket holds the authority**, the menu opens with only "Select" enabled. The menu
   closes when the socket takes the authority, as a gesture ends.
+- **The menu closes whenever the selection is no longer its node**, as after a key, an undo or the
+  socket's `select`: every entry but "Select" acts on the selection, so an entry never acts on
+  another node than the one the menu names.
+- **The menu closes** on a click of one of its entries, on a click outside it, which then acts as it
+  would, and on Esc, egui 0.37.0's `PopupCloseBehavior::CloseOnClick`; a click inside it that is no
+  entry also closes it, as egui's own context menus do. The `Popup::show` of egui 0.37.0 closes a
+  popup only on a click whose press began while it was already open, so the release of the
+  secondary click that opened it does not close it.
 
 ## Claims
 
