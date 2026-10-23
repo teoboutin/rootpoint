@@ -1,6 +1,6 @@
 **Generated — do not edit.** `cargo klarch index`
 
-5 entries
+6 entries
 
 | kind | title |
 | --- | --- |
@@ -9,3 +9,4 @@
 | todo | [A presentation cannot be packed into one file, nor a packed file opened](pack-and-unpack.md) |
 | todo | [No crate is published to crates.io](publish-to-crates-io.md) |
 | todo | [Text is styled per area, with no style per span](rich-text-spans.md) |
+| todo | [The project has no plan for testing its invariants beyond the model's property tests](thorough-testing.md) |
