@@ -1,6 +1,7 @@
-//! The panels around the slide view: the toolbar, the slide list, and the side panel with the
-//! outline of the shown slide's tree, the actions on the selection, and the selected area's content
-//! and style.
+//! The panels around the slide view: the toolbar, the slide list, and the side panel, whose
+//! Selection tab holds the outline of the shown slide's tree, the actions on the selection and the
+//! selected area's content and style, and whose Styles tab edits the table of styles, with the
+//! dialog of a style's removal.
 
 use eframe::egui::{self, Align2, Color32, FontId, Sense, Stroke, Ui, Vec2};
 use rootpoint_model::{
@@ -375,7 +376,8 @@ impl App {
         match content {
             // The style's name, or custom, then the values drawn, a named style's or the text's
             // own; a change of a value sends one option, which makes a named style custom, so the
-            // Selection tab changes no shared style, `design@rootpoint-model@named-styles`.
+            // Selection tab changes no shared style,
+            // `design@rootpoint-app@styles-tab-edits-styles`.
             Content::Text(t) => {
                 self.style_choice(ui, &t.style);
                 let values = self.session.document().resolve_style(&t.style);
@@ -419,8 +421,9 @@ impl App {
 
     /// The Styles tab: the table's styles, each with the number of texts that name it; a click
     /// selects one in the list, the window's own state, and the selected style's name and values
-    /// below send `style rename` and `style set`, the only controls of the window that change a
-    /// named style, `design@rootpoint-model@named-styles`.
+    /// below send `style rename` and `style set`; with New, Duplicate and Remove, they are the only
+    /// controls of the window that change the table of styles,
+    /// `design@rootpoint-app@styles-tab-edits-styles`.
     fn styles_tab(&mut self, ui: &mut Ui) {
         let styles: Vec<(String, usize)> = self
             .session

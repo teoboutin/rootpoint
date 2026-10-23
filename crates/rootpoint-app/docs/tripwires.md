@@ -8,7 +8,7 @@ each naming its decision. What is outstanding is in `register@rootpoint-app@issu
 T6 of the premortem of the first prototype, recorded on the owner's word.
 
 **Fires when:** in real use, the owner reports, more than once, that an agent's `control` ended a
-stay in editing or a drag the owner had not finished.
+stay in editing, a drag, or a dialog or a menu of the window, that the owner had not finished.
 **Response:** reopen `design@rootpoint-app@control-passing`, toward the request granted only while
 the window has no gesture open, `rejected@rootpoint-app@control-when-idle`.
 **Re-entry:** the first real talk prepared with an agent.
@@ -44,8 +44,7 @@ word.
 
 **Fires when:** the owner reports, more than once after the outline landed, that Alt with an arrow
 moved the selection where the owner did not expect.
-**Response:** reopen `design@rootpoint-app@selection-keys`, toward the spatial keys, Alt with an
-arrow selecting the neighbouring area in that direction, as i3's `focus left`, `focus right`,
-`focus up` and `focus down` do, with the parent and the child on other keys such as Alt+Page Up and
-Alt+Page Down; or toward Alt with ↑ and ↓ moving one row of the outline.
+**Response:** reopen `design@rootpoint-app@selection-keys`, toward the spatial keys,
+`rejected@rootpoint-app@spatial-keys`, or toward Alt with ↑ and ↓ moving one row of the outline,
+`rejected@rootpoint-app@outline-row-keys`.
 **Re-entry:** the design audit of the next work on the app's keys, or earlier on the owner's word.

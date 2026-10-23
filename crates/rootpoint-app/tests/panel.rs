@@ -1,6 +1,7 @@
 //! The side panel: its width is the same in every state of its content,
 //! `design@rootpoint-app@sidebar-width`, the instrument of AC2 of
-//! `milestone@plans@editor-conveniences`.
+//! `milestone@plans@editor-conveniences`; and the Styles tab, the only part of the window that
+//! changes a named style, with the dialog of a style's removal.
 
 use eframe::egui::{Context, Event, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
 use rootpoint_app::{App, MemoryFiles};

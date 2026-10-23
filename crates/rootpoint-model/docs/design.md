@@ -229,8 +229,8 @@ refuse what no undo meets. `Op::RemoveAsset` refuses an asset an area or a style
 it refuses a removal, not a reference, and the inverse of `Op::AddAsset` removes an id the counter
 has just given, which no area can name. `Op::RenameStyle` refuses a rename while a text names the
 new name, a style the table lacks, since its inverse would rename that text back with the others;
-after a rename from a name, no text names it. No command creates a breach,
-`design@rootpoint-protocol@no-new-breach`. Which files load is part of the save format.
+after a rename from a name, no text names it. No command creates a breach in a document that has
+none, `design@rootpoint-protocol@no-new-breach`. Which files load is part of the save format.
 
 The renderer draws each stand-in already, an image it was not given grey, which
 `Report::missing_images` names, and a font it does not have in the built-in sans,

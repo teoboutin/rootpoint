@@ -203,7 +203,8 @@ impl crate::App {
                     self.press = None;
                     self.edit_on_click = None;
                     self.text_drag = false;
-                    // The dialog of a removal closes, as a gesture ends.
+                    // The dialog of a removal closes, removing nothing, as a gesture ends,
+                    // `design@rootpoint-app@control-passing`.
                     self.styles_tab.removal = None;
                     self.controller = Controller::Socket;
                 }

@@ -426,7 +426,8 @@ under an agent's control, so the button costs a talk nothing.
 
 The socket's `control` is granted at once: it ends the window's gestures as any edit of the
 window does, a stay with its edits one undo step, a divider drag as at its release, a grip drag
-cancelled, since its edits are made only at its drop. Right after a take-over it is granted too,
+cancelled, since its edits are made only at its drop, and the dialog of a style's removal closed,
+removing nothing. Right after a take-over it is granted too,
 and the refusal of the agent's edits, `design@rootpoint-app@take-over-at-once`, is what tells a
 well-behaved agent to stop and wait. `release` gives the authority back as
 `design@rootpoint-protocol@control-commands` says, while the socket holds it; while the socket

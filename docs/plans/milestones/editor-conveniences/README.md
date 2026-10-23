@@ -249,7 +249,7 @@ updated.** The texts are those `cargo klarch show` lists.
 | `design@rootpoint-app@span-selection` | "Alt+↑ or the breadcrumb" becomes Alt+← or the outline | #side-panel, landed | none |
 | `design@rootpoint-protocol@view-state` | `View` gains the preview | `spec@editor-conveniences@preview-mode` | `design@rootpoint-app@node-selection`, `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing` |
 | `design@rootpoint-app@editor-overlay` | the overlay draws nothing while the preview is on | `spec@editor-conveniences@preview-mode` | `path@rootpoint-app@CLAUDE.md`, `design@rootpoint-app@edit-in-place`, `design@rootpoint-app@take-over-at-once`, the comment of `path@rootpoint-app@tests/presenter.rs` |
-| `design@rootpoint-app@one-controller-at-a-time` | the outline, the node menu's "Select" and the Preview button join the window's view-only inputs | #side-panel, landed for the outline; `spec@editor-conveniences@context-menu`, `spec@editor-conveniences@preview-mode` | the 14 texts `cargo klarch show` lists; each slice reads the ones its change makes false |
+| `design@rootpoint-app@one-controller-at-a-time` | the outline, the node menu's "Select" and the Preview button join the window's view-only inputs | #side-panel, landed for the outline; `spec@editor-conveniences@context-menu`, `spec@editor-conveniences@preview-mode` | the 15 texts `cargo klarch show` lists; each slice reads the ones its change makes false |
 
 The design issue `alt-arrows-follow-the-tree` of rootpoint-app, which asked for this discussion of the
 node keys, is closed by the commit that adds this document, since the document schedules its work.
@@ -1157,14 +1157,22 @@ not that node after the click, or when the menu is not open on the next frame. R
   document. Its response, reopening #no-new-breach and opening a defect for the command, stands on
   the owner's word. Default: the response is spent, since the decision holds and the command is
   repaired by D3; the instrument's gap, no property test starting from a file edited by hand, is
-  named in `issue@rootpoint@thorough-testing`. The rival: reopen #no-new-breach. Awaiting the
-  owner.
+  named in `issue@rootpoint@thorough-testing`. The rival: reopen #no-new-breach, which goes
+  through `skill@knowledge-architect-design`. Awaiting the owner.
 - **D5**, `thread@editor-conveniences@new-area-style`: a split of a text area naming a style the
   table lacks does not copy the name; its new area takes the style a new area takes. The owner
   approved "the style of the area it was split from"; the spec added the condition, so that no
   split spreads a breach a file brought, which narrows the approved rule. Default, built as
   written: the condition. The rival: the name copied, as `duplicate-slide` copies a breach.
   Awaiting the owner; until the ruling, the head states the rule as approved.
+- **D6**, `thread@editor-conveniences@node-menu` and `thread@editor-conveniences@named-styles`: the
+  firing clause of `tripwire@rootpoint-app@control-ends-a-gesture`, T6 of the first prototype,
+  recorded on the owner's word, named a stay in editing and a drag. The socket's `control` now also
+  closes the dialog of a style's removal as a gesture ends, and closes the node menu of
+  `spec@editor-conveniences@context-menu` the same way, so a report that `control` closed one of
+  them in the middle of a choice would not fire it. Default, built as
+  written: the clause names a dialog or a menu of the window too. The rival: the clause as the owner
+  ruled it, a dialog or a menu closed being no loss of work. Awaiting the owner.
 
 ## Harvest
 
