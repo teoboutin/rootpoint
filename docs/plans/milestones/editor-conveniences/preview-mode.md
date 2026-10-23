@@ -17,20 +17,38 @@ whole before this spec. Its harvest commit also deletes the milestone document.
     by `grep -rn "presenting=" crates/*/tests`.
 
   These are view commands: they apply no operation, and the socket needs the authority to send
-  them, as for `select`, `design@rootpoint-app@one-controller-at-a-time`.
+  them, as for `select`, `design@rootpoint-app@one-controller-at-a-time`; `App::socket_command` of
+  `path@rootpoint-app@src/control.rs` already sends every command but the queries, `control` and
+  `release` through that rule, so it needs no change. The grammar of
+  `path@rootpoint-protocol@src/command.rs` gains `Command::Preview { on: bool }`, read from
+  `preview on` and `preview off` and written back so; any other word after `preview` is an error
+  that names the two.
 - **The button.** "Preview", in the toolbar, between "Sample" and "Present", toggles the preview.
   It is a view-only input of the window, usable while the socket holds the authority.
 - **The slide view in preview.**
   - `App::overlay` draws no mark.
   - A press on the slide starts no gesture: no drag, no split at the pointer, no editing.
   - A click on an area sends `select` on it, which ends the preview and selects that area.
+  - A secondary click on an area, or a click or a secondary click on a row of the outline, acts as
+    outside the preview: its `select` ends the preview, and a secondary click then opens the node
+    menu, `design@rootpoint-app@node-menu`. The menu describes the selection, which the preview has
+    none of until that `select`.
+  - Ctrl or Shift held shows no line of a split at the pointer, and the pointer over a divider
+    asks for no resize cursor: both are marks of a gesture, and no gesture starts in preview.
   - Esc sends `preview off`. Esc's other meanings, hiding the line of a split at the pointer,
     cancelling a drag and leaving editing, do not arise in preview, where no gesture runs.
   - In the app, the new state and its functions are named for the final view, as `App::final_view`,
     since "preview" already names the line of a split at the pointer: `hit::Preview`,
-    `Layout::preview`, `Press::Split` and `App::preview_hidden`. The protocol's command keeps the
+    `Layout::preview`, `Press::Split` and `App::preview_hidden`. `App::final_view` returns whether
+    the session's view is in preview, and `App::toggle_final_view` is the button's action, in
+    `path@rootpoint-app@src/actions.rs`, per `design@rootpoint-app@actions-are-commands`. The protocol's command keeps the
     word `preview`, which names nothing else there.
   - The slide's image and its size are the editor's, since the side panel's width does not change.
+- **Entering the preview ends the window's gestures**, as any action that does not join a gesture
+  does, `design@rootpoint-app@gesture-groups`: the button's action ends a stay in editing, with its
+  edits one undo step, before it sends `preview on`, and no drag is open when the button is
+  clicked. The socket's `preview on` needs the authority, whose `control` already ended them.
+- **A double-click on a divider** resets nothing in preview, since its press starts no gesture.
 - **The node keys and Delete** act on the selection, and there is none in preview, so they do
   nothing until a click selects.
 
@@ -45,10 +63,11 @@ whole before this spec. Its harvest commit also deletes the milestone document.
   the texture only, so it now also checks that the overlay painted no shape but the texture's own
   image in the slide's rectangle. Shown to fail: against
   an overlay that still draws the divider lines, a shape is painted.
-- **A click ends the preview and selects.** Test: a test of `App::frame` presses Preview, then
-  clicks area n3. The view has `preview=off` and n3 selected, and no split happened, with Ctrl held
-  during the click. Shown to fail: against a slide view that starts its gestures in preview, a
-  Ctrl-click splits n3.
+- **A click ends the preview and selects.** Test: a test of `App::frame` presses Preview, drags a
+  divider, then clicks area n3 with Ctrl held. The divider has not moved, the view has
+  `preview=off` and n3 selected, and no split happened. Shown to fail: against a slide view that
+  starts its gestures in preview, the divider moves. A Ctrl-click alone would not show it: the
+  preview selects nothing, and a split at the pointer needs a selection.
 - **The button works while the socket holds the authority.** Test: in
   `path@rootpoint-app@tests/control.rs`, with the socket holding control, Preview toggles the view.
   Shown to fail: against a button gated as an edit, the view is unchanged.
