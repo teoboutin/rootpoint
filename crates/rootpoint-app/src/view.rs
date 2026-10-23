@@ -112,8 +112,8 @@ impl App {
                 i.modifiers.alt,
             )
         });
-        // In the final view a press starts no gesture, since the author did not see where it would
-        // act: a click on an area selects it, which ends the final view.
+        // In the final view a press starts no gesture, and a click on an area selects it, which ends
+        // the final view, `design@rootpoint-app@final-view-presses`.
         if self.final_view() {
             if response.clicked()
                 && let Some(at) = pos
@@ -126,7 +126,8 @@ impl App {
         }
         // The second press of a double-click whose first click left the final view starts
         // nothing: the author double-clicked with no mark in view, so neither half resets a
-        // divider, enters editing or splits.
+        // divider, enters editing or splits. D8 of `milestone@plans@editor-conveniences`, a
+        // default awaiting the owner.
         if pressed && let Some(left) = self.left_final_view.take() {
             let delay = ui.ctx().options(|o| o.input_options.max_double_click_delay);
             if ui.input(|i| i.time) - left < delay {

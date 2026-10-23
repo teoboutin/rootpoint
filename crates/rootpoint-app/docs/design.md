@@ -83,6 +83,17 @@ editor text that is no slide content, so they are not the slide text that
 
 ## Selecting
 
+
+### In the final view a press starts no gesture, and a click on an area selects it `##final-view-presses`
+
+In the final view, the session's preview, `design@rootpoint-protocol@final-preview`, a press on the
+slide starts no gesture: no divider or grip drag, no split at the pointer, no editing. A click on an
+area sends `select` for it, which ends the final view; a secondary click does so too, then opens the
+node menu, `design@rootpoint-app@node-menu`; Ctrl or Shift shows no line of a split. The author did
+not see where a gesture would act, since no mark is drawn there,
+`design@rootpoint-app@editor-overlay`. The nearest rival, a final view that hides the marks and
+keeps the gestures, would split on a Ctrl-click with no line shown, and leave the selection
+invisible.
 ### A click on the slide selects an area, and a split is reached by other ways than a click on the slide `##node-selection`
 
 A click on an area sends `select`. A click lands in an area, so a click on the slide reaches no
@@ -327,8 +338,7 @@ node keys, Shift with an arrow, Delete and Alt with an arrow, act on a selected 
 the keys go to the text, where Shift with an arrow selects. While the control socket holds the
 authority to edit, a click on the selected text area only selects it,
 `design@rootpoint-app@one-controller-at-a-time`. In the final view a click selects and enters no
-editing, nor does the second click of a double-click that began there, since a press there starts no
-gesture, `design@rootpoint-protocol@final-preview`. Every area that holds no image holds a text, a
+editing, `design@rootpoint-app@final-view-presses`. Every area that holds no image holds a text, a
 new area an empty one, per `design@rootpoint-model@no-empty-kind`, so a second click enters editing
 on a new area too, and typing into it needs no step that makes it a text first.
 

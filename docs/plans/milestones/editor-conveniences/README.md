@@ -14,7 +14,7 @@ This is the milestone document of a set of conveniences of the editor:
 
 It is written for the sessions that implement its slices, which did not witness the discussion that
 produced it. Each slice's spec leaves when that slice lands. Every slice has landed; this document
-leaves once the owner has ruled on the defaults D3 to D7 below, in the commit that records the
+leaves once the owner has ruled on the defaults D3 to D8 below, in the commit that records the
 rulings.
 
 - Where this document, or a slice's spec, and a design home disagree on a point that "What is
@@ -144,7 +144,7 @@ its slice.
   `thread@editor-conveniences@new-area-style`.
 - **T1 to T4, AC1 to AC4**: the labels under which the premortem's tripwires and acceptance
   criteria were put to the owner, "Premortem" below.
-- **D1 to D7**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
+- **D1 to D8**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
 
 ## What the work is
 
@@ -474,8 +474,9 @@ the session's view state (`argument@editor-conveniences@arg-14`) and first propo
 slide exits Preview and selects. Intuitively, I think I would use it this way. I'm not fully
 certain though." The session adopted it as a rule of the session
 (`argument@editor-conveniences@arg-42`). Final state: approved, in round 5: "final-preview accepted
-too". Shape: #preview-mode, landed. Harvest: the rewrites of
-`design@rootpoint-protocol@view-state` and `design@rootpoint-app@editor-overlay`, and T2.
+too". Shape: #preview-mode, landed. Harvest: `design@rootpoint-protocol@final-preview`,
+`design@rootpoint-app@final-view-presses`, the rewrites of `design@rootpoint-protocol@view-state`
+and `design@rootpoint-app@editor-overlay`, and T2.
 
 ### A text naming a missing style draws with the default style and is reported `##missing-style-fallback`
 
@@ -1035,8 +1036,8 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
   click on the slide ends the preview, `design@rootpoint-protocol@final-preview`.
   - Fires when: the owner reports, more than once, leaving the preview by a click the owner did not
     mean as an edit.
-  - Response: reopen `design@rootpoint-protocol@view-state`, toward a click in the preview that does
-    nothing.
+  - Response: reopen the head that holds the rule, `design@rootpoint-protocol@final-preview`, toward
+    a click in the preview that does nothing.
   - Re-entry: the standing-state review before every merge.
 - **T3**, `thread@editor-conveniences@no-empty-kind`: a second click on a new, empty area enters
   editing, and Delete or the node keys then go to the empty text instead of acting on the area. A
@@ -1189,11 +1190,21 @@ not that node after the click, or when the menu is not open on the next frame. R
   still end the stay, and "Select" of the area itself or an entry naming what the area holds would
   leave it open. Awaiting the owner; until the ruling,
   `design@rootpoint-app@edit-entry` does not state the case.
+- **D8**, `thread@editor-conveniences@final-preview`: a double-click on the slide in the preview.
+  Its first click selects the area and ends the preview; its second press then lands on a selected
+  area outside the preview, where `design@rootpoint-app@edit-entry`, on the owner's word, enters
+  editing on a text area, and where a double-click on a divider sets it halfway. The case was found
+  by the review of the work of #preview-mode, after the owner approved the thread. Default, built as
+  written: the second press of a double-click whose first click left the preview starts nothing, so
+  the double-click acts as its one click, and the window keeps the time of that click. The rival: the
+  second press acts as outside the preview, so a double-click on a text area in the preview enters
+  editing at once and one on a divider sets it halfway, as a double-click does outside it. Awaiting
+  the owner; until the ruling, `design@rootpoint-app@edit-entry` does not state the case.
 
 ## Harvest
 
 This document's own row: every slice has landed, and its row with it. The commit that records the
-owner's rulings on D3 to D7 deletes this document, after checking that each acceptance criterion was
+owner's rulings on D3 to D8 deletes this document, after checking that each acceptance criterion was
 reported on once more in that commit, that T1 to T4 are written, that each later consequence below
 has its issue entry, compatibility a `deferred` one whose trigger is the owner's ruling that real
 use has begun, and that every text outside this document that cites it, a test, a comment or an
