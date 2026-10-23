@@ -34,8 +34,9 @@ content. That dialog was withdrawn, because undo already restores what a removal
 Undo is what protects content from being lost by mistake, against `goal@rootpoint@real-presentations`.
 A removal noticed only after another edit has cleared the redo stack, or a step the author cannot
 find among many, is lost content all the same. Every step is a command of the protocol, so the
-history is the session's, per `design@rootpoint-protocol@view-state`, and a view of it is a view
-`goal@rootpoint-protocol@commands-drive-everything` asks to be a command.
+history is the session's, per `design@rootpoint-protocol@view-state`, and applying an earlier step
+again is a change of the editor, which `goal@rootpoint-protocol@commands-drive-everything` asks to
+be a command.
 
 ### What would close it
 

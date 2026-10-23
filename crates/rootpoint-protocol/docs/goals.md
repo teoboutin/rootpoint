@@ -6,11 +6,13 @@ rootpoint-protocol is built is in `register@rootpoint-protocol@design`.
 
 ## An agent or a script builds and changes a presentation by text commands alone `##commands-drive-everything`
 
-Every change the editor offers, and every view it shows, is a command of the protocol, one per
-line, with a one-line reply an agent can read: the ids a command created, the reason a command was
-refused, and what a render could not draw. It refines `goal@rootpoint@text-command-protocol`. It is
-met while an agent can build, change, save, render and present a presentation with these commands
-and no other means, headless or in the running editor.
+Every change the editor offers, and every view of the presentation it shows (which slide, which node
+and which mode), is a command of the protocol, one per line, with a one-line reply an agent can
+read: the ids a command created, the reason a command was refused, and what a render could not
+draw. The window's own state, such as a tab, an open menu or dialog, a hover or a caret, is not such
+a view. It refines `goal@rootpoint@text-command-protocol`. It is met while an agent can build,
+change, save, render and present a presentation with these commands and no other means, headless or
+in the running editor.
 
 ## The protocol's session builds for the browser `##browser-buildable`
 

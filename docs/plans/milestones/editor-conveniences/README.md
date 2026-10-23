@@ -1094,8 +1094,8 @@ or saves a document that does not load back equal. Response: reopen
 - **D1**, the plan's form, all threads: a milestone of seven slices, one branch each, rather than
   one spec. The session's reason: the work changes rootpoint-app in all seven slices,
   rootpoint-protocol in five, rootpoint-model in three and rootpoint-render in two, in seven pieces
-  each of which can fail alone, and one branch of all of it is too large to review. Awaiting the
-  owner.
+  each of which can fail alone, and one branch of all of it is too large to review. Ruled: the
+  owner approved it.
 - **D2**, `thread@editor-conveniences@named-styles`, `thread@editor-conveniences@node-menu`: which
   states of the window `goal@rootpoint-protocol@commands-drive-everything` counts as a "view it
   shows". The design-conformance review found that the Styles tab, the style selected in its list,
@@ -1104,8 +1104,9 @@ or saves a document that does not load back equal. Response: reopen
   a view is what the editor shows of the presentation, the slide shown, the selection, presenter
   mode and the preview; a widget's own state, a tab, a list's selection, an open menu or dialog, a
   hover, is not, as the outline's hover and the divider highlight are not today. The rival: each of
-  these states becomes view state of the session, with a command. Awaiting the owner, since the
-  goal is the owner's.
+  these states becomes view state of the session, with a command. Ruled by the owner: the owner
+  approved a rewording of the goal that states reading (a), a view of the presentation, and excludes
+  the window's own state; the default stands as built.
 
 ## Harvest
 
