@@ -8,7 +8,10 @@ this spec.
 - `Breach` and `Document::breaches` in the model: the cosmetic breaches of a document. Here two
   kinds: `Breach::MissingAsset { area, asset }`, for an image or a text font that names an asset id
   the table lacks, and `Breach::UnknownFont { area, name }`, for a `FontRef::Builtin` naming a
-  family the binary does not carry, which the renderer already draws in the built-in sans.
+  family the binary does not carry, which the renderer already draws in the built-in sans. The
+  model names the built-in families, "sans" alone, in one constant, `BUILTIN_FAMILIES` of
+  `path@rootpoint-model@src/document.rs`, which `Document::breaches` and `FontSet::family` of
+  `path@rootpoint-render@src/text.rs` both read, so the two never disagree on what is unknown.
   `spec@editor-conveniences@styles-model` adds `Breach::MissingStyle`.
 - `Document::validate` checks the structural invariants only. The check of
   `Document::validate_content` moves into `Document::breaches`. So `load_ron` loads a document with
@@ -29,6 +32,10 @@ this spec.
   leave `Document::breaches` empty, and save to a text that loads back equal. It is AC4's instrument.
 
 ## Claims
+
+In these claims, a missing asset is `a99` in a document whose `next_id` is above 99, so that the id
+is below the counter and only the table lacks it: a file edited by hand raises `next_id` to 100.
+An id at or above the counter is the structural breach of the sixth claim.
 
 - **A missing asset loads, and is reported.** Test: a model test loads a document whose image area
   names `a99`, absent from the table; `load_ron` returns it, and `Document::breaches` returns
