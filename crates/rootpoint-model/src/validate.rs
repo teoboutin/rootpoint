@@ -1,5 +1,6 @@
 //! The invariants every document keeps, checked on every loaded file and after every operation, and
-//! the breaches a document may hold, as `design@rootpoint-model@validated-documents` decides.
+//! the breaches a document may hold, as `design@rootpoint-model@validated-documents` and
+//! `design@rootpoint-model@cosmetic-fallbacks` decide.
 //!
 //! A document comes from `apply` or from a file a person or an agent may have edited by hand, so
 //! the invariants the types' doc comments state are checked, not assumed. A structural breach, one

@@ -177,7 +177,7 @@ becomes.
 | site | today | becomes |
 | --- | --- | --- |
 | `path@rootpoint-model@src/document.rs`, `TextContent::style` | a `TextStyle` | a `StyleChoice` |
-| `path@rootpoint-model@src/validate.rs`, `Document::validate_content` (moved into `Document::breaches` by `spec@editor-conveniences@breach-tiers`) | reads the font of `TextContent::style` | reads the font of the resolved style, and the names of `Named` |
+| `path@rootpoint-model@src/validate.rs`, `Document::breaches`, which the slice #breach-tiers built | reads the font of `TextContent::style` | reads the font of the resolved style, and the names of `Named` |
 | `path@rootpoint-model@src/ops.rs`, `asset_in_use` | the font of each text | the font of each `Custom` and of each style of the table |
 | `path@rootpoint-render@src/lib.rs`, `render_slide`, the colour | `content.style.colour` | the resolved style's colour |
 | `path@rootpoint-render@src/lib.rs`, `lay_out_area`, the vertical alignment | `content.style.v_align` | the resolved style's |

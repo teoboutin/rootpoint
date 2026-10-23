@@ -48,6 +48,13 @@ and `area_rects` and `Remove` then panicked; a lowered id counter loaded, and th
 reused ids; splits and merges at extreme positions made dividers equal, or equal to 0 or 1. They
 are kept as tests in `path@rootpoint-model@tests/invalid.rs`.
 
+### Refusing every breach of a document, and relying on tests to keep the editor from making one `##every-breach-refused`
+
+`live`. A file edited by hand, which `goal@rootpoint-model@faithful-readable-file` makes a purpose,
+is reached by no test of the editor, so a reference to a missing asset or font in it would make
+the file impossible to open, although the renderer draws a stand-in for each. Tests show that the
+editor makes no breach; they cannot repair a file the editor did not make.
+
 ### Naming a node by its position in the tree `##addressing-by-position`
 
 `live`. A position, such as the second child of the first child of a slide's root, shifts at every

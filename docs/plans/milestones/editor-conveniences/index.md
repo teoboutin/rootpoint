@@ -1,10 +1,9 @@
 **Generated — do not edit.** `cargo klarch index`
 
-6 entries
+5 entries
 
 | title |
 | --- |
-| [Slice: Structural and cosmetic breaches](breach-tiers.md) |
 | [Slice: The node menu](context-menu.md) |
 | [Slice: The preview](preview-mode.md) |
 | [Slice: The outline, the node keys and the panel's width](side-panel.md) |

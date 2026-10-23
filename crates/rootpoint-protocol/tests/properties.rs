@@ -1,6 +1,7 @@
 //! Over random sequences of commands on a headless session, `undo`, `redo` and the groups
 //! included, the document stays valid, holds no cosmetic breach, and saves to a text that loads
-//! back equal. A breach reaches a document only by a file edited by hand, never by a command.
+//! back equal. A breach reaches a document only by a file edited by hand, never by a command,
+//! `design@rootpoint-protocol@no-new-breach`.
 
 mod common;
 

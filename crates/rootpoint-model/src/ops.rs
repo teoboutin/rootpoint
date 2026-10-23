@@ -237,7 +237,7 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
         }
         // An image whose asset the table lacks is not refused: it is a cosmetic breach, and the
         // inverse of an edit of an area loaded with one brings it back. The commands refuse to
-        // name a missing asset instead.
+        // name a missing asset instead, `design@rootpoint-protocol@no-new-breach`.
         Op::SetContent { area, content } => {
             let old = std::mem::replace(&mut area_mut(doc, area)?.content, content);
             Ok(Op::SetContent { area, content: old })

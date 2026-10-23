@@ -135,20 +135,45 @@ text protocol re-implement every edit, so `goal@rootpoint-model@headless-changes
 implementations that drift apart. The operations are the crate's public interface for changing a
 document.
 
-### A document is validated when it is loaded and after every operation, and a breach is refused `##validated-documents`
+### A document is validated when it is loaded and after every operation, and a structural breach is refused `##validated-documents`
 
-`Document::validate` checks every invariant the types state: unique ids below the counter, splits
-of two children or more with ordered dividers strictly inside (0, 1) and no child split of their
-own axis, assets present for every area that names one, no zero side in the aspect ratio. `load_ron`
-refuses a file that breaks one, and `apply` refuses an operation whose result breaks one, leaving
-the document unchanged.
+`Document::validate` checks every structural invariant: unique ids below the counter, every
+asset an area names below the counter too, splits of two children or more with ordered dividers
+strictly inside (0, 1) and no child split of their own axis, no zero side in the aspect ratio.
+`load_ron` refuses a file that breaks one, and `apply` refuses an operation whose result breaks
+one, leaving the document unchanged. A breach is structural when, with it, the layout or the
+identity of the nodes is undefined: no area rectangle can be computed, an operation could panic or
+reuse an id, or a repair would have to guess the author's layout. An asset id at or above the
+counter is one, since a later `Op::AddAsset` would give it to a new asset, which the area would
+then show. What is not structural is `design@rootpoint-model@cosmetic-fallbacks`.
 
 The rival, trusting a loaded file and the result of every operation,
 `rejected@rootpoint-model@unvalidated-documents`, was refuted by counterexamples built at review: a
 hand-edited file with a missing divider made `area_rects` and `apply` panic, a lowered id counter
 made a later operation reuse ids, and rounding in a split or a merge made dividers equal, 0 or 1.
-A file edited by hand is a purpose, `goal@rootpoint-model@faithful-readable-file`, so a breach is
-reachable.
+Each is structural. A file edited by hand is a purpose, `goal@rootpoint-model@faithful-readable-file`,
+so a breach is reachable.
+
+### A cosmetic breach of a document is accepted, drawn with a stand-in, and named `##cosmetic-fallbacks`
+
+A breach is cosmetic when it is a reference to a missing target that has a defined stand-in, whose
+effect stays inside one area's drawing: an image or a text font naming an asset the table lacks,
+drawn grey or in the built-in sans, and a `FontRef::Builtin` naming a family outside
+`BUILTIN_FAMILIES`, drawn in the built-in sans. `load_ron` loads it and `apply` accepts an
+operation whose result holds one, so the inverse of an edit of such an area is never refused;
+`Document::breaches` names each, as `Breach`, and the renderer's report, the window's status line
+and the reply of `render` name what was drawn with a stand-in. No command creates one,
+`design@rootpoint-protocol@no-new-breach`. Which files load is part of the save format.
+
+The renderer draws each stand-in already, `design@rootpoint-render@font-sources`, so refusing such
+a file refuses one the renderer could draw, and a file edited by hand is a purpose,
+`goal@rootpoint-model@faithful-readable-file`. The rival, refusing every breach and relying on tests
+to keep the editor from making one, `rejected@rootpoint-model@every-breach-refused`, leaves a file
+edited by hand with no way to open it. On the owner's word: the owner set the principle that a
+document's inconsistencies are told apart as structural or cosmetic, that a cosmetic one falls back
+wherever a fallback can be used, in the owner's opinion, and that a file whose structural change
+makes it impossible to render properly, or not obvious for a user to recover from, may be refused.
+The test above, which tells the two apart, stands on its argument.
 
 ### Ids are stored in the file, come from one counter, and are never reused `##stable-ids`
 

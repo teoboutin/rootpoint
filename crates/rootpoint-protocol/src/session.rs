@@ -416,7 +416,8 @@ impl Session {
     }
 
     /// Refuse a command that names an asset the table lacks, so that no command creates a cosmetic
-    /// breach; the operation accepts one, since an undo may bring back what a file was loaded with.
+    /// breach; the operation accepts one, since an undo may bring back what a file was loaded with,
+    /// `design@rootpoint-protocol@no-new-breach`.
     fn existing_asset(&self, asset: AssetId) -> Result<(), String> {
         if self.doc.assets.contains_key(&asset) {
             Ok(())

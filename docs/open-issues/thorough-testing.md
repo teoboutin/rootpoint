@@ -1,13 +1,13 @@
 ---
 kind: todo
 ---
-# The project has no plan for testing its invariants beyond the model's property tests
+# The project has no plan for testing its invariants beyond a few property tests
 
 ## Summary
 
-Property tests exist in rootpoint-model only. No test drives the protocol's commands at random,
-and nothing is fuzzed. A systematic approach to testing, chosen for the whole project, is not set
-up.
+Property tests exist in rootpoint-model, and one in rootpoint-protocol drives the commands at
+random. Nothing is fuzzed, and the window's actions are tested by hand only. A systematic approach
+to testing, chosen for the whole project, is not set up.
 
 ## Details
 
@@ -21,9 +21,13 @@ What exists, read in the tree:
 - `path@rootpoint-model@tests/file.rs` holds a proptest that a random document saved then loaded
   gives the document back;
 - `path@rootpoint-model@tests/geometry.rs` holds a proptest of the geometry;
+- `path@rootpoint-protocol@tests/properties.rs` holds a proptest over random sequences of
+  commands, `undo`, `redo`, `begin`, `end` and `cancel` included, on a headless `Session`: after
+  each command the document is valid, holds no cosmetic breach, and saves to a text that loads back
+  equal. It does not check that an undo restores the document as it was before;
 - every other test of the project is written by hand, with fixed inputs. A search of every
   `Cargo.toml` and `.rs` file for `proptest`, `quickcheck`, `arbitrary` and `libfuzzer` finds only
-  the model's three test files and its dev-dependency.
+  these four test files, and the dev-dependencies of rootpoint-model and rootpoint-protocol.
 
 Approaches to weigh, as open leads, none chosen:
 
@@ -40,9 +44,8 @@ Approaches to weigh, as open leads, none chosen:
 - **drive the window's actions at random** through `App::frame` in tests, checking that each action
   equals its commands on a second session, as `path@rootpoint-app@tests/actions.rs` does by hand.
 
-`milestone@plans@editor-conveniences` adds one such test, in rootpoint-protocol: random sequences
-of commands that never leave a reference to a missing asset or, once named styles exist, to a
-missing style, keep the document valid, and save to a text that loads back equal.
+`milestone@plans@editor-conveniences` widens the protocol's property test with the commands of
+named styles, so that it also checks that no command leaves a reference to a missing style.
 
 ### Why it matters
 
