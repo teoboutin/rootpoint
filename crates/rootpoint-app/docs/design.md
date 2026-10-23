@@ -82,11 +82,11 @@ and the hint's label, editor text that is no slide content, so they are not the 
 
 ## Selecting
 
-### A click on the slide selects an area, and a split is reached by other ways than a click `##node-selection`
+### A click on the slide selects an area, and a split is reached by other ways than a click on the slide `##node-selection`
 
 A click on an area sends `select`. A click lands in an area, so a click on the slide reaches no
 split, and a split is what a spanning split needs, as `goal@rootpoint@free-slide-division` asks.
-So the window has other ways to reach a split than a click: today a click on the node's
+So the window has other ways to reach a split than a click on the slide: today a click on the node's
 row of the outline, `design@rootpoint-app@tree-outline`, the slide's own row selecting none, Alt
 with an arrow, `design@rootpoint-app@selection-keys`, and the "Select" of the node menu that a
 secondary click on the slide opens, `design@rootpoint-app@node-menu`. A click on a divider grabs it rather than

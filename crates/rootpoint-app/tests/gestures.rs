@@ -782,7 +782,8 @@ fn the_node_menu_selects_an_ancestor() {
     assert_eq!(d.selected(), Some(NodeId(2)));
 }
 
-/// While editing, a secondary click inside the edited area ends the editing, then opens the menu.
+/// While editing, a secondary click inside the edited area ends the editing, then opens the menu:
+/// D7 of `milestone@plans@editor-conveniences`, a default awaiting the owner.
 #[test]
 fn a_secondary_click_while_editing_ends_it_and_opens_the_menu() {
     let mut d = Driver::new();

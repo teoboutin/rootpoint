@@ -245,6 +245,7 @@ updated.** The texts are those `cargo klarch show` lists.
 | `design@rootpoint-model@text-style-per-area` | a text's style is named or custom | #styles-model, landed | `issue@rootpoint@rich-text-spans` |
 | `design@rootpoint-protocol@protocol-addressing` | planned as a widening to names of styles, argued by `thread@editor-conveniences@style-key`; as landed, the head keeps ids alone and points at `design@rootpoint-model@style-key`, which holds the names, since the two lose to different rivals | #styles-model, landed | `design@rootpoint-app@one-controller-at-a-time` |
 | `design@rootpoint-app@node-selection` | the outline replaces the breadcrumb; the node keys follow the outline | #side-panel, landed | `design@rootpoint-app@edit-entry`, `design@rootpoint-app@editor-keys-kept-from-browser`, the comment of `path@rootpoint-app@src/hit.rs` |
+| `design@rootpoint-app@node-selection` | the node menu's "Select" joins the ways to reach a split; its premise and title say a click on the slide reaches none, since a secondary click on the slide opens the menu | #context-menu, landed | none |
 | `design@rootpoint-app@span-selection` | "Alt+↑ or the breadcrumb" becomes Alt+← or the outline | #side-panel, landed | none |
 | `design@rootpoint-protocol@view-state` | `View` gains the preview | `spec@editor-conveniences@preview-mode` | `design@rootpoint-app@node-selection`, `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing` |
 | `design@rootpoint-app@editor-overlay` | the overlay draws nothing while the preview is on | `spec@editor-conveniences@preview-mode` | `path@rootpoint-app@CLAUDE.md`, `design@rootpoint-app@edit-in-place`, `design@rootpoint-app@take-over-at-once`, the comment of `path@rootpoint-app@tests/presenter.rs` |
@@ -1182,8 +1183,9 @@ not that node after the click, or when the menu is not open on the next frame. R
   #context-menu: the click leaves editing, then selects and opens the node menu. While editing, the
   keys go to the text, so with the stay open Delete would delete characters while the menu names
   the area. The rival: the stay stays open under the menu, so that closing the menu with no entry
-  returns to the text where it was; any entry would still end the stay, since every action of the
-  window ends the gestures first. Awaiting the owner; until the ruling,
+  returns to the text where it was; an entry that changes the area, or selects another node, would
+  still end the stay, and "Select" of the area itself or an entry naming what the area holds would
+  leave it open. Awaiting the owner; until the ruling,
   `design@rootpoint-app@edit-entry` does not state the case.
 
 ## Harvest
