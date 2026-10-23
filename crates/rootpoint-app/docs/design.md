@@ -83,17 +83,17 @@ editor text that is no slide content, so they are not the slide text that
 
 ## Selecting
 
+### In the final view a press starts no gesture `##final-view-presses`
 
-### In the final view a press starts no gesture, and a click on an area selects it `##final-view-presses`
+In the final view, the session's preview, a press on the slide starts no gesture: no divider or
+grip drag, no split at the pointer, no editing; Ctrl or Shift shows no line of a split. A click on
+an area only sends its `select`, which ends the final view, by the rule of
+`design@rootpoint-protocol@final-preview`, and a secondary click then opens the node menu,
+`design@rootpoint-app@node-menu`. The author did not see where a gesture would act, since no mark
+is drawn there, `design@rootpoint-app@editor-overlay`. The nearest rival, a final view that hides
+the marks and keeps the gestures, would split on a Ctrl-click with no line shown, and leave the
+selection invisible.
 
-In the final view, the session's preview, `design@rootpoint-protocol@final-preview`, a press on the
-slide starts no gesture: no divider or grip drag, no split at the pointer, no editing. A click on an
-area sends `select` for it, which ends the final view; a secondary click does so too, then opens the
-node menu, `design@rootpoint-app@node-menu`; Ctrl or Shift shows no line of a split. The author did
-not see where a gesture would act, since no mark is drawn there,
-`design@rootpoint-app@editor-overlay`. The nearest rival, a final view that hides the marks and
-keeps the gestures, would split on a Ctrl-click with no line shown, and leave the selection
-invisible.
 ### A click on the slide selects an area, and a split is reached by other ways than a click on the slide `##node-selection`
 
 A click on an area sends `select`. A click lands in an area, so a click on the slide reaches no

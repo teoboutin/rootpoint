@@ -113,7 +113,8 @@ every headless test, and an agent could not show the author the final result.
 
 `preview on` sets the preview and deselects, and `select n<id>` ends it and selects, so the view
 never holds a preview and a selection at once; `preview off` ends it too, and `select s<id>`,
-`deselect` and `present` leave it as it is. The rules are the session's, part of
+`deselect` and `present` leave it as it is. In the editor, a click on an area sends that `select`,
+so a click on the slide leaves the preview and selects. The rules are the session's, part of
 `design@rootpoint-protocol@view-state`, so an agent and a headless test meet what the window does.
 
 The nearest rival, a click in the preview that does nothing,

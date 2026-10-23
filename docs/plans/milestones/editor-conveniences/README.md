@@ -476,7 +476,9 @@ certain though." The session adopted it as a rule of the session
 (`argument@editor-conveniences@arg-42`). Final state: approved, in round 5: "final-preview accepted
 too". Shape: #preview-mode, landed. Harvest: `design@rootpoint-protocol@final-preview`,
 `design@rootpoint-app@final-view-presses`, the rewrites of `design@rootpoint-protocol@view-state`
-and `design@rootpoint-app@editor-overlay`, and T2.
+and `design@rootpoint-app@editor-overlay`, the button among the view-only inputs of
+`design@rootpoint-app@one-controller-at-a-time`, the click in the final view in
+`design@rootpoint-app@edit-entry`, and T2.
 
 ### A text naming a missing style draws with the default style and is reported `##missing-style-fallback`
 
@@ -1196,10 +1198,15 @@ not that node after the click, or when the menu is not open on the next frame. R
   editing on a text area, and where a double-click on a divider sets it halfway. The case was found
   by the review of the work of #preview-mode, after the owner approved the thread. Default, built as
   written: the second press of a double-click whose first click left the preview starts nothing, so
-  the double-click acts as its one click, and the window keeps the time of that click. The rival: the
-  second press acts as outside the preview, so a double-click on a text area in the preview enters
-  editing at once and one on a divider sets it halfway, as a double-click does outside it. Awaiting
-  the owner; until the ruling, `design@rootpoint-app@edit-entry` does not state the case.
+  the double-click acts as its one click, and the window keeps the time of that click. Its reason:
+  the author double-clicked with no mark in view, so the second press acts where the author did not
+  see it would, as `design@rootpoint-app@final-view-presses` argues of any press in the preview. The
+  rival: the second press acts as outside the preview, so a double-click on a text area in the
+  preview enters editing at once and one on a divider sets it halfway, as a double-click does outside
+  it; its ground is the rule of `design@rootpoint-app@edit-entry`, on the owner's word, that a
+  double-click on any text area enters editing. Awaiting the owner; until the ruling, that head
+  states its rule as approved, which the default narrows in this case, and
+  `issue@rootpoint-app@double-click-in-preview-awaits-ruling` records the divergence.
 
 ## Harvest
 
