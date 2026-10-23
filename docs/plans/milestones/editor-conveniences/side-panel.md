@@ -14,6 +14,9 @@ this spec.
   - The selected node's row is highlighted.
   - A click on a row selects its node.
   - While the pointer is over a row, the overlay outlines that node on the slide.
+  - `App::outline_rows` returns where the last frame put each row, with the node it names, `None`
+    for the slide's row, as `App::slide_rows` does for the slide list, so a test places its pointer
+    on a row.
 
   An illustration of the shape the owner approved, not authority:
 
@@ -44,6 +47,13 @@ this spec.
   their text inside it.
 - **The sample's help text** in `path@rootpoint-protocol@sample/sample.ron` names the new keys and
   the outline in place of the breadcrumb.
+- **The texts bound to the breadcrumb and the former keys**: the key test of
+  `path@rootpoint-app@tests/gestures.rs`, which presses Alt with each arrow and expects the former
+  moves; the test of `path@rootpoint-app@tests/slides.rs` named after the breadcrumb, which checks
+  `selection::path`; the doc comments of `App::select_node` and `App::show_slide` in
+  `path@rootpoint-app@src/actions.rs`, of `path@rootpoint-app@src/selection.rs` and of
+  `path@rootpoint-app@src/panels.rs`; and the app's README, which describes the breadcrumb and the
+  keys.
 - **The width test**, AC2's instrument, in the states that exist at this slice: the slide alone, a
   text area, an image area, a text of 200 characters, and a tree 6 levels deep.
 
@@ -79,6 +89,9 @@ this spec.
   which the outline makes visible.
 - egui 0.37.0's `Panel` sizing, in its `containers/panel.rs`, measured by the width test rather
   than read.
+- `tripwire@rootpoint-render@render-within-bounds`: the outline is drawn in every frame of a divider
+  drag, so the audit and the landing measure its drag clause, by
+  `cargo test --release -p rootpoint-app --test presenter -- --ignored --nocapture`.
 
 ## Fails alone on
 
