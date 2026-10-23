@@ -1,6 +1,6 @@
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 1,
+    version: 2,
     aspect: (
         width: 16,
         height: 9,

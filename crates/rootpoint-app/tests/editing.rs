@@ -229,6 +229,32 @@ fn drawn_glyphs(d: &Driver, area: NodeId) -> Vec<(usize, f64)> {
     out
 }
 
+/// A new area holds an empty text, so a second click on it enters editing with no "text" button
+/// first, per `design@rootpoint-app@edit-entry`.
+#[test]
+fn a_second_click_on_a_new_area_enters_editing() {
+    let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);
+    d.app.add_slide();
+    let doc = d.app.session().document();
+    let shown = d.app.shown_slide().unwrap();
+    let at = doc.slides.iter().position(|s| s.id == shown).unwrap();
+    let slide = &doc.slides[at + 1];
+    let (slide, area) = (slide.id, slide.root.id());
+    d.app.show_slide(slide);
+    d.settle();
+    let p = d.app.layout().unwrap().rect(area).unwrap().center();
+    d.click(p);
+    assert_eq!(d.app.session().view().selected, Some(area));
+    assert_eq!(d.app.editing(), None, "a first click only selects");
+    d.settle();
+    d.click(p);
+    assert_eq!(
+        d.app.editing(),
+        Some(area),
+        "a second click edits the new area"
+    );
+}
+
 #[test]
 fn a_click_on_the_selected_text_area_enters_editing_and_a_first_click_only_selects() {
     let mut d = Driver::new(Vec2::new(1000.0, 700.0), 1.0);

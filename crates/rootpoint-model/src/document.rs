@@ -202,12 +202,20 @@ pub struct Area {
 }
 
 /// The content of an area.
-#[derive(Clone, Debug, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Content {
-    #[default]
-    Empty,
     Text(TextContent),
     Image(ImageContent),
+}
+
+/// An empty text, in the default style: the content of a new area.
+impl Default for Content {
+    fn default() -> Self {
+        Content::Text(TextContent {
+            text: String::new(),
+            style: TextStyle::default(),
+        })
+    }
 }
 
 /// Wrapped text, with one style for the whole area.

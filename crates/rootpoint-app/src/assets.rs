@@ -39,7 +39,6 @@ impl Assets {
                         FontRef::Asset(id) => (id, false),
                         FontRef::Builtin(_) => continue,
                     },
-                    Content::Empty => continue,
                 };
                 let Some(asset) = doc.assets.get(&id) else {
                     continue;

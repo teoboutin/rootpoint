@@ -16,7 +16,7 @@ pub enum Side {
 /// A change of a document.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Op {
-    /// Insert, at index `at`, a slide whose root is one empty area.
+    /// Insert, at index `at`, a slide whose root is one area holding an empty text.
     AddSlide {
         at: usize,
     },
@@ -36,8 +36,8 @@ pub enum Op {
     DuplicateSlide {
         slide: SlideId,
     },
-    /// Split any node at `at`, a fraction of its extent along `axis`; the new empty area takes the
-    /// part on `side`.
+    /// Split any node at `at`, a fraction of its extent along `axis`; the new area, an empty text,
+    /// takes the part on `side`.
     Split {
         node: NodeId,
         axis: Axis,
@@ -98,7 +98,7 @@ pub enum OpError {
     IdTaken(u64),
     NotAnArea(NodeId),
     NotASplit(NodeId),
-    /// A slide's root cannot be removed; to clear a slide, replace its tree or empty its area.
+    /// A slide's root cannot be removed; to clear a slide, replace its tree or clear its area.
     RootNotRemovable(NodeId),
     IndexOutOfRange {
         index: usize,
@@ -135,7 +135,7 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             let slide = SlideId(doc.alloc());
             let root = Node::Area(Area {
                 id: NodeId(doc.alloc()),
-                content: Content::Empty,
+                content: Content::default(),
             });
             doc.slides.insert(at, Slide { id: slide, root });
             Ok(Op::RemoveSlide { slide })
@@ -336,7 +336,6 @@ fn asset_in_use(doc: &Document, id: AssetId) -> bool {
         .any(|a| match &a.content {
             Content::Image(image) => image.asset == id,
             Content::Text(text) => text.style.font == FontRef::Asset(id),
-            Content::Empty => false,
         })
 }
 
@@ -356,7 +355,7 @@ fn renumber(node: &mut Node, doc: &mut Document) {
 fn empty_area(id: NodeId) -> Node {
     Node::Area(Area {
         id,
-        content: Content::Empty,
+        content: Content::default(),
     })
 }
 

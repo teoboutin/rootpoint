@@ -235,9 +235,9 @@ fn a_refused_directory_keeps_the_open_presentation_s_files() {
     app.open_directory(vec![("bad/x.ron".to_owned(), b"not ron".to_vec())]);
     assert_eq!(app.status().len(), 1, "{:?}", app.status());
     assert_eq!(app.session().document(), &doc);
-    // Clearing the image's area and undoing it changes the assets in use twice.
+    // Setting the image's area to a text and undoing it changes the assets in use twice.
     app.select_node(rootpoint_model::NodeId(3));
-    app.clear_content();
+    app.set_text_content();
     app.present();
     presented_image(&mut app);
     app.stop_presenting();

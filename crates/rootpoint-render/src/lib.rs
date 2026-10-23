@@ -132,7 +132,6 @@ pub fn render_slide(
         ctx.set_transform(Affine::IDENTITY);
         ctx.push_clip_layer(&clip.to_path(0.1));
         match &a.content {
-            Content::Empty => {}
             Content::Text(content) => {
                 let (laid, origin) = lay_out_area(fonts, content, area);
                 if laid.fell_back {

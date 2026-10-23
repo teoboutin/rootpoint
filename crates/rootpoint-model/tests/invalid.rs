@@ -236,7 +236,7 @@ fn a_tree_breaking_the_split_invariants_is_refused() {
         axis: Axis::LeftToRight,
         children: vec![Node::Area(Area {
             id: root,
-            content: Content::Empty,
+            content: Content::default(),
         })],
         dividers: vec![],
     });

@@ -326,17 +326,6 @@ impl App {
         }
     }
 
-    /// Set the selected area's content to empty.
-    pub fn clear_content(&mut self) {
-        if self.socket_holds() {
-            return;
-        }
-        self.end_gestures();
-        if let Some(area) = self.selected_area() {
-            self.run(Command::Clear { area });
-        }
-    }
-
     /// Set the selected area's content to an empty text, in the default style.
     pub fn set_text_content(&mut self) {
         if self.socket_holds() {

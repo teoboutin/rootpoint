@@ -28,13 +28,13 @@ characters no font has, and text not drawn.
   double-click sets a divider halfway between its neighbours.
 - The side panel's buttons, or Shift and an arrow, split the selection at its middle, the new
   area on that side; Delete removes it. With Ctrl held over the selection a vertical line follows
-  the pointer, with Shift a horizontal one, and a click splits there, the new empty area taking
-  the smaller part; Alt snaps the line, and a divider drag, to the nearest twelfth or to a divider
-  within 8 points. Esc, or releasing the key, removes the line.
+  the pointer, with Shift a horizontal one, and a click splits there, the new area, an empty
+  text, taking the smaller part; Alt snaps the line, and a divider drag, to the nearest twelfth or
+  to a divider within 8 points. Esc, or releasing the key, removes the line.
 - The selected area shows a grip in its top-left corner, except while its text is edited. Dragged onto the middle third of another
   area it swaps the two; dragged onto the rest it moves the area to the nearest edge of the
   target. A tint and a label show what the drop will do; the drop is one undo step.
-- The side panel sets the selected area's content, empty, text or an image, the text's size,
+- The side panel sets the selected area's content, text or an image, the text's size,
   weight, slant, colour, alignment and font, and the image's fit, and adds an image asset.
 - A text is edited in place, on the slide: a click on the selected text area, or a double-click on
   any text area, puts the caret where it clicked. Typing, Backspace and Delete, the arrows with

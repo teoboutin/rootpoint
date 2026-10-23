@@ -277,12 +277,6 @@ fn the_grip_actions_issue_their_commands() {
 #[test]
 fn the_content_actions_issue_their_commands() {
     check(
-        "set the content to empty",
-        &["select n3"],
-        App::clear_content,
-        |_| vec![c("clear n3")],
-    );
-    check(
         "set the content to text",
         &["select n3", "clear n3"],
         App::set_text_content,

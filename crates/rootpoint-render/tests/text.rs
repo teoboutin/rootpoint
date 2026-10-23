@@ -159,8 +159,22 @@ fn area_text_gives_the_layout_render_slide_draws() {
     let rects = area_rects(&doc.slides[0], doc.aspect);
     for (area, lines) in &out.report.lines {
         let text = area_text(&doc, slide, *area, &mut fonts).unwrap();
-        // The same lines as the render laid out.
-        let got: Vec<_> = text.layout.lines().map(|l| l.text_range()).collect();
+        // The same lines as the render laid out. The report holds each range within the text's
+        // length, where Parley gives an empty text one line of one byte.
+        let Some(Node::Area(Area {
+            content: Content::Text(t),
+            ..
+        })) = doc.slides[0].root.find(*area)
+        else {
+            panic!("{area} is not a text area");
+        };
+        let len = t.text.len();
+        let got: Vec<_> = text
+            .layout
+            .lines()
+            .map(|l| l.text_range())
+            .map(|r| r.start.min(len)..r.end.min(len))
+            .collect();
         assert_eq!(&got, lines, "{area}");
         // Its origin is inside the area, inset by the padding on the left.
         let r = rects.iter().find(|(id, _)| id == area).unwrap().1;

@@ -241,7 +241,10 @@ fn each_editing_command_applies_its_operation() {
             "clear n3",
             Op::SetContent {
                 area: NodeId(3),
-                content: Content::Empty,
+                content: Content::Text(TextContent {
+                    text: String::new(),
+                    style: TextStyle::default(),
+                }),
             },
         ),
         (
@@ -296,10 +299,43 @@ fn the_replies_name_the_ids_a_command_created() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "tree"),
-        "s1 n4:beside(0.5,0.75)[n2 empty | n3 empty | n8:stacked(0.5)[n7 empty | n5 empty]]"
+        "s1 n4:beside(0.5,0.75)[n2 text \"\" | n3 text \"\" | n8:stacked(0.5)[n7 text \"\" | n5 text \"\"]]"
     );
     assert_eq!(ok(&mut s, &mut files, "asset cat.png"), "a9");
     assert_eq!(ok(&mut s, &mut files, "duplicate-slide s1"), "s16 root=n10");
+}
+
+/// `clear` empties an area's text: a text keeps its style, and an image area becomes a text in the
+/// default style.
+#[test]
+fn clear_keeps_a_text_s_style_and_gives_an_image_area_the_default_one() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    run(
+        &mut s,
+        &mut files,
+        "add-slide\nsplit n2 beside 0.5\nasset cat.png\ntext n2 \"Hi\" size=120\nimage n3 a5 fit",
+    );
+    ok(&mut s, &mut files, "clear n2");
+    ok(&mut s, &mut files, "clear n3");
+    let content = |id| match s.document().node(NodeId(id)) {
+        Some(Node::Area(a)) => a.content.clone(),
+        other => panic!("n{id} is {other:?}"),
+    };
+    let text = |style| {
+        Content::Text(TextContent {
+            text: String::new(),
+            style,
+        })
+    };
+    assert_eq!(
+        content(2),
+        text(TextStyle {
+            size: 120.0,
+            ..TextStyle::default()
+        })
+    );
+    assert_eq!(content(3), text(TextStyle::default()));
 }
 
 #[test]
@@ -445,7 +481,7 @@ fn save_load_and_tree() {
     assert_eq!(t.document(), s.document());
     assert_eq!(
         ok(&mut t, &mut files, "tree s1"),
-        "s1 n4:beside(0.5)[n2 text \"Hello\" | n3 empty]"
+        "s1 n4:beside(0.5)[n2 text \"Hello\" | n3 text \"\"]"
     );
 }
 
@@ -510,12 +546,12 @@ fn a_cancelled_group_restores_the_document_and_both_stacks() {
     ok(&mut s, &mut files, "redo");
     assert_eq!(
         ok(&mut s, &mut files, "tree s1"),
-        "s1 n4:beside(0.4)[n2 text \"A\" | n3 empty]"
+        "s1 n4:beside(0.4)[n2 text \"A\" | n3 text \"\"]"
     );
     // And the undo stack: two undos reach the empty slide, a third removes the slide, and a
     // fourth has nothing, so the cancelled group left no step.
     run(&mut s, &mut files, "undo\nundo");
-    assert_eq!(ok(&mut s, &mut files, "tree s1"), "s1 n2 empty");
+    assert_eq!(ok(&mut s, &mut files, "tree s1"), "s1 n2 text \"\"");
     ok(&mut s, &mut files, "undo");
     assert!(s.document().slides.is_empty());
     assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
@@ -531,7 +567,7 @@ fn a_load_inside_a_group_closes_it_and_leaves_no_history() {
         "add-slide\nsave d.ron\nbegin\ntext n2 \"x\"",
     );
     ok(&mut s, &mut files, "load d.ron");
-    assert_eq!(ok(&mut s, &mut files, "tree s1"), "s1 n2 empty");
+    assert_eq!(ok(&mut s, &mut files, "tree s1"), "s1 n2 text \"\"");
     // The group was closed by the load: `end` finds none open, and nothing is left to undo.
     assert!(matches!(s.execute("end", &mut files), Some(Reply::Err(_))));
     assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));

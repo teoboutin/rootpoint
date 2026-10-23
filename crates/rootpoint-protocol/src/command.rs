@@ -55,7 +55,7 @@ pub enum Command {
         b: NodeId,
     },
     /// Set an area's text; the options change the area's current style, or the default style
-    /// when the area holds no text.
+    /// when the area holds an image.
     Text {
         area: NodeId,
         text: String,

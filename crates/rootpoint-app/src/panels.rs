@@ -228,13 +228,6 @@ impl App {
         ui.horizontal(|ui| {
             ui.label("Content:");
             if ui
-                .selectable_label(matches!(content, Content::Empty), "empty")
-                .clicked()
-                && !matches!(content, Content::Empty)
-            {
-                self.clear_content();
-            }
-            if ui
                 .selectable_label(matches!(content, Content::Text(_)), "text")
                 .clicked()
                 && !matches!(content, Content::Text(_))
@@ -257,7 +250,6 @@ impl App {
             self.add_asset_dialog();
         }
         match content {
-            Content::Empty => {}
             Content::Text(t) => {
                 self.style(ui, &t.style);
             }

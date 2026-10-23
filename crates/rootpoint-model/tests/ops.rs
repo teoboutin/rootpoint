@@ -166,7 +166,7 @@ fn every_operation_is_undone_by_its_inverse() {
             // A tree of one area, reusing an id the document allocated.
             root: Node::Area(Area {
                 id: top,
-                content: Content::Empty,
+                content: Content::default(),
             }),
         },
         Op::MoveDivider {
@@ -241,7 +241,11 @@ fn splitting_a_child_along_its_parents_axis_merges_into_the_parent() {
             Side::Before => 1,
             Side::After => 2,
         };
-        assert!(matches!(&s.children[new], Node::Area(a) if a.content == Content::Empty));
+        assert!(matches!(
+            &s.children[new],
+            Node::Area(Area { content: Content::Text(t), .. })
+                if t.text.is_empty() && t.style == TextStyle::default()
+        ));
         assert_ne!(s.children[new].id(), right);
         check_invariants(&doc);
     }

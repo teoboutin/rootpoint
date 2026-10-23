@@ -43,7 +43,7 @@ fn ids_survive_save_and_load() {
     assert_eq!(
         after.last(),
         Some(&Reply::Ok(
-            "s1 n6:stacked(0.5)[n3 empty | n5 text \"by id\"]".into()
+            "s1 n6:stacked(0.5)[n3 text \"\" | n5 text \"by id\"]".into()
         ))
     );
 }

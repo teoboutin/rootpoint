@@ -62,7 +62,7 @@ pub struct Preview {
     pub axis: Axis,
     /// The line's position, a fraction of the node along `axis`.
     pub at: f64,
-    /// The new empty area takes the smaller part, `After` when the two are equal.
+    /// The new area takes the smaller part, `After` when the two are equal.
     pub side: Side,
     /// The ends of the line, in points.
     pub from: Pos2,

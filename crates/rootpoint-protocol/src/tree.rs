@@ -27,7 +27,6 @@ fn node_tree(node: &Node) -> String {
             )
         }
         Node::Area(a) => match &a.content {
-            Content::Empty => format!("{} empty", a.id),
             Content::Text(t) => format!("{} text {}", a.id, quote_always(&t.text)),
             Content::Image(i) => {
                 let fit = match i.fit {

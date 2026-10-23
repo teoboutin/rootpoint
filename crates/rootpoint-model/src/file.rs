@@ -10,7 +10,7 @@ use crate::document::{AspectRatio, Asset, AssetId, Document, Slide};
 
 /// The version of the file format this crate writes and reads. A file of another version is
 /// refused, per `design@rootpoint-model@save-format`.
-pub const FORMAT_VERSION: u32 = 1;
+pub const FORMAT_VERSION: u32 = 2;
 
 /// Why a file was not loaded.
 #[derive(Clone, Debug, PartialEq)]

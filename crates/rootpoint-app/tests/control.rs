@@ -408,7 +408,6 @@ fn while_the_socket_holds_control_no_window_action_edits() {
     app.drag_divider(0.6);
     app.grab_grip(n3);
     app.reset_divider(NodeId(4), 0);
-    app.clear_content();
     app.set_text_content();
     app.set_style(rootpoint_protocol::StyleOption::Bold(true));
     app.add_asset("missing.png".to_owned());

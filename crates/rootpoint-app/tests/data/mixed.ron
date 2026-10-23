@@ -1,6 +1,6 @@
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 1,
+    version: 2,
     aspect: (
         width: 16,
         height: 9,
@@ -95,7 +95,23 @@
                                     ),
                                     Area(
                                         id: 9,
-                                        content: Empty,
+                                        content: Text(
+                                            text: "",
+                                            style: (
+                                                font: Builtin("sans"),
+                                                size: 48.0,
+                                                bold: false,
+                                                italic: false,
+                                                colour: (
+                                                    r: 0,
+                                                    g: 0,
+                                                    b: 0,
+                                                    a: 255,
+                                                ),
+                                                h_align: Left,
+                                                v_align: Top,
+                                            ),
+                                        ),
                                     ),
                                 ],
                                 dividers: [

@@ -121,12 +121,23 @@ fn a_file_of_another_version_is_refused() {
             expected: FORMAT_VERSION
         })
     );
+    // Version 1 had an empty kind of content; it is refused, not migrated, per
+    // `design@rootpoint@no-compat-in-initial-dev`.
+    let text =
+        save_ron(&fixture()).replacen(&format!("version: {FORMAT_VERSION},"), "version: 1,", 1);
+    assert_eq!(
+        load_ron(&text),
+        Err(LoadError::Version {
+            found: 1,
+            expected: FORMAT_VERSION
+        })
+    );
 }
 
 #[test]
 fn text_that_is_not_a_document_is_a_parse_error() {
     assert!(matches!(
-        load_ron("(version: 1, slides: oops)"),
+        load_ron(&format!("(version: {FORMAT_VERSION}, slides: oops)")),
         Err(LoadError::Parse(_))
     ));
 }
@@ -136,7 +147,7 @@ fn text_that_is_not_a_document_is_a_parse_error() {
 // untested.
 fn content() -> impl Strategy<Value = Content> {
     prop_oneof![
-        Just(Content::Empty),
+        Just(Content::default()),
         (
             ".{0,20}",
             1.0f64..200.0,

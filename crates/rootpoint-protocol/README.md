@@ -16,7 +16,7 @@ The binary `rootpoint-headless` reads commands from stdin and writes the replies
 $ printf 'add-slide\nsplit n2 beside 0.5\ntree\n' | rootpoint-headless
 ok s1 root=n2
 ok new=n3 split=n4
-ok s1 n4:beside(0.5)[n2 empty | n3 empty]
+ok s1 n4:beside(0.5)[n2 text "" | n3 text ""]
 ```
 
 The binary `rootpoint-ctl`, on Unix, sends commands to a running editor's control socket and

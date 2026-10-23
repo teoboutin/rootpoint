@@ -196,7 +196,6 @@ impl Session {
                                 let _ = fonts.insert_bytes(id, bytes);
                             }
                         }
-                        Content::Empty => {}
                     }
                 }
                 // The portable precision, so that a headless image is the same on every
@@ -375,13 +374,7 @@ impl Session {
                 {
                     return Err("a text size is a number above 0".to_owned());
                 }
-                let mut current = match self.doc.node(area) {
-                    Some(Node::Area(a)) => match &a.content {
-                        Content::Text(t) => t.style.clone(),
-                        _ => TextStyle::default(),
-                    },
-                    _ => TextStyle::default(),
-                };
+                let mut current = self.text_style(area);
                 for option in style {
                     apply_style(&mut current, option);
                 }
@@ -399,7 +392,10 @@ impl Session {
             },
             Command::Clear { area } => Op::SetContent {
                 area,
-                content: Content::Empty,
+                content: Content::Text(TextContent {
+                    text: String::new(),
+                    style: self.text_style(area),
+                }),
             },
             Command::Asset { path } => Op::AddAsset {
                 asset: Asset {
@@ -409,6 +405,17 @@ impl Session {
             Command::RemoveAsset { asset } => Op::RemoveAsset { id: asset },
             other => return Err(format!("`{other}` applies no operation")),
         })
+    }
+
+    /// The style of the text `area` holds, or the default style when it holds none.
+    fn text_style(&self, area: NodeId) -> TextStyle {
+        match self.doc.node(area) {
+            Some(Node::Area(a)) => match &a.content {
+                Content::Text(t) => t.style.clone(),
+                Content::Image(_) => TextStyle::default(),
+            },
+            _ => TextStyle::default(),
+        }
     }
 
     /// Apply an operation, then drop from the view a node or a slide it removed.
