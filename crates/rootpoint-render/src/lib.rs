@@ -13,8 +13,8 @@ use std::sync::Arc;
 pub use images::{DecodeError, ImageSet};
 use parley::Layout;
 use rootpoint_model::{
-    AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, TextContent,
-    VAlign, area_rects,
+    AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, StyleChoice,
+    TextContent, TextStyle, VAlign, area_rects,
 };
 pub use text::{FontError, FontSet};
 use vello_cpu::color::AlphaColor;
@@ -57,6 +57,9 @@ pub struct Report {
     pub font_fallbacks: Vec<NodeId>,
     /// The text areas holding a character that no font of the `FontSet` has, drawn as a box.
     pub missing_glyphs: Vec<NodeId>,
+    /// The text areas naming a style the document's table lacks, with the name; each is drawn with
+    /// `TextStyle::default()`.
+    pub missing_styles: Vec<(NodeId, String)>,
     /// The text areas whose glyphs could not all be drawn, as from a damaged font file.
     pub undrawn_text: Vec<NodeId>,
     /// For each text area, the byte range of its text on each line, as laid out.
@@ -133,7 +136,13 @@ pub fn render_slide(
         ctx.push_clip_layer(&clip.to_path(0.1));
         match &a.content {
             Content::Text(content) => {
-                let (laid, origin) = lay_out_area(fonts, content, area);
+                if let StyleChoice::Named(name) = &content.style
+                    && !doc.styles.contains_key(name)
+                {
+                    report.missing_styles.push((id, name.clone()));
+                }
+                let style = doc.resolve_style(&content.style);
+                let (laid, origin) = lay_out_area(fonts, content, &style, area);
                 if laid.fell_back {
                     report.font_fallbacks.push(id);
                 }
@@ -141,7 +150,7 @@ pub fn render_slide(
                     report.missing_glyphs.push(id);
                 }
                 ctx.set_transform(to_pixels * Affine::translate(origin));
-                let c = content.style.colour;
+                let c = style.colour;
                 ctx.set_paint(AlphaColor::<vello_cpu::color::Srgb>::from_rgba8(
                     c.r, c.g, c.b, c.a,
                 ));
@@ -194,25 +203,28 @@ pub fn area_text(
     let Content::Text(content) = &a.content else {
         return None;
     };
-    let (laid, origin) = lay_out_area(fonts, content, rect);
+    let style = doc.resolve_style(&content.style);
+    let (laid, origin) = lay_out_area(fonts, content, &style, rect);
     Some(AreaText {
         layout: laid.layout,
         origin,
     })
 }
 
-/// A text area's layout, wrapped to the area's width less its padding, and the point its origin is
-/// drawn at: inset by the padding, and moved down by the vertical alignment's share of the room
-/// left. `render_slide` and `area_text` both lay a text out here, so they give one layout.
+/// A text area's layout in its resolved style, wrapped to the area's width less its padding, and
+/// the point its origin is drawn at: inset by the padding, and moved down by the vertical
+/// alignment's share of the room left. `render_slide` and `area_text` both lay a text out here, so
+/// they give one layout.
 fn lay_out_area(
     fonts: &mut FontSet,
     content: &TextContent,
+    style: &TextStyle,
     area: SlideRect,
 ) -> (text::TextLayout, (f64, f64)) {
     let inner = (area.w - 2.0 * TEXT_PADDING).max(0.0);
-    let laid = text::layout_text(fonts, content, inner as f32);
+    let laid = text::layout_text(fonts, &content.text, style, inner as f32);
     let free = area.h - 2.0 * TEXT_PADDING - f64::from(laid.layout.height());
-    let dy = match content.style.v_align {
+    let dy = match style.v_align {
         VAlign::Top => 0.0,
         VAlign::Middle => free / 2.0,
         VAlign::Bottom => free,

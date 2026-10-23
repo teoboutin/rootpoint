@@ -27,14 +27,17 @@ pub enum Breach {
     /// A text's font names a built-in family the binary does not carry, which
     /// [`BUILTIN_FAMILIES`] lists; it is drawn in the built-in sans.
     UnknownFont { area: NodeId, name: String },
+    /// A text names a style the table lacks; it is drawn with `TextStyle::default()`.
+    MissingStyle { area: NodeId, name: String },
 }
 
 impl Document {
     /// Check every invariant the types state: the aspect ratio has no zero side; every id is
     /// unique and below the id counter; every split has two children or more, one divider fewer,
     /// finite, strictly increasing and strictly between 0 and 1, and no child split of its own
-    /// axis; every asset an area names has an id below the counter. An asset the table lacks is
-    /// a cosmetic breach, which [`Document::breaches`] names, and is not checked here.
+    /// axis; every asset an area or a style of the table names has an id below the counter. An
+    /// asset the table lacks is a cosmetic breach, which [`Document::breaches`] names, and is not
+    /// checked here.
     pub fn validate(&self) -> Result<(), Invalid> {
         if self.aspect.width == 0 || self.aspect.height == 0 {
             return Err(Invalid(format!(
@@ -57,6 +60,16 @@ impl Document {
         };
         for id in self.assets.keys() {
             take(id.0)?;
+        }
+        for (name, style) in &self.styles {
+            if let FontRef::Asset(id) = style.font
+                && id.0 >= self.next_id
+            {
+                return Err(Invalid(format!(
+                    "style {name:?} names asset {}, which is not below the id counter, next_id {}",
+                    id.0, self.next_id
+                )));
+            }
         }
         for slide in &self.slides {
             take(slide.id.0)?;
@@ -128,44 +141,59 @@ impl Document {
     pub fn breaches(&self) -> Vec<Breach> {
         let mut out = Vec::new();
         for area in self.slides.iter().flat_map(|s| s.root.areas()) {
-            if let Some(asset) = asset_named(area)
-                && !self.assets.contains_key(&asset)
-            {
-                out.push(Breach::MissingAsset {
-                    area: area.id,
-                    asset,
-                });
-            }
-            if let Content::Text(TextContent {
-                style:
-                    TextStyle {
-                        font: FontRef::Builtin(name),
-                        ..
-                    },
-                ..
-            }) = &area.content
-                && !BUILTIN_FAMILIES.contains(&name.as_str())
-            {
-                out.push(Breach::UnknownFont {
-                    area: area.id,
-                    name: name.clone(),
-                });
+            let font = match &area.content {
+                Content::Image(image) => {
+                    if !self.assets.contains_key(&image.asset) {
+                        out.push(Breach::MissingAsset {
+                            area: area.id,
+                            asset: image.asset,
+                        });
+                    }
+                    continue;
+                }
+                Content::Text(TextContent {
+                    style: StyleChoice::Named(name),
+                    ..
+                }) if !self.styles.contains_key(name) => {
+                    out.push(Breach::MissingStyle {
+                        area: area.id,
+                        name: name.clone(),
+                    });
+                    continue;
+                }
+                Content::Text(text) => self.resolve_style(&text.style).font,
+            };
+            match font {
+                FontRef::Asset(asset) if !self.assets.contains_key(&asset) => {
+                    out.push(Breach::MissingAsset {
+                        area: area.id,
+                        asset,
+                    })
+                }
+                FontRef::Builtin(name) if !BUILTIN_FAMILIES.contains(&name.as_str()) => {
+                    out.push(Breach::UnknownFont {
+                        area: area.id,
+                        name,
+                    })
+                }
+                _ => {}
             }
         }
         out
     }
 }
 
-/// The asset an area names: its image, or its text's font file.
+/// The asset an area names itself: its image, or its own text values' font file. A named style's
+/// font is the table's, which `Document::validate` checks once.
 fn asset_named(area: &Area) -> Option<AssetId> {
     match &area.content {
         Content::Image(image) => Some(image.asset),
         Content::Text(TextContent {
             style:
-                TextStyle {
+                StyleChoice::Custom(TextStyle {
                     font: FontRef::Asset(id),
                     ..
-                },
+                }),
             ..
         }) => Some(*id),
         Content::Text(_) => None,

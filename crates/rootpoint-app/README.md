@@ -18,7 +18,7 @@ file (Ctrl+S) or to another, opens the built-in sample, presents, and undoes (Ct
 and every embedded one, as the protocol's `save` does. The window shows the
 shown slide, scaled uniformly to the largest size that fits and letterboxed, and, under it, what
 the slide's render could not draw as the document asks: missing images, fonts not found,
-characters no font has, and text not drawn.
+characters no font has, styles the document lacks, and text not drawn.
 
 - A click on an area selects it, and the side panel shows the path from the slide's root to the
   selection, each entry a link that selects it. Alt+↑ selects the parent, Alt+↓ a child, the one

@@ -6,11 +6,11 @@ use ron::extensions::Extensions;
 use ron::ser::PrettyConfig;
 use serde::{Deserialize, Serialize};
 
-use crate::document::{AspectRatio, Asset, AssetId, Document, Slide};
+use crate::document::{AspectRatio, Asset, AssetId, Document, Slide, TextStyle};
 
 /// The version of the file format this crate writes and reads. A file of another version is
 /// refused, per `design@rootpoint-model@save-format`.
-pub const FORMAT_VERSION: u32 = 2;
+pub const FORMAT_VERSION: u32 = 3;
 
 /// Why a file was not loaded.
 #[derive(Clone, Debug, PartialEq)]
@@ -31,6 +31,7 @@ struct FileRef<'a> {
     aspect: &'a AspectRatio,
     next_id: u64,
     assets: &'a BTreeMap<AssetId, Asset>,
+    styles: &'a BTreeMap<String, TextStyle>,
     slides: &'a [Slide],
 }
 
@@ -40,6 +41,7 @@ struct File {
     aspect: AspectRatio,
     next_id: u64,
     assets: BTreeMap<AssetId, Asset>,
+    styles: BTreeMap<String, TextStyle>,
     slides: Vec<Slide>,
 }
 
@@ -57,6 +59,7 @@ pub fn save_ron(doc: &Document) -> String {
         aspect: &doc.aspect,
         next_id: doc.next_id,
         assets: &doc.assets,
+        styles: &doc.styles,
         slides: &doc.slides,
     };
     // `unwrap_variant_newtypes` writes `Split(id: 3, ...)` rather than `Split((id: 3, ...))`; the
@@ -79,6 +82,7 @@ pub fn load_ron(text: &str) -> Result<Document, LoadError> {
         aspect: file.aspect,
         slides: file.slides,
         assets: file.assets,
+        styles: file.styles,
         next_id: file.next_id,
     };
     doc.validate()

@@ -1,6 +1,6 @@
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 2,
+    version: 3,
     aspect: (
         width: 16,
         height: 9,
@@ -9,6 +9,64 @@
     assets: {
         11: (
             source: Path("two-colours.png"),
+        ),
+    },
+    styles: {
+        "Body": (
+            font: Builtin("sans"),
+            size: 40.0,
+            bold: false,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Left,
+            v_align: Top,
+        ),
+        "Legend": (
+            font: Builtin("sans"),
+            size: 28.0,
+            bold: false,
+            italic: true,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Top,
+        ),
+        "Subtitle": (
+            font: Builtin("sans"),
+            size: 64.0,
+            bold: false,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Top,
+        ),
+        "Title": (
+            font: Builtin("sans"),
+            size: 120.0,
+            bold: true,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Middle,
         ),
     },
     slides: [
@@ -22,7 +80,7 @@
                         id: 2,
                         content: Text(
                             text: "A title in the built-in sans",
-                            style: (
+                            style: Custom(
                                 font: Builtin("sans"),
                                 size: 72.0,
                                 bold: true,
@@ -57,7 +115,7 @@
                                         id: 5,
                                         content: Text(
                                             text: "A paragraph long enough to wrap over several lines of its area, so that the line breaks of the layout are visible in the image.",
-                                            style: (
+                                            style: Custom(
                                                 font: Builtin("sans"),
                                                 size: 48.0,
                                                 bold: true,
@@ -77,7 +135,7 @@
                                         id: 7,
                                         content: Text(
                                             text: "An italic line in blue",
-                                            style: (
+                                            style: Custom(
                                                 font: Builtin("sans"),
                                                 size: 48.0,
                                                 bold: false,
@@ -97,7 +155,7 @@
                                         id: 9,
                                         content: Text(
                                             text: "",
-                                            style: (
+                                            style: Custom(
                                                 font: Builtin("sans"),
                                                 size: 48.0,
                                                 bold: false,

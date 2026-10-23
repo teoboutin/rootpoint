@@ -9,7 +9,7 @@ use parley::{
     Alignment, AlignmentOptions, FontContext, FontFamily, FontFamilyName, FontStyle, FontWeight,
     Layout, LayoutContext, PositionedLayoutItem, StyleProperty,
 };
-use rootpoint_model::{AssetId, BUILTIN_FAMILIES, FontRef, HAlign, TextContent};
+use rootpoint_model::{AssetId, BUILTIN_FAMILIES, FontRef, HAlign, TextStyle};
 use vello_cpu::kurbo::{Affine, Diagonal2};
 
 /// The family of the built-in sans, which `FontRef::Builtin("sans")` names.
@@ -112,10 +112,15 @@ pub(crate) struct TextLayout {
     pub missing_glyph: bool,
 }
 
-/// Lay a text out in slide units, wrapped to `width` slide units. The layout depends on no pixel
-/// size: every display draws this one layout through its own scale.
-pub(crate) fn layout_text(fonts: &mut FontSet, text: &TextContent, width: f32) -> TextLayout {
-    let resolved = fonts.family(&text.style.font);
+/// Lay a text out in slide units in the style `style`, wrapped to `width` slide units. The layout
+/// depends on no pixel size: every display draws this one layout through its own scale.
+pub(crate) fn layout_text(
+    fonts: &mut FontSet,
+    text: &str,
+    style: &TextStyle,
+    width: f32,
+) -> TextLayout {
+    let resolved = fonts.family(&style.font);
     let fell_back = resolved.is_none();
     let family = resolved.unwrap_or_else(|| BUILTIN_SANS.to_owned());
     // The built-in sans ends the stack, so a character the chosen font lacks is drawn in it.
@@ -123,10 +128,9 @@ pub(crate) fn layout_text(fonts: &mut FontSet, text: &TextContent, width: f32) -
         FontFamilyName::named(&family),
         FontFamilyName::named(BUILTIN_SANS),
     ];
-    let style = &text.style;
     let mut builder = fonts
         .layouts
-        .ranged_builder(&mut fonts.fonts, &text.text, 1.0, true);
+        .ranged_builder(&mut fonts.fonts, text, 1.0, true);
     builder.push_default(StyleProperty::FontFamily(FontFamily::List(
         stack.as_slice().into(),
     )));
@@ -137,7 +141,7 @@ pub(crate) fn layout_text(fonts: &mut FontSet, text: &TextContent, width: f32) -
     if style.italic {
         builder.push_default(StyleProperty::FontStyle(FontStyle::Italic));
     }
-    let mut layout: Layout<()> = builder.build(&text.text);
+    let mut layout: Layout<()> = builder.build(text);
     layout.break_all_lines(Some(width));
     let alignment = match style.h_align {
         HAlign::Left => Alignment::Left,
@@ -145,7 +149,7 @@ pub(crate) fn layout_text(fonts: &mut FontSet, text: &TextContent, width: f32) -
         HAlign::Right => Alignment::Right,
     };
     layout.align(alignment, AlignmentOptions::default());
-    let len = text.text.len();
+    let len = text.len();
     let lines = layout
         .lines()
         .map(|line| {

@@ -170,6 +170,7 @@ impl crate::App {
                             command,
                             Command::Tree { .. }
                                 | Command::View
+                                | Command::Styles
                                 | Command::Render { .. }
                                 | Command::Control
                                 | Command::Release
@@ -192,7 +193,7 @@ impl crate::App {
     fn socket_command(&mut self, command: Command) -> Reply {
         match command {
             // The queries change nothing, so they leave the status line and the texture alone.
-            Command::Tree { .. } | Command::View | Command::Render { .. } => {
+            Command::Tree { .. } | Command::View | Command::Styles | Command::Render { .. } => {
                 self.session.run(command, &mut *self.files)
             }
             Command::Control => {

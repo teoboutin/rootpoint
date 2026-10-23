@@ -35,7 +35,7 @@ impl Assets {
             for area in slide.root.areas() {
                 let (id, image) = match &area.content {
                     Content::Image(i) => (i.asset, true),
-                    Content::Text(t) => match t.style.font {
+                    Content::Text(t) => match doc.resolve_style(&t.style).font {
                         FontRef::Asset(id) => (id, false),
                         FontRef::Builtin(_) => continue,
                     },

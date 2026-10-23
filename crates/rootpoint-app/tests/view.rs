@@ -197,3 +197,26 @@ fn a_file_naming_a_missing_asset_opens_and_the_status_names_it() {
     frame(&ctx, &mut app);
     assert_eq!(app.status(), ["missing images: a99"]);
 }
+
+/// A file whose text names a style the table lacks opens; the status names the area and the style.
+#[test]
+fn a_file_naming_a_missing_style_opens_and_the_status_names_it() {
+    let files = MemoryFiles::default();
+    let mut app = App::new(Box::new(files.clone()));
+    ok(&mut app, "sample");
+    ok(&mut app, "save deck.ron");
+    let saved = String::from_utf8(files.0.borrow()["deck.ron"].clone()).unwrap();
+    let edited = saved.replacen("Named(\"Title\")", "Named(\"Heading\")", 1);
+    assert_ne!(edited, saved, "the saved sample changed shape");
+    files
+        .0
+        .borrow_mut()
+        .insert("deck.ron".into(), edited.into_bytes());
+    ok(&mut app, "load deck.ron");
+    let ctx = Context::default();
+    frame(&ctx, &mut app);
+    assert_eq!(
+        app.status(),
+        ["missing styles, drawn in the default style: n2 Heading"]
+    );
+}

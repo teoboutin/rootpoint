@@ -47,7 +47,7 @@ fn a_document_with_a_missing_asset_loads_and_its_render_names_it() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 160 90"),
-        "fallback=- missing=a99 glyphs=-"
+        "fallback=- missing=a99 glyphs=- styles=-"
     );
 }
 
@@ -103,7 +103,7 @@ fn a_text_whose_font_is_missing_is_named_by_the_render() {
     let text = String::from_utf8(files.files["deck.ron"].clone()).unwrap();
     let edited = text.replacen(
         "content: Image(\n                            asset: 99,\n                            fit: Fit,\n                        ),",
-        "content: Text(text: \"x\", style: (font: Asset(99), size: 48.0, bold: false, italic: false, colour: (r: 0, g: 0, b: 0, a: 255), h_align: Left, v_align: Top)),",
+        "content: Text(text: \"x\", style: Custom(font: Asset(99), size: 48.0, bold: false, italic: false, colour: (r: 0, g: 0, b: 0, a: 255), h_align: Left, v_align: Top)),",
         1,
     );
     assert_ne!(edited, text, "the saved file changed shape:\n{text}");
@@ -111,6 +111,6 @@ fn a_text_whose_font_is_missing_is_named_by_the_render() {
     ok(&mut s, &mut files, "load deck.ron");
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 160 90"),
-        "fallback=n3 missing=- glyphs=-"
+        "fallback=n3 missing=- glyphs=- styles=-"
     );
 }

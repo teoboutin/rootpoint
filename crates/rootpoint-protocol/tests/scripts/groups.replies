@@ -5,23 +5,23 @@ ok
 ok
 ok
 ok
-ok s1 n4:beside(0.47)[n2 text "" | n3 text ""]
+ok s1 n4:beside(0.47)[n2 text "" style="Body" | n3 text "" style="Body"]
 ok
-ok s1 n4:beside(0.4)[n2 text "" | n3 text ""]
+ok s1 n4:beside(0.4)[n2 text "" style="Body" | n3 text "" style="Body"]
 ok
-ok s1 n4:beside(0.47)[n2 text "" | n3 text ""]
-ok
-ok
+ok s1 n4:beside(0.47)[n2 text "" style="Body" | n3 text "" style="Body"]
 ok
 ok
 ok
-ok s1 n4:beside(0.4)[n2 text "" | n3 text ""]
-ok
-ok s1 n4:beside(0.47)[n2 text "" | n3 text ""]
 ok
 ok
+ok s1 n4:beside(0.4)[n2 text "" style="Body" | n3 text "" style="Body"]
 ok
-ok s1 n4:beside(0.4)[n2 text "" | n3 text ""]
+ok s1 n4:beside(0.47)[n2 text "" style="Body" | n3 text "" style="Body"]
+ok
+ok
+ok
+ok s1 n4:beside(0.4)[n2 text "" style="Body" | n3 text "" style="Body"]
 ok
 err a group is open
 ok
@@ -31,7 +31,7 @@ ok
 ok
 ok
 ok
-ok s1 n4:beside(0.4)[n2 text "" | n3 text ""]
+ok s1 n4:beside(0.4)[n2 text "" style="Body" | n3 text "" style="Body"]
 err no group is open
 ok
 ok
@@ -39,7 +39,7 @@ ok
 ok
 ok
 ok
-ok s1 n4:beside(0.4)[n2 text "" | n3 text ""]
+ok s1 n4:beside(0.4)[n2 text "" style="Body" | n3 text "" style="Body"]
 ok selected=- shown=s1 presenting=-
 ok
 ok

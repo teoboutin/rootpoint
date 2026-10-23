@@ -23,7 +23,7 @@ struct Step {
 
 fn step() -> impl Strategy<Value = Step> {
     (
-        0u8..20,
+        0u8..26,
         any::<usize>(),
         any::<usize>(),
         0.05f64..0.95,
@@ -37,6 +37,10 @@ fn step() -> impl Strategy<Value = Step> {
             flag,
         })
 }
+
+/// The names a style command picks from: two of the predefined styles, two new ones, and one with a
+/// space.
+const STYLE_NAMES: [&str; 5] = ["Title", "Body", "Quote", "Note", "Style 1"];
 
 /// Every id the document holds, of any kind.
 fn ids(doc: &Document) -> Vec<u64> {
@@ -85,6 +89,7 @@ fn line_for(doc: &Document, s: &Step) -> String {
             .map_or("s1".to_owned(), |sl| sl.id.to_string())
     };
     let asset = |k: usize| format!("a{}", 1 + k as u64 % (all.iter().max().unwrap_or(&0) + 2));
+    let style = |k: usize| format!("\"{}\"", STYLE_NAMES[k % STYLE_NAMES.len()]);
     let axis = if s.flag { "beside" } else { "stacked" };
     match s.kind {
         0 => "add-slide".to_owned(),
@@ -115,6 +120,21 @@ fn line_for(doc: &Document, s: &Step) -> String {
         16 => "undo".to_owned(),
         17 => "redo".to_owned(),
         18 => ["begin", "end", "cancel"][s.other % 3].to_owned(),
+        // A style is picked among names the table holds, names it lacks, and one with a space.
+        20 => format!("text {} \"n\" style={}", node(s.pick), style(s.other)),
+        21 => format!("text {} \"c\" custom", node(s.pick)),
+        22 => format!(
+            "style add {} size={} italic",
+            style(s.pick),
+            10 + s.other % 90
+        ),
+        23 => format!("style set {} bold font={}", style(s.pick), asset(s.other)),
+        24 => format!("style rename {} {}", style(s.pick), style(s.other)),
+        25 => match s.other % 3 {
+            0 => format!("style remove {}", style(s.pick)),
+            1 => format!("style remove {} into=custom", style(s.pick)),
+            _ => format!("style remove {} into={}", style(s.pick), style(s.other / 3)),
+        },
         _ => format!("select {}", node(s.pick)),
     }
 }

@@ -6,12 +6,13 @@ use std::path::{Path, PathBuf};
 use std::collections::{BTreeMap, BTreeSet};
 
 use rootpoint_model::{
-    Asset, AssetId, AssetSource, Content, Document, FontRef, ImageContent, Node, NodeId, Op,
-    SlideId, TextContent, TextStyle, apply, load_ron, save_ron,
+    Area, Asset, AssetId, AssetSource, BUILTIN_FAMILIES, Content, Document, FontRef, ImageContent,
+    Node, NodeId, Op, Replacement, SlideId, StyleChoice, TextContent, TextStyle, apply, load_ron,
+    save_ron,
 };
 use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
 
-use crate::command::{Command, StyleOption, parse_command};
+use crate::command::{Command, StyleCommand, StyleOption, parse_command, quote, quote_always};
 use crate::files::Files;
 use crate::save::{extension, inside, normalize, relative, with_suffix};
 use crate::tree::slide_tree;
@@ -190,7 +191,7 @@ impl Session {
                             }
                         }
                         Content::Text(t) => {
-                            if let FontRef::Asset(id) = t.style.font
+                            if let FontRef::Asset(id) = self.doc.resolve_style(&t.style).font
                                 && let Ok(bytes) = self.asset_bytes(id, files)
                             {
                                 let _ = fonts.insert_bytes(id, bytes);
@@ -319,6 +320,13 @@ impl Session {
                 self.view.presenting = None;
                 Ok(String::new())
             }
+            Command::Styles => Ok(self
+                .doc
+                .styles
+                .iter()
+                .map(|(name, style)| format!("{} {}", quote_always(name), style_options(style)))
+                .collect::<Vec<_>>()
+                .join("; ")),
             Command::View => {
                 let show = |id: Option<String>| id.unwrap_or_else(|| "-".to_owned());
                 Ok(format!(
@@ -374,20 +382,29 @@ impl Session {
                 {
                     return Err("a text size is a number above 0".to_owned());
                 }
-                for option in &style {
-                    if let StyleOption::Font(Some(asset)) = option {
-                        self.existing_asset(*asset)?;
-                    }
-                }
-                let mut current = self.text_style(area);
+                let mut choice = self.text_style(area);
                 for option in style {
-                    apply_style(&mut current, option);
+                    choice = match option {
+                        StyleOption::Named(name) => {
+                            self.usable_style(&name)?;
+                            StyleChoice::Named(name)
+                        }
+                        StyleOption::Custom => StyleChoice::Custom(self.doc.resolve_style(&choice)),
+                        // Any other option changes the values drawn, so a named style forks to a
+                        // custom copy: no command but `style set` changes a shared style.
+                        value => {
+                            self.usable_option(&value)?;
+                            let mut values = self.doc.resolve_style(&choice);
+                            apply_style(&mut values, value);
+                            StyleChoice::Custom(values)
+                        }
+                    };
                 }
                 Op::SetContent {
                     area,
                     content: Content::Text(TextContent {
                         text,
-                        style: current,
+                        style: choice,
                     }),
                 }
             }
@@ -411,6 +428,46 @@ impl Session {
                 },
             },
             Command::RemoveAsset { asset } => Op::RemoveAsset { id: asset },
+            Command::Style(StyleCommand::Add { name, options }) => Op::AddStyle {
+                style: self.style_values(TextStyle::default(), options)?,
+                name,
+            },
+            Command::Style(StyleCommand::Set { name, options }) => {
+                let current = self.doc.styles.get(&name).ok_or_else(|| no_style(&name))?;
+                Op::SetStyle {
+                    style: self.style_values(current.clone(), options)?,
+                    name,
+                }
+            }
+            Command::Style(StyleCommand::Rename { from, to }) => {
+                // The operation refuses an area that names `to` too; the reply names the area.
+                if let Some(area) = self.users(&to).first() {
+                    return Err(format!("{area} names {}", quote_always(&to)));
+                }
+                Op::RenameStyle { from, to }
+            }
+            Command::Style(StyleCommand::Remove { name, into }) => {
+                self.doc.styles.get(&name).ok_or_else(|| no_style(&name))?;
+                match &into {
+                    None => {
+                        let users = self.users(&name);
+                        if !users.is_empty() {
+                            let users: Vec<String> = users.iter().map(|n| n.to_string()).collect();
+                            return Err(format!(
+                                "{} is used by {}",
+                                quote_always(&name),
+                                users.join(" ")
+                            ));
+                        }
+                    }
+                    Some(Replacement::Named(other)) if *other == name => {
+                        return Err(format!("{} cannot replace itself", quote_always(&name)));
+                    }
+                    Some(Replacement::Named(other)) => self.usable_style(other)?,
+                    Some(Replacement::Custom) => {}
+                }
+                Op::RemoveStyle { name, into }
+            }
             other => return Err(format!("`{other}` applies no operation")),
         })
     }
@@ -426,15 +483,61 @@ impl Session {
         }
     }
 
-    /// The style of the text `area` holds, or the default style when it holds none.
-    fn text_style(&self, area: NodeId) -> TextStyle {
+    /// The style of the text `area` holds, or, when it holds none, the style a new area takes.
+    fn text_style(&self, area: NodeId) -> StyleChoice {
         match self.doc.node(area) {
-            Some(Node::Area(a)) => match &a.content {
-                Content::Text(t) => t.style.clone(),
-                Content::Image(_) => TextStyle::default(),
-            },
-            _ => TextStyle::default(),
+            Some(Node::Area(Area {
+                content: Content::Text(t),
+                ..
+            })) => t.style.clone(),
+            _ => self.doc.new_area_style(),
         }
+    }
+
+    /// Refuse a style a text would name and draw with a stand-in: one the table lacks, or whose
+    /// font is an asset the table lacks or a family the binary does not carry,
+    /// `design@rootpoint-protocol@no-new-breach`.
+    fn usable_style(&self, name: &str) -> Result<(), String> {
+        let style = self.doc.styles.get(name).ok_or_else(|| no_style(name))?;
+        match &style.font {
+            FontRef::Asset(asset) => self.existing_asset(*asset),
+            FontRef::Builtin(family) if !BUILTIN_FAMILIES.contains(&family.as_str()) => Err(
+                format!("{} names no built-in family {family}", quote_always(name)),
+            ),
+            FontRef::Builtin(_) => Ok(()),
+        }
+    }
+
+    /// Refuse a value option that names an asset the table lacks.
+    fn usable_option(&self, option: &StyleOption) -> Result<(), String> {
+        match option {
+            StyleOption::Font(Some(asset)) => self.existing_asset(*asset),
+            _ => Ok(()),
+        }
+    }
+
+    /// The values `options` give a style whose values were `values`.
+    fn style_values(
+        &self,
+        mut values: TextStyle,
+        options: Vec<StyleOption>,
+    ) -> Result<TextStyle, String> {
+        for option in options {
+            self.usable_option(&option)?;
+            apply_style(&mut values, option);
+        }
+        Ok(values)
+    }
+
+    /// The text areas naming the style `name`, in the order of the slides and of their trees.
+    fn users(&self, name: &str) -> Vec<NodeId> {
+        self.doc
+            .slides
+            .iter()
+            .flat_map(|s| s.root.areas())
+            .filter(|a| matches!(&a.content, Content::Text(TextContent { style: StyleChoice::Named(n), .. }) if n == name))
+            .map(|a| a.id)
+            .collect()
     }
 
     /// Apply an operation, then drop from the view a node or a slide it removed.
@@ -694,16 +797,53 @@ fn report_words(report: &Report) -> String {
                 .join(",")
         }
     }
+    let styles: Vec<String> = report
+        .missing_styles
+        .iter()
+        .map(|(area, name)| format!("{area}:{}", quote(name)))
+        .collect();
     format!(
-        "fallback={} missing={} glyphs={}",
+        "fallback={} missing={} glyphs={} styles={}",
         list(&report.font_fallbacks),
         list(&report.missing_images),
-        list(&report.missing_glyphs)
+        list(&report.missing_glyphs),
+        list(&styles)
     )
 }
 
+/// The refusal of a style the table lacks.
+fn no_style(name: &str) -> String {
+    format!("no style {}", quote_always(name))
+}
+
+/// A style's every value, as the options `style add` takes, in a fixed order. A built-in family the
+/// binary does not carry, which only a file edited by hand holds, is written as its name.
+fn style_options(style: &TextStyle) -> String {
+    let font = match &style.font {
+        FontRef::Builtin(name) if name == "sans" => StyleOption::Font(None).to_string(),
+        FontRef::Builtin(name) => format!("font={}", quote(name)),
+        FontRef::Asset(id) => StyleOption::Font(Some(*id)).to_string(),
+    };
+    [
+        StyleOption::Size(style.size),
+        StyleOption::Bold(style.bold),
+        StyleOption::Italic(style.italic),
+        StyleOption::Colour(style.colour),
+        StyleOption::Align(style.h_align),
+        StyleOption::VAlign(style.v_align),
+    ]
+    .iter()
+    .map(|o| o.to_string())
+    .chain(std::iter::once(font))
+    .collect::<Vec<_>>()
+    .join(" ")
+}
+
+/// Apply a value option to a style's values. `style=` and `custom` choose a text's style, which
+/// the caller handles; they change no value.
 fn apply_style(style: &mut TextStyle, option: StyleOption) {
     match option {
+        StyleOption::Named(_) | StyleOption::Custom => {}
         StyleOption::Size(size) => style.size = size,
         StyleOption::Bold(on) => style.bold = on,
         StyleOption::Italic(on) => style.italic = on,

@@ -2,7 +2,9 @@
 
 use std::fmt;
 
-use rootpoint_model::{AssetId, Axis, HAlign, ImageFit, NodeId, Rgba, Side, SlideId, VAlign};
+use rootpoint_model::{
+    AssetId, Axis, HAlign, ImageFit, NodeId, Replacement, Rgba, Side, SlideId, VAlign,
+};
 
 /// One command of the protocol.
 #[derive(Clone, Debug, PartialEq)]
@@ -54,8 +56,9 @@ pub enum Command {
         a: NodeId,
         b: NodeId,
     },
-    /// Set an area's text; the options change the area's current style, or the default style
-    /// when the area holds an image.
+    /// Set an area's text. Its style is the area's current one, or the style a new area takes when
+    /// the area holds an image; `style=` names a style, `custom` copies the values drawn into the
+    /// text's own, and any other option changes the values drawn, which makes a named style custom.
     Text {
         area: NodeId,
         text: String,
@@ -67,7 +70,8 @@ pub enum Command {
         fit: ImageFit,
     },
     /// Empty an area's text. A text keeps its style, so that clearing it changes its characters
-    /// only; an image area, which has no text style to keep, becomes a text in the default style.
+    /// only; an image area, which has no text style to keep, becomes a text in the style a new area
+    /// takes.
     Clear {
         area: NodeId,
     },
@@ -109,6 +113,33 @@ pub enum Command {
     Prev,
     Stop,
     View,
+    /// Change the document's table of named styles.
+    Style(StyleCommand),
+    /// List the named styles, a query.
+    Styles,
+}
+
+/// A change of the table of named styles.
+#[derive(Clone, Debug, PartialEq)]
+pub enum StyleCommand {
+    /// Add a style, whose options change `TextStyle::default()`.
+    Add {
+        name: String,
+        options: Vec<StyleOption>,
+    },
+    /// Change a style's values, which every text naming it then draws with.
+    Set {
+        name: String,
+        options: Vec<StyleOption>,
+    },
+    /// Rename a style, and every text naming it with it.
+    Rename { from: String, to: String },
+    /// Remove a style; the texts naming it take `into`, and with none the removal is refused while
+    /// a text names it.
+    Remove {
+        name: String,
+        into: Option<Replacement>,
+    },
 }
 
 /// One option of a text's style.
@@ -124,6 +155,10 @@ pub enum StyleOption {
     VAlign(VAlign),
     /// `sans`, the built-in font, or an asset id.
     Font(Option<AssetId>),
+    /// `style="<name>"`: name a style of the table.
+    Named(String),
+    /// `custom`: copy the values drawn into the text's own.
+    Custom,
 }
 
 /// Why a line is not a command.
@@ -237,6 +272,32 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         "prev" => Command::Prev,
         "stop" => Command::Stop,
         "view" => Command::View,
+        "styles" => Command::Styles,
+        "style" => Command::Style(
+            match args.word("`add`, `set`, `rename` or `remove`")?.as_str() {
+                "add" => StyleCommand::Add {
+                    name: args.quoted("a quoted style name")?,
+                    options: value_options(&mut args)?,
+                },
+                "set" => StyleCommand::Set {
+                    name: args.quoted("a quoted style name")?,
+                    options: value_options(&mut args)?,
+                },
+                "rename" => StyleCommand::Rename {
+                    from: args.quoted("a quoted style name")?,
+                    to: args.quoted("a quoted new name")?,
+                },
+                "remove" => StyleCommand::Remove {
+                    name: args.quoted("a quoted style name")?,
+                    into: args.optional(parse_into)?,
+                },
+                other => {
+                    return Err(ParseError(format!(
+                        "`{other}` is not `add`, `set`, `rename` or `remove`"
+                    )));
+                }
+            },
+        ),
         other => return Err(ParseError(format!("unknown command `{other}`"))),
     };
     args.finish()?;
@@ -316,6 +377,31 @@ impl fmt::Display for Command {
             Command::Prev => f.write_str("prev"),
             Command::Stop => f.write_str("stop"),
             Command::View => f.write_str("view"),
+            Command::Styles => f.write_str("styles"),
+            Command::Style(StyleCommand::Add { name, options }) => {
+                write!(f, "style add {}", quote_always(name))?;
+                options.iter().try_for_each(|o| write!(f, " {o}"))
+            }
+            Command::Style(StyleCommand::Set { name, options }) => {
+                write!(f, "style set {}", quote_always(name))?;
+                options.iter().try_for_each(|o| write!(f, " {o}"))
+            }
+            Command::Style(StyleCommand::Rename { from, to }) => {
+                write!(
+                    f,
+                    "style rename {} {}",
+                    quote_always(from),
+                    quote_always(to)
+                )
+            }
+            Command::Style(StyleCommand::Remove { name, into }) => {
+                write!(f, "style remove {}", quote_always(name))?;
+                match into {
+                    None => Ok(()),
+                    Some(Replacement::Custom) => f.write_str(" into=custom"),
+                    Some(Replacement::Named(other)) => write!(f, " into={}", quote_always(other)),
+                }
+            }
         }
     }
 }
@@ -347,6 +433,8 @@ impl fmt::Display for StyleOption {
             }),
             StyleOption::Font(None) => f.write_str("font=sans"),
             StyleOption::Font(Some(a)) => write!(f, "font={a}"),
+            StyleOption::Named(name) => write!(f, "style={}", quote_always(name)),
+            StyleOption::Custom => f.write_str("custom"),
         }
     }
 }
@@ -375,37 +463,47 @@ pub(crate) fn split_words(line: &str) -> Result<Vec<Word>, ParseError> {
             chars.next();
         } else if c == '"' {
             chars.next();
-            let mut text = String::new();
-            loop {
-                match chars.next() {
-                    None => return Err(ParseError("an unclosed quote".to_owned())),
-                    Some('"') => break,
-                    Some('\\') => match chars.next() {
-                        Some('"') => text.push('"'),
-                        Some('\\') => text.push('\\'),
-                        Some('n') => text.push('\n'),
-                        Some(other) => {
-                            return Err(ParseError(format!("an unknown escape `\\{other}`")));
-                        }
-                        None => return Err(ParseError("an unclosed quote".to_owned())),
-                    },
-                    Some(other) => text.push(other),
-                }
-            }
-            words.push(Word::Quoted(text));
+            words.push(Word::Quoted(read_quoted(&mut chars)?));
         } else {
             let mut text = String::new();
             while let Some(&c) = chars.peek() {
                 if c.is_whitespace() {
                     break;
                 }
-                text.push(c);
                 chars.next();
+                // A quoted value after `key=`, as in `style="Style 1"`, is read with the escapes
+                // of a quoted text, and stays part of the bare word.
+                if c == '"' && text.ends_with('=') {
+                    text.push_str(&read_quoted(&mut chars)?);
+                } else {
+                    text.push(c);
+                }
             }
             words.push(Word::Bare(text));
         }
     }
     Ok(words)
+}
+
+/// The rest of a quoted string, after its opening quote, with its escapes read.
+fn read_quoted(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) -> Result<String, ParseError> {
+    let mut text = String::new();
+    loop {
+        match chars.next() {
+            None => return Err(ParseError("an unclosed quote".to_owned())),
+            Some('"') => return Ok(text),
+            Some('\\') => match chars.next() {
+                Some('"') => text.push('"'),
+                Some('\\') => text.push('\\'),
+                Some('n') => text.push('\n'),
+                Some(other) => {
+                    return Err(ParseError(format!("an unknown escape `\\{other}`")));
+                }
+                None => return Err(ParseError("an unclosed quote".to_owned())),
+            },
+            Some(other) => text.push(other),
+        }
+    }
 }
 
 /// A word as the printer writes it: bare when it can be read back bare, quoted otherwise.
@@ -574,14 +672,42 @@ fn parse_fit(text: &str) -> Result<ImageFit, ParseError> {
     }
 }
 
+/// The options of `style add` and `style set`: values, never `style=` or `custom`, which choose a
+/// text's style and mean nothing for a style of the table.
+fn value_options(args: &mut Args) -> Result<Vec<StyleOption>, ParseError> {
+    let mut options = Vec::new();
+    while let Some(option) = args.optional(parse_style_option)? {
+        if matches!(option, StyleOption::Named(_) | StyleOption::Custom) {
+            return Err(ParseError(format!(
+                "`{option}` chooses a text's style, not a value of a style"
+            )));
+        }
+        options.push(option);
+    }
+    Ok(options)
+}
+
+/// `into=custom`, or `into="<name>"`: what the texts naming a removed style name instead.
+fn parse_into(text: &str) -> Result<Replacement, ParseError> {
+    match text.strip_prefix("into=") {
+        Some("custom") => Ok(Replacement::Custom),
+        Some(name) if !name.is_empty() => Ok(Replacement::Named(name.to_owned())),
+        _ => Err(ParseError(format!(
+            "`{text}` is not `into=custom` or `into=\"<name>\"`"
+        ))),
+    }
+}
+
 fn parse_style_option(text: &str) -> Result<StyleOption, ParseError> {
     let bad = || ParseError(format!("`{text}` is not a style option"));
     match text.split_once('=') {
         None => match text {
             "bold" => Ok(StyleOption::Bold(true)),
             "italic" => Ok(StyleOption::Italic(true)),
+            "custom" => Ok(StyleOption::Custom),
             _ => Err(bad()),
         },
+        Some(("style", name)) if !name.is_empty() => Ok(StyleOption::Named(name.to_owned())),
         Some(("size", v)) => parse_number(v)
             .ok()
             .filter(|n| *n > 0.0)

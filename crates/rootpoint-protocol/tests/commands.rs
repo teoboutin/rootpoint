@@ -5,7 +5,7 @@ mod common;
 
 use common::*;
 use rootpoint_model::*;
-use rootpoint_protocol::{Command, Reply, Session, StyleOption, parse_command};
+use rootpoint_protocol::{Command, Reply, Session, StyleCommand, StyleOption, parse_command};
 
 #[test]
 fn every_command_prints_back_as_it_parses() {
@@ -114,6 +114,40 @@ fn every_command_prints_back_as_it_parses() {
         Command::Prev,
         Command::Stop,
         Command::View,
+        Command::Text {
+            area: NodeId(2),
+            text: "x".into(),
+            style: vec![
+                StyleOption::Named("Style \"1\" \\ b".into()),
+                StyleOption::Custom,
+                StyleOption::Named("Title".into()),
+            ],
+        },
+        Command::Styles,
+        Command::Style(StyleCommand::Add {
+            name: "Pull quote".into(),
+            options: vec![StyleOption::Size(30.0), StyleOption::Italic(true)],
+        }),
+        Command::Style(StyleCommand::Set {
+            name: "Body".into(),
+            options: vec![StyleOption::Font(None)],
+        }),
+        Command::Style(StyleCommand::Rename {
+            from: "Body".into(),
+            to: "Body text".into(),
+        }),
+        Command::Style(StyleCommand::Remove {
+            name: "Body".into(),
+            into: None,
+        }),
+        Command::Style(StyleCommand::Remove {
+            name: "Body".into(),
+            into: Some(Replacement::Custom),
+        }),
+        Command::Style(StyleCommand::Remove {
+            name: "Body".into(),
+            into: Some(Replacement::Named("Title \"2\"".into())),
+        }),
     ];
     for command in commands {
         let line = command.to_string();
@@ -223,7 +257,7 @@ fn each_editing_command_applies_its_operation() {
                 area: NodeId(2),
                 content: Content::Text(TextContent {
                     text: "Hi".into(),
-                    style,
+                    style: StyleChoice::Custom(style),
                 }),
             },
         ),
@@ -243,7 +277,7 @@ fn each_editing_command_applies_its_operation() {
                 area: NodeId(3),
                 content: Content::Text(TextContent {
                     text: String::new(),
-                    style: TextStyle::default(),
+                    style: StyleChoice::Named(BODY.to_owned()),
                 }),
             },
         ),
@@ -299,14 +333,14 @@ fn the_replies_name_the_ids_a_command_created() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "tree"),
-        "s1 n4:beside(0.5,0.75)[n2 text \"\" | n3 text \"\" | n8:stacked(0.5)[n7 text \"\" | n5 text \"\"]]"
+        "s1 n4:beside(0.5,0.75)[n2 text \"\" style=\"Body\" | n3 text \"\" style=\"Body\" | n8:stacked(0.5)[n7 text \"\" style=\"Body\" | n5 text \"\" style=\"Body\"]]"
     );
     assert_eq!(ok(&mut s, &mut files, "asset cat.png"), "a9");
     assert_eq!(ok(&mut s, &mut files, "duplicate-slide s1"), "s16 root=n10");
 }
 
 /// `clear` empties an area's text: a text keeps its style, and an image area becomes a text in the
-/// default style.
+/// style a new area takes.
 #[test]
 fn clear_keeps_a_text_s_style_and_gives_an_image_area_the_default_one() {
     let mut files = MemoryFiles::default();
@@ -328,14 +362,17 @@ fn clear_keeps_a_text_s_style_and_gives_an_image_area_the_default_one() {
             style,
         })
     };
+    // n2 named Body, which `size=120` made custom with Body's other values; n3, an image, takes the
+    // style of a new area.
+    let body = s.document().styles[BODY].clone();
     assert_eq!(
         content(2),
-        text(TextStyle {
+        text(StyleChoice::Custom(TextStyle {
             size: 120.0,
-            ..TextStyle::default()
-        })
+            ..body
+        }))
     );
-    assert_eq!(content(3), text(TextStyle::default()));
+    assert_eq!(content(3), text(StyleChoice::Named(BODY.to_owned())));
 }
 
 #[test]
@@ -431,6 +468,19 @@ fn a_refused_command_changes_nothing() {
         "asset",
         "sample s1",
         "begin now",
+        // The style commands: a style of the table takes values, never a choice of style.
+        "style add \"X\" custom",
+        "style add \"X\" style=\"Title\"",
+        "style add X",
+        "style frob \"X\"",
+        "style remove \"Body\" into=",
+        "styles all",
+        "text n2 \"x\" style=",
+        "style set \"Nope\" bold",
+        "style add \"\"",
+        "style add \"Body\"",
+        "style rename \"Nope\" \"X\"",
+        "style remove \"Nope\"",
     ];
     assert_refused(&mut s, &mut files, &refused);
     // With no history and presenter mode off.
@@ -481,7 +531,7 @@ fn save_load_and_tree() {
     assert_eq!(t.document(), s.document());
     assert_eq!(
         ok(&mut t, &mut files, "tree s1"),
-        "s1 n4:beside(0.5)[n2 text \"Hello\" | n3 text \"\"]"
+        "s1 n4:beside(0.5)[n2 text \"Hello\" style=\"Body\" | n3 text \"\" style=\"Body\"]"
     );
 }
 
@@ -546,12 +596,15 @@ fn a_cancelled_group_restores_the_document_and_both_stacks() {
     ok(&mut s, &mut files, "redo");
     assert_eq!(
         ok(&mut s, &mut files, "tree s1"),
-        "s1 n4:beside(0.4)[n2 text \"A\" | n3 text \"\"]"
+        "s1 n4:beside(0.4)[n2 text \"A\" style=\"Body\" | n3 text \"\" style=\"Body\"]"
     );
     // And the undo stack: two undos reach the empty slide, a third removes the slide, and a
     // fourth has nothing, so the cancelled group left no step.
     run(&mut s, &mut files, "undo\nundo");
-    assert_eq!(ok(&mut s, &mut files, "tree s1"), "s1 n2 text \"\"");
+    assert_eq!(
+        ok(&mut s, &mut files, "tree s1"),
+        "s1 n2 text \"\" style=\"Body\""
+    );
     ok(&mut s, &mut files, "undo");
     assert!(s.document().slides.is_empty());
     assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
@@ -567,7 +620,10 @@ fn a_load_inside_a_group_closes_it_and_leaves_no_history() {
         "add-slide\nsave d.ron\nbegin\ntext n2 \"x\"",
     );
     ok(&mut s, &mut files, "load d.ron");
-    assert_eq!(ok(&mut s, &mut files, "tree s1"), "s1 n2 text \"\"");
+    assert_eq!(
+        ok(&mut s, &mut files, "tree s1"),
+        "s1 n2 text \"\" style=\"Body\""
+    );
     // The group was closed by the load: `end` finds none open, and nothing is left to undo.
     assert!(matches!(s.execute("end", &mut files), Some(Reply::Err(_))));
     assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
@@ -595,7 +651,7 @@ fn the_sample_opens_with_its_images_and_no_history() {
                 &mut files,
                 &format!("render {} out.png 192 108", slide.id)
             ),
-            "fallback=- missing=- glyphs=-"
+            "fallback=- missing=- glyphs=- styles=-"
         );
     }
 }

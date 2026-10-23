@@ -42,7 +42,7 @@ impl fmt::Display for AssetId {
     }
 }
 
-/// A presentation: its aspect ratio, its slides in order, and its assets.
+/// A presentation: its aspect ratio, its slides in order, its assets, and its named text styles.
 ///
 /// Every id of the document comes from one counter, which only grows, so a removed slide, node or
 /// asset never lends its id to another (`design@rootpoint-model@stable-ids`). Change a document only
@@ -53,18 +53,69 @@ pub struct Document {
     pub aspect: AspectRatio,
     pub slides: Vec<Slide>,
     pub assets: BTreeMap<AssetId, Asset>,
+    /// The named text styles, by name. A text names one, or holds its own values.
+    pub styles: BTreeMap<String, TextStyle>,
     pub(crate) next_id: u64,
 }
 
+/// A new document holds the predefined styles, Title, Subtitle, Body and Legend.
 impl Default for Document {
     fn default() -> Self {
         Document {
             aspect: AspectRatio::default(),
             slides: Vec::new(),
             assets: BTreeMap::new(),
+            styles: predefined_styles(),
             next_id: 1,
         }
     }
+}
+
+/// The style a new area takes when it copies none, by name, while the table holds it.
+pub const BODY: &str = "Body";
+
+/// The styles a new document holds: Title, Subtitle, Body and Legend, each a change of
+/// `TextStyle::default()`.
+pub fn predefined_styles() -> BTreeMap<String, TextStyle> {
+    let base = TextStyle::default;
+    BTreeMap::from([
+        (
+            "Title".to_owned(),
+            TextStyle {
+                size: 120.0,
+                bold: true,
+                h_align: HAlign::Center,
+                v_align: VAlign::Middle,
+                ..base()
+            },
+        ),
+        (
+            "Subtitle".to_owned(),
+            TextStyle {
+                size: 64.0,
+                h_align: HAlign::Center,
+                ..base()
+            },
+        ),
+        (
+            BODY.to_owned(),
+            TextStyle {
+                size: 40.0,
+                h_align: HAlign::Left,
+                v_align: VAlign::Top,
+                ..base()
+            },
+        ),
+        (
+            "Legend".to_owned(),
+            TextStyle {
+                size: 28.0,
+                italic: true,
+                h_align: HAlign::Center,
+                ..base()
+            },
+        ),
+    ])
 }
 
 impl Document {
@@ -72,7 +123,29 @@ impl Document {
     /// by its inverse gives a document equal to the original in this sense: the counter has grown,
     /// so that no id is reused.
     pub fn same_content(&self, other: &Document) -> bool {
-        self.aspect == other.aspect && self.slides == other.slides && self.assets == other.assets
+        self.aspect == other.aspect
+            && self.slides == other.slides
+            && self.assets == other.assets
+            && self.styles == other.styles
+    }
+
+    /// The values a text's style draws with: the table's entry for a name, the text's own values,
+    /// or `TextStyle::default()` for a name the table lacks, a cosmetic breach.
+    pub fn resolve_style(&self, choice: &StyleChoice) -> TextStyle {
+        match choice {
+            StyleChoice::Named(name) => self.styles.get(name).cloned().unwrap_or_default(),
+            StyleChoice::Custom(style) => style.clone(),
+        }
+    }
+
+    /// The style of a new area that copies no other: Body while the table holds it, the default
+    /// values otherwise.
+    pub fn new_area_style(&self) -> StyleChoice {
+        if self.styles.contains_key(BODY) {
+            StyleChoice::Named(BODY.to_owned())
+        } else {
+            StyleChoice::Custom(TextStyle::default())
+        }
     }
 
     pub(crate) fn alloc(&mut self) -> u64 {
@@ -208,12 +281,13 @@ pub enum Content {
     Image(ImageContent),
 }
 
-/// An empty text, in the default style: the content of a new area.
+/// An empty text, in the default values. It reads no style table: the operations give a new area
+/// the style `Document::new_area_style` or the area it was split from gives.
 impl Default for Content {
     fn default() -> Self {
         Content::Text(TextContent {
             text: String::new(),
-            style: TextStyle::default(),
+            style: StyleChoice::Custom(TextStyle::default()),
         })
     }
 }
@@ -222,7 +296,15 @@ impl Default for Content {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextContent {
     pub text: String,
-    pub style: TextStyle,
+    pub style: StyleChoice,
+}
+
+/// A text's style: a style of the document's table, by its name, or the text's own values. Editing
+/// a named style changes every text that names it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum StyleChoice {
+    Named(String),
+    Custom(TextStyle),
 }
 
 /// The style of a text area. Sizes are in slide units.

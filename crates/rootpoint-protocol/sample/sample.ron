@@ -1,6 +1,6 @@
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 2,
+    version: 3,
     aspect: (
         width: 16,
         height: 9,
@@ -9,6 +9,64 @@
     assets: {
         19: (
             source: Path("splits.png"),
+        ),
+    },
+    styles: {
+        "Body": (
+            font: Builtin("sans"),
+            size: 40.0,
+            bold: false,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Left,
+            v_align: Top,
+        ),
+        "Legend": (
+            font: Builtin("sans"),
+            size: 28.0,
+            bold: false,
+            italic: true,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Top,
+        ),
+        "Subtitle": (
+            font: Builtin("sans"),
+            size: 64.0,
+            bold: false,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Top,
+        ),
+        "Title": (
+            font: Builtin("sans"),
+            size: 120.0,
+            bold: true,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Middle,
         ),
     },
     slides: [
@@ -22,20 +80,7 @@
                         id: 2,
                         content: Text(
                             text: "rootpoint",
-                            style: (
-                                font: Builtin("sans"),
-                                size: 120.0,
-                                bold: true,
-                                italic: false,
-                                colour: (
-                                    r: 0,
-                                    g: 0,
-                                    b: 0,
-                                    a: 255,
-                                ),
-                                h_align: Center,
-                                v_align: Middle,
-                            ),
+                            style: Named("Title"),
                         ),
                     ),
                     Split(
@@ -46,40 +91,14 @@
                                 id: 3,
                                 content: Text(
                                     text: "A slide is a tree of splits. Select an area and split it: the split buttons of the side panel, or Shift and an arrow, cut it at its middle. Ctrl or Shift and a click cut it where you click; hold Alt to snap.",
-                                    style: (
-                                        font: Builtin("sans"),
-                                        size: 40.0,
-                                        bold: false,
-                                        italic: false,
-                                        colour: (
-                                            r: 0,
-                                            g: 0,
-                                            b: 0,
-                                            a: 255,
-                                        ),
-                                        h_align: Left,
-                                        v_align: Top,
-                                    ),
+                                    style: Named("Body"),
                                 ),
                             ),
                             Area(
                                 id: 5,
                                 content: Text(
                                     text: "Click an area to select it. Alt+Up selects its parent, Alt+Down a child, Alt+Left and Alt+Right its siblings. The breadcrumb in the side panel shows the path from the slide\'s root.",
-                                    style: (
-                                        font: Builtin("sans"),
-                                        size: 40.0,
-                                        bold: false,
-                                        italic: false,
-                                        colour: (
-                                            r: 0,
-                                            g: 0,
-                                            b: 0,
-                                            a: 255,
-                                        ),
-                                        h_align: Left,
-                                        v_align: Top,
-                                    ),
+                                    style: Named("Body"),
                                 ),
                             ),
                         ],
@@ -103,7 +122,7 @@
                         id: 8,
                         content: Text(
                             text: "Dividers and moving",
-                            style: (
+                            style: Custom(
                                 font: Builtin("sans"),
                                 size: 80.0,
                                 bold: true,
@@ -127,27 +146,14 @@
                                 id: 9,
                                 content: Text(
                                     text: "Drag a divider to resize the areas on each side; Esc cancels the drag, and a double-click puts the divider halfway.",
-                                    style: (
-                                        font: Builtin("sans"),
-                                        size: 40.0,
-                                        bold: false,
-                                        italic: false,
-                                        colour: (
-                                            r: 0,
-                                            g: 0,
-                                            b: 0,
-                                            a: 255,
-                                        ),
-                                        h_align: Left,
-                                        v_align: Top,
-                                    ),
+                                    style: Named("Body"),
                                 ),
                             ),
                             Area(
                                 id: 11,
                                 content: Text(
                                     text: "Drag an area\'s grip onto another area to swap them, or onto its edge to move it there. The hint says what the drop will do.",
-                                    style: (
+                                    style: Custom(
                                         font: Builtin("sans"),
                                         size: 40.0,
                                         bold: false,
@@ -207,7 +213,7 @@
                         id: 15,
                         content: Text(
                             text: "The same image in fit, left, and in fill, right.",
-                            style: (
+                            style: Custom(
                                 font: Builtin("sans"),
                                 size: 36.0,
                                 bold: false,

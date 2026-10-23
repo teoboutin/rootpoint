@@ -277,6 +277,14 @@ impl App {
                 .collect(),
         );
         list(
+            "missing styles, drawn in the default style",
+            report
+                .missing_styles
+                .iter()
+                .map(|(area, name)| format!("{area} {name}"))
+                .collect(),
+        );
+        list(
             "text not drawn",
             report.undrawn_text.iter().map(|n| n.to_string()).collect(),
         );

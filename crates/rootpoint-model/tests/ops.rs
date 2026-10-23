@@ -136,7 +136,7 @@ fn every_operation_is_undone_by_its_inverse() {
             area: top,
             content: Content::Text(TextContent {
                 text: "Hello".to_owned(),
-                style: TextStyle::default(),
+                style: StyleChoice::Custom(TextStyle::default()),
             }),
         },
     )
@@ -244,7 +244,7 @@ fn splitting_a_child_along_its_parents_axis_merges_into_the_parent() {
         assert!(matches!(
             &s.children[new],
             Node::Area(Area { content: Content::Text(t), .. })
-                if t.text.is_empty() && t.style == TextStyle::default()
+                if t.text.is_empty() && t.style == StyleChoice::Named(BODY.to_owned())
         ));
         assert_ne!(s.children[new].id(), right);
         check_invariants(&doc);
@@ -429,7 +429,7 @@ struct Step {
 fn step() -> impl Strategy<Value = Step> {
     // Positions near 0 and 1 as well as ordinary ones, where rounding meets the dividers.
     let at = prop_oneof![0.05f64..0.95, 1e-12f64..1e-3, (1.0 - 1e-3)..(1.0 - 1e-12)];
-    (0u8..14, any::<usize>(), any::<usize>(), at, any::<bool>()).prop_map(
+    (0u8..18, any::<usize>(), any::<usize>(), at, any::<bool>()).prop_map(
         |(kind, pick, other, at, flag)| Step {
             kind,
             pick,
@@ -439,6 +439,10 @@ fn step() -> impl Strategy<Value = Step> {
         },
     )
 }
+
+/// The names the style steps pick from: two of the predefined styles, two new ones, and the empty
+/// name, which is refused.
+const STYLE_NAMES: [&str; 5] = ["Title", "Body", "Quote", "Note", ""];
 
 fn all_nodes(doc: &Document) -> Vec<&Node> {
     fn walk<'a>(n: &'a Node, out: &mut Vec<&'a Node>) {
@@ -518,7 +522,7 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
             area: areas[pick(areas.len())],
             content: Content::Text(TextContent {
                 text: format!("text {}", s.other % 100),
-                style: TextStyle::default(),
+                style: StyleChoice::Custom(TextStyle::default()),
             }),
         },
         8 if !doc.slides.is_empty() => Op::MoveSlide {
@@ -552,14 +556,51 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
             area: areas[pick(areas.len())],
             content: Content::Text(TextContent {
                 text: "in an asset font".to_owned(),
-                style: TextStyle {
+                style: StyleChoice::Custom(TextStyle {
                     font: FontRef::Asset(assets[s.other % assets.len()]),
                     ..TextStyle::default()
-                },
+                }),
             }),
         },
         13 if !doc.slides.is_empty() => Op::RemoveSlide {
             slide: doc.slides[pick(doc.slides.len())].id,
+        },
+        // Style names include ones the table holds, ones it lacks and the empty name, and the
+        // texts name them, so renames and removals meet texts that name a style.
+        14 => Op::AddStyle {
+            name: STYLE_NAMES[s.pick % STYLE_NAMES.len()].to_owned(),
+            style: TextStyle {
+                size: 10.0 + (s.other % 90) as f64,
+                ..TextStyle::default()
+            },
+        },
+        15 => Op::SetStyle {
+            name: STYLE_NAMES[s.pick % STYLE_NAMES.len()].to_owned(),
+            style: TextStyle {
+                bold: s.flag,
+                ..TextStyle::default()
+            },
+        },
+        16 => Op::RenameStyle {
+            from: STYLE_NAMES[s.pick % STYLE_NAMES.len()].to_owned(),
+            to: STYLE_NAMES[s.other % STYLE_NAMES.len()].to_owned(),
+        },
+        17 if s.flag && !areas.is_empty() => Op::SetContent {
+            area: areas[pick(areas.len())],
+            content: Content::Text(TextContent {
+                text: "named".to_owned(),
+                style: StyleChoice::Named(STYLE_NAMES[s.other % STYLE_NAMES.len()].to_owned()),
+            }),
+        },
+        17 => Op::RemoveStyle {
+            name: STYLE_NAMES[s.pick % STYLE_NAMES.len()].to_owned(),
+            into: match s.other % 3 {
+                0 => None,
+                1 => Some(Replacement::Custom),
+                _ => Some(Replacement::Named(
+                    STYLE_NAMES[(s.other / 3) % STYLE_NAMES.len()].to_owned(),
+                )),
+            },
         },
         _ => return None,
     })
@@ -587,4 +628,30 @@ proptest! {
             }
         }
     }
+}
+
+#[test]
+fn an_asset_a_style_uses_cannot_be_removed() {
+    let (mut doc, _) = fixture();
+    let RemoveAssetId(asset) = add_asset(
+        &mut doc,
+        Asset {
+            source: AssetSource::Path("font.ttf".to_owned()),
+        },
+    );
+    apply(
+        &mut doc,
+        Op::AddStyle {
+            name: "Quote".to_owned(),
+            style: TextStyle {
+                font: FontRef::Asset(asset),
+                ..TextStyle::default()
+            },
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        apply(&mut doc, Op::RemoveAsset { id: asset }),
+        Err(OpError::AssetInUse(asset))
+    );
 }

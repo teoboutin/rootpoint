@@ -43,7 +43,8 @@ fn ids_survive_save_and_load() {
     assert_eq!(
         after.last(),
         Some(&Reply::Ok(
-            "s1 n6:stacked(0.5)[n3 text \"\" | n5 text \"by id\"]".into()
+            "s1 n6:stacked(0.5)[n3 text \"\" style=\"Body\" | n5 text \"by id\" style=\"Body\"]"
+                .into()
         ))
     );
 }
@@ -54,7 +55,10 @@ fn a_headless_script_renders_the_renderers_golden_image() {
     std::fs::create_dir_all(dir.join("talk")).unwrap();
     std::fs::write(dir.join("talk/two-colours.png"), two_colour_png()).unwrap();
     let out = headless(&script("golden.txt"), &dir);
-    assert!(out.ends_with("ok fallback=- missing=- glyphs=-\n"), "{out}");
+    assert!(
+        out.ends_with("ok fallback=- missing=- glyphs=- styles=-\n"),
+        "{out}"
+    );
     let golden = image::open(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../rootpoint-render/tests/golden/fit-and-fill.png"),
@@ -85,7 +89,7 @@ fn a_render_reports_what_it_could_not_draw() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 192 108"),
-        "fallback=- missing=a5 glyphs=n3"
+        "fallback=- missing=a5 glyphs=n3 styles=-"
     );
     assert!(files.files.contains_key("out.png"));
 }
@@ -104,20 +108,20 @@ fn a_save_into_another_directory_keeps_every_asset_readable() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 192 108"),
-        "fallback=- missing=- glyphs=-"
+        "fallback=- missing=- glyphs=- styles=-"
     );
     ok(&mut s, &mut files, "save talk/deck.ron");
     assert_eq!(files.files.get("talk/pic.png"), Some(&two_colour_png()));
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 192 108"),
-        "fallback=- missing=- glyphs=-"
+        "fallback=- missing=- glyphs=- styles=-"
     );
     let mut t = Session::new();
     ok(&mut t, &mut files, "load talk/deck.ron");
     assert_eq!(t.document(), s.document());
     assert_eq!(
         ok(&mut t, &mut files, "render s1 talk/out.png 192 108"),
-        "fallback=- missing=- glyphs=-"
+        "fallback=- missing=- glyphs=- styles=-"
     );
 }
 
@@ -248,7 +252,7 @@ fn an_undo_after_a_save_restores_an_asset_that_names_its_file() {
     assert_eq!(sources(&s), vec![("a3".into(), path("../cat.png"))]);
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 192 108"),
-        "fallback=- missing=- glyphs=-"
+        "fallback=- missing=- glyphs=- styles=-"
     );
     // Where no path names the file from the new directory, the stack holds its bytes.
     let mut s = Session::new();

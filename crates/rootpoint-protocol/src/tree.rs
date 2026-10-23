@@ -1,11 +1,11 @@
 //! The one-line form of a slide's tree that `tree` replies with.
 
-use rootpoint_model::{Axis, Content, ImageFit, Node, Slide};
+use rootpoint_model::{Axis, Content, ImageFit, Node, Slide, StyleChoice};
 
 use crate::command::quote_always;
 
 /// The slide as `s<n> <node>`: a split as `n<n>:<axis>(<dividers>)[<child> | ...]`, an area as
-/// `n<n>` and its content.
+/// `n<n>` and its content, a text with its style, `style="<name>"` or `custom`.
 pub(crate) fn slide_tree(slide: &Slide) -> String {
     format!("{} {}", slide.id, node_tree(&slide.root))
 }
@@ -27,7 +27,13 @@ fn node_tree(node: &Node) -> String {
             )
         }
         Node::Area(a) => match &a.content {
-            Content::Text(t) => format!("{} text {}", a.id, quote_always(&t.text)),
+            Content::Text(t) => {
+                let style = match &t.style {
+                    StyleChoice::Named(name) => format!("style={}", quote_always(name)),
+                    StyleChoice::Custom(_) => "custom".to_owned(),
+                };
+                format!("{} text {} {style}", a.id, quote_always(&t.text))
+            }
             Content::Image(i) => {
                 let fit = match i.fit {
                     ImageFit::Fit => "fit",

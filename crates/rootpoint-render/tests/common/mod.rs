@@ -95,7 +95,7 @@ pub fn assert_golden(pixmap: Pixmap, name: &str) {
 pub fn text(text: &str, style: TextStyle) -> Content {
     Content::Text(TextContent {
         text: text.to_owned(),
-        style,
+        style: StyleChoice::Custom(style),
     })
 }
 

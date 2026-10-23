@@ -13,8 +13,8 @@ use crate::selection;
 
 /// The sizes of the size menu, in slide units. A menu, not a drag field: each choice is one
 /// `text` command and one undo step, where a drag field would send one each frame of its drag.
-const SIZES: [f64; 10] = [
-    24.0, 32.0, 40.0, 48.0, 64.0, 80.0, 96.0, 120.0, 160.0, 200.0,
+const SIZES: [f64; 11] = [
+    24.0, 28.0, 32.0, 40.0, 48.0, 64.0, 80.0, 96.0, 120.0, 160.0, 200.0,
 ];
 
 /// The colours of the colour row: one click is one command and one undo step, where a colour
@@ -250,8 +250,11 @@ impl App {
             self.add_asset_dialog();
         }
         match content {
+            // The values drawn, a named style's or the text's own; a change sends one option, which
+            // makes a named style custom, so the panel changes no shared style.
             Content::Text(t) => {
-                self.style(ui, &t.style);
+                let values = self.session.document().resolve_style(&t.style);
+                self.style(ui, &values);
             }
             Content::Image(i) => self.image(ui, i.asset, i.fit),
         }

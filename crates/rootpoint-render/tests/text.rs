@@ -185,3 +185,36 @@ fn area_text_gives_the_layout_render_slide_draws() {
     let image = doc.slides[0].root.areas()[1].id;
     assert!(area_text(&doc, slide, image, &mut fonts).is_none());
 }
+
+/// A text naming a style of the table draws as a text holding that style's values.
+#[test]
+fn a_named_style_draws_as_its_table_entry() {
+    let render = |style: StyleChoice| {
+        let (mut doc, root) = one_slide();
+        set(
+            &mut doc,
+            root,
+            Content::Text(TextContent {
+                text: "A title in its style".to_owned(),
+                style,
+            }),
+        );
+        render_slide(
+            &doc,
+            doc.slides[0].id,
+            384,
+            216,
+            &mut FontSet::new(),
+            &ImageSet::new(),
+            Precision::Portable,
+        )
+        .unwrap()
+    };
+    let title = Document::default().styles["Title"].clone();
+    let named = render(StyleChoice::Named("Title".to_owned()));
+    let custom = render(StyleChoice::Custom(title));
+    assert_eq!(named.report.missing_styles, vec![]);
+    assert!(named.pixmap.data_as_u8_slice() == custom.pixmap.data_as_u8_slice());
+    let default = render(StyleChoice::Custom(TextStyle::default()));
+    assert!(named.pixmap.data_as_u8_slice() != default.pixmap.data_as_u8_slice());
+}

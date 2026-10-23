@@ -60,12 +60,12 @@ fn fixture() -> Document {
         areas[1],
         Content::Text(TextContent {
             text: "A title".to_owned(),
-            style: TextStyle {
+            style: StyleChoice::Custom(TextStyle {
                 size: 72.0,
                 bold: true,
                 h_align: HAlign::Center,
                 ..TextStyle::default()
-            },
+            }),
         }),
     );
     set(
@@ -73,7 +73,7 @@ fn fixture() -> Document {
         areas[2],
         Content::Text(TextContent {
             text: "Some wrapped text below the title.".to_owned(),
-            style: TextStyle::default(),
+            style: StyleChoice::Custom(TextStyle::default()),
         }),
     );
     doc
@@ -160,7 +160,7 @@ fn content() -> impl Strategy<Value = Content> {
             .prop_map(|(text, size, bold, italic, [r, g, b, a], h, v)| {
                 Content::Text(TextContent {
                     text,
-                    style: TextStyle {
+                    style: StyleChoice::Custom(TextStyle {
                         font: FontRef::Builtin("sans".to_owned()),
                         size,
                         bold,
@@ -168,7 +168,7 @@ fn content() -> impl Strategy<Value = Content> {
                         colour: Rgba { r, g, b, a },
                         h_align: [HAlign::Left, HAlign::Center, HAlign::Right][h as usize],
                         v_align: [VAlign::Top, VAlign::Middle, VAlign::Bottom][v as usize],
-                    },
+                    }),
                 })
             }),
     ]
@@ -216,7 +216,7 @@ proptest! {
                     area,
                     content: Content::Text(TextContent {
                         text: "in an asset font".to_owned(),
-                        style: TextStyle { font: FontRef::Asset(asset), ..TextStyle::default() },
+                        style: StyleChoice::Custom(TextStyle { font: FontRef::Asset(asset), ..TextStyle::default() }),
                     }),
                 },
                 (5, _) => match &slide.root {

@@ -1,6 +1,6 @@
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 2,
+    version: 3,
     aspect: (
         width: 16,
         height: 9,
@@ -9,6 +9,64 @@
     assets: {
         7: (
             source: Path("images/cat.png"),
+        ),
+    },
+    styles: {
+        "Body": (
+            font: Builtin("sans"),
+            size: 40.0,
+            bold: false,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Left,
+            v_align: Top,
+        ),
+        "Legend": (
+            font: Builtin("sans"),
+            size: 28.0,
+            bold: false,
+            italic: true,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Top,
+        ),
+        "Subtitle": (
+            font: Builtin("sans"),
+            size: 64.0,
+            bold: false,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Top,
+        ),
+        "Title": (
+            font: Builtin("sans"),
+            size: 120.0,
+            bold: true,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Middle,
         ),
     },
     slides: [
@@ -33,7 +91,7 @@
                                 id: 3,
                                 content: Text(
                                     text: "A title",
-                                    style: (
+                                    style: Custom(
                                         font: Builtin("sans"),
                                         size: 72.0,
                                         bold: true,
@@ -53,7 +111,7 @@
                                 id: 5,
                                 content: Text(
                                     text: "Some wrapped text below the title.",
-                                    style: (
+                                    style: Custom(
                                         font: Builtin("sans"),
                                         size: 48.0,
                                         bold: false,

@@ -16,7 +16,7 @@ The binary `rootpoint-headless` reads commands from stdin and writes the replies
 $ printf 'add-slide\nsplit n2 beside 0.5\ntree\n' | rootpoint-headless
 ok s1 root=n2
 ok new=n3 split=n4
-ok s1 n4:beside(0.5)[n2 text "" | n3 text ""]
+ok s1 n4:beside(0.5)[n2 text "" style="Body" | n3 text "" style="Body"]
 ```
 
 The binary `rootpoint-ctl`, on Unix, sends commands to a running editor's control socket and
@@ -51,6 +51,15 @@ an area as it is, so an area that names a missing asset a file brought keeps nam
 edited by hand that names one, by an id below its `next_id`, still loads: `render` draws the image
 grey, or the text in the built-in sans, and its reply names the asset after `missing=`, or the
 area after `fallback=`.
+
+A text names a style of the document's table, `text n3 "Hi" style="Title"`, or holds its own
+values, `custom`; `tree` prints which. Any other option of `text` changes the values the text
+draws with, so a named text becomes custom and the style itself is unchanged. `style add`, `style
+set`, `style rename` and `style remove` change the table, a name always quoted; `styles` lists it,
+each style as the options `style add` takes. `style remove` is refused while a text names the style,
+unless `into="<other>"` or `into=custom` says what those texts take instead. A command naming a
+style the table lacks is refused; a file naming one loads, its text drawn in the default values,
+and `render` names the area and the style after `styles=`.
 
 `sample` opens the built-in sample, a presentation of three slides that says how the editor's
 gestures work; the crate holds its RON text and its image, in `sample/`, so it opens in every host

@@ -326,7 +326,7 @@ impl App {
         }
     }
 
-    /// Set the selected area's content to an empty text, in the default style.
+    /// Set the selected area's content to an empty text, in the style a new area takes.
     pub fn set_text_content(&mut self) {
         if self.socket_holds() {
             return;

@@ -14,7 +14,7 @@ fn a_script_gets_one_reply_per_command() {
     );
     assert_eq!(
         out,
-        "ok s1 root=n2\nok new=n3 split=n4\nerr unknown command `nonsense`\nok s1 n4:beside(0.5)[n2 text \"\" | n3 text \"\"]\n"
+        "ok s1 root=n2\nok new=n3 split=n4\nerr unknown command `nonsense`\nok s1 n4:beside(0.5)[n2 text \"\" style=\"Body\" | n3 text \"\" style=\"Body\"]\n"
     );
 }
 
@@ -32,7 +32,7 @@ fn a_line_that_is_not_utf8_is_refused_and_the_session_goes_on() {
     let out = headless_bytes(b"add-slide\n\xff\xfe\ntree\n", &dir);
     assert_eq!(
         out,
-        "ok s1 root=n2\nerr the line is not UTF-8\nok s1 n2 text \"\"\n"
+        "ok s1 root=n2\nerr the line is not UTF-8\nok s1 n2 text \"\" style=\"Body\"\n"
     );
 }
 
@@ -45,7 +45,7 @@ fn control_and_release_reply_ok_headless_and_change_nothing() {
     );
     assert_eq!(
         with,
-        "ok\nok s1 root=n2\nok\nok new=n3 split=n4\nerr a group is open\nok\nok\nok\nok s1 n4:beside(0.5)[n2 text \"\" | n3 text \"\"]\n"
+        "ok\nok s1 root=n2\nok\nok new=n3 split=n4\nerr a group is open\nok\nok\nok\nok s1 n4:beside(0.5)[n2 text \"\" style=\"Body\" | n3 text \"\" style=\"Body\"]\n"
     );
     let without = headless("add-slide\nbegin\nsplit n2 beside 0.5\nend\ntree\n", &dir);
     assert_eq!(with.lines().last(), without.lines().last());
