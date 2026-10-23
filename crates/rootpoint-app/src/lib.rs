@@ -78,6 +78,38 @@ pub struct App {
     /// The pickers and full screen of the page.
     #[cfg(target_arch = "wasm32")]
     web: web::Web,
+    /// The tab the side panel shows.
+    tab: SideTab,
+    /// The Styles tab's own state, the window's and not the session's.
+    styles_tab: StylesTab,
+}
+
+/// The tabs of the side panel.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum SideTab {
+    /// The outline, the actions on the selection and its content.
+    #[default]
+    Selection,
+    /// The table of named styles.
+    Styles,
+}
+
+/// The state of the Styles tab: the style selected in its list, the name field's text while it is
+/// edited, and the dialog of a removal, if open. It is the window's own state, a widget's, which no
+/// command sets.
+#[derive(Clone, Debug, Default, PartialEq)]
+struct StylesTab {
+    selected: Option<String>,
+    name_edit: Option<String>,
+    removal: Option<Removal>,
+}
+
+/// The dialog of the removal of a style that texts name: the style, and the replacement chosen,
+/// another style, or `None` for a custom copy.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Removal {
+    pub name: String,
+    pub into: Option<String>,
 }
 
 /// Who holds the authority to edit, per `design@rootpoint-app@one-controller-at-a-time`: the window
@@ -137,17 +169,20 @@ struct SlideView {
     outline: Vec<OutlineRow>,
     /// The node of the outline's row under the pointer in this frame, which the overlay outlines.
     hovered_row: Option<NodeId>,
+    /// Where the last frame placed the side panel's buttons and tabs, by label.
+    buttons: Vec<(String, Rect)>,
 }
 
 /// A row of the side panel's outline, as the last frame placed it: the node it names, `None` for
 /// the slide's own row, its depth in the tree, its place in points, and whether it is the
-/// selection's.
+/// selection's, and its text.
 #[derive(Clone, Debug, PartialEq)]
 pub struct OutlineRow {
     pub node: Option<NodeId>,
     pub depth: usize,
     pub rect: Rect,
     pub selected: bool,
+    pub label: String,
 }
 
 impl App {
@@ -175,6 +210,8 @@ impl App {
             held: None,
             #[cfg(target_arch = "wasm32")]
             web: web::Web::default(),
+            tab: SideTab::default(),
+            styles_tab: StylesTab::default(),
         }
     }
 
@@ -212,6 +249,44 @@ impl App {
     /// Where the last frame placed each row of the slide list, in points.
     pub fn slide_rows(&self) -> &[(SlideId, Rect)] {
         &self.view.rows
+    }
+
+    /// The tab the side panel shows.
+    pub fn side_tab(&self) -> SideTab {
+        self.tab
+    }
+
+    /// Show a tab of the side panel, the window's own state.
+    pub fn show_tab(&mut self, tab: SideTab) {
+        self.tab = tab;
+    }
+
+    /// The style selected in the Styles tab's list.
+    pub fn selected_style(&self) -> Option<&str> {
+        self.styles_tab.selected.as_deref()
+    }
+
+    /// Select a style in the Styles tab's list, the window's own state: it shows nothing on the
+    /// slide, and needs no authority to edit.
+    pub fn select_style(&mut self, name: &str) {
+        if self.styles_tab.selected.as_deref() != Some(name) {
+            self.styles_tab.name_edit = None;
+        }
+        self.styles_tab.selected = Some(name.to_owned());
+    }
+
+    /// The dialog of a style's removal, while it is open.
+    pub fn removal(&self) -> Option<&Removal> {
+        self.styles_tab.removal.as_ref()
+    }
+
+    /// Where the last frame placed the button or the tab labelled `label`, in points.
+    pub fn button_rect(&self, label: &str) -> Option<Rect> {
+        self.view
+            .buttons
+            .iter()
+            .find(|(l, _)| l == label)
+            .map(|(_, r)| *r)
     }
 
     /// Where the last frame placed each row of the outline, in points.
@@ -419,6 +494,8 @@ impl App {
         self.view.side_panel = Some(side.response.rect);
         self.view.side_content = Some(side.inner);
         CentralPanel::no_frame().show(ui, |ui| self.slide_view(ui));
+        let ctx = ui.ctx().clone();
+        self.removal_dialog(&ctx);
     }
 
     /// Presenter mode: the presented slide alone, scaled uniformly to the largest size that fits

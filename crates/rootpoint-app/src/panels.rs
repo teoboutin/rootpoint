@@ -10,7 +10,7 @@ use rootpoint_model::{
 use rootpoint_protocol::StyleOption;
 
 use crate::hit::Edge;
-use crate::{App, OutlineRow};
+use crate::{App, OutlineRow, SideTab};
 
 /// The sizes of the size menu, in slide units. A menu, not a drag field: each choice is one
 /// `text` command and one undo step, where a drag field would send one each frame of its drag.
@@ -153,13 +153,53 @@ impl App {
         }
     }
 
-    /// The side panel: the outline, the actions on the selection, and the selected area's
-    /// content.
+    /// A button whose place the frame records by its label, so a test can click it; it does nothing
+    /// while `enabled` is false.
+    fn button(&mut self, ui: &mut Ui, label: &str, enabled: bool) -> bool {
+        let response = ui.add_enabled(enabled, egui::Button::new(label));
+        self.view.buttons.push((label.to_owned(), response.rect));
+        response.clicked()
+    }
+
+    /// A tab of the side panel, whose place the frame records by its label.
+    fn tab(&mut self, ui: &mut Ui, tab: SideTab, label: &str) {
+        let response = ui.selectable_label(self.tab == tab, label);
+        self.view.buttons.push((label.to_owned(), response.rect));
+        if response.clicked() {
+            self.tab = tab;
+        }
+    }
+
+    /// The side panel: its two tabs, the selection's and the styles'. While the socket holds the
+    /// authority to edit, every control that sends an edit is disabled, and the outline and the
+    /// list of styles, which change only what the window shows, still work, per
+    /// `design@rootpoint-app@one-controller-at-a-time`.
     pub(crate) fn side_panel(&mut self, ui: &mut Ui) {
+        self.view.buttons.clear();
+        ui.horizontal(|ui| {
+            self.tab(ui, SideTab::Selection, "Selection");
+            self.tab(ui, SideTab::Styles, "Styles");
+        });
+        ui.separator();
+        match self.tab {
+            SideTab::Selection => self.selection_tab(ui),
+            SideTab::Styles => self.styles_tab(ui),
+        }
+    }
+
+    /// The Selection tab: the outline, the actions on the selection, and the selected area's
+    /// content.
+    fn selection_tab(&mut self, ui: &mut Ui) {
         self.outline(ui);
         if self.session.view().selected.is_none() {
             return;
         }
+        let editable = !self.socket_holds();
+        ui.add_enabled_ui(editable, |ui| self.selection_actions(ui));
+    }
+
+    /// The actions on the selection and its content.
+    fn selection_actions(&mut self, ui: &mut Ui) {
         ui.separator();
         ui.label("Split, the new area:");
         ui.horizontal_wrapped(|ui| {
@@ -283,7 +323,7 @@ impl App {
             ui.painter().with_clip_rect(rect).text(
                 rect.left_center() + Vec2::new(4.0 + 14.0 * depth as f32, 0.0),
                 Align2::LEFT_CENTER,
-                label,
+                label.clone(),
                 FontId::proportional(13.0),
                 visuals.text_color(),
             );
@@ -292,6 +332,7 @@ impl App {
                 depth,
                 rect,
                 selected: here,
+                label,
             });
             if response.clicked() {
                 clicked = Some(node);
@@ -332,19 +373,190 @@ impl App {
             self.add_asset_dialog();
         }
         match content {
-            // The values drawn, a named style's or the text's own; a change sends one option, which
-            // makes a named style custom, so the panel changes no shared style,
-            // `design@rootpoint-model@named-styles`.
+            // The style's name, or custom, then the values drawn, a named style's or the text's
+            // own; a change of a value sends one option, which makes a named style custom, so the
+            // Selection tab changes no shared style, `design@rootpoint-model@named-styles`.
             Content::Text(t) => {
+                self.style_choice(ui, &t.style);
                 let values = self.session.document().resolve_style(&t.style);
-                self.style(ui, &values);
+                if let Some(option) = self.style(ui, &values) {
+                    self.set_style(option);
+                }
             }
             Content::Image(i) => self.image(ui, i.asset, i.fit),
         }
     }
 
-    /// The style of the selected text: each change sends one option.
-    fn style(&mut self, ui: &mut Ui, style: &rootpoint_model::TextStyle) {
+    /// The selected text's style: a style of the table, by name, or its own values, "custom".
+    fn style_choice(&mut self, ui: &mut Ui, choice: &StyleChoice) {
+        let names: Vec<String> = self.session.document().styles.keys().cloned().collect();
+        let shown = match choice {
+            StyleChoice::Named(name) if names.contains(name) => name.clone(),
+            StyleChoice::Named(name) => format!("\u{26a0} {name}"),
+            StyleChoice::Custom(_) => "custom".to_owned(),
+        };
+        let mut chosen = None;
+        egui::ComboBox::from_label("style")
+            .selected_text(shown)
+            .show_ui(ui, |ui| {
+                for name in names {
+                    let on = *choice == StyleChoice::Named(name.clone());
+                    if ui.selectable_label(on, &name).clicked() && !on {
+                        chosen = Some(Some(name));
+                    }
+                }
+                let custom = matches!(choice, StyleChoice::Custom(_));
+                if ui.selectable_label(custom, "custom").clicked() && !custom {
+                    chosen = Some(None);
+                }
+            });
+        match chosen {
+            Some(Some(name)) => self.name_style(name),
+            Some(None) => self.make_custom(),
+            None => {}
+        }
+    }
+
+    /// The Styles tab: the table's styles, each with the number of texts that name it; a click
+    /// selects one in the list, the window's own state, and the selected style's name and values
+    /// below send `style rename` and `style set`, the only controls of the window that change a
+    /// named style, `design@rootpoint-model@named-styles`.
+    fn styles_tab(&mut self, ui: &mut Ui) {
+        let styles: Vec<(String, usize)> = self
+            .session
+            .document()
+            .styles
+            .keys()
+            .map(|name| (name.clone(), self.style_users(name)))
+            .collect();
+        if let Some(selected) = &self.styles_tab.selected
+            && !styles.iter().any(|(name, _)| name == selected)
+        {
+            self.styles_tab.selected = None;
+        }
+        for (name, users) in &styles {
+            let label = match users {
+                1 => format!("{name}   1 area"),
+                n => format!("{name}   {n} areas"),
+            };
+            let on = self.styles_tab.selected.as_ref() == Some(name);
+            let response = ui.selectable_label(on, label);
+            self.view
+                .buttons
+                .push((format!("style {name}"), response.rect));
+            if response.clicked() {
+                self.select_style(name);
+            }
+        }
+        let editable = !self.socket_holds();
+        ui.separator();
+        ui.horizontal_wrapped(|ui| {
+            if self.button(ui, "New", editable) {
+                self.add_style();
+            }
+            let any = self.styles_tab.selected.is_some();
+            if self.button(ui, "Duplicate", editable && any) {
+                self.duplicate_style();
+            }
+            if self.button(ui, "Remove", editable && any) {
+                self.remove_style();
+            }
+        });
+        let Some(name) = self.styles_tab.selected.clone() else {
+            return;
+        };
+        let Some(values) = self.session.document().styles.get(&name).cloned() else {
+            return;
+        };
+        ui.add_enabled_ui(editable, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("name");
+                let mut text = self
+                    .styles_tab
+                    .name_edit
+                    .clone()
+                    .unwrap_or_else(|| name.clone());
+                let response = ui.add(egui::TextEdit::singleline(&mut text).desired_width(140.0));
+                if response.changed() {
+                    self.styles_tab.name_edit = Some(text.clone());
+                }
+                // The rename is sent once, when the field loses the keyboard or Enter is pressed,
+                // so that typing a name is one command and one undo step.
+                if response.lost_focus() {
+                    self.styles_tab.name_edit = None;
+                    self.rename_style(text);
+                }
+            });
+            if let Some(option) = self.style(ui, &values) {
+                self.set_selected_style(option);
+            }
+        });
+    }
+
+    /// The dialog of the removal of a style that texts name: what they take instead, a custom
+    /// copy first, then each other style a text may name, since the command refuses any other,
+    /// `design@rootpoint-protocol@no-new-breach`. It is a choice the removal needs, not a
+    /// confirmation, `design@rootpoint-model@style-removal`.
+    pub(crate) fn removal_dialog(&mut self, ctx: &egui::Context) {
+        let Some(removal) = self.styles_tab.removal.clone() else {
+            return;
+        };
+        let doc = self.session.document();
+        let others: Vec<String> = doc
+            .styles
+            .iter()
+            .filter(|(name, style)| **name != removal.name && doc.draws_as_asked(style))
+            .map(|(name, _)| name.clone())
+            .collect();
+        let users = self.style_users(&removal.name);
+        let mut choice = None;
+        let mut confirm = false;
+        let mut cancel = false;
+        egui::Window::new("Remove a style")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
+            .show(ctx, |ui| {
+                ui.label(format!(
+                    "Remove \"{}\", used by {users} {}?",
+                    removal.name,
+                    if users == 1 { "area" } else { "areas" }
+                ));
+                if ui.radio(removal.into.is_none(), "a custom copy").clicked() {
+                    choice = Some(None);
+                }
+                for name in &others {
+                    if ui
+                        .radio(removal.into.as_ref() == Some(name), name.as_str())
+                        .clicked()
+                    {
+                        choice = Some(Some(name.clone()));
+                    }
+                }
+                ui.horizontal(|ui| {
+                    let remove = ui.button("Remove style");
+                    self.view
+                        .buttons
+                        .push(("Remove style".to_owned(), remove.rect));
+                    confirm = remove.clicked();
+                    let back = ui.button("Cancel");
+                    self.view.buttons.push(("Cancel".to_owned(), back.rect));
+                    cancel = back.clicked();
+                });
+            });
+        if let Some(into) = choice {
+            self.choose_replacement(into);
+        }
+        if confirm {
+            self.confirm_removal();
+        } else if cancel {
+            self.cancel_removal();
+        }
+    }
+
+    /// The values of a style, a text's or a named style's: each control returns the one option it
+    /// changes, which its caller sends.
+    fn style(&mut self, ui: &mut Ui, style: &rootpoint_model::TextStyle) -> Option<StyleOption> {
         let mut chosen = None;
         ui.horizontal_wrapped(|ui| {
             egui::ComboBox::from_label("size")
@@ -431,9 +643,7 @@ impl App {
                     }
                 });
         }
-        if let Some(option) = chosen {
-            self.set_style(option);
-        }
+        chosen
     }
 
     /// The selected image: its asset and its fit.

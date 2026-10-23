@@ -199,7 +199,10 @@ fn a_file_naming_a_missing_asset_opens_and_the_status_names_it() {
     assert_eq!(app.status(), ["missing images: a99"]);
 }
 
-/// A file whose text names a style the table lacks opens; the status names the area and the style.
+/// AC1 of `milestone@plans@editor-conveniences`: a file whose text names a style the table lacks
+/// opens, and the status line, the outline's row of the area and the reply of `render` name the
+/// area and the style; that the text draws with the default values is
+/// `a_missing_style_draws_with_the_default_and_is_reported` of the protocol's tests.
 #[test]
 fn a_file_naming_a_missing_style_opens_and_the_status_names_it() {
     let files = MemoryFiles::default();
@@ -220,4 +223,15 @@ fn a_file_naming_a_missing_style_opens_and_the_status_names_it() {
         app.status(),
         ["missing styles, drawn in the default style: n2 Heading"]
     );
+    frame(&ctx, &mut app);
+    let row = app
+        .outline_rows()
+        .iter()
+        .find(|r| r.node == Some(rootpoint_model::NodeId(2)))
+        .expect("n2 has a row");
+    assert!(row.label.contains("\u{26a0} Heading"), "{}", row.label);
+    match app.run(parse_command("render s1 out.png 160 90").unwrap()) {
+        Reply::Ok(reply) => assert!(reply.ends_with("styles=n2:Heading"), "{reply}"),
+        other => panic!("render gave {other}"),
+    }
 }

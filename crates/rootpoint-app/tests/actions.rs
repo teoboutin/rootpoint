@@ -18,7 +18,9 @@ use rootpoint_app::App;
 use rootpoint_app::hit::{Edge, Layout, Preview, Zone};
 use rootpoint_app::selection::Move;
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, Side, SlideId};
-use rootpoint_protocol::{Command, Files, Reply, Session, parse_command};
+use rootpoint_protocol::{
+    Command, Files, Reply, Session, StyleCommand, StyleOption, parse_command,
+};
 
 /// Files held in memory, by path, shared so that the test reads what a save wrote.
 #[derive(Clone, Default)]
@@ -370,6 +372,107 @@ fn the_content_actions_issue_their_commands() {
         |a| a.add_asset("cat.png".to_owned()),
         |_| vec![c("asset cat.png")],
     );
+}
+
+#[test]
+fn the_style_actions_issue_their_commands() {
+    check(
+        "name a style",
+        &["select n3"],
+        |a| a.name_style("Title".to_owned()),
+        |s| {
+            vec![c(&format!(
+                "text n3 {:?} style=\"Title\"",
+                text_of(s, NodeId(3))
+            ))]
+        },
+    );
+    check(
+        "make a style custom",
+        &["select n3"],
+        App::make_custom,
+        |s| vec![c(&format!("text n3 {:?} custom", text_of(s, NodeId(3))))],
+    );
+    check("add a style", &[], App::add_style, |_| {
+        vec![c("style add \"Style 1\"")]
+    });
+    check(
+        "duplicate a style",
+        &[],
+        |a| {
+            a.select_style("Title");
+            a.duplicate_style();
+        },
+        |s| {
+            vec![Command::Style(StyleCommand::Add {
+                name: "Style 1".to_owned(),
+                options: StyleOption::values_of(&s.document().styles["Title"]),
+            })]
+        },
+    );
+    check(
+        "rename a style",
+        &[],
+        |a| {
+            a.select_style("Legend");
+            a.rename_style("Caption".to_owned());
+        },
+        |_| vec![c("style rename \"Legend\" \"Caption\"")],
+    );
+    check(
+        "change a value of a style",
+        &[],
+        |a| {
+            a.select_style("Body");
+            a.set_selected_style(StyleOption::Size(64.0));
+        },
+        |_| vec![c("style set \"Body\" size=64")],
+    );
+    check(
+        "remove a style no text names",
+        &[],
+        |a| {
+            a.select_style("Legend");
+            a.remove_style();
+        },
+        |_| vec![c("style remove \"Legend\"")],
+    );
+    check(
+        "remove a style texts name, into a custom copy",
+        &[],
+        |a| {
+            a.select_style("Body");
+            a.remove_style();
+            a.confirm_removal();
+        },
+        |_| vec![c("style remove \"Body\" into=custom")],
+    );
+}
+
+/// A control of the selection never changes a named style: a size on a text naming Body makes the
+/// text custom at that size, and Body keeps its own.
+#[test]
+fn a_control_of_the_selection_never_changes_a_named_style() {
+    let mut app = App::new(Box::new(MemoryFiles::default()));
+    assert!(matches!(app.run(c("sample")), Reply::Ok(_)));
+    let body = app.session().document().styles["Body"].clone();
+    app.select_node(NodeId(3));
+    app.set_style(StyleOption::Size(64.0));
+    let doc = app.session().document();
+    assert_eq!(doc.styles["Body"], body);
+    match doc.node(NodeId(3)) {
+        Some(Node::Area(a)) => match &a.content {
+            Content::Text(t) => assert_eq!(
+                t.style,
+                rootpoint_model::StyleChoice::Custom(rootpoint_model::TextStyle {
+                    size: 64.0,
+                    ..body
+                })
+            ),
+            other => panic!("n3 holds {other:?}"),
+        },
+        other => panic!("n3 is {other:?}"),
+    }
 }
 
 #[test]

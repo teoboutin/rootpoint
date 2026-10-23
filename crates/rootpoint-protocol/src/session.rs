@@ -822,24 +822,16 @@ fn no_style(name: &str) -> String {
 /// A style's every value, as the options `style add` takes, in a fixed order. A built-in family the
 /// binary does not carry, which only a file edited by hand holds, is written as its name.
 fn style_options(style: &TextStyle) -> String {
-    let font = match &style.font {
-        FontRef::Builtin(name) if name == "sans" => StyleOption::Font(None).to_string(),
-        FontRef::Builtin(name) => format!("font={}", quote(name)),
-        FontRef::Asset(id) => StyleOption::Font(Some(*id)).to_string(),
-    };
-    [
-        StyleOption::Size(style.size),
-        StyleOption::Bold(style.bold),
-        StyleOption::Italic(style.italic),
-        StyleOption::Colour(style.colour),
-        StyleOption::Align(style.h_align),
-        StyleOption::VAlign(style.v_align),
-    ]
-    .iter()
-    .map(|o| o.to_string())
-    .chain(std::iter::once(font))
-    .collect::<Vec<_>>()
-    .join(" ")
+    let mut words: Vec<String> = StyleOption::values_of(style)
+        .iter()
+        .map(|o| o.to_string())
+        .collect();
+    if let FontRef::Builtin(name) = &style.font
+        && name != "sans"
+    {
+        words.push(format!("font={}", quote(name)));
+    }
+    words.join(" ")
 }
 
 /// Apply a value option to a style's values. `style=` and `custom` choose a text's style, which

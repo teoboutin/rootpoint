@@ -5,11 +5,12 @@
 use std::path::{Component, Path, PathBuf};
 
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, SlideId, node_rects};
-use rootpoint_protocol::{Command, Reply, StyleOption};
+use rootpoint_model::{Content as C, Replacement, StyleChoice, TextContent};
+use rootpoint_protocol::{Command, Reply, StyleCommand, StyleOption};
 
 use crate::hit::{Edge, MIN_PART, Preview, Zone};
 use crate::selection::Move;
-use crate::{App, Controller, Gesture};
+use crate::{App, Controller, Gesture, Removal};
 
 impl App {
     /// Select a node: a click on an area, or on its row of the outline.
@@ -357,6 +358,179 @@ impl App {
                 style: vec![option],
             });
         }
+    }
+
+    /// Make the selected text name the style `name`.
+    pub fn name_style(&mut self, name: String) {
+        self.send_text_option(StyleOption::Named(name));
+    }
+
+    /// Make the selected text hold the values it draws with as its own.
+    pub fn make_custom(&mut self) {
+        self.send_text_option(StyleOption::Custom);
+    }
+
+    /// Send the selected text again with one style option.
+    fn send_text_option(&mut self, option: StyleOption) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        if let (Some(area), Some(C::Text(TextContent { text, .. }))) =
+            (self.selected_area(), self.selected_content())
+        {
+            let text = text.clone();
+            self.run(Command::Text {
+                area,
+                text,
+                style: vec![option],
+            });
+        }
+    }
+
+    /// The first name of the series "Style 1", "Style 2", … that the table does not hold.
+    fn free_style_name(&self) -> String {
+        let styles = &self.session.document().styles;
+        (1..)
+            .map(|n| format!("Style {n}"))
+            .find(|name| !styles.contains_key(name))
+            .expect("a table holds finitely many styles")
+    }
+
+    /// Add a style in the default values, under a free name, and select it in the Styles tab.
+    pub fn add_style(&mut self) {
+        self.add_style_with(Vec::new());
+    }
+
+    /// Add a copy of the style selected in the Styles tab, under a free name, and select it.
+    pub fn duplicate_style(&mut self) {
+        let Some(values) = self
+            .styles_tab
+            .selected
+            .as_ref()
+            .and_then(|name| self.session.document().styles.get(name))
+        else {
+            return;
+        };
+        let options = StyleOption::values_of(values);
+        self.add_style_with(options);
+    }
+
+    fn add_style_with(&mut self, options: Vec<StyleOption>) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        let name = self.free_style_name();
+        if let Reply::Ok(_) = self.run(Command::Style(StyleCommand::Add {
+            name: name.clone(),
+            options,
+        })) {
+            self.select_style(&name);
+        }
+    }
+
+    /// Rename the style selected in the Styles tab, and keep it selected.
+    pub fn rename_style(&mut self, to: String) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        let Some(from) = self.styles_tab.selected.clone() else {
+            return;
+        };
+        if to.is_empty() || to == from {
+            return;
+        }
+        if let Reply::Ok(_) = self.run(Command::Style(StyleCommand::Rename {
+            from,
+            to: to.clone(),
+        })) {
+            self.select_style(&to);
+        }
+    }
+
+    /// Change one value of the style selected in the Styles tab, which every text naming it then
+    /// draws with.
+    pub fn set_selected_style(&mut self, option: StyleOption) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        if let Some(name) = self.styles_tab.selected.clone() {
+            self.run(Command::Style(StyleCommand::Set {
+                name,
+                options: vec![option],
+            }));
+        }
+    }
+
+    /// Remove the style selected in the Styles tab: at once when no text names it, and otherwise
+    /// by the dialog that asks what its texts take instead, a custom copy first.
+    pub fn remove_style(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        let Some(name) = self.styles_tab.selected.clone() else {
+            return;
+        };
+        if self.style_users(&name) == 0 {
+            if let Reply::Ok(_) =
+                self.run(Command::Style(StyleCommand::Remove { name, into: None }))
+            {
+                self.styles_tab.selected = None;
+            }
+        } else {
+            self.styles_tab.removal = Some(Removal { name, into: None });
+        }
+    }
+
+    /// Choose, in the dialog of a removal, what the texts naming the style take: another style, or
+    /// `None` for a custom copy.
+    pub fn choose_replacement(&mut self, into: Option<String>) {
+        if let Some(removal) = &mut self.styles_tab.removal {
+            removal.into = into;
+        }
+    }
+
+    /// Remove the style of the open dialog, with the replacement chosen.
+    pub fn confirm_removal(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        let Some(removal) = self.styles_tab.removal.take() else {
+            return;
+        };
+        self.end_gestures();
+        let into = Some(match removal.into {
+            Some(other) => Replacement::Named(other),
+            None => Replacement::Custom,
+        });
+        if let Reply::Ok(_) = self.run(Command::Style(StyleCommand::Remove {
+            name: removal.name,
+            into,
+        })) {
+            self.styles_tab.selected = None;
+        }
+    }
+
+    /// Close the dialog of a removal, removing nothing.
+    pub fn cancel_removal(&mut self) {
+        self.styles_tab.removal = None;
+    }
+
+    /// How many texts, over every slide, name the style `name`.
+    pub(crate) fn style_users(&self, name: &str) -> usize {
+        self.session
+            .document()
+            .slides
+            .iter()
+            .flat_map(|s| s.root.areas())
+            .filter(|a| {
+                matches!(&a.content, C::Text(TextContent { style: StyleChoice::Named(n), .. }) if n == name)
+            })
+            .count()
     }
 
     /// Set the selected area's content to an image asset, fitted or filling the area.

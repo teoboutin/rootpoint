@@ -36,8 +36,13 @@ characters no font has, styles the document lacks, and text not drawn.
 - The selected area shows a grip in its top-left corner, except while its text is edited. Dragged onto the middle third of another
   area it swaps the two; dragged onto the rest it moves the area to the nearest edge of the
   target. A tint and a label show what the drop will do; the drop is one undo step.
-- The side panel sets the selected area's content, text or an image, the text's size,
-  weight, slant, colour, alignment and font, and the image's fit, and adds an image asset.
+- The side panel's Selection tab sets the selected area's content, text or an image, the text's
+  named style or "custom", its size, weight, slant, colour, alignment and font, and the image's
+  fit, and adds an image asset. A change of a value of a text that names a style makes the text
+  custom: the Selection tab changes no named style.
+- The side panel's Styles tab lists the named styles, each with the number of areas that name it,
+  and changes the one selected in its list: its name, its values, a new style, a copy, or its
+  removal, which asks what the areas naming it take instead, a custom copy first.
 - A text is edited in place, on the slide: a click on the selected text area, or a double-click on
   any text area, puts the caret where it clicked. Typing, Backspace and Delete, the arrows with
   Ctrl for words and with Shift to select, Home and End, a drag or a Shift+click to select, Ctrl+A,

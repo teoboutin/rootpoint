@@ -3,7 +3,8 @@
 use std::fmt;
 
 use rootpoint_model::{
-    AssetId, Axis, HAlign, ImageFit, NodeId, Replacement, Rgba, Side, SlideId, VAlign,
+    AssetId, Axis, FontRef, HAlign, ImageFit, NodeId, Replacement, Rgba, Side, SlideId, TextStyle,
+    VAlign,
 };
 
 /// One command of the protocol.
@@ -159,6 +160,28 @@ pub enum StyleOption {
     Named(String),
     /// `custom`: copy the values drawn into the text's own.
     Custom,
+}
+
+impl StyleOption {
+    /// The options that give `TextStyle::default()` the values of `style`, every value in a fixed
+    /// order, as `style add` takes them. A built-in family the binary does not carry, which only a
+    /// file edited by hand holds, has no option, so it is left out.
+    pub fn values_of(style: &TextStyle) -> Vec<StyleOption> {
+        let mut options = vec![
+            StyleOption::Size(style.size),
+            StyleOption::Bold(style.bold),
+            StyleOption::Italic(style.italic),
+            StyleOption::Colour(style.colour),
+            StyleOption::Align(style.h_align),
+            StyleOption::VAlign(style.v_align),
+        ];
+        match &style.font {
+            FontRef::Builtin(name) if name == "sans" => options.push(StyleOption::Font(None)),
+            FontRef::Builtin(_) => {}
+            FontRef::Asset(id) => options.push(StyleOption::Font(Some(*id))),
+        }
+        options
+    }
 }
 
 /// Why a line is not a command.
