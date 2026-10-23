@@ -26,4 +26,6 @@ among the kinds the owner named as needed.
 ### What would close it
 
 A design session per kind, or one for several, and its work built. Each new kind is read against
-`tripwire@rootpoint-render@render-within-bounds` at its design audit.
+`tripwire@rootpoint-render@render-within-bounds` at its design audit, and decides whether its
+options earn named styles, which the style table holds for text alone,
+`design@rootpoint-model@style-kinds`.

@@ -1,6 +1,5 @@
 //! The side panel: its width is the same in every state of its content,
-//! `design@rootpoint-app@sidebar-width`, the instrument of AC2 of
-//! `milestone@plans@editor-conveniences`; and the Styles tab, the only part of the window that
+//! `design@rootpoint-app@sidebar-width`; and the Styles tab, the only part of the window that
 //! changes a named style, with the dialog of a style's removal.
 
 use eframe::egui::{Context, Event, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
@@ -212,9 +211,8 @@ fn the_side_panel_s_width_is_the_same_in_every_state_of_its_content() {
     ok(&mut app, &format!("text n3 \"{long}\""));
     ok(&mut app, "select n3");
     widths.push(("a text of 200 characters", width(&ctx, &mut app)));
-    // A tree deeper than the 6 levels AC2 of `milestone@plans@editor-conveniences` names, 9: n5,
-    // at depth 3, split six times, each split of the deepest area wrapping it in a split of the
-    // other axis.
+    // A tree 9 levels deep: n5, at depth 3, split six times, each split of the deepest area
+    // wrapping it in a split of the other axis.
     let mut node = "n5".to_owned();
     for depth in 0..6 {
         let axis = if depth % 2 == 0 { "stacked" } else { "beside" };

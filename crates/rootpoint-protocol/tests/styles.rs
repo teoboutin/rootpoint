@@ -298,7 +298,7 @@ fn a_rename_onto_a_name_an_area_holds_is_refused() {
     refused(&mut s, &mut files, "style rename \"Body\" \"Title\"");
 }
 
-/// A condition awaiting the owner, `issue@rootpoint-model@new-area-style-awaits-rulings`.
+/// A split copies no style name the table lacks, `design@rootpoint-model@new-area-style`.
 #[test]
 fn a_split_does_not_copy_a_missing_name() {
     let mut files = MemoryFiles::default();
@@ -365,8 +365,8 @@ fn styles_lists_each_style_as_its_options() {
 }
 
 /// A file's Body whose font the document lacks is no style a new area takes: it takes the default
-/// values, so no command makes a breach in a document that has none; a condition awaiting the
-/// owner, `issue@rootpoint-model@new-area-style-awaits-rulings`.
+/// values, so no command makes a breach in a document that has none,
+/// `design@rootpoint-model@new-area-style`.
 #[test]
 fn a_new_area_takes_no_body_that_would_draw_with_a_stand_in() {
     let mut files = MemoryFiles::default();

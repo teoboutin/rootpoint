@@ -199,10 +199,10 @@ fn a_file_naming_a_missing_asset_opens_and_the_status_names_it() {
     assert_eq!(app.status(), ["missing images: a99"]);
 }
 
-/// AC1 of `milestone@plans@editor-conveniences`: a file whose text names a style the table lacks
-/// opens, and the status line, the outline's row of the area and the reply of `render` name the
-/// area and the style; that the text draws with the default values is
-/// `a_missing_style_draws_with_the_default_and_is_reported` of the protocol's tests.
+/// A file whose text names a style the table lacks opens, and the status line, the outline's row of
+/// the area and the reply of `render` name the area and the style; that the text draws with the
+/// default values is `a_missing_style_draws_with_the_default_and_is_reported` of the protocol's
+/// tests.
 #[test]
 fn a_file_naming_a_missing_style_opens_and_the_status_names_it() {
     let files = MemoryFiles::default();

@@ -19,9 +19,8 @@ and `end`, are functions of `path@rootpoint-app@src/editing.rs`.
 `design@rootpoint-app@caret-editor-state`. Each issues its commands through `App::run`, and
 `path@rootpoint-app@tests/actions.rs` checks them against a second session, so the head's rule on
 commands holds; only its statement of where the functions are is false of them. No comment or
-commit message gives a reason for the place. Found by the self-consistency review of the work of
-the node menu of `milestone@plans@editor-conveniences`, whose own actions were moved to
-`path@rootpoint-app@src/actions.rs` to meet the head.
+commit message gives a reason for the place. The node menu's actions, `App::open_node_menu` and
+`App::menu_entry`, are in `path@rootpoint-app@src/actions.rs`, as the head says.
 
 ### Why it matters
 

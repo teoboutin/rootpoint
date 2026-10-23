@@ -126,9 +126,7 @@ impl App {
         }
         // The second press of a double-click whose first click left the final view starts
         // nothing: the author double-clicked with no mark in view, so neither half resets a
-        // divider, enters editing or splits. D8 of `milestone@plans@editor-conveniences`, a
-        // default awaiting the owner,
-        // `issue@rootpoint-app@double-click-in-preview-awaits-ruling`.
+        // divider, enters editing or splits, `design@rootpoint-app@edit-entry`.
         if pressed && let Some(left) = self.left_final_view.take() {
             let delay = ui.ctx().options(|o| o.input_options.max_double_click_delay);
             if ui.input(|i| i.time) - left < delay {

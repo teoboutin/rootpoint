@@ -338,18 +338,24 @@ node keys, Shift with an arrow, Delete and Alt with an arrow, act on a selected 
 the keys go to the text, where Shift with an arrow selects. While the control socket holds the
 authority to edit, a click on the selected text area only selects it,
 `design@rootpoint-app@one-controller-at-a-time`. In the final view a click selects and enters no
-editing, `design@rootpoint-app@final-view-presses`. Every area that holds no image holds a text, a
-new area an empty one, per `design@rootpoint-model@no-empty-kind`, so a second click enters editing
-on a new area too, and typing into it needs no step that makes it a text first.
+editing, `design@rootpoint-app@final-view-presses`, and a double-click begun there acts as that one
+click. A secondary click in the slide view or on a row of the outline, inside the edited area too,
+leaves editing before it opens the node menu, `design@rootpoint-app@node-menu`. Every area that
+holds no image holds a text, a new area an empty one, per `design@rootpoint-model@no-empty-kind`, so
+a second click enters editing on a new area too, and typing into it needs no step that makes it a
+text first.
 
 On the owner's word: the owner chose this shape over a single click that selects a text area and
-edits it at once, which saves a click before typing in an area not yet selected, but leaves the
-node keys to act on a text area only after Esc and makes every click on a text area place a caret;
-the owner thinks it is quite intuitive to use. Also on the owner's word: a click enters editing
-only at a place that serves no other gesture, so the grip and the dividers stay usable. And: a
-press outside the edited area acts as it does outside editing, over a press that only leaves
-editing with the edited area still selected, which would cost a second click to select another
-area.
+edits it at once, which saves a click before typing in an area not yet selected, but leaves the node
+keys to act on a text area only after Esc and makes every click on a text area place a caret; the
+owner thinks it is quite intuitive to use. Also on the owner's word: a click enters editing only at
+a place that serves no other gesture, so the grip and the dividers stay usable. And: a press outside
+the edited area acts as it does outside editing, over a press that only leaves editing with the
+edited area still selected, which would cost a second click to select another area. And: the owner
+chose that the secondary click leaves editing before the menu opens, over a stay kept open under the
+menu, so that Delete and the node keys act on the area the menu names; and that a double-click begun
+in the final view acts as its one click, over its second click entering editing, since the author
+double-clicked with no mark in view.
 
 ### The caret and the selection of a text being edited are the editor's state, and no command places or reads them `##caret-editor-state`
 

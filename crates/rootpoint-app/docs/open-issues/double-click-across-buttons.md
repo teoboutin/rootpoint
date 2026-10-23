@@ -17,8 +17,7 @@ divider, which sets it halfway as an undo step of its own after the drag's.
 `button_double_clicked(PointerButton::Primary)` at the release, and a release of a press on a
 divider with that flag runs `App::reset_divider`. egui 0.37.0 keeps one `last_click_time` for every
 button in its input state, so a secondary click shortens the time to the primary release that
-follows it. Seen by the spec-conformity review of the work of the node menu of
-`milestone@plans@editor-conveniences`, on the sample: a divider drag, a secondary click during it,
+follows it. Seen on the sample, with the node menu built: a divider drag, a secondary click during it,
 and the primary release within 0.3 s left two undo steps, the drag and a reset to 0.5. The same
 result came with the node menu's call removed from the view, so it predates the menu. The node
 menu ignores a secondary click during a drag, which does not stop egui from counting it.

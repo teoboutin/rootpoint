@@ -709,8 +709,8 @@ fn a_slide_list_button_pressed_while_a_text_is_edited_is_a_step_of_its_own() {
     assert_eq!(text(&d, n3), before);
 }
 
-/// AC3 of `milestone@plans@editor-conveniences`: a secondary click on an area of the slide selects
-/// it, and the node menu is open on it on the next frame.
+/// A secondary click on an area of the slide selects it, and the node menu is open on it on the next
+/// frame, `design@rootpoint-app@node-menu`.
 #[test]
 fn a_secondary_click_on_an_area_selects_it_and_opens_the_node_menu() {
     let mut d = Driver::new();
@@ -733,8 +733,8 @@ fn a_secondary_click_on_an_area_selects_it_and_opens_the_node_menu() {
     assert_eq!(d.app.menu_node(), None);
 }
 
-/// AC3 of `milestone@plans@editor-conveniences`: a secondary click on a row of the outline selects
-/// its node, and the node menu is open on it on the next frame; on the slide's row, it opens none.
+/// A secondary click on a row of the outline selects its node, and the node menu is open on it on
+/// the next frame, `design@rootpoint-app@node-menu`; on the slide's row, it opens none.
 #[test]
 fn a_secondary_click_on_an_outline_row_selects_it_and_opens_the_node_menu() {
     let mut d = Driver::new();
@@ -783,8 +783,8 @@ fn the_node_menu_selects_an_ancestor() {
     assert_eq!(d.selected(), Some(NodeId(2)));
 }
 
-/// While editing, a secondary click inside the edited area ends the editing, then opens the menu:
-/// D7 of `milestone@plans@editor-conveniences`, a default awaiting the owner.
+/// While editing, a secondary click inside the edited area ends the editing, then opens the menu,
+/// `design@rootpoint-app@edit-entry`.
 #[test]
 fn a_secondary_click_while_editing_ends_it_and_opens_the_menu() {
     let mut d = Driver::new();
