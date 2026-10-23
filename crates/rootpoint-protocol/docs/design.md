@@ -9,13 +9,13 @@ rootpoint-protocol is for is in `register@rootpoint-protocol@goal`.
 ### Commands and their replies are text lines, and the headless binary reads them from stdin `##protocol-transport`
 
 A command is one line: a verb, then words separated by spaces. A text is a double-quoted string,
-with `\"`, `\\` and `\n` escapes; a path is one too where it holds a space, a quote or a
-backslash; a named option is `key=value`. A blank line and a line starting with `#` are no command, so a script carries
-comments. Each command gets one reply line, `ok` or `err` followed by its result or its reason; a
-command that creates ids names them, and `render` names what it could not draw. A printed
-`Command` is a line that parses back to it, so a session can be written out as a script and run
-again. The
-binary `rootpoint-headless` runs a `Session` on its stdin, one reply per command on its stdout.
+with `\"`, `\\` and `\n` escapes; a path is one too where it holds a space, a quote or a backslash;
+a named option is `key=value`, its value bare or a quoted string, as a style's name with a space is.
+A blank line and a line starting with `#` are no command, so a script carries comments. Each command
+gets one reply line, `ok` or `err` followed by its result or its reason; a command that creates ids
+names them, and `render` names what it could not draw. A printed `Command` is a line that parses
+back to it, so a session can be written out as a script and run again. The binary
+`rootpoint-headless` runs a `Session` on its stdin, one reply per command on its stdout.
 
 The commands serve what a readable save file cannot: an edit applied to a running editor, a query
 of its state, and a script run headless, as `goal@rootpoint-protocol@commands-drive-everything`

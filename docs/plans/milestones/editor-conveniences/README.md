@@ -1128,17 +1128,19 @@ not that node after the click, or when the menu is not open on the next frame. R
   approved a rewording of the goal that states reading (a), a view of the presentation, and excludes
   the window's own state; the default stands as built.
 
-- **D3**, `thread@editor-conveniences@new-area-style`: a new area takes Body only while Body draws
-  with no stand-in, its font an asset of the table or a family of `BUILTIN_FAMILIES`, and the
-  default values otherwise. The review of the work of #styles-model found
-  that a file edited by hand, whose Body names a font asset the table lacks and which no text uses,
-  got a breach from `add-slide`, against `design@rootpoint-protocol@no-new-breach`. The condition
-  narrows the rule the owner approved, "A new area holds an empty text, with the style of the area it
-was split from, or Body", for that case alone, so it
-  is a scope change. Default, built as written: the condition. The rival: Body always, and a breach
-  a command makes from such a file. Awaiting the owner. Until the ruling, the head
-  `design@rootpoint-model@new-area-style` states the rule as approved, and the code builds the
-  condition; the ruling is harvested into the head, or the code follows the head.
+- **D3**, `thread@editor-conveniences@new-area-style`: a new area takes Body only while the table
+  holds Body and Body draws with no stand-in, its font an asset of the table or a family of
+  `BUILTIN_FAMILIES`, and the default values otherwise. The review of the work of #styles-model
+  found that a file edited by hand, whose Body names a font asset the table lacks and which no text
+  uses, got a breach from `add-slide`, against `design@rootpoint-protocol@no-new-breach`; and the
+  transcript review of the slice found that a table without Body, which `style remove "Body"
+  into="Title"` leaves, would give a new area `Named("Body")`, a breach a command makes. The
+  condition narrows the rule the owner approved, "A new area holds an empty text, with the style of
+  the area it was split from, or Body", for those cases alone, so it is a scope change. Default,
+  built as written: the condition. The rival: Body always, and a breach a command makes from such
+  a document. Awaiting the owner. Until the ruling, the head `design@rootpoint-model@new-area-style`
+  states the rule as approved, and the code builds the condition; the ruling is harvested into the
+  head, or the code follows the head.
 - **D4**, `thread@editor-conveniences@no-new-breach`: AC4 fired. Its observable, a sequence of
   commands from a document with no breach that leaves a breach, was reproduced by the review of the
   work of #styles-model: `add-slide` on a file whose unused Body names a missing font asset. The

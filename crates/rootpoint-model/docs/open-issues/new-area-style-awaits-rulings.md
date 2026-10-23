@@ -15,14 +15,15 @@ two cases.
 
 ### What
 
-- `Document::new_area_style` of `path@rootpoint-model@src/document.rs` gives Body only while it draws
-  with no stand-in, `Document::draws_as_asked`, its font an asset of the table or a family of
-  `BUILTIN_FAMILIES`; otherwise the default values. D3.
+- `Document::new_area_style` of `path@rootpoint-model@src/document.rs` gives Body only while the
+  table holds it and it draws with no stand-in, `Document::draws_as_asked`, its font an asset of
+  the table or a family of `BUILTIN_FAMILIES`; otherwise the default values. D3.
 - `split_style` of `path@rootpoint-model@src/ops.rs` does not copy a style name the table lacks; the
   new area takes the style `Document::new_area_style` gives. D5.
 
-Both cases are reached only from a file edited by hand: a Body whose font the file lacks, or a text
-naming a style the file lacks. With the head's rule as written, `add-slide` on the first file makes a
+The cases are reached from a file edited by hand, a Body whose font the file lacks or a text naming
+a style the file lacks, and by a command that leaves the table without Body, `style remove "Body"
+into="Title"`. With the head's rule as written, `add-slide` on the first file makes a
 breach in a document that has none, against `design@rootpoint-protocol@no-new-breach`, which is why
 the default builds the condition; for the second, the split copies a breach the file brought.
 

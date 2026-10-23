@@ -167,20 +167,19 @@ removes a style that texts loaded from a file name. The command refuses a remova
 replacement while a text names the style, and names those texts,
 `design@rootpoint-protocol@no-new-breach`. Its inverse puts the style back and makes its former
 users name it again. The rival, a removal that leaves its users drawn with the default values,
-leaves a warning to clear after a deliberate act. On the owner's word: the owner proposed that the
-author name the style that replaces a removed one; the custom copy is the session's, the one
-replacement that changes no slide.
+leaves a warning to clear after a deliberate act. On the owner's word: the owner suggested, as a
+"maybe", that the author name the style that replaces a removed one; the custom copy is the
+session's, the one replacement that changes no slide.
 
 ### A new area takes the style of the text area it was split from, or Body `##new-area-style`
 
 A split of a text area gives its new area that area's style; every other new area, of a split of a
 split or of an image, of `Op::AddSlide`, or of an image area emptied or given a text with no style,
-takes Body while the table holds it, and the default values otherwise, since the rule names no style
-for a table without Body. Splitting a body text for a second column gives a body text with no
-further step, which `goal@rootpoint-app@direct-manipulation` asks of common tasks. The rival, a new
-area that always takes Body, costs a style change after a split of a styled text; whether inheriting
-gets in the way instead is watched by `tripwire@rootpoint-model@inherited-style-in-the-way`. Two
-conditions the code adds await the owner, `issue@rootpoint-model@new-area-style-awaits-rulings`.
+takes Body. Splitting a body text for a second column gives a body text with no further step, which
+`goal@rootpoint-app@direct-manipulation` asks of common tasks. The rival, a new area that always
+takes Body, costs a style change after a split of a styled text; whether inheriting gets in the way
+instead is watched by `tripwire@rootpoint-model@inherited-style-in-the-way`. The conditions the code
+adds await the owner, `issue@rootpoint-model@new-area-style-awaits-rulings`.
 
 ## Changes
 
