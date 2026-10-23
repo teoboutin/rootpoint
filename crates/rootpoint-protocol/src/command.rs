@@ -66,6 +66,8 @@ pub enum Command {
         asset: AssetId,
         fit: ImageFit,
     },
+    /// Empty an area's text. A text keeps its style, so that clearing it changes its characters
+    /// only; an image area, which has no text style to keep, becomes a text in the default style.
     Clear {
         area: NodeId,
     },

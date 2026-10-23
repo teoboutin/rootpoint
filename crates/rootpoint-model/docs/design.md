@@ -70,18 +70,26 @@ are part of every saved file.
 
 ### An area holds its content, and heavy data is an asset the content refers to by id `##inline-content-assets`
 
-An area holds one content: a text with its style, or an image. A text may hold no characters,
-which draws nothing, and a new area holds one in the default style; no kind of content stands for
-an area with nothing in it. Image data and font files
-live once in the document's asset table, keyed by asset id, so a slide's text is read in the file
-where it is shown, as `goal@rootpoint@readable-save-file` asks, and an image placed on many slides
-is stored once.
+An area holds one content: a text with its style, or an image,
+`design@rootpoint-model@no-empty-kind`. Image data and font files live once in the document's asset
+table, keyed by asset id, so a slide's text is read in the file where it is shown, as
+`goal@rootpoint@readable-save-file` asks, and an image placed on many slides is stored once.
 
 The rival, every content stored apart and referenced by areas,
 `rejected@rootpoint-model@content-by-reference`, costs garbage collection or a library of orphans,
 editing that changes every slide sharing a content, a file read by following ids, and content ids
 beside node ids; the owner weighed those costs above the reuse it gives. Reuse of text across
 slides is left to templates, which `issue@rootpoint-model@slide-templates` keeps open.
+
+### An area with nothing in it holds an empty text, and no kind of content of its own `##no-empty-kind`
+
+A text may hold no characters, and a new area, of `Op::AddSlide` or of a split, holds one in the
+default style. An empty text draws nothing, so a kind for an area with nothing in it adds nothing
+an empty text lacks: in the renderer, it differs from an empty text only by an arm that draws
+nothing, `rejected@rootpoint-model@empty-content-kind`. Outside the renderer, the editor has one
+kind to enter for typing, the text, per `design@rootpoint-app@edit-entry`. On the
+owner's word: the owner proposed removing the kind, which in the owner's view was noise in both
+the GUI and the implementation.
 
 ### Images and other assets are files beside the presentation file `##image-storage`
 

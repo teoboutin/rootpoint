@@ -64,3 +64,10 @@ change its bottom-left area changed the area the other reading puts there.
 `live`. A loader of each earlier version costs code and a test per version, and no presentation
 exists to read: the owner gives no real presentation with the project while it is in initial
 development, and keeps no compatibility until the owner rules that real use has begun.
+
+### A kind of content for an area with nothing in it `##empty-content-kind`
+
+`live`. An empty text draws nothing, as this kind does: the renderer's arm for it draws nothing,
+and is the only place the drawing tells the two apart. The kind costs a variant of the save format,
+a reply of `tree` and a button of the side panel, and an area holding it is made a text before the
+author can type into it.

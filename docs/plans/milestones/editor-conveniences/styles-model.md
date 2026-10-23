@@ -183,7 +183,10 @@ becomes.
 | `path@rootpoint-render@src/lib.rs`, `lay_out_area`, the vertical alignment | `content.style.v_align` | the resolved style's |
 | `path@rootpoint-render@src/text.rs`, `layout_text`, the font and the style | `text.style` | a `&TextStyle` parameter |
 | `path@rootpoint-protocol@src/session.rs`, the font loading of `render` | `t.style.font` | the resolved style's font |
-| `path@rootpoint-protocol@src/session.rs`, `Command::Text` | the current `TextStyle`, or the default | the current `StyleChoice`; an option forks a `Named` to `Custom` |
+| `path@rootpoint-protocol@src/session.rs`, `Command::Text` | the current `TextStyle`, or the default, from `Session::text_style` | the current `StyleChoice`; an option forks a `Named` to `Custom` |
+| `path@rootpoint-protocol@src/session.rs`, `Session::text_style` | the text's `TextStyle`, or `TextStyle::default()` for an image area | the text's `StyleChoice`, or, for an image area, the style "The new area's style" gives every other new area |
+| `path@rootpoint-protocol@src/session.rs`, `Command::Clear` | an empty text in `Session::text_style` | unchanged, on the `StyleChoice` that `Session::text_style` gives |
+| `path@rootpoint-model@src/document.rs`, `impl Default for Content` | an empty text in `TextStyle::default()` | an empty text in `Custom(TextStyle::default())`; it reads no style table, so `apply_in` and `empty_area` of `path@rootpoint-model@src/ops.rs`, which hold the document, give a new area the style "The new area's style" decides |
 | `path@rootpoint-protocol@src/session.rs`, `apply_style` | on a `TextStyle` | unchanged, applied to the values a fork copies |
 | `path@rootpoint-protocol@src/command.rs`, `Command::Text::style` | `Vec<StyleOption>` | gains `StyleOption::Named` and `StyleOption::Custom` |
 | `path@rootpoint-app@src/assets.rs`, the font of each text | `t.style.font` | the resolved style's font |

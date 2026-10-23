@@ -158,8 +158,8 @@ in the order of "Implementation sequence".
 - **Styles.** One `TextStyle` per text area, `design@rootpoint-model@text-style-per-area`. The
   side panel's style controls, `App::style`, send one `text` command per change, with a
   `StyleOption`. The protocol's `text` command applies its options to the area's current style, or
-  to `TextStyle::default()` when the area holds no text, in `Session::operation` of
-  `path@rootpoint-protocol@src/session.rs`.
+  to `TextStyle::default()` when the area holds an image, which `Session::text_style` of
+  `path@rootpoint-protocol@src/session.rs` gives to `Session::operation` for `text` and `clear`.
 - **Selection.** The side panel shows the breadcrumb. Alt+↑ selects the parent, Alt+↓ a child,
   Alt+← and Alt+→ the siblings, per `design@rootpoint-app@node-selection`; the key table is in
   `App::shortcuts`.
@@ -399,9 +399,10 @@ right now with a single option." (`argument@editor-conveniences@arg-33`). Shape:
 Proposed by the owner in round 1 (`argument@editor-conveniences@arg-8`); consequences and rival by
 the session (`argument@editor-conveniences@arg-15`, `argument@editor-conveniences@arg-24`). Final
 state: approved, in round 2: "no-empty-kind: accepted." Built by the slice #empty-text. Harvested:
-the rewrites of `design@rootpoint-model@inline-content-assets`,
-`design@rootpoint-app@selection-actions` and `design@rootpoint-app@edit-entry`, and T3 as
-`tripwire@rootpoint-app@empty-text-takes-the-keys`.
+the head `design@rootpoint-model@no-empty-kind`, which holds its shape, with
+`rejected@rootpoint-model@empty-content-kind`; the rewrites of
+`design@rootpoint-model@inline-content-assets`, `design@rootpoint-app@selection-actions` and
+`design@rootpoint-app@edit-entry`; and T3 as `tripwire@rootpoint-app@empty-text-takes-the-keys`.
 
 ### Format version 1 is migrated on load `##format-migration`
 
@@ -925,7 +926,8 @@ crates/rootpoint-app/src/panels.rs
 ## Decided design
 
 The shape of each decided thread is in the spec of the slice that builds it, as each thread's item
-in "Threads" says. `thread@editor-conveniences@no-compat-in-initial-dev` is recorded already.
+in "Threads" says; the shape of a thread whose slice landed is in the design heads its harvest
+wrote, which the thread's item names. `thread@editor-conveniences@no-compat-in-initial-dev` is recorded already.
 
 ## Mapping tables
 
@@ -1112,7 +1114,8 @@ or saves a document that does not load back equal. Response: reopen
 
 This document's own row: when the last slice, `spec@editor-conveniences@preview-mode`, lands, its harvest commit deletes this
 document, after checking that every slice's row is done, that each acceptance criterion was reported
-on, and that T1 to T4 are written. Each slice's row is in its spec.
+on, and that T1 to T4 are written. Each slice's row is in its spec, and is done once the slice's
+spec leaves.
 
 ## Later consequences
 
