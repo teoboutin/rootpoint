@@ -273,6 +273,18 @@ fn the_outline_lists_every_node_with_the_selection_highlighted() {
     );
     let highlighted: Vec<_> = rows.iter().filter(|r| r.selected).map(|r| r.node).collect();
     assert_eq!(highlighted, [Some(NodeId(3))]);
+    // The highlight is painted: a filled rectangle on n3's row, and none on another row.
+    let filled = |rect: Rect| {
+        d.shapes.iter().any(|c| match &c.shape {
+            eframe::egui::Shape::Rect(s) => {
+                s.rect == rect && s.fill != eframe::egui::Color32::TRANSPARENT
+            }
+            _ => false,
+        })
+    };
+    for row in rows {
+        assert_eq!(filled(row.rect), row.selected, "{:?}", row.node);
+    }
 }
 
 /// A click on a row selects its node, and a click on the slide's row selects none.

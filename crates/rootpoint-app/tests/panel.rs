@@ -23,10 +23,16 @@ fn frame(ctx: &Context, app: &mut App) {
     out.textures_delta.clear();
 }
 
-/// The side panel's width, two frames after a change, as a test that reads a place waits.
+/// The side panel's width, two frames after a change, as a test that reads a place waits; and that
+/// its content fits the scroll area's width, its rows wrapped or cut rather than scrolling sideways.
 fn width(ctx: &Context, app: &mut App) -> f32 {
     frame(ctx, app);
     frame(ctx, app);
+    let (content, area) = app.side_panel_content_width().unwrap();
+    assert!(
+        content <= area,
+        "the content, {content} points, overflows {area}"
+    );
     app.side_panel_rect()
         .expect("the side panel is shown")
         .width()
@@ -53,14 +59,15 @@ fn the_side_panel_s_width_is_the_same_in_every_state_of_its_content() {
     ok(&mut app, &format!("text n3 \"{long}\""));
     ok(&mut app, "select n3");
     widths.push(("a text of 200 characters", width(&ctx, &mut app)));
-    // A tree 6 levels deep: each split of the deepest area wraps it in a split of the other axis.
+    // A tree deeper than the 6 levels AC2 names, 9: n5, at depth 3, split six times, each split of
+    // the deepest area wrapping it in a split of the other axis.
     let mut node = "n5".to_owned();
     for depth in 0..6 {
         let axis = if depth % 2 == 0 { "stacked" } else { "beside" };
         node = new_area(&ok(&mut app, &format!("split {node} {axis} 0.5")));
     }
     ok(&mut app, &format!("select {node}"));
-    widths.push(("a tree 6 levels deep", width(&ctx, &mut app)));
+    widths.push(("a tree 9 levels deep", width(&ctx, &mut app)));
     let first = widths[0].1;
     for (state, w) in &widths {
         assert_eq!(*w, first, "{state}: {widths:?}");

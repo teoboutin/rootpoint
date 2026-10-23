@@ -112,26 +112,26 @@ fn the_selection_actions_issue_their_commands() {
         |_| vec![c("select s7")],
     );
     check(
-        "Alt+Up",
+        "Alt+Left",
         &["select n3"],
         |a| a.move_selection(Move::Parent),
         |_| vec![c("select n6")],
     );
     check(
-        "Alt+Right",
+        "Alt+Down",
         &["select n3"],
         |a| a.move_selection(Move::Next),
         |_| vec![c("select n5")],
     );
     check(
-        "Alt+Left",
+        "Alt+Up",
         &["select n5"],
         |a| a.move_selection(Move::Previous),
         |_| vec![c("select n3")],
     );
-    // Alt+Down goes to the child selected last in the split, n5, not to its first.
+    // Alt+Right goes to the child selected last in the split, n5, not to its first.
     check(
-        "Alt+Down",
+        "Alt+Right",
         &["select n5", "select n6"],
         |a| a.move_selection(Move::Child),
         |_| vec![c("select n5")],

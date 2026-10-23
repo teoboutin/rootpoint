@@ -131,6 +131,8 @@ struct SlideView {
     take_control: Option<Rect>,
     /// Where the last frame placed the side panel, in points.
     side_panel: Option<Rect>,
+    /// The width of the side panel's content, and of the scroll area that shows it, in points.
+    side_content: Option<(f32, f32)>,
     /// Where the last frame placed each row of the outline.
     outline: Vec<OutlineRow>,
     /// The node of the outline's row under the pointer in this frame, which the overlay outlines.
@@ -220,6 +222,12 @@ impl App {
     /// Where the last frame placed the side panel, in points.
     pub fn side_panel_rect(&self) -> Option<Rect> {
         self.view.side_panel
+    }
+
+    /// The width of the side panel's content in the last frame, and of the scroll area that shows
+    /// it, in points: a content wider than the area scrolls sideways.
+    pub fn side_panel_content_width(&self) -> Option<(f32, f32)> {
+        self.view.side_content
     }
 
     /// Where the last frame placed the button "Take control", in points: shown while the socket
@@ -407,11 +415,13 @@ impl App {
         let side = Panel::right("selection")
             .default_size(260.0)
             .show(ui, |ui| {
-                egui::ScrollArea::both()
+                let out = egui::ScrollArea::both()
                     .auto_shrink([false, false])
                     .show(ui, |ui| self.side_panel(ui));
+                (out.content_size.x, out.inner_rect.width())
             });
         self.view.side_panel = Some(side.response.rect);
+        self.view.side_content = Some(side.inner);
         CentralPanel::no_frame().show(ui, |ui| self.slide_view(ui));
     }
 
