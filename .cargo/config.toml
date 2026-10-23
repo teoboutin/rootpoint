@@ -6,7 +6,8 @@ klarch = "run -q --release -p xtask -- klarch"
 ROOTPOINT_CHECKOUT = { value = ".", relative = true, force = true }
 
 # The tests built for the browser run in a headless browser, through the runner wasm-bindgen-cli
-# installs at the version of the `wasm-bindgen` crate in `Cargo.lock`, per the xtask head
-# one-tool-binds-and-tests; `cargo x web` checks the version of its `wasm-bindgen` program.
+# installs at the version of the `wasm-bindgen` crate in `Cargo.lock`, per
+# `design@xtask@one-tool-binds-and-tests`; `cargo x web` checks the version of its `wasm-bindgen`
+# program, and `cargo x wasm-test` the version of this runner.
 [target.wasm32-unknown-unknown]
 runner = "wasm-bindgen-test-runner"

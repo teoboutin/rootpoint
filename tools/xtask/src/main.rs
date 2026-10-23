@@ -182,25 +182,43 @@ fn wasm_test(root: &Path) -> Result<(), String> {
         "--test",
         "web",
     ]);
-    // A remote driver brings its own browser. Otherwise the runner takes the first driver it finds
-    // on the `PATH`, chromedriver among them, so the geckodriver found is handed to it by name.
+    // The runner's driver is geckodriver, per `design@xtask@browser-tests-gated`, which says why
+    // the other drivers' variables are removed and the geckodriver found is handed over by name.
+    for other in [
+        "SAFARIDRIVER_REMOTE",
+        "CHROMEDRIVER_REMOTE",
+        "MSEDGEDRIVER_REMOTE",
+    ] {
+        tests.env_remove(other);
+    }
+    // A remote geckodriver brings its own Firefox.
     if std::env::var_os("GECKODRIVER_REMOTE").is_none() {
-        match std::env::var_os("GECKODRIVER")
-            .map(PathBuf::from)
-            .or_else(|| on_path("geckodriver"))
-        {
-            Some(driver) => {
+        let install = "install it with `cargo install geckodriver --locked`";
+        match std::env::var_os("GECKODRIVER").map(PathBuf::from) {
+            Some(driver) if driver.is_file() => {
                 tests.env("GECKODRIVER", driver);
             }
-            None => missing.push(
-                "geckodriver: not on the PATH, nor named by GECKODRIVER; install it with \
-                 `cargo install geckodriver --locked`"
-                    .to_owned(),
-            ),
+            Some(driver) => missing.push(format!(
+                "geckodriver: GECKODRIVER names {}, which is no file; {install}",
+                driver.display()
+            )),
+            None => match on_path("geckodriver") {
+                Some(driver) => {
+                    tests.env("GECKODRIVER", driver);
+                }
+                None => missing.push(format!(
+                    "geckodriver: not on the PATH, nor named by GECKODRIVER; {install}"
+                )),
+            },
         }
         // geckodriver starts the `firefox` it finds on the `PATH`.
         if on_path("firefox").is_none() {
-            missing.push("firefox: not on the PATH".to_owned());
+            missing.push(
+                "firefox: not on the PATH; install it from your system's packages, or from \
+                 https://www.mozilla.org/firefox/ and link its `firefox` into a directory of the \
+                 PATH"
+                    .to_owned(),
+            );
         }
     }
     if !missing.is_empty() {
@@ -219,8 +237,9 @@ fn on_path(program: &str) -> Option<PathBuf> {
         .find(|path| path.is_file())
 }
 
-/// Fail unless `program --version` says `<name> <locked>`, as every program of wasm-bindgen-cli
-/// does, which `design@xtask@one-tool-binds-and-tests` ties to the crate's version.
+/// Fail unless the second word `program --version` prints is `locked`: every program of
+/// wasm-bindgen-cli prints `<name> <version>`, and `design@xtask@one-tool-binds-and-tests` ties
+/// that version to the crate's.
 fn require_version(program: &str, locked: &str) -> Result<(), String> {
     let install =
         format!("install it with `cargo install wasm-bindgen-cli --version {locked} --locked`");

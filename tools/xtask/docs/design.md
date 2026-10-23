@@ -27,3 +27,10 @@ by 1.01, under `cfg(target_arch = "wasm32")`, fails these tests in Firefox and p
 it is taken again by such an edit and `cargo test -p rootpoint-app --test actions --test web`, run
 with and without `--target wasm32-unknown-unknown`. The cost is that the machine that runs the gates
 needs Firefox and geckodriver, as `path@xtask@README.md` says.
+
+The gate keeps the tests in Firefox whatever other driver the machine holds. wasm-bindgen-test-runner
+0.2.129 takes the first driver its `Driver::find` meets, in
+`path@elsewhere@src/wasm_bindgen_test_runner/headless.rs`: a `<DRIVER>_REMOTE` variable of any
+driver, then a `<DRIVER>` variable, geckodriver's first, then the first directory of the `PATH` that
+holds any driver it supports, chromedriver among them. So `cargo x wasm-test` removes the other
+drivers' `_REMOTE` variables, and names the geckodriver it found in `GECKODRIVER`.
