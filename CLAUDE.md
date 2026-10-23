@@ -16,3 +16,16 @@ The project's own skills, agents and workflows are named with the prefix `rootpo
 | the statement is about | home | it leaves when |
 | --- | --- | --- |
 | a survey of prior art or of outside tools, run as grounding for a design discussion | one file per survey in `path@rootpoint@docs/grounding/`, linked from its `README.md` | never: the owner keeps them as material for later design |
+
+## Git workflow `##git-workflow`
+
+- Run the gates before merge `cargo x gates`
+
+Preserve linear history:
+- fetch origin before merge, update local `main` if needed.
+- check that the branch can be fast-forwarded on `origin/main`
+- rebase if that is not the case, then rerun the gates.
+- merge to `main` locally, using `--fast-forward`
+- then push to origin
+
+
