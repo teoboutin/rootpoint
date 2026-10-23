@@ -39,9 +39,9 @@ control socket opened is closed only by the socket or by the take-over, `App::ta
 
 ## The tests find widgets by the places the last frame recorded
 
-`App::layout`, `App::slide_rows` and `App::outline_rows` return where the last frame put the slide,
-the list's rows and the outline's rows, so a test of `App::frame` places its synthetic pointer on
-them; `rootpoint_render::area_text` gives where a text's characters are, in slide units, which
+`App::layout`, `App::slide_rows`, `App::outline_rows` and `App::button_rect` return where the last
+frame put the slide, the list's rows, the outline's rows and the side panel's buttons and tabs, so a
+test of `App::frame` places its synthetic pointer on them; `rootpoint_render::area_text` gives where a text's characters are, in slide units, which
 `App::layout` carries to the view.
 
 ## The browser build differs only where the page does

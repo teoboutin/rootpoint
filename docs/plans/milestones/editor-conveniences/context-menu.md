@@ -28,7 +28,7 @@ this spec.
     the first image asset as its button does; on an image area, it also offers each image asset, as
     the list of `App::image` does.
   - "Style", on a text area, offers the table's styles and custom, as the style row of
-    `spec@editor-conveniences@styles-window` does.
+    #styles-window does.
   - "Remove" removes the node, as Delete does. It is absent on the slide's root.
 
   Each entry runs the action the side panel's equivalent runs, a function of

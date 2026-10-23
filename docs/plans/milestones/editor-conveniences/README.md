@@ -169,10 +169,12 @@ its slice.
   `BUILTIN_FAMILIES` of `path@rootpoint-model@src/document.rs`, "sans" alone, falls back the same way.
 - **Styles.** A document holds a table of named styles, and a text names one or holds its own
   values, per `design@rootpoint-model@named-styles`; `Document::resolve_style` gives the values
-  drawn. The side panel's style controls, `App::style`, show the resolved values and send one `text`
-  command per change, with a `StyleOption`, which makes a named text custom. The protocol's
-  `style add`, `style set`, `style rename`, `style remove` and `styles` change and list the table.
-  The slice #styles-model built these.
+  drawn. The protocol's `style add`, `style set`, `style rename`, `style remove` and `styles` change
+  and list the table; the slice #styles-model built these. The side panel's Selection tab names a
+  style or makes a text custom, and its value controls, `App::style`, which return one
+  `StyleOption`, make a named text custom; its Styles tab, `App::styles_tab`, is the one part of the
+  window that changes a named style, per `design@rootpoint-app@styles-tab-edits-styles`, and asks
+  for a replacement when a style in use is removed. The slice #styles-window built these.
 - **Selection.** The side panel's outline shows the slide's tree, a click on a row selects its node,
   and Alt with ↑ and ↓ selects a sibling, with ← the parent and with → a child, per
   `design@rootpoint-app@node-selection` and `design@rootpoint-app@selection-keys`; the key table
@@ -282,7 +284,7 @@ T1 takes its place, and keeps the rival the issue named.
   at their audits, and `spec@editor-conveniences@preview-mode` reads it at its audit.
 - `tripwire@rootpoint-app@control-ends-a-gesture`: the node menu and the dialog of a style's removal
   are open states of the window; a socket's `control` closes them as it ends a gesture.
-  `spec@editor-conveniences@context-menu` and `spec@editor-conveniences@styles-window` read it at their audits.
+  `spec@editor-conveniences@context-menu` and #styles-window read it at their audits.
 
 **The design and `rejected` entries the design-entry searches graded as bearing, and their
 outcome.** The goals are the criteria below. Beyond the decisions listed above:
@@ -374,7 +376,7 @@ Proposed by the owner in round 1 (`argument@editor-conveniences@arg-3`); mechani
 session (`argument@editor-conveniences@arg-12`, `argument@editor-conveniences@arg-18`). Final
 state: approved, in round 2: "sidebar-width: accepted, draggable and width do not follow content."
 Built by #side-panel. Harvested: `design@rootpoint-app@sidebar-width`, since its argument turns on
-egui's behaviour. AC2 is judged at `spec@editor-conveniences@styles-window`.
+egui's behaviour. AC2 was judged at #styles-window, not fired.
 
 ### A table of named text styles in the document, and each text names one or holds its own `##named-styles`
 
@@ -384,9 +386,8 @@ round 1 (`argument@editor-conveniences@arg-19`, `argument@editor-conveniences@ar
 accepted, this is the shape I was thinking about." Its round-1 detail that removing a style in use
 is refused is replaced by `thread@editor-conveniences@style-removal`. Built in the model and the
 protocol by the slice #styles-model, harvested as `design@rootpoint-model@named-styles`, with the
-rewrite of `design@rootpoint-model@text-style-per-area`. Shape of the window's half:
-`spec@editor-conveniences@styles-window`, whose harvest writes an app head that only the Styles tab
-changes a named style.
+rewrite of `design@rootpoint-model@text-style-per-area`. The window's half, built by #styles-window,
+harvested as `design@rootpoint-app@styles-tab-edits-styles`.
 
 ### A new area holds an empty text, with the style of the area it was split from, or Body `##new-area-style`
 
@@ -502,7 +503,8 @@ Proposed by the owner in round 3 (`argument@editor-conveniences@arg-46`): "Maybe
 a style that should be used as replacement."; the custom copy and the dialog by the session
 (`argument@editor-conveniences@arg-54`). Final state: approved, in round 4: "Approved all three".
 Built in the model and the protocol by #styles-model, harvested as
-`design@rootpoint-model@style-removal`. Shape of the dialog: `spec@editor-conveniences@styles-window`.
+`design@rootpoint-model@style-removal`. The dialog, built by #styles-window, holds the rule's window
+half in the doc comment of `App::removal_dialog`, since the head holds the rule.
 
 ### No command creates a cosmetic breach, and a property test over the protocol's commands checks it `##no-new-breach`
 
@@ -944,7 +946,7 @@ crates/rootpoint-protocol/src/session.rs
 crates/rootpoint-protocol/tests/properties.rs   the property test of #no-new-breach (#breach-tiers, landed)
 crates/rootpoint-app/src/panels.rs
   App::outline                the side panel's tree                          (#side-panel, landed)
-  App::styles_tab             the Styles tab                                 (`spec@editor-conveniences@styles-window`)
+  App::styles_tab             the Styles tab                                 (#styles-window, landed)
   App::node_menu              the menu of a right-click                      (`spec@editor-conveniences@context-menu`)
 ```
 
@@ -1063,8 +1065,8 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
 ### A document naming a missing style loads, draws in the default style, and is reported in three places `##ac-missing-style-warned`
 
 AC1. Guards `thread@editor-conveniences@missing-style-fallback` and
-`thread@editor-conveniences@cosmetic-fallbacks`. Judged by `spec@editor-conveniences@styles-window`,
-when the outline exists. Observable: a test loads a document whose text names a style the table
+`thread@editor-conveniences@cosmetic-fallbacks`. Judged by #styles-window,
+when the outline exists, and not fired there. Observable: a test loads a document whose text names a style the table
 lacks; it fires when the document is refused, when the text draws with any style but
 `TextStyle::default()`, or when the status line, the outline's row of that area or the reply of
 `render` does not name the missing style. Response: reopen
@@ -1073,7 +1075,7 @@ lacks; it fires when the document is refused, when the text draws with any style
 ### The side panel's width is the same in every state of its content `##ac-panel-width-constant`
 
 AC2. Guards `thread@editor-conveniences@sidebar-width`. Judged by
-`spec@editor-conveniences@styles-window`, the last slice that adds content to the side panel;
+#styles-window, the last slice that adds content to the side panel, and not fired there;
 #side-panel landed the test, in `path@rootpoint-app@tests/panel.rs`. Observable: a test of `App::frame` reads the
 side panel's width, two frames after each change, in six states: the slide alone selected, a text
 area, an image area, the Styles tab, a text of 200 characters, and a tree 6 levels deep. It fires
@@ -1094,7 +1096,7 @@ not that node after the click, or when the menu is not open on the next frame. R
 2. Structural and cosmetic breaches, #breach-tiers: landed.
 3. Named styles in the model and the protocol, #styles-model: landed.
 4. The outline, the node keys and the panel's width, #side-panel: landed.
-5. [Named styles in the window](styles-window.md)
+5. Named styles in the window, #styles-window: landed.
 6. [The node menu](context-menu.md)
 7. [The preview](preview-mode.md)
 
@@ -1104,9 +1106,9 @@ not that node after the click, or when the menu is not open on the next frame. R
 - #breach-tiers before #styles-model: a missing style is a cosmetic breach, and #styles-model
   widens the property test #breach-tiers landed.
 - #styles-model before #side-panel: the outline shows each text's style name.
-- #side-panel before `spec@editor-conveniences@styles-window`: the Styles tab is a tab of the side panel whose width
+- #side-panel before #styles-window: the Styles tab is a tab of the side panel whose width
   #side-panel fixes, and AC1 needs the outline's rows.
-- `spec@editor-conveniences@styles-window` before `spec@editor-conveniences@context-menu`: the menu's "Style" entry offers the named styles the window
+- #styles-window before `spec@editor-conveniences@context-menu`: the menu's "Style" entry offers the named styles the window
   shows.
 - `spec@editor-conveniences@context-menu` before `spec@editor-conveniences@preview-mode`: the two are independent; the preview goes last, since it changes
   the view state every other slice reads.

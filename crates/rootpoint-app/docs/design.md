@@ -139,6 +139,20 @@ content fits. The rival, a fixed width with no drag, would give a deep tree or a
 room. On the owner's word: the owner asked for a side panel of a constant width, since a width that
 changes at a click resizes the slide view.
 
+### Only the Styles tab changes a named style, and a change from the selection makes the text custom `##styles-tab-edits-styles`
+
+The Selection tab's style row names a style of the table, or makes the text's values its own; its
+other controls change only the text's own values, so a change of a value of a text naming a style
+makes that text custom, with the named values and that change, `design@rootpoint-model@named-styles`.
+The Styles tab is the one part of the window that sends `style set`, `style rename`, `style add` and
+`style remove`, and it lists, for each style, the number of areas that name it. A change to a style
+that slides out of view use is then made only from the view that lists those uses, which answers the
+cost `rejected@rootpoint-model@content-by-reference` names, that editing a shared content changes
+every slide that shows it. The rival, controls of the selection that change the named style the
+text names, would change slides out of view with a click meant for one text. It is a reason
+respected by every control of both tabs, and the Styles tab, a tab of the side panel, keeps the
+panel's width, `design@rootpoint-app@sidebar-width`.
+
 ### A subtree is selected for a spanning split by moving up to its node, and no rectangle selects `##span-selection`
 
 To split across several areas, the author selects the split that holds them, with Alt+← or its row
@@ -205,7 +219,8 @@ minimum sizes in Blender, 29 pixels times the interface scale, and egui_tiles, 3
 
 ### No action of the window that discards content asks a confirmation, since undo restores what it took `##no-discard-confirmation`
 
-Delete, the side panel's Remove, a slide's removal and a change of a text to an image act at once.
+Delete, the Selection tab's Remove, a slide's removal and a change of a text to an image act at
+once.
 Each is an operation whose inverse restores what it discarded, `Op::Remove` with a snapshot of the
 slide's former tree, per `design@rootpoint-model@edit-operation-core`, so one `undo` brings the
 content back. The rival, a dialog before an action that discards content,
@@ -354,20 +369,21 @@ The window holds the authority to edit at start, so a window just opened is the 
 `rejected@rootpoint-app@socket-holds-control-at-start`; the socket asks for it with `control`,
 `design@rootpoint-app@control-passing`, and the window takes it back by its button,
 `design@rootpoint-app@take-over-at-once`. The socket counts as one controller, every connection
-together: an authority held by a connection would end with it, at every command a client sends
-on a connection of its own, as `rootpoint-ctl <socket> <words>…` does, and between two batches,
+together: an authority held by a connection would end with it, at every command a client sends on a
+connection of its own, as `rootpoint-ctl <socket> <words>…` does, and between two batches,
 `rejected@rootpoint-app@control-per-connection`. While the socket holds it, every action of
-`path@rootpoint-app@src/actions.rs` that changes the document returns at once, `App::edit_at`
-with them, and the window draws no mark of a gesture: no divider highlight, no resize cursor, no
-grip, no preview line, no drop line in the slide list. While the window holds it, every command of
-the socket but the queries, `control` and `release` replies `err the window has control`, or the
-refusal of a take-over.
+`path@rootpoint-app@src/actions.rs` that changes the document returns at once, `App::edit_at` with
+them, the side panel disables its controls that send one, and the window draws no mark of a gesture:
+no divider highlight, no resize cursor, no grip, no preview line, no drop line in the slide list.
+While the window holds it, every command of the socket but the queries, `control` and `release`
+replies `err the window has control`, or the refusal of a take-over.
 
 Two exceptions keep looking free. The socket's queries, `tree`, `view`, `styles` and `render`, need
 no authority, since they apply no operation and join no group. The window's inputs that change only
 the view need none either: a click selects, and never enters editing; Alt with an arrow, a row of
 the outline and the outline of its node under the pointer, a row of the slide list, presenting and
-presenter mode's keys. The view stays the session's one view,
+presenter mode's keys; and the window's own state, the side panel's tab and a style selected in the
+list of the Styles tab. The view stays the session's one view,
 `design@rootpoint-protocol@view-state`: an author inspects any slide while the agent edits another,
 since an editing command names its nodes by id and reads no view,
 `design@rootpoint-protocol@protocol-addressing`. The socket's view commands still need the
