@@ -139,7 +139,7 @@ pub fn alignments() -> Document {
 }
 
 /// One slide of five areas mixing both axes: a title across the top, and below it an image beside
-/// a column of a bold paragraph, an italic coloured line and an empty area.
+/// a column of a bold paragraph, an italic coloured line and an empty text.
 pub fn mixed() -> (Document, AssetId) {
     let (mut doc, title) = one_slide();
     split(&mut doc, title, Axis::TopToBottom, 0.2);

@@ -398,7 +398,7 @@ fn a_click_with_ctrl_held_splits_the_selection_at_the_pointer() {
     };
     assert_eq!(row.axis, rootpoint_model::Axis::LeftToRight);
     assert!((row.dividers[0] - 0.25).abs() < 1e-3, "{:?}", row.dividers);
-    // The new empty area is the smaller part, before the line.
+    // The new area is the smaller part, before the line.
     assert_eq!(row.children[1].id(), n2);
 }
 

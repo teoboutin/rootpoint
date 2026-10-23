@@ -278,7 +278,7 @@ fn the_grip_actions_issue_their_commands() {
 fn the_content_actions_issue_their_commands() {
     check(
         "set the content to text",
-        &["select n3", "clear n3"],
+        &["select n3", "image n3 a19 fit"],
         App::set_text_content,
         |_| vec![c("text n3 \"\"")],
     );
