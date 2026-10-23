@@ -91,7 +91,10 @@ each slice is audited, built, reviewed and harvested in turn, and the branch is 
 a merge after each harvest, with no merge between slices. The owner asked: "implement all the
 remaining slices of the editor-conveniences milestone, in a single branch. Proceed with the normal
 workflow, audit, implementation, harvest, review (as if you were going to merge), then back to
-audit for the next slice."
+audit for the next slice. Only pause when you absolutely need my word to fill a gap, otherwise
+proceed with sensible defaults." A gap the owner must rule on is still put to the owner, by
+`primer@question-authority`: a default is built and the work goes on, and a load-bearing gap stops
+its slice.
 
 - **Gates.** `cargo x gates` runs every check a branch owes before it merges,
   `instructions@merge-gates`. Every slice keeps them
@@ -1110,7 +1113,9 @@ or saves a document that does not load back equal. Response: reopen
   rootpoint-protocol in five, rootpoint-model in three and rootpoint-render in two, in seven pieces
   each of which can fail alone, and one branch of all of it is too large to review. Ruled: the
   owner approved it. The owner later ruled that every slice after #empty-text is built on one
-  branch, which "How the work is done" states: the slices stay, and share one branch.
+  branch, which "How the work is done" states: the slices stay, and share one branch. Each slice's
+  work and harvest are still reviewed apart, so no review reads the whole branch at once but the
+  review before the merge, which reads it again after each slice.
 - **D2**, `thread@editor-conveniences@named-styles`, `thread@editor-conveniences@node-menu`: which
   states of the window `goal@rootpoint-protocol@commands-drive-everything` counts as a "view it
   shows". The design-conformance review found that the Styles tab, the style selected in its list,
