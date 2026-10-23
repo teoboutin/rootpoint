@@ -7,9 +7,9 @@ window listens on a socket at that path for the commands of the text protocol, w
 listens there, refuses a path that holds another kind of file, and removes the socket when it
 closes; a socket left by a run that was killed is replaced at the next start. The window holds the
 authority to edit at start; `control` gives it to the socket, `release` gives it back, and the
-queries `tree`, `view` and `render` need none. While the socket holds control, a banner over the
-toolbar says so beside a button "Take control", which takes it back; the window shows each change
-as it is made, and of the actions below it keeps only those that change the view: selecting by a
+queries `tree`, `view`, `styles` and `render` need none. While the socket holds control, a banner
+over the toolbar says so beside a button "Take control", which takes it back; the window shows each
+change as it is made, and of the actions below it keeps only those that change the view: selecting by a
 click, Alt and the arrows or the breadcrumb, showing a slide of the list, and presenting. It
 draws no grip, no divider highlight and no preview line, and a click on the selected text area
 only selects it. The toolbar opens a presentation (Ctrl+O), saves it to its

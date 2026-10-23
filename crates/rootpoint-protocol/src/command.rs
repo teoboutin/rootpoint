@@ -472,9 +472,11 @@ pub(crate) fn split_words(line: &str) -> Result<Vec<Word>, ParseError> {
                 }
                 chars.next();
                 // A quoted value after `key=`, as in `style="Style 1"`, is read with the escapes
-                // of a quoted text, and stays part of the bare word.
+                // of a quoted text, and stays part of the bare word, quoted again as the printer
+                // writes it, so that `into="custom"`, a style's name, stays apart from
+                // `into=custom`.
                 if c == '"' && text.ends_with('=') {
-                    text.push_str(&read_quoted(&mut chars)?);
+                    text.push_str(&quote_always(&read_quoted(&mut chars)?));
                 } else {
                     text.push(c);
                 }
@@ -687,14 +689,29 @@ fn value_options(args: &mut Args) -> Result<Vec<StyleOption>, ParseError> {
     Ok(options)
 }
 
-/// `into=custom`, or `into="<name>"`: what the texts naming a removed style name instead.
+/// `into=custom`, or `into="<name>"`: what the texts naming a removed style name instead. Only a
+/// bare `custom` asks for a copy, so a style named "custom" is `into="custom"`.
 fn parse_into(text: &str) -> Result<Replacement, ParseError> {
     match text.strip_prefix("into=") {
         Some("custom") => Ok(Replacement::Custom),
-        Some(name) if !name.is_empty() => Ok(Replacement::Named(name.to_owned())),
+        Some(value) if !value.is_empty() => Ok(Replacement::Named(value_text(value)?)),
         _ => Err(ParseError(format!(
             "`{text}` is not `into=custom` or `into=\"<name>\"`"
         ))),
+    }
+}
+
+/// The text of a value after `key=`: a bare word as it is, or a quoted one, as `split_words` keeps
+/// it, with its escapes read.
+fn value_text(value: &str) -> Result<String, ParseError> {
+    let Some(rest) = value.strip_prefix('"') else {
+        return Ok(value.to_owned());
+    };
+    let mut chars = rest.chars().peekable();
+    let text = read_quoted(&mut chars)?;
+    match chars.next() {
+        None => Ok(text),
+        Some(_) => Err(ParseError(format!("`{value}` has words after its quote"))),
     }
 }
 
@@ -707,7 +724,7 @@ fn parse_style_option(text: &str) -> Result<StyleOption, ParseError> {
             "custom" => Ok(StyleOption::Custom),
             _ => Err(bad()),
         },
-        Some(("style", name)) if !name.is_empty() => Ok(StyleOption::Named(name.to_owned())),
+        Some(("style", name)) if !name.is_empty() => value_text(name).map(StyleOption::Named),
         Some(("size", v)) => parse_number(v)
             .ok()
             .filter(|n| *n > 0.0)

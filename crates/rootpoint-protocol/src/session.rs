@@ -6,9 +6,8 @@ use std::path::{Path, PathBuf};
 use std::collections::{BTreeMap, BTreeSet};
 
 use rootpoint_model::{
-    Area, Asset, AssetId, AssetSource, BUILTIN_FAMILIES, Content, Document, FontRef, ImageContent,
-    Node, NodeId, Op, Replacement, SlideId, StyleChoice, TextContent, TextStyle, apply, load_ron,
-    save_ron,
+    Area, Asset, AssetId, AssetSource, Content, Document, FontRef, ImageContent, Node, NodeId, Op,
+    Replacement, SlideId, StyleChoice, TextContent, TextStyle, apply, load_ron, save_ron,
 };
 use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
 
@@ -499,12 +498,15 @@ impl Session {
     /// `design@rootpoint-protocol@no-new-breach`.
     fn usable_style(&self, name: &str) -> Result<(), String> {
         let style = self.doc.styles.get(name).ok_or_else(|| no_style(name))?;
+        if self.doc.draws_as_asked(style) {
+            return Ok(());
+        }
         match &style.font {
-            FontRef::Asset(asset) => self.existing_asset(*asset),
-            FontRef::Builtin(family) if !BUILTIN_FAMILIES.contains(&family.as_str()) => Err(
-                format!("{} names no built-in family {family}", quote_always(name)),
-            ),
-            FontRef::Builtin(_) => Ok(()),
+            FontRef::Asset(asset) => Err(format!("no asset {asset}")),
+            FontRef::Builtin(family) => Err(format!(
+                "{} names no built-in family {family}",
+                quote_always(name)
+            )),
         }
     }
 

@@ -33,11 +33,12 @@ window's half is `spec@editor-conveniences@styles-window`.
     is the removal of the style with no replacement;
   - `Op::SetStyle { name, style }`, which replaces a style's values;
   - `Op::RenameStyle { from, to }`, which rewrites every `Named(from)` to `Named(to)`, refused when
-    `to` is in the table; its inverse renames back;
+    `to` is in the table or a text names `to`; its inverse renames back;
   - `Op::RemoveStyle { name, into }`: `into` names another style, or asks for a custom copy of the
     removed style for each user, or is `None`, which leaves the users naming the removed style.
 
-  No operation refuses a reference to a missing style, per
+  No operation refuses a reference to a missing style but `Op::RenameStyle`, which refuses a
+  rename while a text names `to`, since its inverse would rename that text back too; per
   `thread@editor-conveniences@no-new-breach`: an undo must not be refused. With a file loaded with
   areas naming a missing "Heading", `style add "Heading"` then `undo` removes Heading again and
   leaves those areas as they were loaded. The inverse of a removal restores the style and each
@@ -96,13 +97,13 @@ window's half is `spec@editor-conveniences@styles-window`.
 - **A named style draws as its table entry.** Test: a render test draws a text naming Title and a
   text whose `Custom` style equals Title's values; the two images are equal. Shown to fail: against
   a resolution that ignores the table, the named text draws at size 48.
-- **A style edit changes every area naming it.** Test: a model test applies `Op::SetStyle` to Body
-  and finds every text of the sample naming Body resolving to the new values, and the Title text
-  unchanged. Shown to fail: against a `SetStyle` that copies into areas, an undo then leaves the
+- **A style edit changes every area naming it.** Test: a protocol test runs `style set "Body"` on
+  the sample, the sample being the protocol's, and finds every text naming Body resolving to the new
+  values, and the Title text unchanged. Shown to fail: against a `SetStyle` that copies into areas, an undo then leaves the
   areas changed.
 - **A rename rewrites the references.** Test: `style rename "Body" "Text"` leaves no `Named("Body")`,
   and its undo restores them. Shown to fail: against a rename of the table's key alone,
-  `Document::breaches` names two missing styles.
+  n3 still names Body.
 - **A removal takes a replacement.** Tests:
   - `style remove "Body"` on the sample is refused, with a reply naming its users n3, n5 and n9;
   - with `into="Title"`, every user names Title;
@@ -134,8 +135,8 @@ window's half is `spec@editor-conveniences@styles-window`.
   `style rename "Body" "Heading"` replies `err`, and the document is unchanged. Shown to fail:
   against a rename that checks only the table, n3 is caught by the rename, and its undo turns n3
   into Body.
-- **A split does not copy a missing name.** Test: on the same document, a split of n3 gives a new
-  area naming Body. Shown to fail: against a split that copies every `StyleChoice`, the new area
+- **A split does not copy a missing name.** Test: on the same document, a split of the area naming
+  Heading, n2 in the test, gives a new area naming Body. Shown to fail: against a split that copies every `StyleChoice`, the new area
   names "Heading", and the property test of the next claim would not see it, since it starts from a
   document with no breach.
 - **A name with a space reads and prints back.** Test: `style add "Style 1" size=40` and

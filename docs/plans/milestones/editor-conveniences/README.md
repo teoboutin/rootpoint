@@ -1128,6 +1128,15 @@ or saves a document that does not load back equal. Response: reopen
   approved a rewording of the goal that states reading (a), a view of the presentation, and excludes
   the window's own state; the default stands as built.
 
+- **D3**, `thread@editor-conveniences@new-area-style`: a new area takes Body only while Body draws
+  with no stand-in, its font an asset of the table or a family of `BUILTIN_FAMILIES`, and the
+  default values otherwise. The review of the work of `spec@editor-conveniences@styles-model` found
+  that a file edited by hand, whose Body names a font asset the table lacks and which no text uses,
+  got a breach from `add-slide`, against `design@rootpoint-protocol@no-new-breach`. The condition
+  narrows the rule the owner approved, "every other new area takes Body", for that case alone, so it
+  is a scope change. Default, built as written: the condition. The rival: Body always, and a breach
+  a command makes from such a file. Awaiting the owner.
+
 ## Harvest
 
 This document's own row: when the last slice, `spec@editor-conveniences@preview-mode`, lands, its harvest commit deletes this

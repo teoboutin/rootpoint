@@ -56,8 +56,10 @@ A text names a style of the document's table, `text n3 "Hi" style="Title"`, or h
 values, `custom`; `tree` prints which. Any other option of `text` changes the values the text
 draws with, so a named text becomes custom and the style itself is unchanged. `style add`, `style
 set`, `style rename` and `style remove` change the table, a name always quoted; `styles` lists it,
-each style as the options `style add` takes. `style remove` is refused while a text names the style,
-unless `into="<other>"` or `into=custom` says what those texts take instead. A command naming a
+each style as the options `style add` takes, but for a built-in family the binary does not carry,
+which only a file edited by hand holds, written as its name. `style remove` is refused while a text names the style,
+unless `into="<other>"`, another style, or `into=custom`, a copy of the removed values, says what
+those texts take instead. A command naming a
 style the table lacks is refused; a file naming one loads, its text drawn in the default values,
 and `render` names the area and the style after `styles=`.
 

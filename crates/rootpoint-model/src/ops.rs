@@ -72,7 +72,7 @@ pub enum Op {
     AddAsset {
         asset: Asset,
     },
-    /// Remove an asset that no area uses.
+    /// Remove an asset that no area and no style of the table uses.
     RemoveAsset {
         id: AssetId,
     },
@@ -358,8 +358,9 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             }
             Ok(Op::RenameStyle { from: to, to: from })
         }
-        // No operation refuses a reference to a missing style, so a replacement naming a style the
-        // table lacks is accepted: the commands refuse it, `design@rootpoint-protocol@no-new-breach`.
+        // A replacement naming a style the table lacks is accepted, as every reference to a missing
+        // style is but the one a rename refuses above: the commands refuse it,
+        // `design@rootpoint-protocol@no-new-breach`.
         Op::RemoveStyle { name, into } => {
             let style = doc
                 .styles

@@ -138,13 +138,22 @@ impl Document {
         }
     }
 
-    /// The style of a new area that copies no other: Body while the table holds it, the default
-    /// values otherwise.
+    /// The style of a new area that copies no other: Body while the table holds it and it draws
+    /// with no stand-in, the default values otherwise, so that no new area holds a breach.
     pub fn new_area_style(&self) -> StyleChoice {
-        if self.styles.contains_key(BODY) {
-            StyleChoice::Named(BODY.to_owned())
-        } else {
-            StyleChoice::Custom(TextStyle::default())
+        match self.styles.get(BODY) {
+            Some(body) if self.draws_as_asked(body) => StyleChoice::Named(BODY.to_owned()),
+            _ => StyleChoice::Custom(TextStyle::default()),
+        }
+    }
+
+    /// Whether a style's font is one the document or the binary has: an asset of the table, or a
+    /// built-in family of `BUILTIN_FAMILIES`. A text drawn in one that is not stands in the built-in
+    /// sans, a cosmetic breach.
+    pub fn draws_as_asked(&self, style: &TextStyle) -> bool {
+        match &style.font {
+            FontRef::Asset(id) => self.assets.contains_key(id),
+            FontRef::Builtin(name) => BUILTIN_FAMILIES.contains(&name.as_str()),
         }
     }
 

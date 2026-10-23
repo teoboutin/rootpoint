@@ -362,3 +362,52 @@ fn styles_lists_each_style_as_its_options() {
     }
     assert_eq!(fresh.document().styles, s.document().styles);
 }
+
+/// A file's Body whose font the document lacks is no style a new area takes: it takes the default
+/// values, so no command makes a breach in a document that has none.
+#[test]
+fn a_new_area_takes_no_body_that_would_draw_with_a_stand_in() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    run(
+        &mut s,
+        &mut files,
+        "asset font.ttf\nstyle set \"Body\" font=a1\nsave deck.ron",
+    );
+    let text = String::from_utf8(files.files["deck.ron"].clone()).unwrap();
+    let table = "        1: (\n            source: Path(\"font.ttf\"),\n        ),\n";
+    let edited = text.replacen(table, "", 1);
+    assert_ne!(edited, text, "the saved file changed shape");
+    files.files.insert("deck.ron".into(), edited.into_bytes());
+    ok(&mut s, &mut files, "load deck.ron");
+    assert_eq!(s.document().breaches(), vec![]);
+    ok(&mut s, &mut files, "add-slide");
+    assert_eq!(s.document().breaches(), vec![]);
+    assert_eq!(
+        text_of(&s, 3).style,
+        StyleChoice::Custom(TextStyle::default())
+    );
+}
+
+/// A style of a file whose built-in family the binary does not carry is no style a text may name.
+#[test]
+fn no_command_names_a_style_of_an_unknown_family() {
+    let mut files = MemoryFiles::default();
+    let mut s = sample(&mut files);
+    ok(&mut s, &mut files, "save deck.ron");
+    let text = String::from_utf8(files.files["deck.ron"].clone()).unwrap();
+    let legend = "        \"Legend\": (\n            font: Builtin(\"sans\"),";
+    let edited = text.replacen(
+        legend,
+        "        \"Legend\": (\n            font: Builtin(\"serif\"),",
+        1,
+    );
+    assert_ne!(edited, text, "the saved sample changed shape");
+    files.files.insert("deck.ron".into(), edited.into_bytes());
+    ok(&mut s, &mut files, "load deck.ron");
+    assert_eq!(
+        refused(&mut s, &mut files, "text n3 \"x\" style=\"Legend\""),
+        "\"Legend\" names no built-in family serif"
+    );
+    refused(&mut s, &mut files, "style remove \"Body\" into=\"Legend\"");
+}

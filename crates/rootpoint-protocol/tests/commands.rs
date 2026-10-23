@@ -148,6 +148,16 @@ fn every_command_prints_back_as_it_parses() {
             name: "Body".into(),
             into: Some(Replacement::Named("Title \"2\"".into())),
         }),
+        // A style named "custom" stays apart from the copy `into=custom` asks for.
+        Command::Style(StyleCommand::Remove {
+            name: "Body".into(),
+            into: Some(Replacement::Named("custom".into())),
+        }),
+        Command::Text {
+            area: NodeId(2),
+            text: "x".into(),
+            style: vec![StyleOption::Named("custom".into())],
+        },
     ];
     for command in commands {
         let line = command.to_string();
