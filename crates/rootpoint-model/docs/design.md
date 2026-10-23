@@ -73,18 +73,22 @@ are part of every saved file.
 An area holds one content: a text with its style, or an image,
 `design@rootpoint-model@no-empty-kind`. Image data and font files live once in the document's asset
 table, keyed by asset id, so a slide's text is read in the file where it is shown, as
-`goal@rootpoint@readable-save-file` asks, and an image placed on many slides is stored once.
+`goal@rootpoint@readable-save-file` asks, and an image placed on many slides is stored once. A
+text's style may name an entry of the document's style table, `design@rootpoint-model@named-styles`,
+the one part of a content shared by name.
 
 The rival, every content stored apart and referenced by areas,
 `rejected@rootpoint-model@content-by-reference`, costs garbage collection or a library of orphans,
 editing that changes every slide sharing a content, a file read by following ids, and content ids
-beside node ids; the owner weighed those costs above the reuse it gives. Reuse of text across
+beside node ids; the owner weighed those costs above the reuse it gives. A shared style answers
+each: a style no text names is an entry of a library, not an orphan; changing every text that names
+it is its purpose, done only by `style set`; the file reads the name in place; and the name is no id. Reuse of text across
 slides is left to templates, which `issue@rootpoint-model@slide-templates` keeps open.
 
 ### An area with nothing in it holds an empty text, and no kind of content of its own `##no-empty-kind`
 
-A text may hold no characters, and a new area, of `Op::AddSlide` or of a split, holds one in the
-default style. An empty text draws nothing, so a kind for an area with nothing in it adds nothing
+A text may hold no characters, and a new area, of `Op::AddSlide` or of a split, holds one, in the
+style `design@rootpoint-model@new-area-style` gives. An empty text draws nothing, so a kind for an area with nothing in it adds nothing
 an empty text lacks: in what the renderer draws, it differs from an empty text only by an arm that
 draws nothing, `rejected@rootpoint-model@empty-content-kind`. Outside the renderer, the editor has
 one kind to enter for typing, the text, per `design@rootpoint-app@edit-entry`. On the owner's word:
@@ -115,10 +119,67 @@ that has both. It would have left the format untested for embedded assets until 
 
 ### A text area has one style for all its text `##text-style-per-area`
 
-A text's font, size, weight, slant, colour and alignment are set for the whole area. Styled spans
-inside a text need an editor of rich text, the hardest part of a text editor to build, which this
-design avoids; the owner judged one style per area enough for the first prototype. The style is part
-of the file.
+A text's font, size, weight, slant, colour and alignment are set for the whole area, by one style,
+named or custom, `design@rootpoint-model@named-styles`. Styled spans inside a text need an editor
+of rich text, the hardest part of a text editor to build, which this design avoids; the owner
+judged one style per area enough for the first prototype. The style is part of the file.
+
+### A text names a style of the document's table, or holds its own values `##named-styles`
+
+A document holds a table of named text styles, and a text's style is `Named(name)`, a style of the
+table, or `Custom(values)`, its own. A new document holds four, Title, Subtitle, Body and Legend.
+Editing a named style changes every text that names it, which is its purpose: the nearest rival, a
+preset whose values are copied into the text when it is picked, changes nothing placed when the
+preset changes later. The other rival, overrides per field over a named style, makes every field
+optional and needs a cascade that one style per area avoids; a custom style covers the text that
+differs. A value given to a named text alone makes it custom, with the named values and that change,
+so that only `style set` changes a shared style. The table is part of the file and of the
+document's public type. On the owner's word: the owner proposed predefined styles for titles,
+subtitles and legends, with an editor of them, each text choosing one or a custom style of its own.
+
+### Styles are named by their name, in the file and in commands `##style-key`
+
+A text names a style by its name, `Named("Title")` in the file and `style="Title"` in a command,
+and a rename is one operation that rewrites every text naming the style, its inverse renaming them
+back. The name reads in place in the file, where an id would send the reader to the table, as
+`goal@rootpoint@readable-save-file` asks of the file. The rival, an id from the document's counter,
+with which a rename touches nothing else, `rejected@rootpoint-model@style-ids`, meets readability
+too, so the choice was a weighing. On the owner's word: the owner chose names over ids, judging
+that referring by name is important.
+
+### Named styles are for text only, until another kind of content needs its own `##style-kinds`
+
+The style table holds text styles; an image's one option, how it fits its area, is chosen per area
+with no name. A kind of content added later, `issue@rootpoint@more-content-kinds`, decides then
+whether its options earn named styles. The rival, a style object per kind from the start, splits
+styles by kind before any kind but text has options worth sharing. On the owner's word: the owner,
+who first thought each kind should probably have its own style object, deferred it, judging that
+for images it makes little sense with a single option.
+
+### Removing a style that texts name takes a replacement for them `##style-removal`
+
+`Op::RemoveStyle` gives the texts naming the removed style another style of the table, or each a
+custom copy of the removed values, which changes no slide; with no replacement they keep naming the
+removed style, a cosmetic breach, `design@rootpoint-model@cosmetic-fallbacks`, so that the inverse
+of `Op::AddStyle` removes a style that texts loaded from a file name. The command refuses a removal
+with no replacement while a text names the style, and names those texts,
+`design@rootpoint-protocol@no-new-breach`. Its inverse puts the style back and makes its former
+users name it again. The rival, a removal that leaves its users drawn with the default values,
+leaves a warning to clear after a deliberate act. On the owner's word: the owner proposed that the
+author name the style that replaces a removed one; the custom copy is the session's, the one
+replacement that changes no slide.
+
+### A new area takes the style of the text area it was split from, or Body `##new-area-style`
+
+A split of a text area gives its new area that area's style, when it is custom or names a style the
+table holds; every other new area, of a split of a split or of an image, of `Op::AddSlide`, or of
+an image area emptied or given a text with no style, takes Body while the table holds it, and the
+default values otherwise. Splitting a body text for a second column gives a body text with no
+further step, which `goal@rootpoint-app@direct-manipulation` asks of common tasks. A name the table
+lacks is not copied, so no split creates a breach, `design@rootpoint-protocol@no-new-breach`. The
+rival, a new area that always takes Body, costs a style change after a split of a styled text;
+whether inheriting gets in the way instead is watched by
+`tripwire@rootpoint-model@inherited-style-in-the-way`.
 
 ## Changes
 
@@ -138,7 +199,7 @@ document.
 ### A document is validated when it is loaded and after every operation, and a structural breach is refused `##validated-documents`
 
 `Document::validate` checks every structural invariant: unique ids below the counter, every
-asset an area names below the counter too, splits of two children or more with ordered dividers
+asset an area or a style of the table names below the counter too, splits of two children or more with ordered dividers
 strictly inside (0, 1) and no child split of their own axis, no zero side in the aspect ratio.
 `load_ron` refuses a file that breaks one, and `apply` refuses an operation whose result breaks
 one, leaving the document unchanged. A breach is structural when, with it, the layout or the
@@ -158,10 +219,11 @@ so a breach is reachable.
 
 A breach is cosmetic when it is a reference to a missing target that has a defined stand-in, whose
 effect stays inside one area's drawing: an image or a text font naming an asset the table lacks,
-drawn grey or in the built-in sans, and a `FontRef::Builtin` naming a family outside
-`BUILTIN_FAMILIES`, drawn in the built-in sans. `load_ron` loads it and `apply` accepts an
+drawn grey or in the built-in sans, a `FontRef::Builtin` naming a family outside
+`BUILTIN_FAMILIES`, drawn in the built-in sans, and a text naming a style the table lacks, drawn
+with `TextStyle::default()`. `load_ron` loads it and `apply` accepts an
 operation whose result holds one, so the inverse of an edit of such an area, which brings back what
-a file was loaded with, is never refused. `Op::RemoveAsset` still refuses an asset an area uses: it
+a file was loaded with, is never refused. `Op::RemoveAsset` still refuses an asset an area or a style of the table uses: it
 refuses a removal, not a reference, and no undo meets it, since the inverse of `Op::AddAsset`
 removes an id the counter has just given, which no area can name;
 `Document::breaches` names each, as `Breach`, and the renderer's report, the window's status line

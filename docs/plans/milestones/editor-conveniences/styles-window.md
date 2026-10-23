@@ -2,7 +2,7 @@
 
 The fifth slice of `milestone@plans@editor-conveniences`. Read the milestone document whole before
 this spec. It builds the window's half of `thread@editor-conveniences@named-styles`; the model and
-the protocol are `spec@editor-conveniences@styles-model`.
+the protocol are #styles-model.
 
 ## Builds
 
@@ -12,7 +12,7 @@ the protocol are `spec@editor-conveniences@styles-model`.
     `text <area> "<text>" custom`.
   - Under it, the size, bold, italic, colour, alignment and font controls show the resolved values.
   - A change to any of them sends `text` with that option, which forks a named area to custom, per
-    `spec@editor-conveniences@styles-model`. No control of the selection changes a named style.
+    `design@rootpoint-model@named-styles`. No control of the selection changes a named style.
 - **The Styles tab**, `App::styles_tab`: a second tab of the side panel, "Selection | Styles".
   - The tab lists each style with the number of areas, over every slide, that name it.
   - A click on a style selects it in the tab. That selection is the window's own state, not the
@@ -124,8 +124,7 @@ commit.
 
 - An app head: only the Styles tab changes a named style, and a change from the selection makes the
   area custom. It passes entry test 2, a reason respected by every control of both tabs.
-- The replacement dialog, under the head of `thread@editor-conveniences@style-removal` written by
-  `spec@editor-conveniences@styles-model`, or a comment at the dialog if that head holds the rule
-  already.
+- The replacement dialog, under `design@rootpoint-model@style-removal`, or a comment at the dialog
+  if that head holds the rule already.
 - `design@rootpoint-app@one-controller-at-a-time`: re-read; the Styles tab's edits return while the
   socket holds the authority, and a selection in its list is a view-only input of the window.

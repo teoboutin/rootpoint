@@ -150,26 +150,29 @@ its slice.
 **What exists today, at each site the work touches.**
 
 - **Content.** `Content` in `path@rootpoint-model@src/document.rs` is `Text(TextContent)` or
-  `Image(ImageContent)`, and `TextContent` holds a `text` and a `TextStyle`. A new area, made by
-  `Op::Split` or by `Op::AddSlide`, holds `Content::default()`, an empty text in
-  `TextStyle::default()`, in `apply_in` and `empty_area` of `path@rootpoint-model@src/ops.rs`. The
-  slice #empty-text removed `Content::Empty` and set `FORMAT_VERSION` to 2.
+  `Image(ImageContent)`, and `TextContent` holds a `text` and a `StyleChoice`. A new area, made by
+  `Op::Split` or by `Op::AddSlide`, holds an empty text in the style `split_style` or
+  `Document::new_area_style` gives, in `apply_in` of `path@rootpoint-model@src/ops.rs`, per
+  `design@rootpoint-model@new-area-style`. The slice #empty-text removed `Content::Empty`, and
+  #styles-model set `FORMAT_VERSION` to 3.
 - **Validation.** `Document::validate` in `path@rootpoint-model@src/validate.rs` refuses a
   structural breach, an asset id at or above the counter included, per
   `design@rootpoint-model@validated-documents`; `load_ron` and `apply` call it. `Document::breaches`
-  names the cosmetic ones, `Breach::MissingAsset` and `Breach::UnknownFont`, which load and apply,
-  per `design@rootpoint-model@cosmetic-fallbacks`. The commands `image` and `text font=` refuse a
-  missing asset, per `design@rootpoint-protocol@no-new-breach`. The slice #breach-tiers built these.
+  names the cosmetic ones, `Breach::MissingAsset`, `Breach::UnknownFont` and
+  `Breach::MissingStyle`, which load and apply, per `design@rootpoint-model@cosmetic-fallbacks`.
+  The commands refuse a missing asset or style, per `design@rootpoint-protocol@no-new-breach`. The
+  slices #breach-tiers and #styles-model built these.
 - **Stand-ins.** The renderer draws an image it was not given as grey and lists it in
   `missing_images`, in `render_slide` of `path@rootpoint-render@src/lib.rs`; a font it cannot find
   draws in the built-in sans, chosen by `FontSet::family` in `path@rootpoint-render@src/text.rs`, and
   `render_slide` lists it in `font_fallbacks`. A `FontRef::Builtin` naming a family outside
   `BUILTIN_FAMILIES` of `path@rootpoint-model@src/document.rs`, "sans" alone, falls back the same way.
-- **Styles.** One `TextStyle` per text area, `design@rootpoint-model@text-style-per-area`. The
-  side panel's style controls, `App::style`, send one `text` command per change, with a
-  `StyleOption`. The protocol's `text` command applies its options to the area's current style, or
-  to `TextStyle::default()` when the area holds an image, which `Session::text_style` of
-  `path@rootpoint-protocol@src/session.rs` gives to `Session::operation` for `text` and `clear`.
+- **Styles.** A document holds a table of named styles, and a text names one or holds its own
+  values, per `design@rootpoint-model@named-styles`; `Document::resolve_style` gives the values
+  drawn. The side panel's style controls, `App::style`, show the resolved values and send one `text`
+  command per change, with a `StyleOption`, which makes a named text custom. The protocol's
+  `style add`, `style set`, `style rename`, `style remove` and `styles` change and list the table.
+  The slice #styles-model built these.
 - **Selection.** The side panel shows the breadcrumb. Alt+↑ selects the parent, Alt+↓ a child,
   Alt+← and Alt+→ the siblings, per `design@rootpoint-app@node-selection`; the key table is in
   `App::shortcuts`.
@@ -232,13 +235,13 @@ updated.** The texts are those `cargo klarch show` lists.
 | decision | change | slice | citing texts, judged at that slice's harvest |
 | --- | --- | --- | --- |
 | `design@rootpoint-model@inline-content-assets` | "empty" leaves its list of contents | #empty-text, landed | none |
-| `design@rootpoint-model@inline-content-assets` | a text's style may name an entry of the document's style table, by name: shared data held apart from the area, argued against `rejected@rootpoint-model@content-by-reference` below | `spec@editor-conveniences@styles-model` | none |
+| `design@rootpoint-model@inline-content-assets` | a text's style may name an entry of the document's style table, by name: shared data held apart from the area, argued against `rejected@rootpoint-model@content-by-reference` below | #styles-model, landed | none |
 | `design@rootpoint-app@selection-actions` | "the new empty area" becomes the new area, an empty text | #empty-text, landed | `design@rootpoint-app@edit-entry` |
 | `design@rootpoint-app@edit-entry` | a second click enters editing on any area that is not an image, since every such area is a text | #empty-text, landed | none |
 | `design@rootpoint-app@edit-entry` | a secondary click, inside the edited area too, ends editing before it opens the node menu, as the owner approved with `thread@editor-conveniences@node-menu` | `spec@editor-conveniences@context-menu` | none |
 | `design@rootpoint-model@validated-documents` | a cosmetic breach is accepted, reported and drawn with a stand-in, `design@rootpoint-model@cosmetic-fallbacks`; a structural breach is still refused | #breach-tiers, landed | the comments of `path@rootpoint-model@src/ops.rs` and `path@rootpoint-model@src/validate.rs` |
-| `design@rootpoint-model@text-style-per-area` | a text's style is named or custom | `spec@editor-conveniences@styles-model` | `issue@rootpoint@rich-text-spans` |
-| `design@rootpoint-protocol@protocol-addressing` | a change of the decision, argued by `thread@editor-conveniences@style-key`: a command names a style by its name, which a rename changes, so the head's argument, an id that names one thing after every edit, does not cover it; its title widens to state both | `spec@editor-conveniences@styles-model` | `design@rootpoint-app@one-controller-at-a-time` |
+| `design@rootpoint-model@text-style-per-area` | a text's style is named or custom | #styles-model, landed | `issue@rootpoint@rich-text-spans` |
+| `design@rootpoint-protocol@protocol-addressing` | a change of the decision, argued by `thread@editor-conveniences@style-key`: a command names a style by its name, which a rename changes, so the head's argument, an id that names one thing after every edit, does not cover it; its title widens to state both | #styles-model, landed | `design@rootpoint-app@one-controller-at-a-time` |
 | `design@rootpoint-app@node-selection` | the outline replaces the breadcrumb; the node keys follow the outline | `spec@editor-conveniences@side-panel` | `design@rootpoint-app@edit-entry`, `design@rootpoint-app@editor-keys-kept-from-browser`, the comment of `path@rootpoint-app@src/hit.rs` |
 | `design@rootpoint-app@span-selection` | "Alt+↑ or the breadcrumb" becomes Alt+← or the outline | `spec@editor-conveniences@side-panel` | none |
 | `design@rootpoint-protocol@view-state` | `View` gains the preview | `spec@editor-conveniences@preview-mode` | `design@rootpoint-app@node-selection`, `design@rootpoint-app@one-controller-at-a-time`, `issue@rootpoint-protocol@history-browsing` |
@@ -274,7 +277,7 @@ T1 takes its place, and keeps the rival the issue named.
 - `tripwire@rootpoint-model@grouping-lost-to-merge`: the outline shows the merged tree, which is
   where the owner would meet a lost grouping; `spec@editor-conveniences@side-panel` reads it at its audit.
 - `tripwire@rootpoint-render@render-within-bounds`: its re-entry is the design audit of work that
-  adds a content kind or changes the renderer; #empty-text read it at its audit, and `spec@editor-conveniences@styles-model` and `spec@editor-conveniences@preview-mode` read it
+  adds a content kind or changes the renderer; #empty-text read it at its audit, and #styles-model and `spec@editor-conveniences@preview-mode` read it
   at their audits.
 - `tripwire@rootpoint-app@control-ends-a-gesture`: the node menu and the dialog of a style's removal
   are open states of the window; a socket's `control` closes them as it ends a gesture.
@@ -376,35 +379,38 @@ Proposed by the owner in round 1 (`argument@editor-conveniences@arg-4`); shaped 
 round 1 (`argument@editor-conveniences@arg-19`, `argument@editor-conveniences@arg-20`,
 `argument@editor-conveniences@arg-21`). Final state: approved, in round 2: "named-styles:
 accepted, this is the shape I was thinking about." Its round-1 detail that removing a style in use
-is refused is replaced by `thread@editor-conveniences@style-removal`. Shape:
-`spec@editor-conveniences@styles-model` (the model and the protocol) and
-`spec@editor-conveniences@styles-window` (the window). Harvest: the rewrite of
-`design@rootpoint-model@text-style-per-area`, and an app head that only the Styles tab changes a
-named style.
+is refused is replaced by `thread@editor-conveniences@style-removal`. Built in the model and the
+protocol by the slice #styles-model, harvested as `design@rootpoint-model@named-styles`, with the
+rewrite of `design@rootpoint-model@text-style-per-area`. Shape of the window's half:
+`spec@editor-conveniences@styles-window`, whose harvest writes an app head that only the Styles tab
+changes a named style.
 
 ### A new area holds an empty text, with the style of the area it was split from, or Body `##new-area-style`
 
 Proposed by the session in round 1, as a consequence of `thread@editor-conveniences@named-styles`
 and `thread@editor-conveniences@no-empty-kind`. Final state: approved, in round 2: "new-area-style:
-accepted, this looks convenient." Shape: `spec@editor-conveniences@styles-model`. Harvest: a
-model head, and T4.
+accepted, this looks convenient." Built by #styles-model. Harvested: the head
+`design@rootpoint-model@new-area-style`, and T4 as `tripwire@rootpoint-model@inherited-style-in-the-way`.
+D3 awaits the owner's word on a condition of it.
 
 ### Styles are named in the file and in commands by their name `##style-key`
 
 Proposed by the session in round 1 (`argument@editor-conveniences@arg-22`), as a weighing for the
 owner. Final state: approved, in round 2: "style-key: approved, referral by name is important."
-(`argument@editor-conveniences@arg-32`). The owner chose names over ids. Shape: "Decided design" of
-`spec@editor-conveniences@styles-model`. Harvest: a model head, with the owner's ground; and the
-rewrite of `design@rootpoint-protocol@protocol-addressing`.
+(`argument@editor-conveniences@arg-32`). The owner chose names over ids. Built by #styles-model.
+Harvested: the head `design@rootpoint-model@style-key`, with the owner's ground, and
+`rejected@rootpoint-model@style-ids`; and the rewrite of
+`design@rootpoint-protocol@protocol-addressing`.
 
 ### Named styles are for text only, until another kind needs its own `##style-kinds`
 
 Proposed by the session in round 1 (`argument@editor-conveniences@arg-23`), against the owner's
 hedged "Each node kind should probably have its own "Style" object." Final state: approved, in round
 2: "style-kinds: agreed, deferred for when it makes more sense, for images it makes little sense
-right now with a single option." (`argument@editor-conveniences@arg-33`). Shape: "Decided design" of
-`spec@editor-conveniences@styles-model`. Harvest: a sentence of the head on named styles; no issue, since
-`issue@rootpoint@more-content-kinds` is where a new kind is decided.
+right now with a single option." (`argument@editor-conveniences@arg-33`). Built by #styles-model.
+Harvested: the head `design@rootpoint-model@style-kinds`, of its own since its rival is another
+than named styles'; no issue, since `issue@rootpoint@more-content-kinds` is where a new kind is
+decided.
 
 ### `Content::Empty` is removed: an area holds a text, possibly with no characters, or an image `##no-empty-kind`
 
@@ -471,9 +477,9 @@ use a fallback and give a visible warning, not be a hard error." The session sho
 exception to `design@rootpoint-model@validated-documents` (`argument@editor-conveniences@arg-37`,
 `argument@editor-conveniences@arg-38`). Final state: superseded by
 `thread@editor-conveniences@cosmetic-fallbacks`, which the owner generalized from it in round 3 and
-which carries its shape whole; closed with it in round 4. Its shape is built by
-`spec@editor-conveniences@styles-model`, as a member of `thread@editor-conveniences@cosmetic-fallbacks`.
-Harvest: under the head of `thread@editor-conveniences@cosmetic-fallbacks`.
+which carries its shape whole; closed with it in round 4. Built by #styles-model, as a member of
+`thread@editor-conveniences@cosmetic-fallbacks`. Harvested: `Breach::MissingStyle` is named in
+`design@rootpoint-model@cosmetic-fallbacks`. Its third place, the outline's row, is judged by AC1.
 
 ### A structural breach of a document is refused; a cosmetic one is drawn with a stand-in and reported `##cosmetic-fallbacks`
 
@@ -491,8 +497,8 @@ which holds its shape and attributes the principle to the owner, with
 Proposed by the owner in round 3 (`argument@editor-conveniences@arg-46`): "Maybe the user can name
 a style that should be used as replacement."; the custom copy and the dialog by the session
 (`argument@editor-conveniences@arg-54`). Final state: approved, in round 4: "Approved all three".
-Shape: `spec@editor-conveniences@styles-model` (the command) and
-`spec@editor-conveniences@styles-window` (the dialog). Harvest: a model head.
+Built in the model and the protocol by #styles-model, harvested as
+`design@rootpoint-model@style-removal`. Shape of the dialog: `spec@editor-conveniences@styles-window`.
 
 ### No command creates a cosmetic breach, and a property test over the protocol's commands checks it `##no-new-breach`
 
@@ -500,8 +506,8 @@ Proposed by the owner in round 3 (`argument@editor-conveniences@arg-45`,
 `argument@editor-conveniences@arg-47`); the split between commands and operations and the test by
 the session (`argument@editor-conveniences@arg-49`, `argument@editor-conveniences@arg-55`). Final
 state: approved, in round 4: "Approved all three". Built by the slice #breach-tiers, and widened by
-`spec@editor-conveniences@styles-model`. Harvested: the protocol head
-`design@rootpoint-protocol@no-new-breach`; AC4 is reported at `spec@editor-conveniences@styles-model`.
+#styles-model. Harvested: the protocol head
+`design@rootpoint-protocol@no-new-breach`. AC4 was reported at #styles-model, not fired.
 Fuzzing and wider testing: `issue@rootpoint@thorough-testing`.
 
 ## Arguments
@@ -909,26 +915,26 @@ Illustrations of the shapes, not authority: each slice's audit reads them agains
 
 ```
 crates/rootpoint-model/src/document.rs
-  Document::styles            the style table: name → TextStyle             (`spec@editor-conveniences@styles-model`)
-  StyleChoice                 enum: Named(String) | Custom(TextStyle)        (`spec@editor-conveniences@styles-model`)
-  TextContent::style          becomes a StyleChoice                          (`spec@editor-conveniences@styles-model`)
-  Document::resolve_style     the TextStyle a StyleChoice draws with         (`spec@editor-conveniences@styles-model`)
+  Document::styles            the style table: name → TextStyle             (#styles-model, landed)
+  StyleChoice                 enum: Named(String) | Custom(TextStyle)        (#styles-model, landed)
+  TextContent::style          becomes a StyleChoice                          (#styles-model, landed)
+  Document::resolve_style     the TextStyle a StyleChoice draws with         (#styles-model, landed)
   Document::breaches          the cosmetic breaches of a document            (#breach-tiers, landed)
   Breach                      enum: MissingAsset { area, asset } | UnknownFont { area, name }
                               | MissingStyle { area, name }
-                                                                             (#breach-tiers, landed; MissingStyle: `spec@editor-conveniences@styles-model`)
+                                                                             (#breach-tiers, landed; MissingStyle: #styles-model, landed)
   Content::Empty              removed                                        (#empty-text, landed)
 crates/rootpoint-model/src/ops.rs
-  Op::AddStyle, Op::SetStyle, Op::RenameStyle, Op::RemoveStyle               (`spec@editor-conveniences@styles-model`)
+  Op::AddStyle, Op::SetStyle, Op::RenameStyle, Op::RemoveStyle, Op::RestoreStyle (#styles-model, landed)
 crates/rootpoint-model/src/file.rs
-  FORMAT_VERSION              existing; 2 since #empty-text, 3 at `spec@editor-conveniences@styles-model`
+  FORMAT_VERSION              existing; 2 since #empty-text, 3 since #styles-model
 crates/rootpoint-render/src/lib.rs
-  Report::missing_styles      (area, name) of each text drawn with the default style (`spec@editor-conveniences@styles-model`)
+  Report::missing_styles      (area, name) of each text drawn with the default style (#styles-model, landed)
 crates/rootpoint-protocol/src/command.rs
-  Command::Style { .. }       style add | set | rename | remove              (`spec@editor-conveniences@styles-model`)
-  Command::Styles             lists the styles                               (`spec@editor-conveniences@styles-model`)
+  Command::Style(StyleCommand) style add | set | rename | remove             (#styles-model, landed)
+  Command::Styles             lists the styles                               (#styles-model, landed)
   Command::Preview { on }     preview on | off                               (`spec@editor-conveniences@preview-mode`)
-  StyleOption::Named, StyleOption::Custom   text n3 style="Title" | custom   (`spec@editor-conveniences@styles-model`)
+  StyleOption::Named, StyleOption::Custom   text n3 style="Title" | custom   (#styles-model, landed)
 crates/rootpoint-protocol/src/session.rs
   View::preview               bool                                           (`spec@editor-conveniences@preview-mode`)
 crates/rootpoint-protocol/tests/properties.rs   the property test of #no-new-breach (#breach-tiers, landed)
@@ -947,9 +953,9 @@ recorded already.
 
 ## Mapping tables
 
-Each mapping table is in the spec of the slice that needs it:
-`spec@editor-conveniences@styles-model` maps every site of `TextContent::style`. The map of every
-check of `Document::validate` left with the slice #breach-tiers.
+Each mapping table is in the spec of the slice that needs it. The map of every check of
+`Document::validate` left with the slice #breach-tiers, and the map of every site of
+`TextContent::style` with #styles-model.
 
 ## Losing alternatives
 
@@ -1030,7 +1036,8 @@ verdict. The owner ruled in round 4: "record T1–T4 and AC1–AC4."
   - Re-entry: the standing-state review before every merge.
 - **T4**, `thread@editor-conveniences@new-area-style`: inheriting the split area's style mostly gets
   in the way, as when a Title is split to add a logo. A tripwire, recorded at the harvest of
-  `spec@editor-conveniences@styles-model`, guarding the head that records the new area's style.
+  #styles-model as `tripwire@rootpoint-model@inherited-style-in-the-way`, guarding
+  `design@rootpoint-model@new-area-style`.
   - Fires when: the owner reports changing the new area's style right after most splits of a styled
     area.
   - Response: reopen that head, toward a new area that always takes Body.
@@ -1076,8 +1083,8 @@ not that node after the click, or when the menu is not open on the next frame. R
 
 ### No sequence of commands creates a cosmetic breach `##ac-no-command-breach`
 
-AC4. Guards `thread@editor-conveniences@no-new-breach`. Judged by
-`spec@editor-conveniences@styles-model`, once style commands exist; #breach-tiers landed the test. Observable: a proptest in `path@rootpoint-protocol@tests/properties.rs` runs random
+AC4. Guards `thread@editor-conveniences@no-new-breach`. Judged by #styles-model, once style
+commands exist, and not fired there; #breach-tiers landed the test. Observable: a proptest in `path@rootpoint-protocol@tests/properties.rs` runs random
 sequences of commands, `undo` and `redo` included, from a document with no breach, on a headless
 `Session`; it fires when a sequence leaves `Document::breaches` non-empty, breaks `Document::validate`,
 or saves a document that does not load back equal. Response: reopen
@@ -1087,7 +1094,7 @@ or saves a document that does not load back equal. Response: reopen
 
 1. Content::Empty removed, #empty-text: landed.
 2. Structural and cosmetic breaches, #breach-tiers: landed.
-3. [Named styles in the model and the protocol](styles-model.md)
+3. Named styles in the model and the protocol, #styles-model: landed.
 4. [The outline, the node keys and the panel's width](side-panel.md)
 5. [Named styles in the window](styles-window.md)
 6. [The node menu](context-menu.md)
@@ -1096,9 +1103,9 @@ or saves a document that does not load back equal. Response: reopen
 ## Order rationale
 
 - #empty-text before #breach-tiers: the breaches are defined over the content kinds that remain.
-- #breach-tiers before `spec@editor-conveniences@styles-model`: a missing style is a cosmetic breach, and `spec@editor-conveniences@styles-model`
+- #breach-tiers before #styles-model: a missing style is a cosmetic breach, and #styles-model
   widens the property test #breach-tiers landed.
-- `spec@editor-conveniences@styles-model` before `spec@editor-conveniences@side-panel`: the outline shows each text's style name.
+- #styles-model before `spec@editor-conveniences@side-panel`: the outline shows each text's style name.
 - `spec@editor-conveniences@side-panel` before `spec@editor-conveniences@styles-window`: the Styles tab is a tab of the side panel whose width
   `spec@editor-conveniences@side-panel` fixes, and AC1 needs the outline's rows.
 - `spec@editor-conveniences@styles-window` before `spec@editor-conveniences@context-menu`: the menu's "Style" entry offers the named styles the window
@@ -1130,7 +1137,7 @@ or saves a document that does not load back equal. Response: reopen
 
 - **D3**, `thread@editor-conveniences@new-area-style`: a new area takes Body only while Body draws
   with no stand-in, its font an asset of the table or a family of `BUILTIN_FAMILIES`, and the
-  default values otherwise. The review of the work of `spec@editor-conveniences@styles-model` found
+  default values otherwise. The review of the work of #styles-model found
   that a file edited by hand, whose Body names a font asset the table lacks and which no text uses,
   got a breach from `add-slide`, against `design@rootpoint-protocol@no-new-breach`. The condition
   narrows the rule the owner approved, "every other new area takes Body", for that case alone, so it

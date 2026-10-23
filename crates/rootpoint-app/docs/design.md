@@ -323,7 +323,7 @@ grip, no preview line, no drop line in the slide list. While the window holds it
 the socket but the queries, `control` and `release` replies `err the window has control`, or the
 refusal of a take-over.
 
-Two exceptions keep looking free. The socket's queries, `tree`, `view` and `render`, need no
+Two exceptions keep looking free. The socket's queries, `tree`, `view`, `styles` and `render`, need no
 authority, since they apply no operation and join no group. The window's inputs that change only
 the view need none either: a click selects, and never enters editing; Alt with an arrow, the
 breadcrumb, a row of the slide list, presenting and presenter mode's keys. The view stays the

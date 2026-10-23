@@ -12,8 +12,9 @@ cannot change inside a text.
 
 ### What
 
-Rich text replaces `TextStyle` per area with styled spans, in the model, the renderer and the
-in-place editor, `design@rootpoint-app@edit-in-place`, which takes one style per area as given.
+Rich text puts styled spans over an area's one style, named or custom, in the model, the renderer
+and the in-place editor, `design@rootpoint-app@edit-in-place`, which takes one style per area as
+given. The area's style is one of `design@rootpoint-model@named-styles`.
 
 ### Why it matters
 

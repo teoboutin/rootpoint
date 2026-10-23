@@ -55,6 +55,13 @@ is reached by no test of the editor, so a reference to a missing asset or font i
 the file impossible to open, although the renderer draws a stand-in for each. Tests show that the
 editor makes no breach; they cannot repair a file the editor did not make.
 
+### Naming a style by an id from the document's counter `##style-ids`
+
+`live`. A rename would then touch nothing but the table, and the name would change no reference.
+The file would read `Named(21)` where a name reads in place, and a command would name a style by an
+id a reader looks up; the owner chose names, judging that referring by name is important. It would
+change the save format and every command that names a style.
+
 ### Naming a node by its position in the tree `##addressing-by-position`
 
 `live`. A position, such as the second child of the first child of a slide's root, shifts at every

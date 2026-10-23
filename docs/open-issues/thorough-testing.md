@@ -22,9 +22,10 @@ What exists, read in the tree:
   gives the document back;
 - `path@rootpoint-model@tests/geometry.rs` holds a proptest of the geometry;
 - `path@rootpoint-protocol@tests/properties.rs` holds a proptest over random sequences of
-  commands, `undo`, `redo`, `begin`, `end` and `cancel` included, on a headless `Session`: after
-  each command the document is valid, holds no cosmetic breach, and saves to a text that loads back
-  equal. It does not check that an undo restores the document as it was before;
+  commands, `undo`, `redo`, `begin`, `end` and `cancel` and the commands of named styles included,
+  on a headless `Session`: after each command the document is valid, holds no cosmetic breach, a
+  missing style among them, and saves to a text that loads back equal. It does not check that an
+  undo restores the document as it was before;
 - every other test of the project is written by hand, with fixed inputs. A search of every
   `Cargo.toml` and `.rs` file for `proptest`, `quickcheck`, `arbitrary` and `libfuzzer` finds only
   these four test files, and the dev-dependencies of rootpoint-model and rootpoint-protocol.
@@ -41,9 +42,6 @@ Approaches to weigh, as open leads, none chosen:
   panics;
 - **drive the window's actions at random** through `App::frame` in tests, checking that each action
   equals its commands on a second session, as `path@rootpoint-app@tests/actions.rs` does by hand.
-
-`milestone@plans@editor-conveniences` widens the protocol's property test with the commands of
-named styles, so that it also checks that no command leaves a reference to a missing style.
 
 ### Why it matters
 
