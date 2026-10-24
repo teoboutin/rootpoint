@@ -2,7 +2,8 @@
 //! per `design@rootpoint-app@actions-are-commands`. A test calls each on an app with no window,
 //! and runs the same commands on a second session.
 
-use std::path::{Component, Path, PathBuf};
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::Path;
 
 use eframe::egui::Pos2;
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, SlideId, node_rects};
@@ -611,13 +612,17 @@ impl App {
         }
     }
 
-    /// Add an image asset, by its path relative to the session's directory.
+    /// Add a file of the host's files as an asset, by `import`: at its path below a workspace's
+    /// root, or copied into the store.
     pub fn add_asset(&mut self, path: String) {
         if self.socket_holds() {
             return;
         }
         self.end_gestures();
-        self.run(Command::Asset { path });
+        self.run(Command::Import {
+            from: path,
+            to: None,
+        });
     }
 
     /// Undo the last step: a drag or a stay in editing still open ends first, and is that
@@ -639,39 +644,23 @@ impl App {
         self.run(Command::Redo);
     }
 
-    /// Load a presentation file; Save then writes to it.
-    pub fn open_file(&mut self, path: String) {
+    /// Open a directory as a workspace: its `presentation.ron`, which Save then writes, or an
+    /// empty presentation.
+    pub fn open_workspace(&mut self, dir: String) {
         if self.socket_holds() {
             return;
         }
         self.end_gestures();
-        let path = self.relative_if_absolute(path);
-        if let Reply::Ok(_) = self.run(Command::Load { path: path.clone() }) {
-            self.path = Some(path);
-        }
+        self.run(Command::Open { dir });
     }
 
-    /// Save the presentation to a file; Save then writes to it again.
-    pub fn save_to(&mut self, path: String) {
-        if self.socket_holds() {
-            return;
-        }
-        self.end_gestures();
-        let path = self.relative_if_absolute(path);
-        if let Reply::Ok(_) = self.run(Command::Save { path: path.clone() }) {
-            self.path = Some(path);
-        }
-    }
-
-    /// Open the built-in sample, which has no file of its own.
+    /// Open the built-in sample, in memory.
     pub fn open_sample(&mut self) {
         if self.socket_holds() {
             return;
         }
         self.end_gestures();
-        if let Reply::Ok(_) = self.run(Command::Sample) {
-            self.path = None;
-        }
+        self.run(Command::Sample);
     }
 
     /// F5: present the shown slide, full screen.
@@ -697,12 +686,12 @@ impl App {
         self.run(Command::Stop);
     }
 
-    /// Open the presentation of a directory the author picked, given as each file's path under
-    /// the picked directory, its first component that directory's name, and its bytes: the
-    /// files become the ones the app holds in memory, under their paths below the directory, and
-    /// the one `.ron` file directly in it is loaded. A directory that loads no presentation leaves
-    /// the open one and its files as they were. Only an app made by `App::in_memory` holds them;
-    /// the browser build is one.
+    /// Open a copy of the presentation of a directory the author picked, given as each file's path
+    /// under the picked directory, its first component that directory's name, and its bytes: the
+    /// files become the ones the app holds in memory, under those paths, and `open-copy` copies the
+    /// directory's `presentation.ron` and its assets into the session's map. A directory that opens
+    /// no presentation leaves the open one and the files held as they were. Only an app made by
+    /// `App::in_memory` holds them; the browser build is one.
     pub fn open_directory(&mut self, picked: Vec<(String, Vec<u8>)>) {
         if self.socket_holds() {
             return;
@@ -711,45 +700,23 @@ impl App {
             self.error = Some("this editor holds no files in memory".to_owned());
             return;
         };
-        let files: std::collections::BTreeMap<String, Vec<u8>> = picked
-            .into_iter()
-            .map(|(path, bytes)| match path.split_once('/') {
-                Some((_, below)) => (below.to_owned(), bytes),
-                None => (path, bytes),
-            })
-            .collect();
-        let presentations: Vec<&String> = files
-            .keys()
-            .filter(|p| !p.contains('/') && p.ends_with(".ron"))
-            .collect();
-        let [presentation] = presentations[..] else {
-            self.error = Some(format!(
-                "a presentation directory holds one .ron file directly in it, and this one holds {}",
-                presentations.len()
-            ));
+        let Some(dir) = picked
+            .first()
+            .map(|(path, _)| path.split('/').next().unwrap_or(path).to_owned())
+        else {
+            self.error = Some("the picked directory holds no file".to_owned());
             return;
         };
-        let presentation = presentation.clone();
-        let before = held.replace(files);
+        let before = held.replace(picked.into_iter().collect());
         self.end_gestures();
-        match self.run(Command::Load {
-            path: presentation.clone(),
-        }) {
-            Reply::Ok(_) => {
-                self.path = Some(presentation);
-                // The decoded assets are those of the last directory, which had the same root, per
-                // `design@rootpoint-app@picked-files-by-path`.
-                self.assets = crate::assets::Assets::default();
-            }
-            Reply::Err(_) => {
-                held.replace(before);
-            }
+        if let Reply::Err(_) = self.run(Command::OpenCopy { dir }) {
+            held.replace(before);
         }
     }
 
-    /// Add an image the author picked, by its file name and its bytes, as an asset: it joins the
-    /// files the app holds in memory, in the presentation's directory, under its name, or the name
-    /// with a number where another file with other bytes already has it.
+    /// Add an image the author picked, by its file name and its bytes, as an asset: it is held in
+    /// memory under its name, and `import` copies it into the session's map, under its name, or
+    /// the name with a number where the map holds other bytes under it.
     pub fn add_picked_image(&mut self, name: String, bytes: Vec<u8>) {
         if self.socket_holds() {
             return;
@@ -758,29 +725,8 @@ impl App {
             self.error = Some("this editor holds no files in memory".to_owned());
             return;
         };
-        let directory = self.session.directory().to_path_buf();
-        let (stem, extension) = match name.rsplit_once('.') {
-            Some((stem, ext)) => (stem.to_owned(), format!(".{ext}")),
-            None => (name.clone(), String::new()),
-        };
-        let mut path = name;
-        for n in 2.. {
-            let full = normalize(&directory.join(&path));
-            let Some(full) = self.utf8(&full) else {
-                return;
-            };
-            match held.get(&full) {
-                Some(held) if held != bytes => path = format!("{stem}-{n}{extension}"),
-                _ => {
-                    held.insert(full, bytes);
-                    // An asset the document names at this path, drawn missing until now, is
-                    // decoded again: the cache's key holds the path, not whether its file exists.
-                    self.assets = crate::assets::Assets::default();
-                    break;
-                }
-            }
-        }
-        self.add_asset(path);
+        held.insert(name.clone(), bytes);
+        self.add_asset(name);
     }
 
     /// Ctrl+O: ask for a presentation directory, whose files the next frames read, then open it
@@ -796,7 +742,7 @@ impl App {
     /// Ctrl+S: the browser build saves no file, and says so, per
     /// `design@rootpoint-app@browser-load-only`.
     #[cfg(target_arch = "wasm32")]
-    pub(crate) fn save(&mut self) {
+    pub fn save(&mut self) {
         self.error = Some("the browser build saves no file".to_owned());
     }
 
@@ -810,49 +756,31 @@ impl App {
         self.web.pick_image();
     }
 
-    /// Ctrl+O: ask for a presentation file, and load it.
+    /// Ctrl+O: ask for a presentation directory, and open it as a workspace.
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn open_dialog(&mut self) {
         if self.socket_holds() {
             return;
         }
-        let picked = rfd::FileDialog::new()
-            .add_filter("rootpoint presentation", &["ron"])
-            .pick_file();
-        if let Some(path) = picked.and_then(|p| self.utf8(&p)) {
-            self.open_file(path);
+        let picked = rfd::FileDialog::new().pick_folder();
+        if let Some(dir) = picked.and_then(|p| self.utf8(&p)) {
+            self.open_workspace(dir);
         }
     }
 
-    /// Ctrl+S: save to the presentation's file, or ask for one when it has none.
+    /// Ctrl+S: save the presentation to its store, `presentation.ron` at a workspace's root. A
+    /// presentation held in memory has no file of its own, and the status line says how to write
+    /// one.
     #[cfg(not(target_arch = "wasm32"))]
-    pub(crate) fn save(&mut self) {
+    pub fn save(&mut self) {
         if self.socket_holds() {
             return;
         }
-        match self.path.clone() {
-            Some(path) => self.save_to(path),
-            None => self.save_dialog(),
-        }
+        self.end_gestures();
+        self.run(Command::Save);
     }
 
-    /// Ask for the file to save to.
-    #[cfg(not(target_arch = "wasm32"))]
-    pub(crate) fn save_dialog(&mut self) {
-        if self.socket_holds() {
-            return;
-        }
-        let picked = rfd::FileDialog::new()
-            .add_filter("rootpoint presentation", &["ron"])
-            .set_file_name("presentation.ron")
-            .save_file();
-        if let Some(path) = picked.and_then(|p| self.utf8(&p)) {
-            self.save_to(path);
-        }
-    }
-
-    /// Ask for an image file, and add it as an asset, its path relative to the session's
-    /// directory, as every asset's path is.
+    /// Ask for an image file, and add it as an asset by `import`.
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn add_asset_dialog(&mut self) {
         if self.socket_holds() {
@@ -864,47 +792,13 @@ impl App {
         else {
             return;
         };
-        let directory = match std::env::current_dir() {
-            Ok(cwd) => normalize(&cwd.join(self.session.directory())),
-            Err(e) => {
-                self.error = Some(format!("the working directory: {e}"));
-                return;
-            }
-        };
-        match relative(&normalize(&file), &directory).and_then(|p| self.utf8(&p)) {
-            Some(path) => self.add_asset(path),
-            None if self.error.is_none() => {
-                self.error = Some(format!(
-                    "{} has no path from the presentation",
-                    file.display()
-                ));
-            }
-            None => {}
-        }
-    }
-
-    /// A path given to load or save, from a dialog or the command line, made relative to the
-    /// working directory when it is absolute, so every path the session holds has one form. The
-    /// session compares its directory and a save's target by their
-    /// text, so a relative directory and an absolute target would never match, and a save would
-    /// copy an asset already inside the target's directory, a defect whose cause
-    /// `spec@asset-storage@rooted-assets` is to remove, with this function. A path that has none
-    /// from the working directory stays absolute.
-    pub(crate) fn relative_if_absolute(&mut self, path: String) -> String {
-        let given = Path::new(&path);
-        if !given.is_absolute() {
-            return path;
-        }
-        let Ok(cwd) = std::env::current_dir() else {
-            return path;
-        };
-        match relative(&normalize(given), &normalize(&cwd)) {
-            Some(rel) => self.utf8(&rel).unwrap_or(path),
-            None => path,
+        if let Some(path) = self.utf8(&file) {
+            self.add_asset(path);
         }
     }
 
     /// A path as UTF-8, which the protocol's commands hold, or `None` with the status naming it.
+    #[cfg(not(target_arch = "wasm32"))]
     fn utf8(&mut self, path: &Path) -> Option<String> {
         let text = path.to_str().map(str::to_owned);
         if text.is_none() {
@@ -939,67 +833,9 @@ fn new_area(reply: &Reply) -> Option<NodeId> {
         .map(NodeId)
 }
 
-/// The path with its `.` components removed, and each `..` removed with the component before it.
-fn normalize(path: &Path) -> PathBuf {
-    let mut out: Vec<Component> = Vec::new();
-    for c in path.components() {
-        match c {
-            Component::CurDir => {}
-            Component::ParentDir if matches!(out.last(), Some(Component::Normal(_))) => {
-                out.pop();
-            }
-            // A `..` above the root is the root.
-            Component::ParentDir if matches!(out.last(), Some(Component::RootDir)) => {}
-            c => out.push(c),
-        }
-    }
-    out.iter().collect()
-}
-
-/// The path of the absolute `file` from the absolute directory `dir`, both normalized, with `..`
-/// where it lies outside; `None` where the two share no root, as on two drives. A `file` equal
-/// to `dir` gives the empty path.
-fn relative(file: &Path, dir: &Path) -> Option<PathBuf> {
-    let file: Vec<Component> = file.components().collect();
-    let dir: Vec<Component> = dir.components().collect();
-    if file.first() != dir.first() {
-        return None;
-    }
-    let common = file.iter().zip(&dir).take_while(|(a, b)| a == b).count();
-    let mut out = PathBuf::new();
-    for _ in &dir[common..] {
-        out.push("..");
-    }
-    for c in &file[common..] {
-        out.push(c.as_os_str());
-    }
-    Some(out)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn a_path_is_made_relative_to_the_presentations_directory() {
-        let rel = |f: &str, d: &str| relative(Path::new(f), Path::new(d)).unwrap();
-        assert_eq!(rel("/a/b/cat.png", "/a/b"), Path::new("cat.png"));
-        assert_eq!(rel("/a/b/img/cat.png", "/a/b"), Path::new("img/cat.png"));
-        assert_eq!(rel("/a/cat.png", "/a/b/c"), Path::new("../../cat.png"));
-        assert_eq!(rel("/a/b/cat.png", "/a/b/."), Path::new("cat.png"));
-    }
-
-    #[test]
-    fn a_directory_that_holds_dot_dot_is_normalized_first() {
-        // The working directory /a/b and the session's directory ../x: the presentation is in
-        // /a/x, so /a/x/cat.png is beside it.
-        let dir = normalize(&Path::new("/a/b").join("../x"));
-        assert_eq!(dir, Path::new("/a/x"));
-        assert_eq!(
-            relative(Path::new("/a/x/cat.png"), &dir).unwrap(),
-            Path::new("cat.png")
-        );
-    }
 
     #[test]
     fn the_new_area_of_a_split_is_read_from_its_reply() {

@@ -10,10 +10,10 @@ mod command;
 pub mod control;
 mod files;
 mod sample;
-mod save;
 mod session;
+mod store;
 mod tree;
 
 pub use command::{Command, ParseError, StyleCommand, StyleOption, parse_command};
 pub use files::Files;
-pub use session::{Reply, Session, View, read_line};
+pub use session::{Reply, Session, Store, View, read_line};

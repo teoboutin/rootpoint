@@ -5,8 +5,8 @@
 
 use eframe::egui::{self, Align2, Color32, FontId, Sense, Stroke, Ui, Vec2};
 use rootpoint_model::{
-    AssetId, AssetSource, Axis, Breach, Content, FontRef, HAlign, ImageFit, Node, NodeId, Rgba,
-    SlideId, StyleChoice, VAlign,
+    AssetId, Axis, Breach, Content, FontRef, HAlign, ImageFit, Node, NodeId, Rgba, SlideId,
+    StyleChoice, VAlign,
 };
 use rootpoint_protocol::StyleOption;
 
@@ -44,10 +44,6 @@ impl App {
             #[cfg(not(target_arch = "wasm32"))]
             if ui.button("Save").clicked() {
                 self.save();
-            }
-            #[cfg(not(target_arch = "wasm32"))]
-            if ui.button("Save as…").clicked() {
-                self.save_dialog();
             }
             if ui.button("Sample").clicked() {
                 self.open_sample();
@@ -291,11 +287,8 @@ impl App {
                         format!("T  {}  {style}  \"{start}\"", a.id)
                     }
                     Content::Image(i) => {
-                        let name = match doc.assets.get(&i.asset).map(|a| &a.source) {
-                            Some(AssetSource::Path(p)) => {
-                                p.rsplit('/').next().unwrap_or(p).to_owned()
-                            }
-                            Some(AssetSource::Embedded(_)) => format!("{} embedded", i.asset),
+                        let name = match doc.assets.get(&i.asset) {
+                            Some(a) => a.path.rsplit('/').next().unwrap_or(&a.path).to_owned(),
                             None => format!("\u{26a0} {}", i.asset),
                         };
                         format!("I  {}  {name}", a.id)
@@ -703,31 +696,25 @@ impl App {
             .collect()
     }
 
-    /// The assets whose file is a TrueType or OpenType font, by its name or its first bytes. Only
+    /// The assets whose file is a TrueType or OpenType font, by its name. Only
     /// these are offered as fonts: any other asset chosen as a font would draw in the built-in sans.
     fn font_assets(&self) -> Vec<(AssetId, String)> {
         self.session
             .document()
             .assets
             .iter()
-            .filter(|(_, a)| match &a.source {
-                AssetSource::Path(p) => {
-                    let p = p.to_ascii_lowercase();
-                    p.ends_with(".ttf") || p.ends_with(".otf")
-                }
-                AssetSource::Embedded(b) => {
-                    b.starts_with(&[0, 1, 0, 0]) || b.starts_with(b"OTTO") || b.starts_with(b"true")
-                }
+            .filter(|(_, a)| {
+                let p = a.path.to_ascii_lowercase();
+                p.ends_with(".ttf") || p.ends_with(".otf")
             })
             .map(|(id, _)| (*id, self.asset_name(*id)))
             .collect()
     }
 
-    /// An asset's file name, or "embedded".
+    /// An asset's file name, the last component of its path.
     pub(crate) fn asset_name(&self, id: AssetId) -> String {
-        match self.session.document().assets.get(&id).map(|a| &a.source) {
-            Some(AssetSource::Path(p)) => p.rsplit('/').next().unwrap_or(p).to_owned(),
-            Some(AssetSource::Embedded(_)) => "embedded".to_owned(),
+        match self.session.document().assets.get(&id) {
+            Some(a) => a.path.rsplit('/').next().unwrap_or(&a.path).to_owned(),
             None => String::new(),
         }
     }

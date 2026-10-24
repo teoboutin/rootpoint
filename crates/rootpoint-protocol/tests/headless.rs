@@ -21,8 +21,9 @@ fn a_script_gets_one_reply_per_command() {
 #[test]
 fn a_saved_file_is_written_where_the_script_runs() {
     let dir = scratch("save");
-    headless("add-slide\nsave deck.ron\n", &dir);
-    let text = std::fs::read_to_string(dir.join("deck.ron")).unwrap();
+    std::fs::create_dir(dir.join("deck")).unwrap();
+    headless("open deck\nadd-slide\nsave\n", &dir);
+    let text = std::fs::read_to_string(dir.join("deck/presentation.ron")).unwrap();
     assert!(text.contains(&format!("version: {FORMAT_VERSION},")));
 }
 

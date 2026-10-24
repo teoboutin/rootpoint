@@ -43,6 +43,24 @@ impl Files for MemoryFiles {
     fn exists(&mut self, path: &str) -> Result<bool, String> {
         Ok(self.0.borrow().contains_key(path))
     }
+
+    fn canonical(&mut self, path: &str) -> Result<String, String> {
+        Ok(path.to_owned())
+    }
+}
+
+impl MemoryFiles {
+    /// Files at these paths, each holding its own path's bytes, for a test that imports them.
+    fn holding(paths: &[&str]) -> Self {
+        let files = MemoryFiles::default();
+        for p in paths {
+            files
+                .0
+                .borrow_mut()
+                .insert(p.to_string(), p.as_bytes().to_vec());
+        }
+        files
+    }
 }
 
 fn c(line: &str) -> Command {
@@ -68,7 +86,8 @@ fn check(
     action: impl FnOnce(&mut App),
     expected: impl FnOnce(&Session) -> Vec<Command>,
 ) {
-    let (files_a, mut files_b) = (MemoryFiles::default(), MemoryFiles::default());
+    let images = ["cat.png", "other.png"];
+    let (files_a, mut files_b) = (MemoryFiles::holding(&images), MemoryFiles::holding(&images));
     let mut app = App::new(Box::new(files_a.clone()));
     let mut session = Session::new();
     for line in ["sample"].iter().chain(setup) {
@@ -370,7 +389,7 @@ fn the_content_actions_issue_their_commands() {
         "add an image asset",
         &[],
         |a| a.add_asset("cat.png".to_owned()),
-        |_| vec![c("asset cat.png")],
+        |_| vec![c("import cat.png")],
     );
 }
 
@@ -506,17 +525,16 @@ fn the_menu_actions_issue_their_commands() {
         App::redo,
         |_| vec![c("redo")],
     );
-    check(
-        "save",
-        &[],
-        |a| a.save_to("out/deck.ron".to_owned()),
-        |_| vec![c("save out/deck.ron")],
-    );
+    // The browser build's Save writes no file, `design@rootpoint-app@browser-load-only`.
+    #[cfg(not(target_arch = "wasm32"))]
+    check("save", &["open out", "add-slide"], App::save, |_| {
+        vec![c("save")]
+    });
     check(
         "open",
-        &["save out/deck.ron", "clear n3"],
-        |a| a.open_file("out/deck.ron".to_owned()),
-        |_| vec![c("load out/deck.ron")],
+        &["open out", "add-slide", "save", "sample"],
+        |a| a.open_workspace("out".to_owned()),
+        |_| vec![c("open out")],
     );
     check(
         "open the built-in sample",
@@ -567,7 +585,7 @@ fn the_node_menu_entries_issue_their_commands() {
     );
     check(
         "menu: another image keeps the fit",
-        &["asset other.png", "image n3 a19 fill"],
+        &["import other.png", "image n3 a19 fill"],
         menu(3, MenuEntry::Image(AssetId(20))),
         |_| vec![c("select n3"), c("image n3 a20 fill")],
     );
@@ -600,7 +618,7 @@ fn the_node_menu_entries_issue_their_commands() {
     // panel's button does; the menu's own entries are read, not built by the test.
     check(
         "menu: image on an image area",
-        &["asset other.png", "image n3 a20 fill"],
+        &["import other.png", "image n3 a20 fill"],
         |a| {
             a.open_node_menu(NodeId(3), Pos2::ZERO);
             let item = a.menu_items().into_iter().find(|i| i.label == "image");
@@ -650,59 +668,74 @@ fn the_presenter_actions_issue_their_commands() {
 }
 
 /// The actions a browser picker's files go through, on an app that holds its files in memory: a
-/// picked directory loads its one presentation, whose files the app holds under their paths below
-/// the directory, and a picked image is added under its name, or a numbered name where another
-/// file with other bytes has it.
+/// picked directory opens a copy of its presentation, whose files the app holds under their paths,
+/// and a picked image is imported under its name, or a numbered name where the map holds other
+/// bytes under it.
 #[test]
 fn the_picker_actions_issue_their_commands() {
     let ron = include_bytes!("data/mixed.ron").to_vec();
     let png = include_bytes!("data/two-colours.png").to_vec();
     let mut app = App::in_memory();
     let mut files = MemoryFiles::default();
-    for (path, bytes) in [("mixed.ron", &ron), ("two-colours.png", &png)] {
-        files.0.borrow_mut().insert(path.to_owned(), bytes.clone());
+    let picked = vec![
+        ("talk/presentation.ron".to_owned(), ron.clone()),
+        ("talk/two-colours.png".to_owned(), png.clone()),
+    ];
+    for (path, bytes) in &picked {
+        files.0.borrow_mut().insert(path.clone(), bytes.clone());
     }
     let mut session = Session::new();
     let same = |app: &App, session: &Session, name: &str| {
         assert_eq!(app.session().document(), session.document(), "{name}");
         assert_eq!(app.session().view(), session.view(), "{name}");
+        assert_eq!(app.session().store(), session.store(), "{name}");
     };
-    let picked = vec![
-        ("talk/mixed.ron".to_owned(), ron.clone()),
-        ("talk/two-colours.png".to_owned(), png.clone()),
-    ];
     app.open_directory(picked);
     assert!(matches!(
-        session.run(c("load mixed.ron"), &mut files),
+        session.run(c("open-copy talk"), &mut files),
         Reply::Ok(_)
     ));
     same(&app, &session, "open a directory");
-    // A load leaves no step to undo, in the app as in the session.
+    // An open leaves no step to undo, in the app as in the session.
     assert_eq!(
         app.run(Command::Undo),
         session.run(Command::Undo, &mut files)
     );
-    app.add_picked_image("two-colours.png".to_owned(), png);
+    app.add_picked_image("two-colours.png".to_owned(), png.clone());
+    files
+        .0
+        .borrow_mut()
+        .insert("two-colours.png".to_owned(), png);
     assert!(matches!(
-        session.run(c("asset two-colours.png"), &mut files),
+        session.run(c("import two-colours.png"), &mut files),
         Reply::Ok(_)
     ));
-    same(&app, &session, "add an image held under its name");
+    same(&app, &session, "add an image the map holds under its name");
     app.add_picked_image("two-colours.png".to_owned(), vec![0, 1, 2]);
     files
         .0
         .borrow_mut()
-        .insert("two-colours-2.png".to_owned(), vec![0, 1, 2]);
+        .insert("two-colours.png".to_owned(), vec![0, 1, 2]);
     assert!(matches!(
-        session.run(c("asset two-colours-2.png"), &mut files),
+        session.run(c("import two-colours.png"), &mut files),
         Reply::Ok(_)
     ));
     same(&app, &session, "add an image under a numbered name");
+    assert_eq!(
+        app.session()
+            .document()
+            .assets
+            .values()
+            .last()
+            .unwrap()
+            .path,
+        "two-colours-2.png"
+    );
     assert_eq!(
         app.run(Command::Undo),
         session.run(Command::Undo, &mut files)
     );
     same(&app, &session, "after undo");
-    // The browser build saves nothing.
-    assert!(matches!(app.run(c("save x.ron")), Reply::Err(_)));
+    // The browser build saves nothing, and a presentation held in memory has no file to save to.
+    assert!(matches!(app.run(c("save")), Reply::Err(_)));
 }

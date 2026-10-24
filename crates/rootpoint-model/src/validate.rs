@@ -6,8 +6,9 @@
 //! the invariants the types' doc comments state are checked, not assumed. A structural breach, one
 //! that leaves the layout or the identity of the nodes undefined, is refused: no later operation
 //! meets a broken tree. A cosmetic breach, a reference to a missing target that has a defined
-//! stand-in inside one area's drawing, is accepted, and `Document::breaches` names it so that the
-//! renderer's stand-in is reported.
+//! stand-in inside one area's drawing, or an asset whose path leads out of its root, which no store
+//! reads and which is drawn as a missing one, is accepted, and `Document::breaches` names it so that
+//! the renderer's stand-in is reported.
 
 use std::collections::BTreeSet;
 
@@ -18,7 +19,8 @@ use crate::document::*;
 pub struct Invalid(pub String);
 
 /// A cosmetic breach of a document: a reference of one area to a target the document or the binary
-/// lacks, which the renderer draws with a stand-in.
+/// lacks, or an asset of the table whose path fails `asset_path_is_confined`; the renderer draws
+/// each with a stand-in.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Breach {
     /// An image, or a text's font, names an asset the table lacks. The image is drawn grey; the
@@ -29,6 +31,9 @@ pub enum Breach {
     UnknownFont { area: NodeId, name: String },
     /// A text names a style the table lacks; it is drawn with `TextStyle::default()`.
     MissingStyle { area: NodeId, name: String },
+    /// An asset's path leads out of the root of its store: no store reads or writes it, so an
+    /// image that shows it is drawn grey, and a text in its font in the built-in sans.
+    UnconfinedAsset { asset: AssetId },
 }
 
 impl Document {
@@ -136,8 +141,9 @@ impl Document {
     }
 
     /// Every cosmetic breach of the document, area by area in the order of the slides and of
-    /// their trees. A document the editor's commands built has none; a file edited by hand, or
-    /// an undo back to such a file's content, can.
+    /// their trees, then each asset of the table whose path fails `asset_path_is_confined`, used
+    /// or not, in the order of the ids. A document the editor's commands built has none; a file
+    /// edited by hand, or an undo back to such a file's content, can.
     pub fn breaches(&self) -> Vec<Breach> {
         let mut out = Vec::new();
         for area in self.slides.iter().flat_map(|s| s.root.areas()) {
@@ -177,6 +183,11 @@ impl Document {
                     })
                 }
                 _ => {}
+            }
+        }
+        for (&asset, entry) in &self.assets {
+            if !asset_path_is_confined(&entry.path) {
+                out.push(Breach::UnconfinedAsset { asset });
             }
         }
         out

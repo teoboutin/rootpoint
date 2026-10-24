@@ -11,26 +11,29 @@ use rootpoint_protocol::{Reply, Session};
 /// lacks: a file edited by hand, whose counter, 100, is above the id.
 fn loaded_with_a_missing_asset(files: &mut MemoryFiles) -> Session {
     let mut s = Session::new();
+    files.files.insert("cat.png".into(), b"cat".to_vec());
     run(
         &mut s,
         files,
-        "add-slide\nsplit n2 beside 0.5\nasset cat.png\nimage n3 a5 fit\nsave deck.ron",
+        "add-slide\nsplit n2 beside 0.5\nimport cat.png\nimage n3 a5 fit",
     );
-    let saved = String::from_utf8(files.files["deck.ron"].clone()).unwrap();
+    write_presentation(&s, files, "deck");
+    let saved = String::from_utf8(files.files["deck/presentation.ron"].clone()).unwrap();
     let edited =
         saved
             .replacen("asset: 5,", "asset: 99,", 1)
             .replacen("next_id: 6,", "next_id: 100,", 1);
-    let table =
-        "    assets: {\n        5: (\n            source: Path(\"cat.png\"),\n        ),\n    },";
+    let table = "    assets: {\n        5: (\n            path: \"cat.png\",\n        ),\n    },";
     let edited = edited.replacen(table, "    assets: {},", 1);
     assert!(
         !edited.contains("asset: 5,") && !edited.contains("next_id: 6,") && !edited.contains(table),
         "the saved file changed shape:\n{saved}"
     );
-    files.files.insert("deck.ron".into(), edited.into_bytes());
+    files
+        .files
+        .insert("deck/presentation.ron".into(), edited.into_bytes());
     let mut s = Session::new();
-    ok(&mut s, files, "load deck.ron");
+    ok(&mut s, files, "open deck");
     s
 }
 
@@ -71,12 +74,12 @@ fn an_undo_that_brings_back_a_missing_asset_is_not_refused() {
 /// counter, which no operation would refuse.
 #[test]
 fn no_command_names_a_missing_asset() {
-    let mut files = MemoryFiles::default();
+    let mut files = MemoryFiles::holding(&["font.ttf"]);
     let mut s = Session::new();
     run(
         &mut s,
         &mut files,
-        "add-slide\nasset font.ttf\nremove-asset a3",
+        "add-slide\nimport font.ttf\nremove-asset a3",
     );
     for (line, asset) in [
         ("image n2 a3 fit", "a3"),
@@ -100,15 +103,17 @@ fn a_text_whose_font_is_missing_is_named_by_the_render() {
     let mut files = MemoryFiles::default();
     let mut s = loaded_with_a_missing_asset(&mut files);
     // The area holds an image of a99; the edit keeps the breach in the text's font instead.
-    let text = String::from_utf8(files.files["deck.ron"].clone()).unwrap();
+    let text = String::from_utf8(files.files["deck/presentation.ron"].clone()).unwrap();
     let edited = text.replacen(
         "content: Image(\n                            asset: 99,\n                            fit: Fit,\n                        ),",
         "content: Text(text: \"x\", style: Custom(font: Asset(99), size: 48.0, bold: false, italic: false, colour: (r: 0, g: 0, b: 0, a: 255), h_align: Left, v_align: Top)),",
         1,
     );
     assert_ne!(edited, text, "the saved file changed shape:\n{text}");
-    files.files.insert("deck.ron".into(), edited.into_bytes());
-    ok(&mut s, &mut files, "load deck.ron");
+    files
+        .files
+        .insert("deck/presentation.ron".into(), edited.into_bytes());
+    ok(&mut s, &mut files, "open deck");
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 160 90"),
         "fallback=n3 missing=- glyphs=- styles=-"

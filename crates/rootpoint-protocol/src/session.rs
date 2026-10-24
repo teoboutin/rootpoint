@@ -1,19 +1,19 @@
 //! A session: one document, its undo history and a view state, changed by commands.
 
 use std::fmt;
-use std::path::{Path, PathBuf};
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use rootpoint_model::{
-    Area, Asset, AssetId, AssetSource, Content, Document, FontRef, ImageContent, Node, NodeId, Op,
-    Replacement, SlideId, StyleChoice, TextContent, TextStyle, apply, load_ron, save_ron,
+    Area, Asset, AssetId, Content, Document, FontRef, ImageContent, Node, NodeId, Op, Replacement,
+    SlideId, StyleChoice, TextContent, TextStyle, apply, asset_path_is_confined, load_ron,
+    save_ron,
 };
 use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
 
 use crate::command::{Command, StyleCommand, StyleOption, parse_command, quote, quote_always};
 use crate::files::Files;
-use crate::save::{extension, inside, normalize, relative, with_suffix};
+use crate::store::{PRESENTATION, join, readable, unconfined, with_suffix, writable};
 use crate::tree::slide_tree;
 
 /// The reply to one command: `ok` with its result, or `err` with the reason. It prints as one
@@ -78,11 +78,24 @@ struct Group {
     redo: Vec<Step>,
 }
 
-/// One document, its undo and redo stacks, and its view, changed only by commands.
+/// Where the session finds the files of its presentation. Every asset path is relative to the
+/// store's root, which never changes while the store is open, so no command rewrites a path.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Store {
+    /// The presentation is held in memory: its assets' files are this map, by asset path, and no
+    /// file of it is on disk.
+    Memory(BTreeMap<String, Vec<u8>>),
+    /// A workspace: `presentation.ron` and the assets' files are the host's, below this root, a
+    /// directory written as `Files::canonical` gives it.
+    Workspace(String),
+}
+
+/// One document, its undo and redo stacks, its view and its store, changed only by commands.
 pub struct Session {
     doc: Document,
-    /// The directory of the presentation file, against which asset paths are read.
-    dir: PathBuf,
+    store: Store,
+    /// The undo steps pushed, undone or redone since the store was opened or last saved.
+    unsaved: u64,
     undo: Vec<Step>,
     redo: Vec<Step>,
     group: Option<Group>,
@@ -100,7 +113,8 @@ impl Session {
     pub fn new() -> Self {
         Session {
             doc: Document::default(),
-            dir: PathBuf::new(),
+            store: Store::Memory(BTreeMap::new()),
+            unsaved: 0,
             undo: Vec::new(),
             redo: Vec::new(),
             group: None,
@@ -116,10 +130,23 @@ impl Session {
         &self.view
     }
 
-    /// The directory an asset's path is read against: the presentation's, or the working
-    /// directory, the empty path, before a first save or load.
-    pub fn directory(&self) -> &Path {
-        &self.dir
+    pub fn store(&self) -> &Store {
+        &self.store
+    }
+
+    /// The root of a workspace, against which its asset paths are read; none in memory, where the
+    /// map's keys are the asset paths.
+    pub fn root(&self) -> Option<&str> {
+        match &self.store {
+            Store::Memory(_) => None,
+            Store::Workspace(root) => Some(root),
+        }
+    }
+
+    /// The undo steps pushed, undone or redone since the store was opened or last saved: 0 when
+    /// no edit was made since.
+    pub fn unsaved(&self) -> u64 {
+        self.unsaved
     }
 
     /// Run one line: a command's reply, or `None` for a blank line or a comment, which starts
@@ -150,24 +177,73 @@ impl Session {
                 *self = Session::new();
                 Ok(String::new())
             }
-            Command::Save { path } => {
-                self.save(&path, files)?;
+            Command::Save => {
+                let Store::Workspace(root) = &self.store else {
+                    return Err(
+                        "a presentation held in memory is saved by `pack <file>` or \
+                        `unpack <dir>`"
+                            .to_owned(),
+                    );
+                };
+                files.write(&join(root, PRESENTATION), save_ron(&self.doc).as_bytes())?;
+                self.unsaved = 0;
                 Ok(String::new())
             }
             Command::Sample => {
-                let doc = crate::sample::sample()?;
+                let (doc, images) = crate::sample::sample()?;
                 *self = Session::new();
                 self.doc = doc;
+                self.store = Store::Memory(images);
                 Ok(String::new())
             }
-            Command::Load { path } => {
-                let bytes = files.read(&path)?;
-                let text = String::from_utf8(bytes).map_err(|_| format!("{path} is not UTF-8"))?;
-                let doc = load_ron(&text).map_err(|e| format!("{path}: {e:?}"))?;
+            Command::Open { dir } => {
+                let root = files.canonical(&dir)?;
+                let file = join(&root, PRESENTATION);
+                // A directory with no presentation opens an empty one, which the first save writes.
+                let doc = if files.exists(&file)? {
+                    read_presentation(&file, files)?
+                } else {
+                    Document::default()
+                };
                 *self = Session::new();
                 self.doc = doc;
-                self.dir = parent(&path);
+                self.store = Store::Workspace(root);
                 Ok(String::new())
+            }
+            Command::OpenCopy { dir } => {
+                let doc = read_presentation(&join(&dir, PRESENTATION), files)?;
+                // Each asset is read through the check of a workspace at `dir`, so the copy reads
+                // nothing outside it; an asset it refuses, or cannot read, is missing in the map.
+                let mut map = BTreeMap::new();
+                for asset in doc.assets.values() {
+                    if let Ok(full) = readable(&dir, &asset.path, files)
+                        && let Ok(bytes) = files.read(&full)
+                    {
+                        map.insert(asset.path.clone(), bytes);
+                    }
+                }
+                *self = Session::new();
+                self.doc = doc;
+                self.store = Store::Memory(map);
+                Ok(String::new())
+            }
+            Command::Import { from, to } => {
+                let path = self.import(&from, to, files)?;
+                match self.doc.assets.iter().find(|(_, a)| a.path == path) {
+                    Some((id, _)) => Ok(id.to_string()),
+                    None => self.edit(Op::AddAsset {
+                        asset: Asset { path },
+                    }),
+                }
+            }
+            Command::Store => {
+                let unsaved = self.unsaved;
+                Ok(match &self.store {
+                    Store::Memory(_) => format!("memory unsaved={unsaved}"),
+                    Store::Workspace(root) => {
+                        format!("workspace {} unsaved={unsaved}", quote(root))
+                    }
+                })
             }
             Command::Tree { slide } => {
                 let slides: Vec<String> = match slide {
@@ -224,8 +300,14 @@ impl Session {
                 let from = if undo { &mut self.undo } else { &mut self.redo };
                 let step = from.pop().ok_or(format!("nothing to {command}"))?;
                 match self.apply_step(step.clone()) {
-                    Ok(back) if undo => self.redo.push(back),
-                    Ok(back) => self.undo.push(back),
+                    Ok(back) if undo => {
+                        self.redo.push(back);
+                        self.unsaved += 1;
+                    }
+                    Ok(back) => {
+                        self.undo.push(back);
+                        self.unsaved += 1;
+                    }
                     Err(e) => {
                         let from = if undo { &mut self.undo } else { &mut self.redo };
                         from.push(step);
@@ -349,16 +431,98 @@ impl Session {
             }
             editing => {
                 let op = self.operation(editing)?;
-                let before = ids(&self.doc);
-                let inverse = self.apply_op(op)?;
-                match &mut self.group {
-                    Some(group) => group.inverses.push(inverse.clone()),
-                    None => self.undo.push(vec![inverse.clone()]),
-                }
-                self.redo.clear();
-                Ok(self.created(&before, &inverse))
+                self.edit(op)
             }
         }
+    }
+
+    /// Apply an editing operation: its inverse joins the open group, or is an undo step of its
+    /// own. The reply names the ids it created.
+    fn edit(&mut self, op: Op) -> Result<String, String> {
+        let before = ids(&self.doc);
+        let inverse = self.apply_op(op)?;
+        match &mut self.group {
+            Some(group) => group.inverses.push(inverse.clone()),
+            None => {
+                self.undo.push(vec![inverse.clone()]);
+                self.unsaved += 1;
+            }
+        }
+        self.redo.clear();
+        Ok(self.created(&before, &inverse))
+    }
+
+    /// The asset path an import of the host's file `from` adds, after writing the file into the
+    /// store when it is not there yet. In a workspace, a file below the root is taken at its path,
+    /// with no copy, and `to`, when given, must be that path. Any other file is written at `to`, or
+    /// at the root under its file name, with `-2`, `-3` before the extension where a file of other
+    /// bytes holds the name, and the name itself where its file holds the same bytes.
+    fn import(
+        &mut self,
+        from: &str,
+        to: Option<String>,
+        files: &mut dyn Files,
+    ) -> Result<String, String> {
+        let bytes = files.read(from)?;
+        if let Store::Workspace(root) = &self.store {
+            let canonical = files.canonical(from)?;
+            if let Some(below) = canonical.strip_prefix(&join(root, "")) {
+                if to.as_ref().is_some_and(|to| to != below) {
+                    return Err(format!(
+                        "{} is below the root, at {}",
+                        quote(from),
+                        quote(below)
+                    ));
+                }
+                if !asset_path_is_confined(below) {
+                    return Err(unconfined(below));
+                }
+                return Ok(below.to_owned());
+            }
+        }
+        let name = match to {
+            Some(to) => to,
+            None => from.rsplit('/').next().unwrap_or(from).to_owned(),
+        };
+        if !asset_path_is_confined(&name) {
+            return Err(unconfined(&name));
+        }
+        for n in 1.. {
+            let candidate = if n == 1 {
+                name.clone()
+            } else {
+                with_suffix(&name, n)
+            };
+            let held = match &self.store {
+                Store::Memory(map) => map.get(&candidate).cloned(),
+                Store::Workspace(root) => {
+                    let full = writable(root, &candidate, files)?;
+                    if files.exists(&full)? {
+                        Some(files.read(&full)?)
+                    } else {
+                        None
+                    }
+                }
+            };
+            // A name no file holds is free, even where an asset names it: the file written there
+            // is that asset's, which was drawn missing until now.
+            match held {
+                Some(held) if held == bytes => return Ok(candidate),
+                Some(_) => continue,
+                None => {}
+            }
+            match &mut self.store {
+                Store::Memory(map) => {
+                    map.insert(candidate.clone(), bytes);
+                }
+                Store::Workspace(root) => {
+                    let full = writable(root, &candidate, files)?;
+                    files.write(&full, &bytes)?;
+                }
+            }
+            return Ok(candidate);
+        }
+        unreachable!("the suffixes do not run out")
     }
 
     /// The operation an editing command applies.
@@ -433,11 +597,6 @@ impl Session {
                     text: String::new(),
                     style: self.text_style(area),
                 }),
-            },
-            Command::Asset { path } => Op::AddAsset {
-                asset: Asset {
-                    source: AssetSource::Path(path),
-                },
             },
             Command::RemoveAsset { asset } => Op::RemoveAsset { id: asset },
             Command::Style(StyleCommand::Add { name, options }) => Op::AddStyle {
@@ -594,153 +753,34 @@ impl Session {
         Ok(back)
     }
 
-    /// Save the document to `path`, so that every asset is readable beside the saved file: an
-    /// asset whose file lies in the saved file's directory keeps it, and any other is written
-    /// there, under a name no other file holds. Every asset to write is read before anything is
-    /// written, so a save that cannot read one writes nothing.
-    fn save(&mut self, path: &str, files: &mut dyn Files) -> Result<(), String> {
-        let target = normalize(&parent(path));
-        let own = Path::new(path)
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned());
-        // The new source of each asset whose source changes, and the files to write.
-        let mut sources: BTreeMap<AssetId, String> = BTreeMap::new();
-        let mut writes: Vec<(String, Vec<u8>)> = Vec::new();
-        let mut kept = BTreeSet::new();
-        let mut copied = Vec::new();
-        for (&id, asset) in &self.doc.assets {
-            match &asset.source {
-                AssetSource::Path(p) => {
-                    let full = normalize(&self.dir.join(p));
-                    if let Some(rel) = inside(&full, &target) {
-                        if rel != *p {
-                            sources.insert(id, rel.clone());
-                        }
-                        kept.insert(rel);
-                        continue;
-                    }
-                    let bytes = files
-                        .read(&full.to_string_lossy())
-                        .map_err(|e| format!("{id}: {e}"))?;
-                    let name = Path::new(p)
-                        .file_name()
-                        .map(|n| n.to_string_lossy().into_owned())
-                        .unwrap_or_else(|| format!("asset-{}{}", id.0, extension(&bytes)));
-                    copied.push((id, name, bytes));
-                }
-                AssetSource::Embedded(bytes) => {
-                    let name = format!("asset-{}{}", id.0, extension(bytes));
-                    copied.push((id, name, bytes.clone()));
-                }
-            }
-        }
-        // The names this save gives, each with the bytes it holds once the save is done.
-        let mut given: BTreeMap<String, Vec<u8>> = BTreeMap::new();
-        for (id, name, bytes) in copied {
-            let mut n = 1;
-            let chosen = loop {
-                let candidate = if n == 1 {
-                    name.clone()
-                } else {
-                    with_suffix(&name, n)
-                };
-                n += 1;
-                if Some(&candidate) == own.as_ref() {
-                    continue;
-                }
-                if let Some(held) = given.get(&candidate) {
-                    if *held == bytes {
-                        break candidate;
-                    }
-                    continue;
-                }
-                let file = target.join(&candidate).to_string_lossy().into_owned();
-                if files.exists(&file).map_err(|e| format!("{id}: {e}"))? {
-                    let held = files.read(&file).map_err(|e| format!("{id}: {e}"))?;
-                    if held == bytes {
-                        given.insert(candidate.clone(), bytes);
-                        break candidate;
-                    }
-                    continue;
-                }
-                // A kept asset's file that is missing still holds its name.
-                if kept.contains(&candidate) {
-                    continue;
-                }
-                given.insert(candidate.clone(), bytes.clone());
-                writes.push((file, bytes));
-                break candidate;
-            };
-            if self.doc.assets[&id].source != AssetSource::Path(chosen.clone()) {
-                sources.insert(id, chosen);
-            }
-        }
-        let mut doc = self.doc.clone();
-        for (&id, source) in &sources {
-            let op = Op::SetAssetSource {
-                id,
-                source: AssetSource::Path(source.clone()),
-            };
-            apply(&mut doc, op).map_err(|e| format!("{e:?}"))?;
-        }
-        for (file, bytes) in &writes {
-            files.write(file, bytes)?;
-        }
-        files.write(path, save_ron(&doc).as_bytes())?;
-        // The new sources are no undo step: an undo to an old path, read against the new
-        // directory, would name another file. The operations the stacks hold are given the same
-        // sources instead, and an asset only they hold a path that names the same file.
-        let old_dir = std::mem::replace(&mut self.dir, target);
-        self.doc = doc;
-        let group = self
-            .group
-            .iter_mut()
-            .flat_map(|g| std::iter::once(&mut g.inverses).chain(g.redo.iter_mut()));
-        let steps = self
-            .undo
-            .iter_mut()
-            .chain(self.redo.iter_mut())
-            .chain(group);
-        for op in steps.flatten() {
-            if let Op::RestoreAsset { id, asset } = op {
-                if let Some(source) = sources.get(id) {
-                    asset.source = AssetSource::Path(source.clone());
-                } else if let AssetSource::Path(p) = &asset.source {
-                    let full = normalize(&old_dir.join(p));
-                    match relative(&full, &self.dir) {
-                        Some(rel) => asset.source = AssetSource::Path(rel),
-                        // No path names the file from the new directory; its bytes do.
-                        None => {
-                            if let Ok(bytes) = files.read(&full.to_string_lossy()) {
-                                asset.source = AssetSource::Embedded(bytes);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
     /// Close the open group, if any: its edits become one undo step, and an empty group none.
     fn end_group(&mut self) {
         if let Some(group) = self.group.take()
             && !group.inverses.is_empty()
         {
             self.undo.push(group.inverses.into_iter().rev().collect());
+            self.unsaved += 1;
         }
     }
 
-    /// An asset's bytes: embedded in the document, or read from its path, relative to the
-    /// presentation's directory. It is public so that a host decoding assets, as the app does,
-    /// reads them by this one rule and never joins a path to a directory itself.
+    /// An asset's bytes: its entry of the map in memory, or its file below a workspace's root.
+    /// A path that leads out of the root is refused, whatever the file names, so no read reaches
+    /// outside it (`design@rootpoint-model@asset-source`). It is public so that a host decoding
+    /// assets, as the app does, reads them by this one rule and never joins a path itself.
     pub fn asset_bytes(&self, id: AssetId, files: &mut dyn Files) -> Result<Vec<u8>, String> {
         let asset = self.doc.assets.get(&id).ok_or(format!("no asset {id}"))?;
-        match &asset.source {
-            AssetSource::Embedded(bytes) => Ok(bytes.clone()),
-            AssetSource::Path(path) => {
-                let full = normalize(&self.dir.join(path));
-                files.read(&full.to_string_lossy())
+        match &self.store {
+            Store::Memory(map) => {
+                if !asset_path_is_confined(&asset.path) {
+                    return Err(unconfined(&asset.path));
+                }
+                map.get(&asset.path)
+                    .cloned()
+                    .ok_or(format!("{}: no such file", quote(&asset.path)))
+            }
+            Store::Workspace(root) => {
+                let full = readable(root, &asset.path, files)?;
+                files.read(&full)
             }
         }
     }
@@ -862,9 +902,9 @@ fn apply_style(style: &mut TextStyle, option: StyleOption) {
     }
 }
 
-fn parent(path: &str) -> PathBuf {
-    Path::new(path)
-        .parent()
-        .map(Path::to_path_buf)
-        .unwrap_or_default()
+/// The presentation of a file of the host.
+fn read_presentation(file: &str, files: &mut dyn Files) -> Result<Document, String> {
+    let bytes = files.read(file)?;
+    let text = String::from_utf8(bytes).map_err(|_| format!("{file} is not UTF-8"))?;
+    load_ron(&text).map_err(|e| format!("{file}: {e:?}"))
 }

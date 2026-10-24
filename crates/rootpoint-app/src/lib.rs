@@ -56,8 +56,6 @@ pub struct App {
     press: Option<Press>,
     /// From the pointer to the grabbed divider's line, in points, during a divider drag.
     grab_offset: egui::Vec2,
-    /// The file the presentation was last loaded from or saved to, which Save writes.
-    path: Option<String>,
     /// Esc hides the preview line until Ctrl and Shift are both released.
     preview_hidden: bool,
     /// Whether the window was last asked to be full screen, as presenter mode is.
@@ -210,7 +208,6 @@ impl App {
             gesture: Gesture::Idle,
             press: None,
             grab_offset: egui::Vec2::ZERO,
-            path: None,
             preview_hidden: false,
             fullscreen: false,
             edit: None,
@@ -231,7 +228,8 @@ impl App {
     }
 
     /// An editor on an empty session whose files are held in memory, as the browser build's are:
-    /// `App::open_directory` and `App::add_picked_image` put files in, and a save writes none.
+    /// `App::open_directory` and `App::add_picked_image` put the picked files in, which `open-copy`
+    /// and `import` copy into the session's map, and a save writes none.
     pub fn in_memory() -> Self {
         let files = MemoryFiles::default();
         let mut app = App::new(Box::new(files.clone()));
@@ -345,7 +343,22 @@ impl App {
     /// Run a command on the session. Every action of the editor goes through here, so the
     /// document and the view after an action are those its commands give.
     pub fn run(&mut self, command: Command) -> Reply {
+        // A command that replaces the store replaces the files the assets are read from, and two
+        // maps can hold other bytes at one path; an import can write the file of an asset drawn
+        // missing until then. The decoded assets are keyed on the paths, not on the bytes, so they
+        // are dropped after either.
+        let rereads = matches!(
+            command,
+            Command::New
+                | Command::Sample
+                | Command::Open { .. }
+                | Command::OpenCopy { .. }
+                | Command::Import { .. }
+        );
         let reply = self.session.run(command, &mut *self.files);
+        if rereads && matches!(reply, Reply::Ok(_)) {
+            self.assets = Assets::default();
+        }
         self.error = match &reply {
             Reply::Ok(_) => None,
             Reply::Err(reason) => Some(reason.clone()),

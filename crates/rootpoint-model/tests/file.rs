@@ -36,7 +36,7 @@ fn fixture() -> Document {
         &mut doc,
         Op::AddAsset {
             asset: Asset {
-                source: AssetSource::Path("images/cat.png".to_owned()),
+                path: "images/cat.png".to_owned(),
             },
         },
     )
@@ -174,16 +174,14 @@ fn content() -> impl Strategy<Value = Content> {
     ]
 }
 
-fn source() -> impl Strategy<Value = AssetSource> {
-    prop_oneof![
-        "[a-z/]{1,12}\\.png".prop_map(AssetSource::Path),
-        prop::collection::vec(any::<u8>(), 0..16).prop_map(AssetSource::Embedded),
-    ]
+/// An asset path, confined or not: a file edited by hand can name either, and both load.
+fn source() -> impl Strategy<Value = String> {
+    prop_oneof!["[a-z/]{1,12}\\.png", "[a-z./\\\\]{0,14}"]
 }
 
 proptest! {
     /// Over random documents, of several slides, random trees and divider positions, every kind
-    /// of content, fonts from the asset table, and both kinds of asset source, loading the saved
+    /// of content, fonts from the asset table, and asset paths confined or not, loading the saved
     /// text gives the document back.
     #[test]
     fn saving_then_loading_gives_the_document_back(
@@ -227,7 +225,7 @@ proptest! {
                     },
                     Node::Area(_) => continue,
                 },
-                _ => Op::AddAsset { asset: Asset { source } },
+                _ => Op::AddAsset { asset: Asset { path: source } },
             };
             // An operation the document refuses, such as a divider out of order, is skipped.
             let _ = apply(&mut doc, op);

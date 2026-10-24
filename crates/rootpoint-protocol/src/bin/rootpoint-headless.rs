@@ -1,8 +1,8 @@
 //! Runs protocol commands with no window: one command per line from stdin, one reply per command
-//! to stdout, until the end of its input. The paths of `save`, `load` and `render` are relative to
-//! the working directory; an asset's path, to the directory of the presentation last saved or
-//! loaded, or to the working directory before either. A `save` copies beside the saved file every
-//! asset whose file lies outside its directory, and every embedded one.
+//! to stdout, until the end of its input. A host path, the argument of `open`, `open-copy`,
+//! `import` and `render`, is relative to the working directory; an asset's path, to the root of the
+//! workspace `open` opened, or a key of the map of a presentation held in memory. It has no
+//! autosave: a script writes `presentation.ron` by `save`.
 
 use std::io::{BufRead, Write};
 
@@ -19,12 +19,24 @@ impl Files for NativeFiles {
         std::fs::read(path).map_err(|e| format!("{path}: {e}"))
     }
 
+    /// Writes the file, creating the directories above it, as an import at `img/cat.png` needs.
     fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String> {
+        if let Some(dir) = std::path::Path::new(path).parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{path}: {e}"))?;
+        }
         std::fs::write(path, bytes).map_err(|e| format!("{path}: {e}"))
     }
 
     fn exists(&mut self, path: &str) -> Result<bool, String> {
         std::fs::exists(path).map_err(|e| format!("{path}: {e}"))
+    }
+
+    fn canonical(&mut self, path: &str) -> Result<String, String> {
+        let canonical = std::fs::canonicalize(path).map_err(|e| format!("{path}: {e}"))?;
+        canonical
+            .into_os_string()
+            .into_string()
+            .map_err(|p| format!("{} is not UTF-8", p.display()))
     }
 }
 

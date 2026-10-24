@@ -1,8 +1,8 @@
-//! The editor of rootpoint, in a window. `rootpoint [--control <socket>] [presentation.ron]` opens
-//! the presentation given, or an empty one. With `--control`, the window listens on a Unix domain
-//! socket at that path, and runs the commands `rootpoint-ctl` sends it; the window exits with an
-//! error when another window listens there. Paths are relative to the working directory, as the
-//! headless runner's are.
+//! The editor of rootpoint, in a window. `rootpoint [--control <socket>] [<dir>]` opens the
+//! directory given as a workspace, or an empty presentation in memory. With `--control`, the window
+//! listens on a Unix domain socket at that path, and runs the commands `rootpoint-ctl` sends it; the
+//! window exits with an error when another window listens there. Host paths are relative to the
+//! working directory, as the headless runner's are.
 //!
 //! Built for the wasm target, it is the browser build instead: it draws in the page's canvas of
 //! id `rootpoint`, opens the built-in sample, and holds its files in memory.
@@ -53,19 +53,31 @@ impl Files for NativeFiles {
         std::fs::read(path).map_err(|e| format!("{path}: {e}"))
     }
 
+    /// Writes the file, creating the directories above it, as an import at `img/cat.png` needs.
     fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String> {
+        if let Some(dir) = std::path::Path::new(path).parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{path}: {e}"))?;
+        }
         std::fs::write(path, bytes).map_err(|e| format!("{path}: {e}"))
     }
 
     fn exists(&mut self, path: &str) -> Result<bool, String> {
         std::fs::exists(path).map_err(|e| format!("{path}: {e}"))
     }
+
+    fn canonical(&mut self, path: &str) -> Result<String, String> {
+        let canonical = std::fs::canonicalize(path).map_err(|e| format!("{path}: {e}"))?;
+        canonical
+            .into_os_string()
+            .into_string()
+            .map_err(|p| format!("{} is not UTF-8", p.display()))
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
     let mut args = std::env::args().skip(1);
-    let (mut socket, mut presentation) = (None, None);
+    let (mut socket, mut workspace) = (None, None);
     while let Some(arg) = args.next() {
         if arg == "--control" {
             socket = args.next();
@@ -74,14 +86,14 @@ fn main() -> eframe::Result {
                 std::process::exit(2);
             }
         } else {
-            presentation = Some(arg);
+            workspace = Some(arg);
         }
     }
     let mut app = App::new(Box::new(NativeFiles));
-    if let Some(path) = presentation {
-        // A file that cannot be loaded leaves the empty presentation, and the status line says
-        // why. One that loads is the file Save writes.
-        app.open_file(path);
+    if let Some(dir) = workspace {
+        // A directory that cannot be opened leaves the empty presentation, and the status line
+        // says why. One that opens is the workspace Save writes.
+        app.open_workspace(dir);
     }
     eframe::run_native(
         "rootpoint",

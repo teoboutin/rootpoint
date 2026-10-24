@@ -80,11 +80,11 @@ pub enum Op {
         id: AssetId,
         asset: Asset,
     },
-    /// Replace an asset's source, as a save does when it writes the asset's bytes beside the
-    /// presentation; the asset keeps its id, so the areas that name it are unchanged.
-    SetAssetSource {
+    /// Replace an asset's path, as a move of its file does; the asset keeps its id, so the areas
+    /// that name it are unchanged.
+    SetAssetPath {
         id: AssetId,
-        source: AssetSource,
+        path: String,
     },
     /// Add a named style; the name is not empty and not in the table.
     AddStyle {
@@ -298,6 +298,10 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             let old = std::mem::replace(&mut area_mut(doc, area)?.content, content);
             Ok(Op::SetContent { area, content: old })
         }
+        // An asset path that fails `asset_path_is_confined` is not refused either: it is a
+        // cosmetic breach no store reads or writes, and an undo may bring back what a file was
+        // loaded with, `design@rootpoint-model@cosmetic-fallbacks`. The commands refuse to name one,
+        // `design@rootpoint-protocol@no-new-breach`.
         Op::AddAsset { asset } => {
             let id = AssetId(doc.alloc());
             doc.assets.insert(id, asset);
@@ -322,10 +326,10 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             doc.assets.insert(id, asset);
             Ok(Op::RemoveAsset { id })
         }
-        Op::SetAssetSource { id, source } => {
+        Op::SetAssetPath { id, path } => {
             let asset = doc.assets.get_mut(&id).ok_or(OpError::UnknownAsset(id))?;
-            let old = std::mem::replace(&mut asset.source, source);
-            Ok(Op::SetAssetSource { id, source: old })
+            let old = std::mem::replace(&mut asset.path, path);
+            Ok(Op::SetAssetPath { id, path: old })
         }
         Op::AddStyle { name, style } => {
             free_name(doc, &name)?;

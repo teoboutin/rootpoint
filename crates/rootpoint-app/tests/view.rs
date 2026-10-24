@@ -35,6 +35,19 @@ impl Files for MemoryFiles {
     fn exists(&mut self, path: &str) -> Result<bool, String> {
         Ok(self.0.borrow().contains_key(path))
     }
+
+    fn canonical(&mut self, path: &str) -> Result<String, String> {
+        Ok(path.to_owned())
+    }
+}
+
+/// Write the app's document as `presentation.ron` of the directory `dir`, as `save` would in a
+/// workspace there.
+fn write_presentation(app: &App, files: &MemoryFiles, dir: &str) {
+    files.0.borrow_mut().insert(
+        format!("{dir}/presentation.ron"),
+        rootpoint_model::save_ron(app.session().document()).into_bytes(),
+    );
 }
 
 fn ok(app: &mut App, line: &str) {
@@ -144,12 +157,10 @@ fn the_status_names_an_image_the_render_could_not_draw() {
     let files = MemoryFiles::default();
     let mut app = App::new(Box::new(files.clone()));
     ok(&mut app, "sample");
-    ok(&mut app, "save out/deck.ron");
-    // The sample's image is embedded, so the save writes it out under its asset's id.
+    // The sample's presentation in a workspace that lacks its image.
+    write_presentation(&app, &files, "out");
     let asset = *app.session().document().assets.keys().next().unwrap();
-    let image = format!("out/asset-{}.png", asset.0);
-    assert!(files.0.borrow_mut().remove(&image).is_some(), "{image}");
-    ok(&mut app, "load out/deck.ron");
+    ok(&mut app, "open out");
     let third = app.session().document().slides[2].id;
     ok(&mut app, &format!("select {third}"));
     let ctx = Context::default();
@@ -157,10 +168,10 @@ fn the_status_names_an_image_the_render_could_not_draw() {
     assert_eq!(app.status(), [format!("missing images: {asset}")]);
     // A command that fails is named too.
     assert!(matches!(
-        app.run(parse_command("load missing.ron").unwrap()),
+        app.run(parse_command("open-copy missing").unwrap()),
         Reply::Err(_)
     ));
-    assert_eq!(app.status()[0], "missing.ron: no such file");
+    assert_eq!(app.status()[0], "missing/presentation.ron: no such file");
 }
 
 /// A file edited by hand to name an asset the table lacks, below its counter, opens: the image is
@@ -168,19 +179,23 @@ fn the_status_names_an_image_the_render_could_not_draw() {
 #[test]
 fn a_file_naming_a_missing_asset_opens_and_the_status_names_it() {
     let files = MemoryFiles::default();
+    files
+        .0
+        .borrow_mut()
+        .insert("cat.png".into(), b"cat".to_vec());
     let mut app = App::new(Box::new(files.clone()));
     for line in [
+        "open deck",
         "add-slide",
         "split n2 beside 0.5",
-        "asset cat.png",
+        "import cat.png",
         "image n3 a5 fit",
-        "save deck.ron",
+        "save",
     ] {
         ok(&mut app, line);
     }
-    let saved = String::from_utf8(files.0.borrow()["deck.ron"].clone()).unwrap();
-    let table =
-        "    assets: {\n        5: (\n            source: Path(\"cat.png\"),\n        ),\n    },";
+    let saved = String::from_utf8(files.0.borrow()["deck/presentation.ron"].clone()).unwrap();
+    let table = "    assets: {\n        5: (\n            path: \"cat.png\",\n        ),\n    },";
     let edited = saved
         .replacen("asset: 5,", "asset: 99,", 1)
         .replacen("next_id: 6,", "next_id: 100,", 1)
@@ -192,8 +207,8 @@ fn a_file_naming_a_missing_asset_opens_and_the_status_names_it() {
     files
         .0
         .borrow_mut()
-        .insert("deck.ron".into(), edited.into_bytes());
-    ok(&mut app, "load deck.ron");
+        .insert("deck/presentation.ron".into(), edited.into_bytes());
+    ok(&mut app, "open deck");
     let ctx = Context::default();
     frame(&ctx, &mut app);
     assert_eq!(app.status(), ["missing images: a99"]);
@@ -208,15 +223,15 @@ fn a_file_naming_a_missing_style_opens_and_the_status_names_it() {
     let files = MemoryFiles::default();
     let mut app = App::new(Box::new(files.clone()));
     ok(&mut app, "sample");
-    ok(&mut app, "save deck.ron");
-    let saved = String::from_utf8(files.0.borrow()["deck.ron"].clone()).unwrap();
+    write_presentation(&app, &files, "deck");
+    let saved = String::from_utf8(files.0.borrow()["deck/presentation.ron"].clone()).unwrap();
     let edited = saved.replacen("Named(\"Title\")", "Named(\"Heading\")", 1);
     assert_ne!(edited, saved, "the saved sample changed shape");
     files
         .0
         .borrow_mut()
-        .insert("deck.ron".into(), edited.into_bytes());
-    ok(&mut app, "load deck.ron");
+        .insert("deck/presentation.ron".into(), edited.into_bytes());
+    ok(&mut app, "open deck");
     let ctx = Context::default();
     frame(&ctx, &mut app);
     assert_eq!(

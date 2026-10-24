@@ -5,18 +5,28 @@ mod common;
 
 use common::*;
 use rootpoint_model::*;
-use rootpoint_protocol::{Command, Reply, Session, StyleCommand, StyleOption, parse_command};
+use rootpoint_protocol::{
+    Command, Reply, Session, Store, StyleCommand, StyleOption, parse_command,
+};
 
 #[test]
 fn every_command_prints_back_as_it_parses() {
     let commands = vec![
         Command::New,
-        Command::Save {
-            path: "a talk/deck.ron".into(),
+        Command::Save,
+        Command::Open {
+            dir: "a talk".into(),
         },
-        Command::Load {
-            path: "deck.ron".into(),
+        Command::OpenCopy { dir: "deck".into() },
+        Command::Import {
+            from: "/home/me/cat.png".into(),
+            to: None,
         },
+        Command::Import {
+            from: "cat.png".into(),
+            to: Some("img/a cat.png".into()),
+        },
+        Command::Store,
         Command::Tree { slide: None },
         Command::Tree {
             slide: Some(SlideId(3)),
@@ -91,9 +101,6 @@ fn every_command_prints_back_as_it_parses() {
             fit: ImageFit::Fill,
         },
         Command::Clear { area: NodeId(4) },
-        Command::Asset {
-            path: "images/cat.png".into(),
-        },
         Command::RemoveAsset { asset: AssetId(5) },
         Command::Sample,
         Command::Undo,
@@ -203,9 +210,9 @@ fn every_scripted_line_prints_back_as_a_line_that_parses_to_it() {
 /// command equals the document after `apply` of that operation.
 #[test]
 fn each_editing_command_applies_its_operation() {
-    let mut files = MemoryFiles::default();
+    let mut files = MemoryFiles::holding(&["cat.png", "dog.png"]);
     let mut session = Session::new();
-    let setup = "add-slide\nsplit n2 beside 0.5\nasset cat.png\ntext n2 \"Hi\" size=64\nimage n3 a5 fit\nadd-slide";
+    let setup = "add-slide\nsplit n2 beside 0.5\nimport cat.png\ntext n2 \"Hi\" size=64\nimage n3 a5 fit\nadd-slide";
     for reply in run(&mut session, &mut files, setup) {
         assert!(matches!(reply, Reply::Ok(_)), "{reply:?}");
     }
@@ -294,17 +301,17 @@ fn each_editing_command_applies_its_operation() {
             },
         ),
         (
-            "asset dog.png",
+            "import dog.png",
             Op::AddAsset {
                 asset: Asset {
-                    source: AssetSource::Path("dog.png".into()),
+                    path: "dog.png".into(),
                 },
             },
         ),
     ];
     for (line, op) in rows {
         let mut s = Session::new();
-        let mut f = MemoryFiles::default();
+        let mut f = MemoryFiles::holding(&["cat.png", "dog.png"]);
         run(&mut s, &mut f, setup);
         assert!(
             matches!(s.execute(line, &mut f), Some(Reply::Ok(_))),
@@ -316,8 +323,8 @@ fn each_editing_command_applies_its_operation() {
     }
     // remove-asset needs an asset no area uses.
     let mut s = Session::new();
-    let mut f = MemoryFiles::default();
-    run(&mut s, &mut f, "asset dog.png");
+    let mut f = MemoryFiles::holding(&["dog.png"]);
+    run(&mut s, &mut f, "import dog.png");
     let mut expected = s.document().clone();
     apply(&mut expected, Op::RemoveAsset { id: AssetId(1) }).unwrap();
     assert!(matches!(
@@ -329,7 +336,7 @@ fn each_editing_command_applies_its_operation() {
 
 #[test]
 fn the_replies_name_the_ids_a_command_created() {
-    let mut files = MemoryFiles::default();
+    let mut files = MemoryFiles::holding(&["cat.png"]);
     let mut s = Session::new();
     assert_eq!(ok(&mut s, &mut files, "add-slide"), "s1 root=n2");
     assert_eq!(
@@ -347,7 +354,9 @@ fn the_replies_name_the_ids_a_command_created() {
         ok(&mut s, &mut files, "tree"),
         "s1 n4:beside(0.5,0.75)[n2 text \"\" style=\"Body\" | n3 text \"\" style=\"Body\" | n8:stacked(0.5)[n7 text \"\" style=\"Body\" | n5 text \"\" style=\"Body\"]]"
     );
-    assert_eq!(ok(&mut s, &mut files, "asset cat.png"), "a9");
+    assert_eq!(ok(&mut s, &mut files, "import cat.png"), "a9");
+    // An import of a file an asset already holds names that asset, and adds none.
+    assert_eq!(ok(&mut s, &mut files, "import cat.png"), "a9");
     assert_eq!(ok(&mut s, &mut files, "duplicate-slide s1"), "s16 root=n10");
 }
 
@@ -355,12 +364,12 @@ fn the_replies_name_the_ids_a_command_created() {
 /// style a new area takes.
 #[test]
 fn clear_keeps_a_text_s_style_and_gives_an_image_area_the_default_one() {
-    let mut files = MemoryFiles::default();
+    let mut files = MemoryFiles::holding(&["cat.png"]);
     let mut s = Session::new();
     run(
         &mut s,
         &mut files,
-        "add-slide\nsplit n2 beside 0.5\nasset cat.png\ntext n2 \"Hi\" size=120\nimage n3 a5 fit",
+        "add-slide\nsplit n2 beside 0.5\nimport cat.png\ntext n2 \"Hi\" size=120\nimage n3 a5 fit",
     );
     ok(&mut s, &mut files, "clear n2");
     ok(&mut s, &mut files, "clear n3");
@@ -409,8 +418,8 @@ fn undo_and_redo_walk_the_history() {
         matches!(s.execute("redo", &mut files), Some(Reply::Err(_))),
         "a new edit clears redo"
     );
-    // `load` and `new` clear both stacks.
-    run(&mut s, &mut files, "save deck.ron\nundo\nload deck.ron");
+    // `open` and `new` clear both stacks.
+    run(&mut s, &mut files, "open deck\nundo");
     assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
     assert!(matches!(s.execute("redo", &mut files), Some(Reply::Err(_))));
     // The model refuses an operation whose ids its document has not allocated, so the new
@@ -426,12 +435,12 @@ fn undo_and_redo_walk_the_history() {
 
 #[test]
 fn a_refused_command_changes_nothing() {
-    let mut files = MemoryFiles::default();
+    let mut files = MemoryFiles::holding(&["cat.png"]);
     let mut s = Session::new();
     run(
         &mut s,
         &mut files,
-        "add-slide\nsplit n2 beside 0.5\nasset cat.png\nimage n3 a5 fit\nselect n3\npresent s1",
+        "add-slide\nsplit n2 beside 0.5\nimport cat.png\nimage n3 a5 fit\nselect n3\npresent s1",
     );
     // Every write fails, so that `save` and `render` are refused.
     files.read_only = true;
@@ -451,7 +460,12 @@ fn a_refused_command_changes_nothing() {
         "image n2 a9 fit",
         "remove-asset a5",
         "tree s9",
-        "load missing.ron",
+        "open-copy missing",
+        "import missing.png",
+        "import cat.png ../cat.png",
+        "import cat.png /cat.png",
+        "import cat.png .rootpoint/cat.png",
+        "import cat.png presentation.ron",
         "text n2 \"unclosed",
         "add-slide 5",
         "duplicate-slide s9",
@@ -467,7 +481,8 @@ fn a_refused_command_changes_nothing() {
         "preview on now",
         "render s9 out.png",
         "render s1 out.png",
-        "save deck.ron",
+        // A presentation held in memory has no file of its own to save to.
+        "save",
         // A quoted word is a text or a path, never an id, an option or a verb.
         "text n2 \"x\" \"bold\"",
         "select \"n2\"",
@@ -480,7 +495,9 @@ fn a_refused_command_changes_nothing() {
         "new now",
         "deselect n3",
         "view all",
-        "asset",
+        "import",
+        "save deck.ron",
+        "store all",
         "sample s1",
         "begin now",
         // The style commands: a style of the table takes values, never a choice of style.
@@ -532,17 +549,17 @@ fn blank_lines_and_comments_give_no_reply() {
 }
 
 #[test]
-fn save_load_and_tree() {
+fn save_open_and_tree() {
     let mut files = MemoryFiles::default();
     let mut s = Session::new();
     run(
         &mut s,
         &mut files,
-        "add-slide\nsplit n2 beside 0.5\ntext n2 \"Hello\"\nsave talk/deck.ron",
+        "open talk\nadd-slide\nsplit n2 beside 0.5\ntext n2 \"Hello\"\nsave",
     );
-    assert!(files.files.contains_key("talk/deck.ron"));
+    assert!(files.files.contains_key("talk/presentation.ron"));
     let mut t = Session::new();
-    ok(&mut t, &mut files, "load talk/deck.ron");
+    ok(&mut t, &mut files, "open talk");
     assert_eq!(t.document(), s.document());
     assert_eq!(
         ok(&mut t, &mut files, "tree s1"),
@@ -555,7 +572,7 @@ fn every_reply_is_one_line() {
     let mut files = MemoryFiles::default();
     let mut s = Session::new();
     // Each error repeats a word or a path that holds a new line.
-    for line in ["add-slide \"a\\nb\"", "\"x\\ny\"", "load \"a\\nb\""] {
+    for line in ["add-slide \"a\\nb\"", "\"x\\ny\"", "open-copy \"a\\nb\""] {
         let reply = s.execute(line, &mut files).unwrap();
         assert!(matches!(reply, Reply::Err(_)), "`{line}` gave {reply:?}");
         assert!(!reply.to_string().contains('\n'), "`{line}` gave {reply}");
@@ -626,20 +643,20 @@ fn a_cancelled_group_restores_the_document_and_both_stacks() {
 }
 
 #[test]
-fn a_load_inside_a_group_closes_it_and_leaves_no_history() {
+fn an_open_inside_a_group_closes_it_and_leaves_no_history() {
     let mut files = MemoryFiles::default();
     let mut s = Session::new();
     run(
         &mut s,
         &mut files,
-        "add-slide\nsave d.ron\nbegin\ntext n2 \"x\"",
+        "open d\nadd-slide\nsave\nbegin\ntext n2 \"x\"",
     );
-    ok(&mut s, &mut files, "load d.ron");
+    ok(&mut s, &mut files, "open d");
     assert_eq!(
         ok(&mut s, &mut files, "tree s1"),
         "s1 n2 text \"\" style=\"Body\""
     );
-    // The group was closed by the load: `end` finds none open, and nothing is left to undo.
+    // The group was closed by the open: `end` finds none open, and nothing is left to undo.
     assert!(matches!(s.execute("end", &mut files), Some(Reply::Err(_))));
     assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
 }
@@ -652,11 +669,12 @@ fn the_sample_opens_with_its_images_and_no_history() {
     ok(&mut s, &mut files, "sample");
     let doc = s.document().clone();
     assert!(doc.slides.len() >= 3);
-    assert!(
-        doc.assets
-            .values()
-            .all(|a| matches!(a.source, AssetSource::Embedded(_)))
-    );
+    // The images are in the map of a store in memory, at the paths the assets name.
+    let Store::Memory(map) = s.store() else {
+        panic!("the sample is not in memory");
+    };
+    assert!(!doc.assets.is_empty());
+    assert!(doc.assets.values().all(|a| map.contains_key(&a.path)));
     assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
     assert!(matches!(s.execute("end", &mut files), Some(Reply::Err(_))));
     for slide in doc.slides {

@@ -153,6 +153,12 @@ impl Files for DirFiles {
     fn exists(&mut self, path: &str) -> Result<bool, String> {
         std::fs::exists(self.0.join(path)).map_err(|e| format!("{path}: {e}"))
     }
+
+    fn canonical(&mut self, path: &str) -> Result<String, String> {
+        let canonical =
+            std::fs::canonicalize(self.0.join(path)).map_err(|e| format!("{path}: {e}"))?;
+        Ok(canonical.to_str().unwrap().to_owned())
+    }
 }
 
 /// An app listening on a socket of its own, on `files`.
@@ -225,8 +231,9 @@ fn the_protocol_scripts_give_the_same_replies_through_the_socket() {
             dir.join(runs[0]).join("session"),
         );
         for d in [&window_dir, &session_dir] {
-            // The golden script's asset, read beside the presentation it saves first.
+            // The golden script's workspace and its asset, and the workspace of the ids scripts.
             std::fs::create_dir_all(d.join("talk")).unwrap();
+            std::fs::create_dir_all(d.join("deck")).unwrap();
             std::fs::copy(
                 concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/two-colours.png"),
                 d.join("talk/two-colours.png"),
@@ -444,12 +451,13 @@ fn while_the_socket_holds_control_no_window_action_edits() {
     assert_eq!(app.editing(), None);
     app.undo();
     app.redo();
-    app.save_to("deck.ron".to_owned());
+    app.save();
     app.open_sample();
-    app.open_file("deck.ron".to_owned());
+    std::fs::create_dir_all(dir.join("deck")).unwrap();
+    app.open_workspace("deck".to_owned());
     assert_eq!(app.session().document(), &before);
     assert!(!app.session().group_open());
-    assert!(!dir.join("deck.ron").exists(), "save wrote nothing");
+    assert!(app.session().root().is_none(), "the workspace was opened");
     assert!(!app.can_split_middle(rootpoint_model::Axis::LeftToRight));
     // The undo stack is as it was: empty, since the sample was opened.
     app.take_control();

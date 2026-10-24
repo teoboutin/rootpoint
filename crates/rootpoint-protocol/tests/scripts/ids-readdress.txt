@@ -1,5 +1,6 @@
-# Ids survive a save, second half: load, and address the areas by the ids printed before the save.
-load deck.ron
+# Ids survive a save, second half: open the workspace again, and address the areas by the ids
+# printed before the save.
+open deck
 text n5 "by id"
 divider n4 0 0.3
 remove n2

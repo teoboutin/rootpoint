@@ -205,6 +205,54 @@ fn a_file_naming_a_missing_asset_loads_and_names_the_breach() {
     );
 }
 
+/// A path that leads out of the root, or names a file of the workspace that is no asset, fails
+/// confinement; a path below the root passes.
+#[test]
+fn an_asset_path_is_confined_only_below_its_root() {
+    for path in [
+        "cat.png",
+        "img/cat.png",
+        "a/b/c.ttf",
+        ".hidden.png",
+        "img/presentation.ron",
+    ] {
+        assert!(asset_path_is_confined(path), "{path} is refused");
+    }
+    for path in [
+        "",
+        "/etc/passwd",
+        "../cat.png",
+        "img/../../cat.png",
+        "img/./cat.png",
+        "img//cat.png",
+        "img/",
+        "img\\cat.png",
+        ".rootpoint/lock",
+        ".rootpoint",
+        "presentation.ron",
+    ] {
+        assert!(!asset_path_is_confined(path), "{path} is accepted");
+    }
+}
+
+#[test]
+fn a_file_naming_an_unconfined_asset_loads_and_names_the_breach() {
+    for path in [
+        "../cat.png",
+        "/tmp/cat.png",
+        ".rootpoint/trash/7",
+        "presentation.ron",
+    ] {
+        let text = fixture_text().replacen("\"images/cat.png\"", &format!("{path:?}"), 1);
+        let doc = load_ron(&text).expect("an unconfined asset is a cosmetic breach");
+        assert_eq!(
+            doc.breaches(),
+            vec![Breach::UnconfinedAsset { asset: AssetId(7) }],
+            "{path}"
+        );
+    }
+}
+
 #[test]
 fn a_file_naming_an_asset_at_or_above_the_counter_is_refused() {
     let text = fixture_text();
@@ -247,7 +295,7 @@ fn restoring_an_asset_the_counter_has_not_reached_is_refused() {
         Op::RestoreAsset {
             id: AssetId(1),
             asset: Asset {
-                source: AssetSource::Path("a.png".into()),
+                path: "a.png".into(),
             },
         },
     );
@@ -299,7 +347,7 @@ fn a_text_whose_font_is_a_missing_asset_is_applied_and_undone() {
         &mut doc,
         Op::AddAsset {
             asset: Asset {
-                source: AssetSource::Path("font.ttf".into()),
+                path: "font.ttf".into(),
             },
         },
     )

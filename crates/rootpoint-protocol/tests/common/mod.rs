@@ -31,9 +31,102 @@ impl Files for MemoryFiles {
         Ok(())
     }
 
+    /// A directory exists where a file lies below it.
     fn exists(&mut self, path: &str) -> Result<bool, String> {
-        Ok(self.files.contains_key(path))
+        let dir = format!("{path}/");
+        Ok(self.files.contains_key(path) || self.files.keys().any(|k| k.starts_with(&dir)))
     }
+
+    /// Files in memory have no symlinks: a path is its own canonical form.
+    fn canonical(&mut self, path: &str) -> Result<String, String> {
+        Ok(path.to_owned())
+    }
+}
+
+/// The native file system, paths relative to the working directory, which records every path it
+/// is given, so that a test can check that none leads out of a root.
+#[derive(Default)]
+pub struct RecordingFiles {
+    pub paths: Vec<String>,
+}
+
+impl Files for RecordingFiles {
+    fn read(&mut self, path: &str) -> Result<Vec<u8>, String> {
+        self.paths.push(path.to_owned());
+        std::fs::read(path).map_err(|e| format!("{path}: {e}"))
+    }
+
+    fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String> {
+        self.paths.push(path.to_owned());
+        if let Some(dir) = std::path::Path::new(path).parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{path}: {e}"))?;
+        }
+        std::fs::write(path, bytes).map_err(|e| format!("{path}: {e}"))
+    }
+
+    fn exists(&mut self, path: &str) -> Result<bool, String> {
+        self.paths.push(path.to_owned());
+        std::fs::exists(path).map_err(|e| format!("{path}: {e}"))
+    }
+
+    fn canonical(&mut self, path: &str) -> Result<String, String> {
+        self.paths.push(path.to_owned());
+        let canonical = std::fs::canonicalize(path).map_err(|e| format!("{path}: {e}"))?;
+        Ok(canonical.to_str().unwrap().to_owned())
+    }
+}
+
+impl RecordingFiles {
+    /// The paths given that are not `root` and do not lie below it.
+    pub fn outside(&self, root: &std::path::Path) -> Vec<String> {
+        let root = root.to_str().unwrap();
+        self.paths
+            .iter()
+            .filter(|p| *p != root && !p.starts_with(&format!("{root}/")))
+            .cloned()
+            .collect()
+    }
+}
+
+impl MemoryFiles {
+    /// Files at these paths, each holding its own path's bytes, for a test that imports them.
+    pub fn holding(paths: &[&str]) -> Self {
+        MemoryFiles {
+            files: paths
+                .iter()
+                .map(|p| (p.to_string(), p.as_bytes().to_vec()))
+                .collect(),
+            read_only: false,
+        }
+    }
+}
+
+/// Write the session's document as `presentation.ron` of the directory `dir`, as `save` would in
+/// a workspace there, so that a test edits it by hand and opens it.
+pub fn write_presentation(session: &Session, files: &mut MemoryFiles, dir: &str) {
+    files.files.insert(
+        format!("{dir}/presentation.ron"),
+        rootpoint_model::save_ron(session.document()).into_bytes(),
+    );
+}
+
+/// A 40×20 PNG: its left half red, its right half blue, as the renderer's fixture image.
+pub fn two_colour_png() -> Vec<u8> {
+    let img = image::RgbaImage::from_fn(40, 20, |x, _| {
+        if x < 20 {
+            image::Rgba([220, 30, 30, 255])
+        } else {
+            image::Rgba([30, 30, 220, 255])
+        }
+    });
+    let mut bytes = Vec::new();
+    image::DynamicImage::ImageRgba8(img)
+        .write_to(
+            &mut std::io::Cursor::new(&mut bytes),
+            image::ImageFormat::Png,
+        )
+        .unwrap();
+    bytes
 }
 
 /// Run each line of a script, and return the replies, one per command.

@@ -11,12 +11,26 @@ use rootpoint_model::{
 #[derive(Clone, Debug, PartialEq)]
 pub enum Command {
     New,
-    Save {
-        path: String,
+    /// Write the presentation to its store: `presentation.ron` at a workspace's root.
+    Save,
+    /// Open a directory of the host as a workspace: its `presentation.ron`, or an empty
+    /// presentation when it has none, and its assets read from under it.
+    Open {
+        dir: String,
     },
-    Load {
-        path: String,
+    /// Open a copy of a directory's presentation in memory: its `presentation.ron`, and the files
+    /// of its assets copied into the session's map.
+    OpenCopy {
+        dir: String,
     },
+    /// Add a file of the host as an asset: at its path below a workspace's root, or copied into
+    /// the store, at `to` or under its file name at the root.
+    Import {
+        from: String,
+        to: Option<String>,
+    },
+    /// The store, and the count of undo steps since the last open or save.
+    Store,
     Tree {
         slide: Option<SlideId>,
     },
@@ -75,9 +89,6 @@ pub enum Command {
     /// takes.
     Clear {
         area: NodeId,
-    },
-    Asset {
-        path: String,
     },
     RemoveAsset {
         asset: AssetId,
@@ -205,8 +216,14 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
     let verb = args.word("a verb")?;
     let command = match verb.as_str() {
         "new" => Command::New,
-        "save" => Command::Save { path: args.path()? },
-        "load" => Command::Load { path: args.path()? },
+        "save" => Command::Save,
+        "open" => Command::Open { dir: args.path()? },
+        "open-copy" => Command::OpenCopy { dir: args.path()? },
+        "import" => Command::Import {
+            from: args.path()?,
+            to: args.optional_path(),
+        },
+        "store" => Command::Store,
         "tree" => Command::Tree {
             slide: args.optional(parse_slide)?,
         },
@@ -267,7 +284,6 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         "clear" => Command::Clear {
             area: parse_node(&args.word("an area")?)?,
         },
-        "asset" => Command::Asset { path: args.path()? },
         "remove-asset" => Command::RemoveAsset {
             asset: parse_asset(&args.word("an asset")?)?,
         },
@@ -342,8 +358,14 @@ impl fmt::Display for Command {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Command::New => f.write_str("new"),
-            Command::Save { path } => write!(f, "save {}", quote(path)),
-            Command::Load { path } => write!(f, "load {}", quote(path)),
+            Command::Save => f.write_str("save"),
+            Command::Open { dir } => write!(f, "open {}", quote(dir)),
+            Command::OpenCopy { dir } => write!(f, "open-copy {}", quote(dir)),
+            Command::Import { from, to: None } => write!(f, "import {}", quote(from)),
+            Command::Import { from, to: Some(to) } => {
+                write!(f, "import {} {}", quote(from), quote(to))
+            }
+            Command::Store => f.write_str("store"),
             Command::Tree { slide: None } => f.write_str("tree"),
             Command::Tree { slide: Some(s) } => write!(f, "tree {s}"),
             Command::Render { slide, path, size } => {
@@ -392,7 +414,6 @@ impl fmt::Display for Command {
                 write!(f, "image {area} {asset} {fit}")
             }
             Command::Clear { area } => write!(f, "clear {area}"),
-            Command::Asset { path } => write!(f, "asset {}", quote(path)),
             Command::RemoveAsset { asset } => write!(f, "remove-asset {asset}"),
             Command::Sample => f.write_str("sample"),
             Command::Undo => f.write_str("undo"),
@@ -594,6 +615,13 @@ impl<'a> Args<'a> {
             .ok_or_else(|| ParseError("missing a path".to_owned()))?;
         self.next += 1;
         Ok(word.text().to_owned())
+    }
+
+    /// The next word, bare or quoted, as a path, or `None` when the line has no more words.
+    pub(crate) fn optional_path(&mut self) -> Option<String> {
+        let word = self.words.get(self.next)?;
+        self.next += 1;
+        Some(word.text().to_owned())
     }
 
     /// The next word parsed by `parse`, or `None` when the line has no more bare words. A quoted

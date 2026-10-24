@@ -170,6 +170,7 @@ impl crate::App {
                             command,
                             Command::Tree { .. }
                                 | Command::View
+                                | Command::Store
                                 | Command::Styles
                                 | Command::Render { .. }
                                 | Command::Control
@@ -193,9 +194,11 @@ impl crate::App {
     fn socket_command(&mut self, command: Command) -> Reply {
         match command {
             // The queries change nothing, so they leave the status line and the texture alone.
-            Command::Tree { .. } | Command::View | Command::Styles | Command::Render { .. } => {
-                self.session.run(command, &mut *self.files)
-            }
+            Command::Tree { .. }
+            | Command::View
+            | Command::Store
+            | Command::Styles
+            | Command::Render { .. } => self.session.run(command, &mut *self.files),
             Command::Control => {
                 if self.controller != Controller::Socket {
                     // A press begun before completes nothing at its release.
@@ -227,30 +230,6 @@ impl crate::App {
             _ if self.controller == Controller::TakenFromSocket => Reply::Err(
                 "the author took control: stop, and wait for the author's instructions".to_owned(),
             ),
-            // The file Save writes follows the socket's commands as it follows the window's.
-            Command::Load { path } => {
-                let path = self.relative_if_absolute(path);
-                let reply = self.run(Command::Load { path: path.clone() });
-                if matches!(reply, Reply::Ok(_)) {
-                    self.path = Some(path);
-                }
-                reply
-            }
-            Command::Save { path } => {
-                let path = self.relative_if_absolute(path);
-                let reply = self.run(Command::Save { path: path.clone() });
-                if matches!(reply, Reply::Ok(_)) {
-                    self.path = Some(path);
-                }
-                reply
-            }
-            Command::New | Command::Sample => {
-                let reply = self.run(command);
-                if matches!(reply, Reply::Ok(_)) {
-                    self.path = None;
-                }
-                reply
-            }
             command => self.run(command),
         }
     }

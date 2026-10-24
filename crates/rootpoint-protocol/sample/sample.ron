@@ -1,6 +1,6 @@
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 3,
+    version: 4,
     aspect: (
         width: 16,
         height: 9,
@@ -8,7 +8,7 @@
     next_id: 20,
     assets: {
         19: (
-            source: Path("splits.png"),
+            path: "splits.png",
         ),
     },
     styles: {

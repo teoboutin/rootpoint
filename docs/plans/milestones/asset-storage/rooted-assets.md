@@ -23,8 +23,9 @@ actions, rewired onto the new commands.
   exist yet.
 - `Store`, `Session::store`, `Session::root` and `Session::unsaved` in
   `path@rootpoint-protocol@src/session.rs`. `Session::directory` leaves, and with it the directory
-  arithmetic of `Session::save` (`normalize`, `inside` and `relative` of
-  `path@rootpoint-protocol@src/save.rs`, as far as nothing else uses them) and the stack rewrite of
+  arithmetic of `Session::save` (`normalize`, `inside` and `relative` of the module `save`, which the
+  slice renames `path@rootpoint-protocol@src/store.rs` for what stays, the name an import gives a
+  file, and the store's check) and the stack rewrite of
   `design@rootpoint-protocol@save-updates-sources`.
 - The store's one check of every access to an asset, by the milestone's "Decided design" of
   #asset-paths-only: `Session::asset_bytes` and every write, rename and removal of an asset go
@@ -57,7 +58,7 @@ actions, rewired onto the new commands.
     reset `self.assets` today; `Assets::refresh` of `path@rootpoint-app@src/assets.rs` keys instead
     on `Session::root` and the asset paths, and `App::run` drops the decoded assets after a command
     that replaces the store, `new`, `sample`, `open` or `open-copy`, since two maps can hold other
-    bytes at one path.
+    bytes at one path, and after an `import`, which can write the file of an asset drawn missing.
   - The control socket's dispatch of `Load`, `Save`, `New` and `Sample`, in
     `path@rootpoint-app@src/control.rs`, follows the new commands.
   - The outline's label, `font_assets` and `App::asset_name` of `path@rootpoint-app@src/panels.rs`
@@ -112,7 +113,7 @@ actions, rewired onto the new commands.
 
 ## Audit subjects
 
-- `path@rootpoint-protocol@src/session.rs`, `path@rootpoint-protocol@src/save.rs`,
+- `path@rootpoint-protocol@src/session.rs`, `path@rootpoint-protocol@src/store.rs`,
   `path@rootpoint-protocol@src/files.rs`, `path@rootpoint-protocol@src/command.rs`,
   `path@rootpoint-protocol@src/sample.rs`, `path@rootpoint-protocol@src/bin/rootpoint-headless.rs`.
 - `path@rootpoint-model@src/document.rs`, `path@rootpoint-model@src/ops.rs`,

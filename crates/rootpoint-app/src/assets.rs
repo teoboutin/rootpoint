@@ -2,32 +2,32 @@
 //! from the bytes `Session::asset_bytes` gives.
 
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 
-use rootpoint_model::{AssetId, AssetSource, Content, FontRef};
+use rootpoint_model::{AssetId, Content, FontRef};
 use rootpoint_protocol::{Files, Session};
 use rootpoint_render::{FontSet, ImageSet};
 
-/// How the document uses an asset, and where its bytes are.
+/// How the document uses an asset, and the path of its bytes in the store.
 #[derive(Clone, PartialEq)]
 struct Use {
     image: bool,
     font: bool,
-    source: AssetSource,
+    path: String,
 }
 
 /// The sets of decoded assets, and what they were decoded from.
 #[derive(Default)]
 pub(crate) struct Assets {
-    decoded: Option<(PathBuf, BTreeMap<AssetId, Use>)>,
+    decoded: Option<(Option<String>, BTreeMap<AssetId, Use>)>,
     fonts: FontSet,
     images: ImageSet,
 }
 
 impl Assets {
-    /// Decode the assets again where the document's assets, their use or the directory their
-    /// paths are read against changed since the last decoding. A `FontSet` cannot drop a font,
-    /// so both sets are built anew.
+    /// Decode the assets again where the document's assets, their use, their paths or the root
+    /// their paths are read against changed since the last decoding. A store in memory has no root,
+    /// so the caller drops the decoded assets when a command replaces it. A `FontSet` cannot drop a
+    /// font, so both sets are built anew.
     pub(crate) fn refresh(&mut self, session: &Session, files: &mut dyn Files) {
         let doc = session.document();
         let mut uses: BTreeMap<AssetId, Use> = BTreeMap::new();
@@ -46,7 +46,7 @@ impl Assets {
                 let entry = uses.entry(id).or_insert(Use {
                     image: false,
                     font: false,
-                    source: asset.source.clone(),
+                    path: asset.path.clone(),
                 });
                 if image {
                     entry.image = true;
@@ -55,7 +55,7 @@ impl Assets {
                 }
             }
         }
-        let key = (session.directory().to_path_buf(), uses);
+        let key = (session.root().map(str::to_owned), uses);
         if self.decoded.as_ref() == Some(&key) {
             return;
         }

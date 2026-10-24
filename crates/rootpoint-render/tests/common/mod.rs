@@ -55,7 +55,7 @@ pub fn add_asset(doc: &mut Document, path: &str) -> AssetId {
         doc,
         Op::AddAsset {
             asset: Asset {
-                source: AssetSource::Path(path.to_owned()),
+                path: path.to_owned(),
             },
         },
     )

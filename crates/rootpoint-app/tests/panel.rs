@@ -174,6 +174,9 @@ fn the_dialog_offers_only_styles_a_text_may_name() {
         fn exists(&mut self, _: &str) -> Result<bool, String> {
             Ok(true)
         }
+        fn canonical(&mut self, path: &str) -> Result<String, String> {
+            Ok(path.to_owned())
+        }
     }
     let mut sample = App::new(Box::new(MemoryFiles::default()));
     ok(&mut sample, "sample");
@@ -186,7 +189,7 @@ fn the_dialog_offers_only_styles_a_text_may_name() {
     );
     assert_ne!(edited, text, "the saved sample changed shape");
     let mut app = App::new(Box::new(Deck(edited)));
-    ok(&mut app, "load deck.ron");
+    ok(&mut app, "open deck");
     assert_eq!(app.replacements("Body"), ["Subtitle", "Title"]);
 }
 

@@ -14,7 +14,7 @@ use rootpoint_app::App;
 use rootpoint_model::{NodeId, SlideId};
 use rootpoint_protocol::{Command, Files, Reply};
 
-/// The native file system, for the fixture beside this file.
+/// The native file system, for the fixture beside this file, opened as a workspace.
 struct NativeFiles;
 
 impl Files for NativeFiles {
@@ -28,6 +28,11 @@ impl Files for NativeFiles {
 
     fn exists(&mut self, path: &str) -> Result<bool, String> {
         std::fs::exists(path).map_err(|e| format!("{path}: {e}"))
+    }
+
+    fn canonical(&mut self, path: &str) -> Result<String, String> {
+        let canonical = std::fs::canonicalize(path).map_err(|e| format!("{path}: {e}"))?;
+        Ok(canonical.to_str().unwrap().to_owned())
     }
 }
 
@@ -240,8 +245,17 @@ fn time_a_divider_drag_with_an_idle_control_socket() {
 }
 
 fn time_a_divider_drag(mut app: App, label: &str) {
-    let fixture = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/data/mixed.ron").to_owned();
-    app.open_file(fixture);
+    // The fixture as a workspace: its presentation and its image in a directory of their own.
+    let data = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data");
+    let workspace = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("drag-workspace");
+    std::fs::create_dir_all(&workspace).unwrap();
+    std::fs::copy(data.join("mixed.ron"), workspace.join("presentation.ron")).unwrap();
+    std::fs::copy(
+        data.join("two-colours.png"),
+        workspace.join("two-colours.png"),
+    )
+    .unwrap();
+    app.open_workspace(workspace.to_str().unwrap().to_owned());
     assert!(app.status().is_empty(), "{:?}", app.status());
     // Size the window so that the slide view is 1600×900 points, at one pixel per point.
     let mut d = Driver::new(app, Vec2::new(2000.0, 1000.0));

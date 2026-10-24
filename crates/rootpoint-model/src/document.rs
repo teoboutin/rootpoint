@@ -398,16 +398,24 @@ pub enum ImageFit {
     Fill,
 }
 
-/// An entry of the asset table: heavy data that areas refer to by id.
+/// An entry of the asset table: heavy data that areas refer to by id. Its bytes are a file at its
+/// path, relative to the root of the presentation's store, which only the caller knows
+/// (`design@rootpoint-model@asset-source`); the document holds no bytes.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Asset {
-    pub source: AssetSource,
+    pub path: String,
 }
 
-/// Where an asset's bytes are: a file beside the presentation, by a path relative to it, or the
-/// bytes themselves, as a packed presentation carries them.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum AssetSource {
-    Path(String),
-    Embedded(Vec<u8>),
+/// Whether an asset path stays inside its root: `/`-separated components, none of them empty, `.`
+/// or `..`, no `\`, and a first component that is not `.rootpoint` and a path that is not
+/// `presentation.ron`, the two files of a workspace that are no asset. A file edited by hand can
+/// name another path: it loads, and the store never reads or writes it, a cosmetic breach,
+/// `design@rootpoint-model@cosmetic-fallbacks`.
+pub fn asset_path_is_confined(path: &str) -> bool {
+    !path.contains('\\')
+        && path != "presentation.ron"
+        && path.split('/').next() != Some(".rootpoint")
+        && path
+            .split('/')
+            .all(|c| !c.is_empty() && c != "." && c != "..")
 }

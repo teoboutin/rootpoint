@@ -1,6 +1,6 @@
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 3,
+    version: 4,
     aspect: (
         width: 16,
         height: 9,
@@ -8,7 +8,7 @@
     next_id: 12,
     assets: {
         11: (
-            source: Path("two-colours.png"),
+            path: "two-colours.png",
         ),
     },
     styles: {

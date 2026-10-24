@@ -12,7 +12,7 @@ use wasm_bindgen_test::wasm_bindgen_test as test;
 
 use eframe::egui::{Color32, Context, ImageData, Pos2, RawInput, Rect, TextureId, Vec2};
 use rootpoint_app::App;
-use rootpoint_model::{AssetSource, SlideId};
+use rootpoint_model::SlideId;
 
 /// The native golden image of the sample's first slide at 640×360, drawn with
 /// `Precision::Portable`, whose pixels do not depend on the machine's SIMD, as
@@ -143,7 +143,7 @@ fn the_sample_s_first_slide_is_the_native_golden_image() {
 fn picked() -> Vec<(String, Vec<u8>)> {
     vec![
         (
-            "talk/mixed.ron".to_owned(),
+            "talk/presentation.ron".to_owned(),
             include_bytes!("data/mixed.ron").to_vec(),
         ),
         (
@@ -153,20 +153,23 @@ fn picked() -> Vec<(String, Vec<u8>)> {
     ]
 }
 
-/// The image a picked directory's presentation names is held as its file names it, a path read
-/// from memory, and is drawn. `path@rootpoint-app@tests/actions.rs` checks the picker actions'
+/// The image a picked directory's presentation names is copied into the session's map at the path
+/// its file names, and is drawn. `path@rootpoint-app@tests/actions.rs` checks the picker actions'
 /// commands.
 #[test]
 fn the_image_of_a_picked_directory_is_drawn() {
     let mut app = App::in_memory();
     app.open_directory(picked());
     assert!(app.status().is_empty(), "{:?}", app.status());
+    let rootpoint_protocol::Store::Memory(map) = app.session().store() else {
+        panic!("a picked directory opens in memory");
+    };
     assert!(
         app.session()
             .document()
             .assets
             .values()
-            .all(|a| matches!(a.source, AssetSource::Path(_)))
+            .all(|a| map.contains_key(&a.path))
     );
     app.present();
     presented_image(&mut app);
@@ -174,7 +177,7 @@ fn the_image_of_a_picked_directory_is_drawn() {
 }
 
 #[test]
-fn a_directory_without_one_presentation_is_refused() {
+fn a_directory_without_a_presentation_is_refused() {
     let mut app = App::in_memory();
     app.open_sample();
     let before = app.session().document().clone();
@@ -199,8 +202,8 @@ fn picked_with(name: &str, png: &[u8]) -> Vec<(String, Vec<u8>)> {
         .collect()
 }
 
-/// Every picked directory loads at the same directory, the root of the files held, so a second
-/// one whose presentation names the same paths is drawn with its own images, not the first's.
+/// A second picked directory whose presentation names the same paths is drawn with its own images,
+/// not the first's: each opens a map of its own, and the decoded assets are dropped with the first.
 #[test]
 fn a_second_directory_is_drawn_with_its_own_images() {
     let other = include_bytes!("data/sample-s1.png");
@@ -232,7 +235,10 @@ fn a_refused_directory_keeps_the_open_presentation_s_files() {
     let before = presented_image(&mut app);
     app.stop_presenting();
     let doc = app.session().document().clone();
-    app.open_directory(vec![("bad/x.ron".to_owned(), b"not ron".to_vec())]);
+    app.open_directory(vec![(
+        "bad/presentation.ron".to_owned(),
+        b"not ron".to_vec(),
+    )]);
     assert_eq!(app.status().len(), 1, "{:?}", app.status());
     assert_eq!(app.session().document(), &doc);
     // Setting the image's area to a text and undoing it changes the assets in use twice.
@@ -250,7 +256,8 @@ fn a_refused_directory_keeps_the_open_presentation_s_files() {
     );
 }
 
-/// An image added under the path the document already names, drawn missing until then, is drawn.
+/// An image imported at the path the document already names, drawn missing until then, is drawn:
+/// the import writes the asset's file, and adds no asset.
 #[test]
 fn an_image_added_at_a_missing_asset_s_path_is_drawn() {
     let mut app = App::in_memory();

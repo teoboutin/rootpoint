@@ -1,7 +1,9 @@
-//! Over random sequences of commands on a headless session, `undo`, `redo` and the groups
-//! included, the document stays valid, holds no cosmetic breach, and saves to a text that loads
-//! back equal. A breach reaches a document only by a file edited by hand, never by a command,
-//! `design@rootpoint-protocol@no-new-breach`.
+//! Over random sequences of commands on a headless session, `undo`, `redo`, the groups, imports
+//! and copies of a directory included, the document stays valid, holds no cosmetic breach, an
+//! asset path that leads out of the root among them, and saves to a text that loads back equal. A
+//! breach reaches a document only by a file edited by hand, never by a command,
+//! `design@rootpoint-protocol@no-new-breach`; and no command rewrites an asset path, so a path an
+//! undo or a redo brings back stays confined too.
 
 mod common;
 
@@ -115,11 +117,18 @@ fn line_for(doc: &Document, s: &Step) -> String {
             if s.flag { "fit" } else { "fill" }
         ),
         13 => format!("clear {}", node(s.pick)),
-        14 => format!("asset image{}.png", s.other % 5),
+        // Five files of other bytes, imported at the root or under a folder; the folder `../` is
+        // refused, and leaves nothing.
+        14 => match s.other % 3 {
+            0 => format!("import image{}.png", s.other % 5),
+            1 => format!("import image{}.png img/i{}.png", s.other % 5, s.pick % 3),
+            _ => format!("import image{}.png ../i.png", s.other % 5),
+        },
         15 => format!("remove-asset {}", asset(s.other)),
         16 => "undo".to_owned(),
         17 => "redo".to_owned(),
         18 => ["begin", "end", "cancel"][s.other % 3].to_owned(),
+        19 => "open-copy deck".to_owned(),
         // A style is picked among names the table holds, names it lacks, and one with a space.
         20 => format!("text {} \"n\" style={}", node(s.pick), style(s.other)),
         21 => format!("text {} \"c\" custom", node(s.pick)),
@@ -144,7 +153,14 @@ proptest! {
     /// loads back otherwise.
     #[test]
     fn no_sequence_of_commands_creates_a_breach(steps in prop::collection::vec(step(), 1..60)) {
-        let mut files = MemoryFiles::default();
+        let mut files = MemoryFiles::holding(&[
+            "image0.png", "image1.png", "image2.png", "image3.png", "image4.png",
+        ]);
+        // The directory `open-copy` copies: a presentation of one image, its file beside it.
+        let mut deck = Session::new();
+        run(&mut deck, &mut files, "add-slide\nimport image0.png\nimage n2 a3 fit");
+        write_presentation(&deck, &mut files, "deck");
+        files.files.insert("deck/image0.png".into(), b"image0.png".to_vec());
         let mut session = Session::new();
         let mut script = Vec::new();
         for s in &steps {

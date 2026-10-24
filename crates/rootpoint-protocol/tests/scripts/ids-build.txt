@@ -1,5 +1,6 @@
-# Ids survive a save, first half: build two splits and save.
+# Ids survive a save, first half: open a workspace, build two splits and save.
+open deck
 add-slide
 split n2 beside 0.5
 split n3 stacked 0.5
-save deck.ron
+save

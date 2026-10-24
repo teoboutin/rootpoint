@@ -127,7 +127,7 @@ fn every_operation_is_undone_by_its_inverse() {
     let (mut doc, [left, top, bottom]) = fixture();
     let slide = doc.slides[0].id;
     let image = Asset {
-        source: AssetSource::Path("cat.png".to_owned()),
+        path: "cat.png".to_owned(),
     };
     let RemoveAssetId(asset) = add_asset(&mut doc, image.clone());
     apply(
@@ -186,9 +186,9 @@ fn every_operation_is_undone_by_its_inverse() {
             asset: image.clone(),
         },
         Op::RemoveAsset { id: asset },
-        Op::SetAssetSource {
+        Op::SetAssetPath {
             id: asset,
-            source: AssetSource::Embedded(vec![1, 2, 3]),
+            path: "img/dog.png".to_owned(),
         },
     ];
     for op in ops {
@@ -361,9 +361,9 @@ fn a_refused_operation_changes_nothing() {
             }),
         },
         Op::RemoveAsset { id: AssetId(999) },
-        Op::SetAssetSource {
+        Op::SetAssetPath {
             id: AssetId(999),
-            source: AssetSource::Path("dog.png".to_owned()),
+            path: "dog.png".to_owned(),
         },
         Op::AddSlide { at: 5 },
     ];
@@ -380,7 +380,7 @@ fn an_asset_in_use_cannot_be_removed() {
     let RemoveAssetId(asset) = add_asset(
         &mut doc,
         Asset {
-            source: AssetSource::Path("cat.png".to_owned()),
+            path: "cat.png".to_owned(),
         },
     );
     apply(
@@ -531,10 +531,10 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
         },
         9 => Op::AddAsset {
             asset: Asset {
-                source: if s.flag {
-                    AssetSource::Path(format!("image{}.png", s.other % 10))
+                path: if s.flag {
+                    format!("image{}.png", s.other % 10)
                 } else {
-                    AssetSource::Embedded(vec![s.other as u8; 3])
+                    format!("../image{}.png", s.other % 10)
                 },
             },
         },
@@ -636,7 +636,7 @@ fn an_asset_a_style_uses_cannot_be_removed() {
     let RemoveAssetId(asset) = add_asset(
         &mut doc,
         Asset {
-            source: AssetSource::Path("font.ttf".to_owned()),
+            path: "font.ttf".to_owned(),
         },
     );
     apply(

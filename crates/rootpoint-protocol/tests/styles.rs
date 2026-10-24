@@ -41,14 +41,16 @@ fn refused(s: &mut Session, files: &mut MemoryFiles, line: &str) -> String {
 
 /// The sample with its n2 naming "Heading", which the table lacks, as a file edited by hand.
 fn with_heading(files: &mut MemoryFiles) -> Session {
-    let mut s = sample(files);
-    ok(&mut s, files, "save deck.ron");
-    let text = String::from_utf8(files.files["deck.ron"].clone()).unwrap();
+    let s = sample(files);
+    write_presentation(&s, files, "deck");
+    let text = String::from_utf8(files.files["deck/presentation.ron"].clone()).unwrap();
     let edited = text.replacen("Named(\"Title\")", "Named(\"Heading\")", 1);
     assert_ne!(edited, text, "the saved sample changed shape");
-    files.files.insert("deck.ron".into(), edited.into_bytes());
+    files
+        .files
+        .insert("deck/presentation.ron".into(), edited.into_bytes());
     let mut s = Session::new();
-    ok(&mut s, files, "load deck.ron");
+    ok(&mut s, files, "open deck");
     s
 }
 
@@ -194,23 +196,26 @@ fn no_command_names_a_missing_style() {
         "no style \"Heading\""
     );
     // A style of the table whose font is an asset the table lacks, as a file edited by hand holds.
-    ok(&mut s, &mut files, "asset font.ttf");
+    files.files.insert("font.ttf".into(), b"font".to_vec());
+    ok(&mut s, &mut files, "import font.ttf");
     let font = *s.document().assets.keys().max().unwrap();
     ok(
         &mut s,
         &mut files,
         &format!("style add \"Odd\" font={font}"),
     );
-    ok(&mut s, &mut files, "save odd.ron");
-    let text = String::from_utf8(files.files["odd.ron"].clone()).unwrap();
+    write_presentation(&s, &mut files, "odd");
+    let text = String::from_utf8(files.files["odd/presentation.ron"].clone()).unwrap();
     let table = format!(
-        "        {}: (\n            source: Path(\"font.ttf\"),\n        ),\n",
+        "        {}: (\n            path: \"font.ttf\",\n        ),\n",
         font.0
     );
     let edited = text.replacen(&table, "", 1);
     assert_ne!(edited, text, "the saved file changed shape");
-    files.files.insert("odd.ron".into(), edited.into_bytes());
-    ok(&mut s, &mut files, "load odd.ron");
+    files
+        .files
+        .insert("odd/presentation.ron".into(), edited.into_bytes());
+    ok(&mut s, &mut files, "open odd");
     assert_eq!(
         refused(&mut s, &mut files, "text n3 \"x\" style=\"Odd\""),
         format!("no asset {font}")
@@ -369,19 +374,22 @@ fn styles_lists_each_style_as_its_options() {
 /// `design@rootpoint-model@new-area-style`.
 #[test]
 fn a_new_area_takes_no_body_that_would_draw_with_a_stand_in() {
-    let mut files = MemoryFiles::default();
+    let mut files = MemoryFiles::holding(&["font.ttf"]);
     let mut s = Session::new();
     run(
         &mut s,
         &mut files,
-        "asset font.ttf\nstyle set \"Body\" font=a1\nsave deck.ron",
+        "import font.ttf\nstyle set \"Body\" font=a1",
     );
-    let text = String::from_utf8(files.files["deck.ron"].clone()).unwrap();
-    let table = "        1: (\n            source: Path(\"font.ttf\"),\n        ),\n";
+    write_presentation(&s, &mut files, "deck");
+    let text = String::from_utf8(files.files["deck/presentation.ron"].clone()).unwrap();
+    let table = "        1: (\n            path: \"font.ttf\",\n        ),\n";
     let edited = text.replacen(table, "", 1);
     assert_ne!(edited, text, "the saved file changed shape");
-    files.files.insert("deck.ron".into(), edited.into_bytes());
-    ok(&mut s, &mut files, "load deck.ron");
+    files
+        .files
+        .insert("deck/presentation.ron".into(), edited.into_bytes());
+    ok(&mut s, &mut files, "open deck");
     assert_eq!(s.document().breaches(), vec![]);
     ok(&mut s, &mut files, "add-slide");
     assert_eq!(s.document().breaches(), vec![]);
@@ -396,8 +404,8 @@ fn a_new_area_takes_no_body_that_would_draw_with_a_stand_in() {
 fn no_command_names_a_style_of_an_unknown_family() {
     let mut files = MemoryFiles::default();
     let mut s = sample(&mut files);
-    ok(&mut s, &mut files, "save deck.ron");
-    let text = String::from_utf8(files.files["deck.ron"].clone()).unwrap();
+    write_presentation(&s, &mut files, "deck");
+    let text = String::from_utf8(files.files["deck/presentation.ron"].clone()).unwrap();
     let legend = "        \"Legend\": (\n            font: Builtin(\"sans\"),";
     let edited = text.replacen(
         legend,
@@ -405,8 +413,10 @@ fn no_command_names_a_style_of_an_unknown_family() {
         1,
     );
     assert_ne!(edited, text, "the saved sample changed shape");
-    files.files.insert("deck.ron".into(), edited.into_bytes());
-    ok(&mut s, &mut files, "load deck.ron");
+    files
+        .files
+        .insert("deck/presentation.ron".into(), edited.into_bytes());
+    ok(&mut s, &mut files, "open deck");
     assert_eq!(
         refused(&mut s, &mut files, "text n3 \"x\" style=\"Legend\""),
         "\"Legend\" names no built-in family serif"
