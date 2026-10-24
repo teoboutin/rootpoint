@@ -111,7 +111,9 @@ implementation started, they are built on one branch, named after this milestone
 harvest and then one review, as the review before a merge would be, with the transcript axis run
 alone after the others; the repairs of a slice's review are reviewed again only at the end of the
 milestone. This replaces, for the branches, the one branch per slice of D1 and of
-`skill@knowledge-architect-planning@cutting-steps-and-slices`.
+`skill@knowledge-architect-planning@cutting-steps-and-slices`. On the same word, the work pauses for the
+owner only where the owner's word is needed to fill a gap, and otherwise goes on with sensible
+defaults, each reported to the owner.
 
 - **Gates.** `cargo x gates` runs every check a branch owes before it merges,
   `instructions@merge-gates`. Every slice keeps them passing, the gate `wasm` and the browser tests
