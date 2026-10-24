@@ -769,6 +769,7 @@ crates/rootpoint-protocol/src/workspace.rs WorkspaceLock, fn socket_path(root: O
                                            the pointer file; native only, cfg(not(target_arch = "wasm32"))   (#workspace-host)
 crates/rootpoint-app/src/autosave.rs       the autosave thread and the guard           (#autosave-and-watch)
 crates/rootpoint-app/src/watch.rs          the asset watcher                           (#autosave-and-watch)
+crates/rootpoint-app/src/lib.rs            App::autosave(), App::asset_decodings(), for the tests   (#autosave-and-watch)
 crates/rootpoint-app/src/asset_tab.rs      the asset tab                               (#asset-manager)
 crates/rootpoint-app/src/lib.rs            SideTab::Assets (SideTab exists, with Selection and Styles)   (#asset-manager)
 crates/rootpoint-app/src/lib.rs            App::state_label(&self) -> String, the state label's text, read by tests   (#workspace-host)
