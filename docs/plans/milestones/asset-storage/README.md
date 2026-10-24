@@ -205,8 +205,9 @@ The slices are built in the order of "Implementation sequence", each on its own 
   `Embedded`.
 - `sample` opens the protocol crate's sample, `path@rootpoint-protocol@sample/`, its images as
   `Embedded` assets, per `design@rootpoint-protocol@builtin-sample`.
-- `asset <path>` adds an asset by a path relative to the session's directory; `remove-asset`
-  removes one that nothing uses.
+- `asset <path>`, `Command::Asset` of `path@rootpoint-protocol@src/command.rs`, adds an asset by a
+  path relative to the session's directory, in `Session::run`; `remove-asset` removes one that
+  nothing uses, `Op::RemoveAsset` of `path@rootpoint-model@src/ops.rs` refusing one in use.
 - The window, `path@rootpoint-app@src/main.rs`, is `rootpoint [--control <socket>]
   [presentation.ron]`; with `--control` it listens on a Unix socket at that path,
   `rootpoint_app::control::Listener` of `path@rootpoint-app@src/control.rs`, per
@@ -259,7 +260,7 @@ referencing each, and the slice that updates it:
 | decision | outcome | referencing texts, and the slice that updates each |
 | --- | --- | --- |
 | `design@rootpoint-model@asset-source` | reversed by #asset-paths-only: an asset is a path, `Embedded` leaves | `register@rootpoint-protocol@design` line 178 (#rooted-assets); `pack-and-unpack`, closed on this branch |
-| `design@rootpoint-model@image-storage` | rewritten by #editing-modes and #workspace-layout; its owner's ground, assets as files beside a readable text, and packing as the final goal, stands | `register@rootpoint-app@design` line 523 and `register@rootpoint-protocol@design` line 180 (#rooted-assets, #browser-packs) |
+| `design@rootpoint-model@image-storage` | rewritten by #editing-modes and #workspace-layout; its owner's ground, assets as files beside a readable text, and packing as the final goal, stands | `register@rootpoint-app@design` line 523 and `register@rootpoint-protocol@design` line 180 (#workspace-host, and #browser-packs where they name the browser) |
 | `design@rootpoint-protocol@asset-save-rule` | reversed: no save copies assets; an import copies a file from outside into the store | `register@rootpoint-protocol@design` line 210 (#rooted-assets); `pack-and-unpack`, closed on this branch |
 | `design@rootpoint-protocol@save-updates-sources` | reversed: the root never changes during a session, so no save rewrites a path | none |
 | `design@rootpoint-protocol@builtin-sample` | rewritten: `sample` opens in memory, its images in the map; its owner's ground stands | none |
@@ -422,8 +423,9 @@ the name, no flag of state in the pointer file, no lock of its own, an in-memory
 `rootpoint-ctl list`; and compared five shapes. Approved in round 3: "socket-place: shape approved,
 good refinements". Arguments: #arg-7, #arg-18, #arg-19. Shape: "Decided design" and
 #workspace-host. Harvest: rewrites of `design@rootpoint-app@control-socket` and
-`design@rootpoint-protocol@ctl-sends-a-line-or-a-batch`, and a `rejected` entry for the socket
-inside `.rootpoint/`, at #workspace-host.
+`design@rootpoint-protocol@ctl-sends-a-line-or-a-batch`, and `rejected` entries for the socket
+inside `.rootpoint/` and for the abstract namespace and TCP, at #workspace-host, each by the tests
+of `skill@knowledge-architect-decision-recording`.
 
 ### An asset is a path inside the root, and the RON holds no bytes `##asset-paths-only`
 
@@ -485,8 +487,8 @@ layout description together, easier to transport and share, and which can be unp
 container is the session's. Approved in round 2: "pack-container: approved", and Q4: "i belive this
 is important. there does not seem to be too much of a cost using zip anyway, apart from needing it
 on wasm". Arguments: #arg-1, #arg-13. Shape: "Decided design" and #pack-commands. Harvest: a head of the
-protocol at #pack-commands, with `rejected` entries for a binary format of rootpoint's own and for the RON
-with embedded bytes (written at #rooted-assets). Guarded by T3 and T4.
+protocol at #pack-commands, with `rejected` entries for a binary format of rootpoint's own and for
+tar, and one for the RON with embedded bytes, written at #rooted-assets. Guarded by T3 and T4.
 
 ### The browser build saves by downloading a pack `##browser-pack-save`
 
@@ -959,7 +961,7 @@ One text slide of the sample, with no image: in memory or in a workspace, what e
 ### #unsaved-close-warning
 
 In memory, a close of the window, or of the page, while `Session::unsaved` is not 0 asks first; a
-workspace never asks once it autosaves. The native window cancels the close by
+workspace never asks. The native window cancels the close by
 `ViewportCommand::CancelClose` and shows the question; the page installs a `beforeunload`
 listener. D3 puts to the owner the title of `design@rootpoint-app@no-discard-confirmation`, which
 this question contradicts.
@@ -1177,28 +1179,32 @@ at the new name and removes the old one, a shape the decision admits.
 
 ## Defaults awaiting the owner
 
-- **D1**, on #editing-modes and the sequence: the work is a milestone of seven slices, in the order
+- **D1**, ruled: the owner accepted it in the message "all five defaults accepted, proced". Its text: on #editing-modes and the sequence: the work is a milestone of seven slices, in the order
   above, each on its own branch. The session's default, put to the owner at the hand-off; it blocks
   this branch's merge.
-- **D2**, on #asset-paths-only: the session's reading of the owner's word of round 4, that "should
+- **D2**, ruled: the owner accepted it in the message "all five defaults accepted, proced". Its text: on #asset-paths-only: the session's reading of the owner's word of round 4, that "should
   not accept relative path" means a path that is not under the root, `..` or absolute, while asset
   paths stay relative to the root, as #asset-paths-only approved. Put to the owner at the hand-off.
   #rooted-assets is built on it as written, and merges once the owner has ruled.
-- **D3**, on #unsaved-close-warning: the question before closing an in-memory window with unsaved
+- **D3**, ruled: the owner accepted it in the message "all five defaults accepted, proced". Its text: on #unsaved-close-warning: the question before closing an in-memory window with unsaved
   edits contradicts the title of `design@rootpoint-app@no-discard-confirmation`, "No action of the
   window that discards content asks a confirmation, since undo restores what it took", whose ground
   is the owner's. Default: the head's title becomes "No action of the window that undo can reverse
   asks a confirmation", and a close in memory with unsaved edits, which no undo reaches, is named
   in its body as the case #unsaved-close-warning asks for; rewritten at #workspace-host, which
   builds the native question. Found by the review of this document.
-- **D4**, on #asset-paths-only: the owner's word of round 4, "the project should not accept relative
+- **D4**, accepted by the owner in the message "all five defaults accepted, proced", on the narrower
+  statement of the principle; put to the owner again with the principle whole, as below. Its text: on #asset-paths-only: the owner's word of round 4, "the project should not accept relative
   path, and especially not one sitting outside the workspace directory", against the owner's
-  principle in `design@rootpoint-model@cosmetic-fallbacks`, that a cosmetic breach falls back
-  wherever a fallback can be used. An asset path outside the root could be drawn grey, as a missing
+  principle in `design@rootpoint-model@cosmetic-fallbacks`, that "a cosmetic one falls back
+  wherever a fallback can be used, in the owner's opinion, and that a file whose structural change
+  makes it impossible to render properly, or not obvious for a user to recover from, may be
+  refused", as the head records it; the reply that put D4 stated the principle without its hedge
+  and its last clause. An asset path outside the root could be drawn grey, as a missing
   file is. Default: `load_ron` refuses it, as a structural breach, on the round 4 word, the later
   and the more specific; the rival is a cosmetic breach, its image drawn grey and named. Found by
   the review of this document; it bears on #rooted-assets, built on the default.
-- **D5**, on #c-visible-mode: the owner ruled the form "the window always shows one of three
+- **D5**, ruled: the owner accepted it in the message "all five defaults accepted, proced". Its text: on #c-visible-mode: the owner ruled the form "the window always shows one of three
   states". The guard of #ron-overwrite-guard, which the owner accepted in the same round, leaves a
   workspace that is not saved, and the slices before #autosave-and-watch leave a workspace saved
   only by Ctrl+S; no one of the three labels is true of either. Default: the label takes the
@@ -1214,6 +1220,10 @@ written with its decision; and `issue@rootpoint-app@browser-autosave` re-read ag
 browser build then holds.
 
 ## Later consequences
+
+- A second window could open a workspace another holds, read-only, for example to present on
+  another screen: an idea the session raised in round 1 and proposed nothing for. The workspace
+  lock refuses it today; a later design would take a shared lock, `File::try_lock_shared`.
 
 - `issue@rootpoint-app@browser-autosave` gives the browser build a store of its own, which would add
   a third store to #editing-modes, or a workspace in the browser.

@@ -29,7 +29,8 @@ the native half of `thread@asset-storage@unsaved-close-warning`, and the state l
 - `App::state_label` and its text at the right end of the toolbar, by the milestone's table "The
   store's state to the state label" (D5); the names of the writing actions, by #c-visible-mode; the
   question on close in memory while `Session::unsaved` is not 0, by `ViewportCommand::CancelClose`.
-  Until #autosave-and-watch, a workspace with unsaved edits asks too, since nothing saves it.
+  A workspace never asks, as the owner accepted it; until #autosave-and-watch, its state label
+  says how many changes Ctrl+S has not saved.
 
 ## Claims
 
@@ -78,8 +79,8 @@ the native half of `thread@asset-storage@unsaved-close-warning`, and the state l
 
 - `flock` holds on the owner's local disks; T1 watches a workspace shared by a sync tool.
 - A workspace is saved only by Ctrl+S until #autosave-and-watch, which ends it; the state label's
-  two states "before #autosave-and-watch" and the close question in a workspace leave with it, and
-  that slice's claims check their removal.
+  two states "before #autosave-and-watch" leave with it, and that slice's claims check their
+  removal.
 
 ## Decided design
 
