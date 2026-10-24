@@ -12,11 +12,25 @@ The seventh and last slice of `milestone@plans@asset-storage`. It lands
   hands the bytes to the page as a download; Ctrl+S does the same once a pack is the session's
   target. The Save buttons of `path@rootpoint-app@src/panels.rs` show in the browser build, and the
   app's `MemoryFiles` accepts the writes of a pack.
-- A `beforeunload` listener that asks while `Session::unsaved` is not 0.
+  - The toolbar's file buttons show in both builds: "Open pack…", "Save" and "Save as pack…"; the
+    native build adds "Pack to…" in a workspace and "Save as workspace…" or "Unpack to…" in memory,
+    which write a directory the page cannot. In the browser, "Open pack…" asks the page's file
+    picker for a `.rpk` file, `Web::pick_pack`, whose bytes reach `App::open_picked_pack`.
+  - "Save as pack…" runs `pack <name>`, the session's pack or `presentation.rpk`, into the app's
+    `MemoryFiles`, which keeps the writes in its map; then the bytes written go to the page, which
+    downloads them through a `Blob`, an object URL and a click on an `<a download>` element,
+    `Web::download`. Ctrl+S, with a pack as the target, runs `save`, then the same download.
+- A `beforeunload` listener that asks while `Session::unsaved` is not 0: `App::in_memory`, in the
+  browser build, installs it on the page's window, holding a weak reference to a flag the app sets
+  after each command and each frame from the edits no file holds, so a dropped app asks nothing;
+  the listener prevents the event's default and sets its `returnValue`, which browsers read as the
+  question.
 - The state label in the browser build, by the milestone's table of its states: the toolbar,
   shared by both builds, draws it already; this slice tests it there.
 - One text slide in `path@rootpoint-protocol@sample/sample.ron`, by the milestone's "Decided design"
-  of #sample-explains-modes.
+  of #sample-explains-modes, after the others, its ids 20 to 23, so the ids of the sample's slides,
+  nodes and image stay as the tests name them; an id a test takes from the counter after the
+  sample, as an import's, grows by 4.
 
 ## Claims
 
