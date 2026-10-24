@@ -763,7 +763,7 @@ crates/rootpoint-app/src/actions.rs        App::open_picked_pack(name, bytes)   
 crates/rootpoint-protocol/src/session.rs   enum Store { Memory(BTreeMap<String, Vec<u8>>), Workspace(String) }   (#rooted-assets)
 crates/rootpoint-protocol/src/session.rs   Session::store, Session::root               (#rooted-assets; Session::directory leaves)
 crates/rootpoint-protocol/src/session.rs   Session::unsaved: u64, the steps applied, undone or redone since the last open or save, or a pack in memory   (#rooted-assets)
-crates/rootpoint-protocol/src/session.rs   Session::trash: BTreeMap<AssetId, Vec<u8>>, the trash in memory   (#asset-commands)
+crates/rootpoint-protocol/src/session.rs   Session::trash: BTreeMap<String, Vec<u8>>, the trash in memory, by the names `<id>-<n>` of the workspace's   (#asset-commands)
 crates/rootpoint-protocol/src/pack.rs      fn write_pack(ron: &str, assets: &[(String, Vec<u8>)]) -> Result<Vec<u8>, String>   (#pack-commands)
 crates/rootpoint-protocol/src/pack.rs      fn read_pack(&[u8]) -> Result<(String, BTreeMap<String, Vec<u8>>), String>   (#pack-commands)
 crates/rootpoint-protocol/src/pack.rs      const PACK_MIMETYPE: &str = "application/x-rootpoint"   (#pack-commands)
@@ -849,7 +849,7 @@ of `save-updates-sources`, now `rejected@rootpoint-protocol@free-save-path`, lea
     .gitignore      "*"
     lock            held by WorkspaceLock; holds the pid of its holder, for the refusal's message
     socket          the path of the window's control socket, and nothing else
-    trash/<id>      the bytes of a removed asset, until the workspace is opened again, which empties it
+    trash/<id>-<n>  the bytes of a removed or replaced asset, until the workspace is opened again, which empties it
 ```
 
 `.rootpoint/` and `presentation.ron` are never asset paths: `asset_path_is_confined` refuses a path
@@ -933,7 +933,7 @@ listed by `assets untracked`, and is never packed.
 ### #asset-disk-changes
 
 In a workspace, `asset-move` renames the file through `Files::rename`, `asset-remove` moves it to
-`.rootpoint/trash/<id>`, `asset-replace` writes new bytes after moving the old ones to the trash,
+`.rootpoint/trash/<id>-<n>`, `asset-replace` writes new bytes after moving the old ones to the trash,
 and undo moves them back; `asset-relink` sets an asset's path to a file already there, and moves no
 file; in memory, the same moves happen between the map and `Session::trash`. The undo step of such
 a command holds its file moves with its operations, and a step whose file move fails applies none
