@@ -8,8 +8,11 @@ it, and the lock goes when the window closes or opens another store. On Unix the
 from its start, on a socket for the commands of the text protocol, which `rootpoint-ctl` of the
 protocol crate sends: in `$XDG_RUNTIME_DIR/rootpoint/`, named after the workspace, or
 `memory-<pid>.sock` in memory, the socket following the store; a workspace's `.rootpoint/socket`
-names it, so `rootpoint-ctl <dir>` reaches the window. A socket left by a run that was killed is
-replaced, and the window removes its socket when it closes. The toolbar ends with the state label:
+names it, so `rootpoint-ctl <dir>` reaches the window. Where `$XDG_RUNTIME_DIR` is unset, the
+sockets are in `$TMPDIR/rootpoint/`, then `/tmp/rootpoint-<uid>/`, a directory of the user's alone.
+A socket left by a run that was killed is replaced, a path that holds another kind of file is
+refused and kept, and the window removes its socket when it closes; a window whose socket cannot
+be bound runs without one, the status line saying why. The toolbar ends with the state label:
 "In memory, not saved", "In memory, saved to `<file>`" or "Workspace `<path>`, saved", with the
 changes not saved yet; closing a window held in memory with changes not saved asks first. The window holds the
 authority to edit at start; `control` gives it to the socket, `release` gives it back, and the

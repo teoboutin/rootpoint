@@ -869,7 +869,8 @@ go through the same function, `path@rootpoint-app@src/control.rs` included.
 ### #socket-place
 
 The runtime directory is `$XDG_RUNTIME_DIR/rootpoint/`, or `$TMPDIR/rootpoint/`, then
-`/tmp/rootpoint-<uid>/`, where the variable is unset; it is created with mode 0700. The window's
+`/tmp/rootpoint-<uid>/`, where the variable is unset or relative; it is the user's alone, of mode
+0700, and one another user made first is refused. The window's
 socket there is `<name>-<hash>.sock` in a workspace, where `<name>` is the root's basename truncated
 to 40 bytes and `<hash>` the first 8 hexadecimal digits of the FNV-1a hash, 64 bits, of the
 canonical root; and `memory-<pid>.sock` in memory. A workspace's socket is bound only while its lock

@@ -114,8 +114,8 @@ pub fn run(
 }
 
 /// The directory of the control sockets: `$XDG_RUNTIME_DIR/rootpoint/`, or `$TMPDIR/rootpoint/`,
-/// then `/tmp/rootpoint-<uid>/`, where the variable is unset or empty. A host creates it with mode
-/// 0700, so no other user reaches a window through it.
+/// then `/tmp/rootpoint-<uid>/`, where the variable is unset or relative. A host creates it with
+/// mode 0700, `make_runtime_dir`, so no other user reaches a window through it.
 pub fn runtime_dir() -> PathBuf {
     // A relative value would make the pointer file name a socket only one working directory finds.
     let var = |name| std::env::var_os(name).filter(|v| Path::new(v).is_absolute());

@@ -101,5 +101,7 @@ This slice judges `acceptance@asset-storage@ac-autosave-gui-cost` and
   `primer@design-heads`; a `rejected` entry for shape B, #arg-10, and for a reload of
   `presentation.ron` on each change, #arg-11 and #arg-15.
 - Write T2, guarding the guard's head.
+- Add to `issue@rootpoint-app@abandoned-composition-undo-step` that its empty step also costs one
+  autosave write that changes nothing.
 - Update `path@rootpoint-app@README.md` for autosave and the banner, and
   `path@rootpoint-protocol@README.md` for `reload`.

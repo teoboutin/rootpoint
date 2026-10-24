@@ -16,7 +16,9 @@ does nothing, `rejected@rootpoint-protocol@click-does-nothing-in-preview`.
 
 ## Guarding `design@rootpoint-protocol@workspace-lock`: a workspace shared by a sync tool is open on two machines `##workspace-on-two-machines`
 
-T1 of the premortem of the milestone on asset storage, recorded on the owner's word.
+T1 of the premortem of the milestone on asset storage, recorded on the owner's word, which named its
+re-entry at its firing; the standing-state review reads it before every merge besides, the home's
+standing re-entry.
 
 **Fires when:** a workspace opened on two machines through a sync tool leaves a conflict copy of
 `presentation.ron`, or loses an edit made on one of them, the lock holding on one machine only.
