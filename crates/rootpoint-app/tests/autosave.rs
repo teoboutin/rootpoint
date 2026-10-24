@@ -406,7 +406,7 @@ fn a_directory_made_again_is_watched_again() {
 /// The measurement of `design@rootpoint-app@workspace-autosave`: the GUI thread's share of one
 /// autosave, the clone of the document and its hand-over, as the median of 21 runs, at 50, 200 and
 /// 1000 slides, beside the median of `save_ron`, which the thread runs; the bound is on the share at
-/// 1000 slides, `tripwire@rootpoint-app@autosave-gui-cost`. Outside the gates, since timings vary:
+/// 1000 slides. Outside the gates, since timings vary:
 /// `cargo test -p rootpoint-app --release --test autosave -- --ignored --nocapture`.
 #[test]
 #[ignore]
