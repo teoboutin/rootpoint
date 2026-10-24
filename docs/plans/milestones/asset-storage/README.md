@@ -1203,7 +1203,7 @@ at the new name and removes the old one, a shape the decision admits.
 3. #workspace-host, landed, its spec deleted with its harvest: the native window's command line, the workspace lock, the
    socket in the runtime directory, `rootpoint-ctl`, the state label and the warning on close in
    memory. Fails alone on: the lock's refusal, and the bind race test.
-4. [#autosave-and-watch](autosave-and-watch.md): the autosave thread, the guard and
+4. #autosave-and-watch, landed, its spec deleted with its harvest: the autosave thread, the guard and
    `Op::ReplaceDocument`, the asset watcher. Fails alone on: AC1, AC3, and the guard's banner after
    an outside write.
 5. [#asset-commands](asset-commands.md): `asset-move`, `asset-replace`, `asset-remove`, `assets`,

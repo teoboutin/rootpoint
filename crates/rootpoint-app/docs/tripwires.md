@@ -48,3 +48,15 @@ moved the selection where the owner did not expect.
 `rejected@rootpoint-app@spatial-keys`, or toward Alt with ↑ and ↓ moving one row of the outline,
 `rejected@rootpoint-app@outline-row-keys`.
 **Re-entry:** the design audit of the next work on the app's keys, or earlier on the owner's word.
+
+## Guarding `design@rootpoint-app@ron-overwrite-guard`: the banner shows while no program but rootpoint wrote the file `##guard-shows-with-no-outside-writer`
+
+T2 of the premortem of the milestone on asset storage, recorded on the owner's word.
+
+**Fires when:** the banner "presentation.ron was changed outside rootpoint" shows while no program
+other than rootpoint wrote the file, as a tool that rewrites its bytes with no change of content,
+git's `autocrlf` or a sync tool's normalising, would make it.
+**Response:** reopen `design@rootpoint-app@ron-overwrite-guard`, toward a comparison of the parsed
+documents instead of the bytes.
+**Re-entry:** at its firing, as the owner named it; and the standing-state review before every
+merge, the home's standing re-entry.

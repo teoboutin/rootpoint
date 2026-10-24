@@ -68,6 +68,9 @@ again, and `store` names it, `pack=<file>`. `unpack <dir>` writes a presentation
 an empty or absent directory, as `presentation.ron` and its assets' files, and the store is then a
 workspace there. Any unzip tool also extracts a pack into a workspace, its `mimetype` file aside.
 
+`reload` reads `presentation.ron` at a workspace's root again and makes it the document, one undo
+step; it replies `err` when the file does not load, and in memory.
+
 `import <host-path> [<asset-path>]` adds a file as an asset, and replies its id. In a workspace, a
 file below the root is added at its path there, with no copy. Any other file is copied into the
 store, at `<asset-path>` or at the root under its file name; a name whose file holds other bytes

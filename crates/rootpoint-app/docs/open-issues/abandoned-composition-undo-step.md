@@ -35,7 +35,8 @@ back what the stay did. A step that takes back nothing costs the user one press 
 no change, and reads as a broken undo, against `goal@rootpoint-app@direct-manipulation`. The empty
 step also counts in `Session::unsaved`, so a window held in memory asks before closing, by
 `design@rootpoint-app@no-discard-confirmation`, and its state label counts a change, for an edit
-that changed nothing; assumption, not run.
+that changed nothing; and, in a workspace, the step costs one autosave write that changes nothing,
+`design@rootpoint-app@workspace-autosave`; assumptions, not run.
 
 ### What would close it
 
