@@ -43,6 +43,37 @@ impl Files for NativeFiles {
             .into_string()
             .map_err(|p| format!("{} is not UTF-8", p.display()))
     }
+    fn list(&mut self, dir: &str) -> Result<Vec<String>, String> {
+        /// The files below `dir`, each as `below` and its path under `dir`; a symlink is listed as
+        /// a file, never followed.
+        fn walk(dir: &std::path::Path, below: &str, out: &mut Vec<String>) -> std::io::Result<()> {
+            for entry in std::fs::read_dir(dir)? {
+                let entry = entry?;
+                let name = entry.file_name().into_string().map_err(|name| {
+                    std::io::Error::other(format!("{} is not UTF-8", name.display()))
+                })?;
+                let path = if below.is_empty() {
+                    name
+                } else {
+                    format!("{below}/{name}")
+                };
+                if entry.file_type()?.is_dir() {
+                    walk(&entry.path(), &path, out)?;
+                } else {
+                    out.push(path);
+                }
+            }
+            Ok(())
+        }
+        let mut out = Vec::new();
+        match walk(std::path::Path::new(dir), "", &mut out) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+            Err(e) => return Err(format!("{dir}: {e}")),
+        }
+        out.sort();
+        Ok(out)
+    }
 }
 
 fn main() {

@@ -31,6 +31,18 @@ pub enum Command {
     },
     /// The store, and the count of undo steps since the last open or save.
     Store,
+    /// Write the presentation and its assets' files as a pack; the store is unchanged.
+    Pack {
+        file: String,
+    },
+    /// Open a pack in memory: its entries become the session's map.
+    OpenPack {
+        file: String,
+    },
+    /// Write a presentation held in memory as a workspace at an empty directory, which it then is.
+    Unpack {
+        dir: String,
+    },
     Tree {
         slide: Option<SlideId>,
     },
@@ -224,6 +236,9 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
             to: args.optional_path(),
         },
         "store" => Command::Store,
+        "pack" => Command::Pack { file: args.path()? },
+        "open-pack" => Command::OpenPack { file: args.path()? },
+        "unpack" => Command::Unpack { dir: args.path()? },
         "tree" => Command::Tree {
             slide: args.optional(parse_slide)?,
         },
@@ -366,6 +381,9 @@ impl fmt::Display for Command {
                 write!(f, "import {} {}", quote(from), quote(to))
             }
             Command::Store => f.write_str("store"),
+            Command::Pack { file } => write!(f, "pack {}", quote(file)),
+            Command::OpenPack { file } => write!(f, "open-pack {}", quote(file)),
+            Command::Unpack { dir } => write!(f, "unpack {}", quote(dir)),
             Command::Tree { slide: None } => f.write_str("tree"),
             Command::Tree { slide: Some(s) } => write!(f, "tree {s}"),
             Command::Render { slide, path, size } => {

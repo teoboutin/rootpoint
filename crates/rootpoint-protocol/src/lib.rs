@@ -9,6 +9,7 @@ mod command;
 #[cfg(unix)]
 pub mod control;
 mod files;
+mod pack;
 mod sample;
 mod session;
 mod store;

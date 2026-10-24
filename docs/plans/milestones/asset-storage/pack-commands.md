@@ -6,7 +6,7 @@ headless. The browser's picker and download wait for #browser-packs.
 
 ## Builds
 
-- `planned@rootpoint-protocol@src/pack.rs`: `write_pack`, which writes a zip of the entry
+- `path@rootpoint-protocol@src/pack.rs`: `write_pack`, which writes a zip of the entry
   `mimetype`, stored, holding `PACK_MIMETYPE`, then `presentation.ron`, deflated, then each asset of
   the table at its asset path, stored; and `read_pack`, which reads one and refuses a pack whose
   first entry is not that `mimetype`, an entry whose name fails confinement, and a symlink entry.

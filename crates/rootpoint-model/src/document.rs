@@ -408,13 +408,14 @@ pub struct Asset {
 
 /// Whether an asset path stays inside its root, `design@rootpoint-model@asset-path-confinement`:
 /// `/`-separated components, none of them empty, `.` or `..`, no `\`, and a first component that is
-/// not `.rootpoint` and a path that is not `presentation.ron`, the two files of a workspace that are
-/// no asset. A file edited by hand can
+/// not `.rootpoint` and a path that is not `presentation.ron` or `mimetype`, the files of a
+/// workspace and of a pack that are no asset. A file edited by hand can
 /// name another path: it loads, and the store never reads or writes it, a cosmetic breach,
 /// `design@rootpoint-model@cosmetic-fallbacks`.
 pub fn asset_path_is_confined(path: &str) -> bool {
     !path.contains('\\')
         && path != "presentation.ron"
+        && path != "mimetype"
         && path.split('/').next() != Some(".rootpoint")
         && path
             .split('/')

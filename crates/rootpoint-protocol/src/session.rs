@@ -97,6 +97,8 @@ pub struct Session {
     store: Store,
     /// The undo steps pushed, undone or redone since the store was opened or last saved.
     unsaved: u64,
+    /// The host path of the pack last opened or written in memory, which `save` writes again.
+    pack: Option<String>,
     undo: Vec<Step>,
     redo: Vec<Step>,
     group: Option<Group>,
@@ -116,6 +118,7 @@ impl Session {
             doc: Document::default(),
             store: Store::Memory(BTreeMap::new()),
             unsaved: 0,
+            pack: None,
             undo: Vec::new(),
             redo: Vec::new(),
             group: None,
@@ -150,6 +153,12 @@ impl Session {
         self.unsaved
     }
 
+    /// The host path of the pack a presentation held in memory was last opened from or written to,
+    /// which `save` writes again; none in a workspace.
+    pub fn pack(&self) -> Option<&str> {
+        self.pack.as_deref()
+    }
+
     /// Run one line: a command's reply, or `None` for a blank line or a comment, which starts
     /// with `#`, by the rule of `read_line`.
     pub fn execute(&mut self, line: &str, files: &mut dyn Files) -> Option<Reply> {
@@ -178,15 +187,50 @@ impl Session {
                 *self = Session::new();
                 Ok(String::new())
             }
-            Command::Save => {
-                let Store::Workspace(root) = &self.store else {
+            Command::Save => match (&self.store, self.pack.clone()) {
+                (Store::Workspace(root), _) => {
+                    files.write(&join(root, PRESENTATION), save_ron(&self.doc).as_bytes())?;
+                    self.unsaved = 0;
+                    Ok(String::new())
+                }
+                (Store::Memory(_), Some(file)) => self.write_pack(&file, files),
+                (Store::Memory(_), None) => Err("a presentation held in memory is saved by \
+                    `pack <file>` or `unpack <dir>`"
+                    .to_owned()),
+            },
+            Command::Pack { file } => self.write_pack(&file, files),
+            Command::OpenPack { file } => {
+                let bytes = files.read(&file)?;
+                let (text, map) =
+                    crate::pack::read_pack(&bytes).map_err(|e| format!("{file}: {e}"))?;
+                let doc = load_ron(&text).map_err(|e| format!("{file}: {e:?}"))?;
+                *self = Session::new();
+                self.doc = doc;
+                self.store = Store::Memory(map);
+                self.pack = Some(file);
+                Ok(String::new())
+            }
+            Command::Unpack { dir } => {
+                let Store::Memory(map) = &self.store else {
                     return Err(
-                        "a presentation held in memory is saved by `pack <file>` or \
-                        `unpack <dir>`"
+                        "a workspace is unpacked already: `pack <file>` writes it as a pack"
                             .to_owned(),
                     );
                 };
-                files.write(&join(root, PRESENTATION), save_ron(&self.doc).as_bytes())?;
+                // A directory that holds anything is refused, so an unpack overwrites no file;
+                // a path that is a file fails the listing.
+                if files.exists(&dir)? && !files.list(&dir)?.is_empty() {
+                    return Err(format!(
+                        "{} holds files: unpack into an empty directory",
+                        quote(&dir)
+                    ));
+                }
+                for (path, bytes) in map {
+                    files.write(&join(&dir, path), bytes)?;
+                }
+                files.write(&join(&dir, PRESENTATION), save_ron(&self.doc).as_bytes())?;
+                self.store = Store::Workspace(files.canonical(&dir)?);
+                self.pack = None;
                 self.unsaved = 0;
                 Ok(String::new())
             }
@@ -240,7 +284,10 @@ impl Session {
             Command::Store => {
                 let unsaved = self.unsaved;
                 Ok(match &self.store {
-                    Store::Memory(_) => format!("memory unsaved={unsaved}"),
+                    Store::Memory(_) => match &self.pack {
+                        Some(file) => format!("memory unsaved={unsaved} pack={}", quote(file)),
+                        None => format!("memory unsaved={unsaved}"),
+                    },
                     Store::Workspace(root) => {
                         format!("workspace {} unsaved={unsaved}", quote(root))
                     }
@@ -451,6 +498,31 @@ impl Session {
         }
         self.redo.clear();
         Ok(self.created(&before, &inverse))
+    }
+
+    /// Write the presentation and its assets' files as a pack at `file`, every asset read by the
+    /// store's check: an asset with no readable bytes is left out, and the reply names it after
+    /// `missing=`. In memory the pack becomes the one `save` writes.
+    fn write_pack(&mut self, file: &str, files: &mut dyn Files) -> Result<String, String> {
+        let mut assets = Vec::new();
+        let mut missing = Vec::new();
+        for (&id, asset) in &self.doc.assets {
+            match self.asset_bytes(id, files) {
+                Ok(bytes) => assets.push((asset.path.clone(), bytes)),
+                Err(_) => missing.push(id.to_string()),
+            }
+        }
+        let bytes = crate::pack::write_pack(&save_ron(&self.doc), &assets)?;
+        files.write(file, &bytes)?;
+        if let Store::Memory(_) = self.store {
+            self.pack = Some(file.to_owned());
+            self.unsaved = 0;
+        }
+        Ok(if missing.is_empty() {
+            "missing=-".to_owned()
+        } else {
+            format!("missing={}", missing.join(","))
+        })
     }
 
     /// The asset path an import of the host's file `from` adds, after writing the file into the

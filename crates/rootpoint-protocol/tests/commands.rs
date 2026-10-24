@@ -27,6 +27,13 @@ fn every_command_prints_back_as_it_parses() {
             to: Some("img/a cat.png".into()),
         },
         Command::Store,
+        Command::Pack {
+            file: "my talk.rpk".into(),
+        },
+        Command::OpenPack {
+            file: "talk.rpk".into(),
+        },
+        Command::Unpack { dir: "out".into() },
         Command::Tree { slide: None },
         Command::Tree {
             slide: Some(SlideId(3)),
@@ -498,6 +505,10 @@ fn a_refused_command_changes_nothing() {
         "import",
         "save deck.ron",
         "store all",
+        "pack",
+        "open-pack",
+        "unpack",
+        "open-pack missing.rpk",
         "sample s1",
         "begin now",
         // The style commands: a style of the table takes values, never a choice of style.

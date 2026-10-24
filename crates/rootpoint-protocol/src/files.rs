@@ -19,4 +19,9 @@ pub trait Files {
     fn canonical(&mut self, path: &str) -> Result<String, String> {
         Err(format!("{path}: unsupported"))
     }
+    /// Every file below the directory, at any depth, as a path relative to it written with `/`, a
+    /// symlink included as a file; none for a directory that does not exist.
+    fn list(&mut self, dir: &str) -> Result<Vec<String>, String> {
+        Err(format!("{dir}: unsupported"))
+    }
 }

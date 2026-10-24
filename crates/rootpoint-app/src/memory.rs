@@ -51,4 +51,13 @@ impl Files for MemoryFiles {
     fn canonical(&mut self, path: &str) -> Result<String, String> {
         Ok(path.to_owned())
     }
+    fn list(&mut self, dir: &str) -> Result<Vec<String>, String> {
+        let below = format!("{dir}/");
+        Ok(self
+            .0
+            .borrow()
+            .keys()
+            .filter_map(|k| k.strip_prefix(&below).map(str::to_owned))
+            .collect())
+    }
 }

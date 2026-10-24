@@ -654,6 +654,53 @@ impl App {
         self.run(Command::Open { dir });
     }
 
+    /// Open a pack in memory, its file then the one Save writes.
+    pub fn open_pack(&mut self, file: String) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.run(Command::OpenPack { file });
+    }
+
+    /// Write the presentation as a pack: in memory, Save then writes it again; a workspace stays
+    /// as it is.
+    pub fn pack_to(&mut self, file: String) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.run(Command::Pack { file });
+    }
+
+    /// Write a presentation held in memory as a workspace at an empty directory, which Save then
+    /// writes.
+    pub fn unpack_to(&mut self, dir: String) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.run(Command::Unpack { dir });
+    }
+
+    /// Open a pack the author picked, by its file name and its bytes: they are held in memory
+    /// under the name, and `open-pack` opens them. A refused pack leaves the held files as they
+    /// were. Only an app made by `App::in_memory` holds them; the browser build is one.
+    pub fn open_picked_pack(&mut self, name: String, bytes: Vec<u8>) {
+        if self.socket_holds() {
+            return;
+        }
+        let Some(held) = self.held.clone() else {
+            self.error = Some("this editor holds no files in memory".to_owned());
+            return;
+        };
+        let before = held.replace_one(&name, Some(bytes));
+        self.open_pack(name.clone());
+        if self.error.is_some() {
+            held.replace_one(&name, before);
+        }
+    }
+
     /// Open the built-in sample, in memory.
     pub fn open_sample(&mut self) {
         if self.socket_holds() {
@@ -773,16 +820,62 @@ impl App {
         }
     }
 
-    /// Ctrl+S: save the presentation to its store, `presentation.ron` at a workspace's root. A
-    /// presentation held in memory has no file of its own, and the status line says how to write
-    /// one.
+    /// Ctrl+S: save the presentation to its store, `presentation.ron` at a workspace's root, or
+    /// the pack a presentation held in memory was opened from or written to; with none, ask where
+    /// to write a pack, as "Save as pack…" does.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn save(&mut self) {
         if self.socket_holds() {
             return;
         }
+        if self.session.root().is_none() && self.session.pack().is_none() {
+            self.pack_dialog();
+            return;
+        }
         self.end_gestures();
         self.run(Command::Save);
+    }
+
+    /// "Open pack…": ask for a `.rpk` file, and open it in memory.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn open_pack_dialog(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        let picked = rfd::FileDialog::new()
+            .add_filter("rootpoint pack", &["rpk"])
+            .pick_file();
+        if let Some(file) = picked.and_then(|p| self.utf8(&p)) {
+            self.open_pack(file);
+        }
+    }
+
+    /// "Save as pack…" in memory, "Pack to…" in a workspace: ask for the `.rpk` file to write.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn pack_dialog(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        let picked = rfd::FileDialog::new()
+            .add_filter("rootpoint pack", &["rpk"])
+            .set_file_name("presentation.rpk")
+            .save_file();
+        if let Some(file) = picked.and_then(|p| self.utf8(&p)) {
+            self.pack_to(file);
+        }
+    }
+
+    /// "Save as workspace…", or "Unpack to…" once a pack is the target: ask for an empty
+    /// directory, and write the presentation held in memory there as a workspace.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn unpack_dialog(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        let picked = rfd::FileDialog::new().pick_folder();
+        if let Some(dir) = picked.and_then(|p| self.utf8(&p)) {
+            self.unpack_to(dir);
+        }
     }
 
     /// Ask for an image file, and add it as an asset by `import`.

@@ -7,6 +7,11 @@ publish = false
 [dependencies]
 rootpoint-model = { path = "../rootpoint-model" }
 rootpoint-render = { path = "../rootpoint-render" }
+# A pack is a zip file. zip names flate2 with its default features off, so flate2 is named here for
+# its `rust_backend`, miniz_oxide, pure Rust and built for the browser, rather than zip's default
+# `deflate`, which adds zopfli and zlib-rs.
+zip = { version = "9.1.0", default-features = false, features = ["deflate-flate2"] }
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
 
 [[bin]]
 name = "rootpoint-headless"

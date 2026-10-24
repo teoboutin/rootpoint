@@ -33,6 +33,36 @@ const COLOURS: [(u8, u8, u8); 8] = [
 ];
 
 impl App {
+    /// The native toolbar's buttons that open a pack or write the presentation, each named by
+    /// where it writes, so the author sees what each one does: in memory, a pack or a workspace; in
+    /// a workspace, a pack.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn file_buttons(&mut self, ui: &mut Ui) {
+        if ui.button("Open pack…").clicked() {
+            self.open_pack_dialog();
+        }
+        if ui.button("Save").clicked() {
+            self.save();
+        }
+        if self.session.root().is_some() {
+            if ui.button("Pack to…").clicked() {
+                self.pack_dialog();
+            }
+            return;
+        }
+        if ui.button("Save as pack…").clicked() {
+            self.pack_dialog();
+        }
+        let unpack = if self.session.pack().is_some() {
+            "Unpack to…"
+        } else {
+            "Save as workspace…"
+        };
+        if ui.button(unpack).clicked() {
+            self.unpack_dialog();
+        }
+    }
+
     /// The toolbar: the file actions, the sample, the final view, presenting, undo and redo.
     pub(crate) fn toolbar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
@@ -42,9 +72,7 @@ impl App {
             // The browser build saves no file, so it shows no button that saves, per
             // `design@rootpoint-app@browser-load-only`.
             #[cfg(not(target_arch = "wasm32"))]
-            if ui.button("Save").clicked() {
-                self.save();
-            }
+            self.file_buttons(ui);
             if ui.button("Sample").clicked() {
                 self.open_sample();
             }

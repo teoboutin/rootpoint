@@ -215,6 +215,8 @@ fn an_asset_path_is_confined_only_below_its_root() {
         "a/b/c.ttf",
         ".hidden.png",
         "img/presentation.ron",
+        "img/mimetype",
+        ".rootpointx/a.png",
     ] {
         assert!(asset_path_is_confined(path), "{path} is refused");
     }
@@ -230,6 +232,7 @@ fn an_asset_path_is_confined_only_below_its_root() {
         ".rootpoint/lock",
         ".rootpoint",
         "presentation.ron",
+        "mimetype",
     ] {
         assert!(!asset_path_is_confined(path), "{path} is accepted");
     }

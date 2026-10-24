@@ -537,6 +537,24 @@ fn the_menu_actions_issue_their_commands() {
         |_| vec![c("open out")],
     );
     check(
+        "pack",
+        &["add-slide"],
+        |a| a.pack_to("s.rpk".to_owned()),
+        |_| vec![c("pack s.rpk")],
+    );
+    check(
+        "open a pack",
+        &["pack s.rpk", "add-slide"],
+        |a| a.open_pack("s.rpk".to_owned()),
+        |_| vec![c("open-pack s.rpk")],
+    );
+    check(
+        "unpack",
+        &["add-slide"],
+        |a| a.unpack_to("out".to_owned()),
+        |_| vec![c("unpack out")],
+    );
+    check(
         "open the built-in sample",
         &["clear n3"],
         App::open_sample,
@@ -738,4 +756,37 @@ fn the_picker_actions_issue_their_commands() {
     same(&app, &session, "after undo");
     // The browser build saves nothing, and a presentation held in memory has no file to save to.
     assert!(matches!(app.run(c("save")), Reply::Err(_)));
+}
+
+/// A pack the author picked opens through the files held in memory as `open-pack` opens it in a
+/// session, in the browser as natively; a file that is no pack is refused and changes nothing.
+#[test]
+fn a_picked_pack_opens_as_open_pack_does() {
+    let mut files = MemoryFiles::default();
+    let mut session = Session::new();
+    for line in ["sample", "add-slide", "pack s.rpk"] {
+        assert!(
+            matches!(session.run(c(line), &mut files), Reply::Ok(_)),
+            "{line}"
+        );
+    }
+    let pack = files.0.borrow()["s.rpk"].clone();
+    let mut expected = Session::new();
+    assert!(matches!(
+        expected.run(c("open-pack s.rpk"), &mut files),
+        Reply::Ok(_)
+    ));
+    let mut app = App::in_memory();
+    app.open_sample();
+    app.open_picked_pack("s.rpk".to_owned(), pack);
+    assert_eq!(app.status(), Vec::<String>::new());
+    assert_eq!(app.session().document(), expected.document());
+    assert_eq!(app.session().store(), expected.store());
+    assert_eq!(app.session().pack(), Some("s.rpk"));
+    let before = app.session().document().clone();
+    // Picked under the same name, a file that is no pack leaves the pack held there before.
+    app.open_picked_pack("s.rpk".to_owned(), b"no zip".to_vec());
+    assert_eq!(app.status().len(), 1, "{:?}", app.status());
+    assert_eq!(app.session().document(), &before);
+    assert!(matches!(app.run(c("open-pack s.rpk")), Reply::Ok(_)));
 }
