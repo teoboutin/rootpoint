@@ -126,8 +126,15 @@ the guard stops the writes replies `err`; `Op::ReplaceDocument` keeps the larger
 `rejected` entry for shape B, nor for a reload at each change; the split of the head of
 #asset-watch; the history edits of commit messages; the trash's entries named `<id>-<n>`; an
 import's file staged through the trash; a file two assets name refused for a move or a replace; an
-asset whose file a symlink places outside the root removed with its file left in place; and the
-thumbnail decoded by `rootpoint_render::decode_rgba`.
+asset whose file a symlink places outside the root removed with its file left in place; the
+thumbnail decoded by `rootpoint_render::decode_rgba`; the `assets` reply's `uses=` naming the named
+styles beside the areas; the step between an asset command's move and the next autosave accepted,
+as `design@rootpoint-app@workspace-autosave` states; Esc leaving the asset tab's move and relink
+unsent, as Esc cancels every gesture of the window; and an import below a file refused, a name a
+folder holds taking a suffix. The review at the end of the milestone also notes that the asset
+tab's total size, its drag to move, its import by a drop or a picker, its removal of the unused
+and its removal into another asset are stated by `path@rootpoint-app@README.md` alone once the
+milestone leaves.
 
 - **Gates.** `cargo x gates` runs every check a branch owes before it merges,
   `instructions@merge-gates`. Every slice keeps them passing, the gate `wasm` and the browser tests
@@ -1311,7 +1318,8 @@ at the new name and removes the old one, a shape the decision admits.
   that mirrors the disk names as noise. Default: the list leaves out a file whose path has a
   component that starts with `.`, as `rootpoint_protocol::listed_untracked` builds it, where
   `design@rootpoint-protocol@table-of-added-assets` states the rival until the ruling; such a path
-  is still a confined asset path, so an asset may name one, and a relink then offers none. The
+  is still a confined asset path, so an asset may name one, and a relink then offers no such file
+  but by a path typed. The
   rivals: leave out `.git/` alone, or follow the `.gitignore` files.
 - **D11**, awaiting the owner, built at #asset-manager: on #asset-manager-scope, whose relink offers
   first "an untracked file of the same bytes", the session's proposal, whose premise fails: a

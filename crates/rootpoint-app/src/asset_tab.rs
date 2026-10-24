@@ -2,8 +2,8 @@
 //! paths' prefixes, with a search and the filters of `assets`; the selected asset's size, its
 //! thumbnail and its uses; and the actions on it, each a command of `path@rootpoint-app@src/actions.rs`.
 //! The tab reads the document and the store and runs no query through `App::run`, which would render
-//! the slide again; what it reads from the files is kept until the next command, watcher event or
-//! change of the store, so a frame reads no file.
+//! the slide again; what it reads from the files is kept until a command changes the store, its
+//! files or its table, or a watcher event comes, so a frame reads no file.
 
 use std::collections::{BTreeMap, BTreeSet};
 

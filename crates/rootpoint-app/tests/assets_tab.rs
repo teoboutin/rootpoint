@@ -328,3 +328,37 @@ fn control_a_path_typed_then_enter_is_sent() {
     let after = app.session().document().assets[&AssetId(19)].path.clone();
     assert_eq!(after, format!("{before}x"), "{:?}", app.status());
 }
+
+/// A command that changes the asset table, or the bytes at a path, makes the Assets tab read the
+/// files again at its next frame; an edit of a slide does not.
+#[test]
+fn a_change_of_the_table_or_the_files_reads_them_again() {
+    let files = Counted::default();
+    for (path, size) in [("ws/a.png", 40), ("ws/b.png", 20)] {
+        files
+            .files
+            .borrow_mut()
+            .insert(path.to_owned(), png(size, size));
+    }
+    let reads = files.reads.clone();
+    let mut app = App::new(Box::new(files));
+    let ctx = Context::default();
+    ok(&mut app, "open ws");
+    ok(&mut app, "add-slide");
+    ok(&mut app, "import ws/a.png");
+    app.show_tab(SideTab::Assets);
+    frame(&ctx, &mut app);
+    let count = |reads: &Rc<RefCell<BTreeMap<String, usize>>>| {
+        reads.borrow().get("ws/a.png").copied().unwrap_or(0)
+    };
+    let before = count(&reads);
+    ok(&mut app, "text n2 \"x\"");
+    frame(&ctx, &mut app);
+    assert_eq!(count(&reads), before, "an edit of a slide reads no file");
+    ok(&mut app, "import ws/b.png");
+    frame(&ctx, &mut app);
+    assert!(
+        count(&reads) > before,
+        "a new asset makes the tab read the files"
+    );
+}
