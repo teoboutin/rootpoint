@@ -14,11 +14,13 @@ actions, rewired onto the new commands.
 - `asset_path_is_confined`, by the milestone's "Decided design" of #asset-paths-only, and
   `Breach::UnconfinedAsset` of `Document::breaches` for an asset whose path fails it, on D4's
   default: the file loads, and the renderer draws the asset as a missing one.
-- `Files::canonical(path) -> Result<String, String>` and `Files::list(dir) -> Result<Vec<String>,
-  String>`, the second listing every file under `dir`, recursively, as paths relative to it. Both
-  are default methods of the trait that reply `Err("unsupported")`, so the 12 test doubles that
-  implement `Files` change only where a test needs them; `NativeFiles` of the window and of the
-  headless binary, the app's `MemoryFiles` and the protocol tests' `MemoryFiles` implement them.
+- `Files::canonical(path) -> Result<String, String>`, a default method of the trait that replies
+  `Err("unsupported")`, so the 12 test doubles that implement `Files` change only where a test
+  needs it; `NativeFiles` of the window and of the headless binary, the app's `MemoryFiles` and the
+  protocol tests' `MemoryFiles` implement it. `Files::list` waits for #asset-commands, whose trash
+  and `assets untracked` are its first callers. `NativeFiles::write`, in both binaries, creates the
+  directories above the file, since `import <file> img/cat.png` can name a directory that does not
+  exist yet.
 - `Store`, `Session::store`, `Session::root` and `Session::unsaved` in
   `path@rootpoint-protocol@src/session.rs`. `Session::directory` leaves, and with it the directory
   arithmetic of `Session::save` (`normalize`, `inside` and `relative` of
@@ -31,14 +33,31 @@ actions, rewired onto the new commands.
   argument and `store`, by the milestone's table of #editing-modes; `load`, `save <path>` and
   `asset` leave; `new` and `sample` open in memory, the sample's images in the map. A `save` in
   memory replies `err` naming `pack` and `unpack`.
+  - `open-copy <dir>` reads `<dir>/presentation.ron`, the fixed name of #workspace-layout, and
+    replies `err` when it is not there.
+  - `import` of a host path whose asset path an asset of the table already has adds no asset,
+    pushes no undo step and replies that asset's id: one asset per file, as #asset-tree-shape keeps
+    one id per asset, and as the claim on the save-mixes defect counts.
+  - `Session::unsaved` grows by one for each undo step pushed, undone or redone: an editing command
+    outside a group, a non-empty group closed, an `undo`, a `redo`; it is 0 after `new`, `sample`,
+    `open`, `open-copy` and `save`. A query and a `cancel` leave it.
+  - `store` is a query: the control socket runs it while the window holds control, as `view`.
 - In the window, every caller of the session's directory and of the removed commands:
   - Open and Save of `path@rootpoint-app@src/actions.rs` run `open` and `save`; the native Open
-    asks for a directory. `App::relative_if_absolute` leaves, with its callers `open_file` and
+    asks for a directory, and the window's command line takes a directory, opened by `open`;
+    `--control` stays until #workspace-host. `App::path` leaves, since the store names where `save`
+    writes. "Save as…" leaves: no command writes a presentation held in memory until
+    #pack-commands, and #workspace-host names the actions that do, "Save as pack…" and "Save as
+    workspace…". `App::relative_if_absolute` leaves, with its callers `open_file` and
     `save_to`, and with `normalize` and `relative` of actions.rs and their unit tests, since the
     root is canonical.
-  - `add_asset_dialog` and `App::add_picked_image` run `import`; `App::open_directory` runs
-    `open-copy` over the picked files. Both reset `self.assets` today; `Assets::refresh` of
-    `path@rootpoint-app@src/assets.rs` keys instead on the store and the asset paths.
+  - `add_asset_dialog` and `App::add_picked_image` run `import`; `App::open_directory` holds the
+    picked files in `MemoryFiles` under their paths, the picked directory's name first, and runs
+    `open-copy` on that name; the rule of "the one `.ron` file" leaves for the fixed name. Both
+    reset `self.assets` today; `Assets::refresh` of `path@rootpoint-app@src/assets.rs` keys instead
+    on `Session::root` and the asset paths, and `App::run` drops the decoded assets after a command
+    that replaces the store, `new`, `sample`, `open` or `open-copy`, since two maps can hold other
+    bytes at one path.
   - The control socket's dispatch of `Load`, `Save`, `New` and `Sample`, in
     `path@rootpoint-app@src/control.rs`, follows the new commands.
   - The outline's label, `font_assets` and `App::asset_name` of `path@rootpoint-app@src/panels.rs`
@@ -80,6 +99,8 @@ actions, rewired onto the new commands.
 ## Fixtures
 
 - The four committed `.ron` files, rewritten to version 4 with `path:` for each asset.
+- A test that adds an asset whose file does not exist, as `asset missing.png` does today, imports
+  an existing file instead, or loads a file edited by hand, since `import` reads its file.
 - The sample's images stay files of `path@rootpoint-protocol@sample/`, included at build time;
   `sample` puts them in the map under their file names. The test of
   `path@rootpoint-protocol@tests/commands.rs` that asserts the sample's assets are `Embedded`

@@ -105,8 +105,13 @@ C1 to C9, in the order of the section "Criteria" below; "Names" maps each.
 ## How the work is done
 
 Before each slice, read `skill@knowledge-architect-planning@working-a-slice` whole, and follow it.
-The slices are built in the order of "Implementation sequence", each on its own branch, merged as
-`instructions@git-workflow` says before the next slice begins.
+The slices are built in the order of "Implementation sequence". On the owner's word, given when the
+implementation started, they are built on one branch, named after this milestone, which merges as
+`instructions@git-workflow` says after the last slice: each slice takes its audit, its work, its
+harvest and then one review, as the review before a merge would be, with the transcript axis run
+alone after the others; the repairs of a slice's review are reviewed again only at the end of the
+milestone. This replaces, for the branches, the one branch per slice of D1 and of
+`skill@knowledge-architect-planning@cutting-steps-and-slices`.
 
 - **Gates.** `cargo x gates` runs every check a branch owes before it merges,
   `instructions@merge-gates`. Every slice keeps them passing, the gate `wasm` and the browser tests
@@ -743,8 +748,8 @@ crates/rootpoint-model/src/validate.rs     Breach::UnconfinedAsset { asset: Asse
 crates/rootpoint-protocol/tests/common/mod.rs   RecordingFiles, native files that record every path given them   (#rooted-assets)
 crates/rootpoint-model/src/ops.rs          Op::SetAssetPath { id, path }               (#rooted-assets; Op::SetAssetSource leaves)
 crates/rootpoint-model/src/ops.rs          Op::ReplaceDocument { document }            (#autosave-and-watch)
-crates/rootpoint-protocol/src/files.rs     Files::canonical, Files::list               (#rooted-assets)
-crates/rootpoint-protocol/src/files.rs     Files::rename, Files::remove                (#asset-commands)
+crates/rootpoint-protocol/src/files.rs     Files::canonical                            (#rooted-assets)
+crates/rootpoint-protocol/src/files.rs     Files::list, Files::rename, Files::remove   (#asset-commands)
 crates/rootpoint-protocol/src/session.rs   enum Store { Memory(BTreeMap<String, Vec<u8>>), Workspace(String) }   (#rooted-assets)
 crates/rootpoint-protocol/src/session.rs   Session::store, Session::root               (#rooted-assets; Session::directory leaves)
 crates/rootpoint-protocol/src/session.rs   Session::unsaved: u64, the steps applied, undone or redone since the last open, save or pack   (#rooted-assets)

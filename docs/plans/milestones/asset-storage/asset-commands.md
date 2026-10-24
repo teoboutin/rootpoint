@@ -6,7 +6,9 @@ in both stores, headless.
 
 ## Builds
 
-- `Files::rename(from, to)` and `Files::remove(path)`, in `path@rootpoint-protocol@src/files.rs`,
+- `Files::list(dir) -> Result<Vec<String>, String>`, every file under `dir`, recursively, as paths
+  relative to it, which the trash's emptying and `assets untracked` call first; and
+  `Files::rename(from, to)` and `Files::remove(path)`, in `path@rootpoint-protocol@src/files.rs`,
   default methods replying `Err("unsupported")`, implemented by `NativeFiles`, the app's
   `MemoryFiles` and the protocol tests' `MemoryFiles`.
 - The commands `asset-move <a> <asset-path>`, `asset-relink <a> <asset-path>`,
