@@ -727,6 +727,17 @@ fn the_sample_opens_with_its_images_and_no_history() {
     };
     assert!(!doc.assets.is_empty());
     assert!(doc.assets.values().all(|a| map.contains_key(&a.path)));
+    // Every build carries the sample, so its images stay small: under 50 KB in all.
+    let images: usize = map.values().map(Vec::len).sum();
+    assert!(images < 50 * 1024, "{images} bytes");
+    // Its last slide says where a presentation is saved, the modes and the pack, with no image.
+    let last = doc.slides.last().unwrap();
+    assert!(
+        last.root
+            .areas()
+            .iter()
+            .all(|a| matches!(a.content, Content::Text(_)))
+    );
     assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
     assert!(matches!(s.execute("end", &mut files), Some(Reply::Err(_))));
     for slide in doc.slides {

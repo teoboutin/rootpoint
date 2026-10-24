@@ -377,3 +377,64 @@ fn f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation() {
     assert!(!key("F6"), "another key's default");
     stop.forget();
 }
+
+/// A pack round-trips in the browser build: opened from its bytes, edited, saved as the pack the
+/// session targets, whose bytes the page would download, and opened again, it holds the edit.
+#[test]
+fn a_pack_round_trips_through_its_download() {
+    let mut app = App::in_memory();
+    app.open_picked_pack("talk.rpk".to_owned(), pack_of(picked()));
+    let reply = app.run(rootpoint_protocol::parse_command("add-slide").unwrap());
+    assert!(matches!(reply, rootpoint_protocol::Reply::Ok(_)), "{reply}");
+    let edited = app.session().document().clone();
+    let (name, bytes) = app.pack_for_download(false).expect("the pack's bytes");
+    assert_eq!(name, "talk.rpk");
+    let mut again = App::in_memory();
+    again.open_picked_pack(name, bytes);
+    assert!(again.session().document().same_content(&edited));
+    // With no pack its target, the presentation is packed under a name of its own.
+    let mut fresh = App::in_memory();
+    fresh.open_directory(picked());
+    let (name, _) = fresh.pack_for_download(false).expect("a new pack");
+    assert_eq!(name, "presentation.rpk");
+}
+
+/// The state label reads each state a presentation held in memory has: not saved, saved to its
+/// pack, and the changes since.
+#[test]
+fn the_state_label_reads_each_state_in_memory() {
+    let mut app = App::in_memory();
+    app.open_directory(picked());
+    assert_eq!(app.state_label(), "In memory, not saved");
+    app.pack_for_download(true).expect("a pack");
+    assert_eq!(app.state_label(), "In memory, saved to presentation.rpk");
+    let reply = app.run(rootpoint_protocol::parse_command("add-slide").unwrap());
+    assert!(matches!(reply, rootpoint_protocol::Reply::Ok(_)), "{reply}");
+    assert_eq!(
+        app.state_label(),
+        "In memory, saved to presentation.rpk, 1 change since"
+    );
+}
+
+/// The page asks before it unloads only while an edit is in no file: the listener of the window
+/// prevents `beforeunload`'s default after an edit, and not before.
+#[cfg(target_arch = "wasm32")]
+#[test]
+fn the_page_asks_before_it_unloads_only_with_an_edit() {
+    let unload = || {
+        let init = web_sys::EventInit::new();
+        init.set_cancelable(true);
+        let event = web_sys::Event::new_with_event_init_dict("beforeunload", &init).unwrap();
+        web_sys::window().unwrap().dispatch_event(&event).unwrap();
+        event.default_prevented()
+    };
+    let mut app = App::in_memory();
+    app.open_directory(picked());
+    assert!(!unload(), "nothing unsaved asks nothing");
+    let reply = app.run(rootpoint_protocol::parse_command("add-slide").unwrap());
+    assert!(matches!(reply, rootpoint_protocol::Reply::Ok(_)), "{reply}");
+    assert!(unload(), "an edit asks");
+    app.pack_for_download(true).expect("a pack");
+    assert!(!unload(), "a saved pack asks nothing");
+    drop(app);
+}

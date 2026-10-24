@@ -114,6 +114,9 @@ pub struct App {
     /// The pickers and full screen of the page.
     #[cfg(target_arch = "wasm32")]
     web: web::Web,
+    /// Whether the page's `beforeunload` asks: edits no file holds, `App::edits_not_written`.
+    #[cfg(target_arch = "wasm32")]
+    unload_warning: std::rc::Rc<std::cell::Cell<bool>>,
     /// The tab the side panel shows.
     tab: SideTab,
     /// The Styles tab's own state, the window's and not the session's.
@@ -271,6 +274,8 @@ impl App {
             closing: false,
             #[cfg(target_arch = "wasm32")]
             web: web::Web::default(),
+            #[cfg(target_arch = "wasm32")]
+            unload_warning: std::rc::Rc::default(),
             tab: SideTab::default(),
             styles_tab: StylesTab::default(),
             asset_tab: asset_tab::AssetTab::default(),
@@ -296,6 +301,9 @@ impl App {
         let files = MemoryFiles::default();
         let mut app = App::new(Box::new(files.clone()));
         app.held = Some(files);
+        // The page asks before it unloads while edits are in no file, as the window's close does.
+        #[cfg(target_arch = "wasm32")]
+        web::warn_before_unload(std::rc::Rc::downgrade(&app.unload_warning));
         app
     }
 
@@ -487,6 +495,8 @@ impl App {
             Reply::Err(reason) => Some(reason.clone()),
         };
         self.view.drawn = None;
+        #[cfg(target_arch = "wasm32")]
+        self.unload_warning.set(self.edits_not_written());
         // What the Assets tab read from the files changes with the store, its files or its table;
         // an edit of a slide, as each frame of a drag sends, reads no file again.
         if rereads
@@ -854,6 +864,7 @@ impl App {
             match picked {
                 web::Picked::Directory(files) => self.open_directory(files),
                 web::Picked::Image(name, bytes) => self.add_picked_image(name, bytes),
+                web::Picked::Pack(name, bytes) => self.open_picked_pack(name, bytes),
                 web::Picked::Replacement(asset, name, bytes) => {
                     self.replace_with_picked(asset, name, bytes)
                 }

@@ -20,8 +20,19 @@ pub(crate) enum Picked {
     Image(String, Vec<u8>),
     /// The new bytes of an asset, by the name of the file picked.
     Replacement(rootpoint_model::AssetId, String, Vec<u8>),
+    /// A pack, by its file name.
+    Pack(String, Vec<u8>),
     /// A file that could not be read, and why.
     Failed(String),
+}
+
+/// What a picker asks for, which names what its file becomes.
+#[derive(Clone, Copy)]
+enum Purpose {
+    Directory,
+    Image,
+    Pack,
+    Replacement(rootpoint_model::AssetId),
 }
 
 /// The page's side of the app.
@@ -48,17 +59,55 @@ impl Web {
 
     /// Ask for a directory, with the browser's directory picker.
     pub(crate) fn pick_directory(&mut self) {
-        self.pick("", true, None);
+        self.pick("", Purpose::Directory);
     }
 
     /// Ask for one image or font file.
     pub(crate) fn pick_image(&mut self) {
-        self.pick("image/png,image/jpeg,.ttf,.otf", false, None);
+        self.pick("image/png,image/jpeg,.ttf,.otf", Purpose::Image);
+    }
+
+    /// Ask for a pack, a `.rpk` file.
+    pub(crate) fn pick_pack(&mut self) {
+        self.pick(".rpk", Purpose::Pack);
+    }
+
+    /// Hand bytes to the page as a download under `name`: a `Blob` of them, an object URL, and a
+    /// click on an `<a download>` element, then the URL is revoked.
+    pub(crate) fn download(&mut self, name: &str, bytes: &[u8]) {
+        let fail = |inbox: &Rc<RefCell<Vec<Picked>>>| {
+            inbox
+                .borrow_mut()
+                .push(Picked::Failed(format!("{name} could not be downloaded")));
+        };
+        let parts = js_sys::Array::of1(&js_sys::Uint8Array::from(bytes));
+        let Some((document, url)) = web_sys::window()
+            .and_then(|w| w.document())
+            .zip(web_sys::Blob::new_with_u8_array_sequence(&parts).ok())
+            .and_then(|(d, blob)| {
+                Some((d, web_sys::Url::create_object_url_with_blob(&blob).ok()?))
+            })
+        else {
+            fail(&self.inbox);
+            return;
+        };
+        let Some(anchor) = document
+            .create_element("a")
+            .ok()
+            .and_then(|e| e.dyn_into::<web_sys::HtmlAnchorElement>().ok())
+        else {
+            fail(&self.inbox);
+            return;
+        };
+        anchor.set_href(&url);
+        anchor.set_download(name);
+        anchor.click();
+        let _ = web_sys::Url::revoke_object_url(&url);
     }
 
     /// Ask for the file whose bytes replace an asset's.
     pub(crate) fn pick_replacement(&mut self, asset: rootpoint_model::AssetId) {
-        self.pick("", false, Some(asset));
+        self.pick("", Purpose::Replacement(asset));
     }
 
     /// Read the files dropped on the window, as a picker reads the files it is given.
@@ -81,7 +130,8 @@ impl Web {
     /// Show the browser's file picker: an `<input type="file">`, with `webkitdirectory` for a
     /// directory. The click comes from a frame drawn after the author's key or click, which the
     /// browser still counts as the author's activation.
-    fn pick(&mut self, accept: &str, directory: bool, replacing: Option<rootpoint_model::AssetId>) {
+    fn pick(&mut self, accept: &str, purpose: Purpose) {
+        let directory = matches!(purpose, Purpose::Directory);
         let Some(input) = web_sys::window()
             .and_then(|w| w.document())
             .and_then(|d| d.create_element("input").ok())
@@ -141,9 +191,10 @@ impl Web {
                         files.push(file);
                         Some(Picked::Directory(files))
                     }
-                    Some((name, bytes)) => Some(match replacing {
-                        Some(asset) => Picked::Replacement(asset, name, bytes),
-                        None => Picked::Image(name, bytes),
+                    Some((name, bytes)) => Some(match purpose {
+                        Purpose::Replacement(asset) => Picked::Replacement(asset, name, bytes),
+                        Purpose::Pack => Picked::Pack(name, bytes),
+                        Purpose::Image | Purpose::Directory => Picked::Image(name, bytes),
                     }),
                 };
                 inbox.borrow_mut().extend(picked);
@@ -182,6 +233,24 @@ impl Web {
         self.fullscreen_seen = now;
         left
     }
+}
+
+/// Ask before the page unloads while `unsaved` holds: a listener of the window's `beforeunload`
+/// prevents the event's default and sets its `returnValue`, which a browser reads as the question.
+/// It holds the flag weakly, so an app dropped asks nothing.
+pub(crate) fn warn_before_unload(unsaved: std::rc::Weak<std::cell::Cell<bool>>) {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let listener = Closure::<dyn FnMut(web_sys::Event)>::new(move |e: web_sys::Event| {
+        if unsaved.upgrade().is_some_and(|flag| flag.get()) {
+            e.prevent_default();
+            let _ = js_sys::Reflect::set(&e, &"returnValue".into(), &"".into());
+        }
+    });
+    let _ =
+        window.add_event_listener_with_callback("beforeunload", listener.as_ref().unchecked_ref());
+    listener.forget();
 }
 
 /// Keep F5, the key that starts presenter mode, from reloading the page: a listener of the window,

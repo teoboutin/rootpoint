@@ -404,7 +404,7 @@ fn a_click_on_a_row_shows_its_slide_and_a_drag_moves_it() {
     let mut d = Driver::new();
     let rows = d.app.slide_rows().to_vec();
     let ids: Vec<_> = rows.iter().map(|r| r.0).collect();
-    assert_eq!(ids.len(), 3);
+    assert_eq!(ids.len(), 4);
     d.click(rows[1].1.center());
     assert_eq!(d.app.shown_slide(), Some(ids[1]));
     // Drag the first row onto the third.
@@ -415,7 +415,7 @@ fn a_click_on_a_row_shows_its_slide_and_a_drag_moves_it() {
     }
     d.button(to, false);
     let after: Vec<_> = d.doc().slides.iter().map(|s| s.id).collect();
-    assert_eq!(after, [ids[1], ids[2], ids[0]]);
+    assert_eq!(after, [ids[1], ids[2], ids[0], ids[3]]);
     // The drag showed no slide of its own.
     assert_eq!(d.app.shown_slide(), Some(ids[1]));
 }

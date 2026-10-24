@@ -40,14 +40,18 @@ js-sys = "0.3.106"
 wasm-bindgen = "0.2.129"
 wasm-bindgen-futures = "0.4.79"
 web-sys = { version = "0.3.106", features = [
+    "BeforeUnloadEvent",
     "Blob",
     "Document",
     "Element",
+    "Event",
     "File",
     "FileList",
+    "HtmlAnchorElement",
     "HtmlCanvasElement",
     "HtmlInputElement",
     "KeyboardEvent",
+    "Url",
     "Window",
     "console",
 ] }
@@ -58,7 +62,7 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.79"
-web-sys = { version = "0.3.106", features = ["KeyboardEventInit"] }
+web-sys = { version = "0.3.106", features = ["EventInit", "KeyboardEventInit"] }
 
 [[bin]]
 name = "rootpoint"

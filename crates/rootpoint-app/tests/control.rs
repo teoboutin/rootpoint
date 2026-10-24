@@ -383,7 +383,7 @@ fn the_take_over_closes_the_socket_group_and_its_agent_is_told_to_wait() {
     assert_eq!(app.session().document(), &before);
     assert_eq!(one(&mut app, &path, "control"), "ok");
     assert_eq!(one(&mut app, &path, "text n3 \"c\""), "ok");
-    assert!(matches!(app.session().document().slides.len(), 3));
+    assert!(matches!(app.session().document().slides.len(), 4));
     let _ = Reply::Ok(String::new());
 }
 

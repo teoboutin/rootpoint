@@ -1,8 +1,9 @@
 //! Files held in memory, by path: the file system of the browser build, which holds the files of a
 //! directory the author picked, the images and the packs picked since, by path, which `open-copy`,
-//! `import` and `open-pack` copy into the session's map, per `design@rootpoint-app@picked-files-by-path`, and writes none,
-//! per `design@rootpoint-app@browser-load-only`. It is built on every target, so the native tests
-//! check the actions that read it.
+//! `import` and `open-pack` copy into the session's map, per `design@rootpoint-app@picked-files-by-path`, and the pack the
+//! session writes, which the page downloads. It moves and removes no file, since the browser build
+//! holds no workspace. It is built on every target, so the native tests check the actions that
+//! read it.
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -39,8 +40,11 @@ impl Files for MemoryFiles {
             .ok_or(format!("{path}: no such file"))
     }
 
-    fn write(&mut self, path: &str, _: &[u8]) -> Result<(), String> {
-        Err(format!("{path}: the browser build saves no file"))
+    /// Keeps the bytes under the path: a pack the browser build writes there, which the page then
+    /// downloads, `App::pack_for_download`.
+    fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String> {
+        self.0.borrow_mut().insert(path.to_owned(), bytes.to_vec());
+        Ok(())
     }
 
     fn exists(&mut self, path: &str) -> Result<bool, String> {
@@ -65,10 +69,10 @@ impl Files for MemoryFiles {
     }
 
     fn rename(&mut self, from: &str, _: &str) -> Result<(), String> {
-        Err(format!("{from}: the browser build saves no file"))
+        Err(format!("{from}: the browser build holds no workspace"))
     }
 
     fn remove(&mut self, path: &str) -> Result<(), String> {
-        Err(format!("{path}: the browser build saves no file"))
+        Err(format!("{path}: the browser build holds no workspace"))
     }
 }

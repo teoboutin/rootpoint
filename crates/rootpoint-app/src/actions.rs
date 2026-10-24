@@ -797,6 +797,34 @@ impl App {
         self.run(Command::Unpack { dir });
     }
 
+    /// Write the presentation held in memory as a pack into the files held in memory, and give its
+    /// name and its bytes, which the browser build hands to the page as a download: `save` when a
+    /// pack is the session's target and `new_pack` is false, `pack` to that pack's name, or to
+    /// `presentation.rpk`, otherwise. None, with the status saying why, when the command fails or
+    /// the app holds no files in memory. Built on every target, so the native tests check it.
+    pub fn pack_for_download(&mut self, new_pack: bool) -> Option<(String, Vec<u8>)> {
+        if self.socket_holds() {
+            return None;
+        }
+        let Some(mut held) = self.held.clone() else {
+            self.error = Some("this editor holds no files in memory".to_owned());
+            return None;
+        };
+        self.end_gestures();
+        let name = self.session.pack().unwrap_or("presentation.rpk").to_owned();
+        let command = if new_pack || self.session.pack().is_none() {
+            Command::Pack { file: name.clone() }
+        } else {
+            Command::Save
+        };
+        match self.run(command) {
+            Reply::Ok(_) => rootpoint_protocol::Files::read(&mut held, &name)
+                .ok()
+                .map(|bytes| (name, bytes)),
+            Reply::Err(_) => None,
+        }
+    }
+
     /// Open a pack the author picked, by its file name and its bytes: they are held in memory
     /// under the name, and `open-pack` opens them. A refused pack leaves the held files as they
     /// were. Only an app made by `App::in_memory` holds them; the browser build is one.
@@ -935,11 +963,31 @@ impl App {
         self.web.pick_directory();
     }
 
-    /// Ctrl+S: the browser build saves no file, and says so, per
-    /// `design@rootpoint-app@browser-load-only`.
+    /// Ctrl+S: write the pack the session targets, or a new one with none, and hand its bytes to
+    /// the page, which downloads them.
     #[cfg(target_arch = "wasm32")]
     pub fn save(&mut self) {
-        self.error = Some("the browser build saves no file".to_owned());
+        if let Some((name, bytes)) = self.pack_for_download(false) {
+            self.web.download(&name, &bytes);
+        }
+    }
+
+    /// "Save as pack…": write a pack, and hand its bytes to the page, which downloads them.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn pack_dialog(&mut self) {
+        if let Some((name, bytes)) = self.pack_for_download(true) {
+            self.web.download(&name, &bytes);
+        }
+    }
+
+    /// "Open pack…": ask for a `.rpk` file, which the next frames read, then open it with
+    /// `App::open_picked_pack`.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn open_pack_dialog(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        self.web.pick_pack();
     }
 
     /// Ask for an image or a font file, which the next frames read, then add it with

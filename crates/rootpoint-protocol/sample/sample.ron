@@ -5,7 +5,7 @@
         width: 16,
         height: 9,
     ),
-    next_id: 20,
+    next_id: 24,
     assets: {
         19: (
             path: "splits.png",
@@ -232,6 +232,32 @@
                 ],
                 dividers: [
                     0.8,
+                ],
+            ),
+        ),
+        (
+            id: 20,
+            root: Split(
+                id: 23,
+                axis: TopToBottom,
+                children: [
+                    Area(
+                        id: 21,
+                        content: Text(
+                            text: "Where it is saved",
+                            style: Named("Title"),
+                        ),
+                    ),
+                    Area(
+                        id: 22,
+                        content: Text(
+                            text: "A presentation is held in memory, or in a workspace: a directory with presentation.ron at its root and its images below it. The label at the right of the toolbar says which. In memory, Save as pack… writes one .rpk file that holds the presentation and its images, which Open pack… opens on any computer, and in the browser, a download; Save as workspace… writes it as a directory. A workspace saves itself after every change, and its .rootpoint/ folder holds what is the machine's and not the presentation's: its lock, its trash and the address of its window.",
+                            style: Named("Body"),
+                        ),
+                    ),
+                ],
+                dividers: [
+                    0.25,
                 ],
             ),
         ),

@@ -33,11 +33,11 @@ const COLOURS: [(u8, u8, u8); 8] = [
 ];
 
 impl App {
-    /// The native toolbar's buttons that open a pack or write the presentation, each named by
-    /// where it writes, so the author sees what each one does: in memory, a pack or a workspace; in
-    /// a workspace, a pack. "Open pack…" is a button of its own beside Open, since the native file
-    /// dialog picks a file or a directory, never either.
-    #[cfg(not(target_arch = "wasm32"))]
+    /// The toolbar's buttons that open a pack or write the presentation, each named by where it
+    /// writes, so the author sees what each one does: in memory, a pack or, natively, a workspace;
+    /// in a workspace, a pack. "Open pack…" is a button of its own beside Open, since a file dialog
+    /// picks a file or a directory, never either. The browser build writes a pack only, which the
+    /// page downloads.
     fn file_buttons(&mut self, ui: &mut Ui) {
         if ui.button("Open pack…").clicked() {
             self.open_pack_dialog();
@@ -45,6 +45,17 @@ impl App {
         if ui.button("Save").clicked() {
             self.save();
         }
+        #[cfg(target_arch = "wasm32")]
+        if ui.button("Save as pack…").clicked() {
+            self.pack_dialog();
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        self.native_file_buttons(ui);
+    }
+
+    /// The native toolbar's buttons that write a pack at a path, or a directory.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn native_file_buttons(&mut self, ui: &mut Ui) {
         if self.session.root().is_some() {
             if ui.button("Pack to…").clicked() {
                 self.pack_dialog();
@@ -71,9 +82,6 @@ impl App {
             if ui.button("Open…").clicked() {
                 self.open_dialog();
             }
-            // The browser build saves no file, so it shows none of the buttons of a pack or a
-            // save, per `design@rootpoint-app@browser-load-only`.
-            #[cfg(not(target_arch = "wasm32"))]
             self.file_buttons(ui);
             if ui.button("Sample").clicked() {
                 self.open_sample();
