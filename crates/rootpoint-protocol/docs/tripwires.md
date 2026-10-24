@@ -24,3 +24,13 @@ T1 of the premortem of the milestone on asset storage, recorded on the owner's w
 file, and a refusal when it names another host.
 **Re-entry:** at its firing, as the session proposed and the owner approved; and the
 standing-state review before every merge, the home's standing re-entry.
+
+## Guarding `design@rootpoint-protocol@table-of-added-assets`: an author loses an untracked file through a pack `##untracked-file-lost-in-a-pack`
+
+T3 of the premortem of the milestone on asset storage, recorded on the owner's word.
+
+**Fires when:** an author keeps a file the presentation does not name, as a source `.svg` beside
+its `.png`, packs, unpacks elsewhere, finds the file missing, and expected it kept.
+**Response:** an option of `pack` that packs the untracked files too.
+**Re-entry:** at its firing, as the session proposed and the owner approved; and the
+standing-state review before every merge, the home's standing re-entry.

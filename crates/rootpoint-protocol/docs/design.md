@@ -40,7 +40,8 @@ A command that names a target the document lacks is refused before any operation
 `font` option of `text`, `style add` and `style set` reply `err no asset a<n>` for an asset the
 table does not hold, `text … style="<name>"` and `style remove … into="<name>"` refuse a style
 the table lacks, or one whose font is a missing target, and `import` refuses an asset path that
-fails `asset_path_is_confined`, `design@rootpoint-protocol@store-confines-access`. The refusal is
+fails `asset_path_is_confined`, `design@rootpoint-protocol@store-confines-access`, as `asset-move`
+and `asset-relink` refuse one, and `asset-remove … into=` an asset the table lacks. The refusal is
 the command's, since the operations accept a reference to a missing target but for the exceptions
 `design@rootpoint-model@cosmetic-fallbacks` names. So a breach reaches a document only through a
 file: a command that copies or moves an area, as `duplicate-slide` and `swap` do, carries the breach
@@ -154,10 +155,13 @@ it: every operation applied inside is one undo step, undone and redone together,
 group leaves no step; `err` with no group open. `cancel` reverts every operation applied inside
 the group and restores the undo and redo stacks as they were at its `begin`; `err` with no group
 open. `undo` and `redo` inside a group close it first, as `end` does, then act; `new`, `sample`,
-`open` and `open-copy` close it as part of replacing the document and the stacks; `reload` joins
+`open`, `open-copy` and `open-pack` close it as part of replacing the document and the stacks; `reload` joins
 it as any edit does; view commands join nothing.
-The stacks hold steps, each the inverses of one group or of one command, applied atomically: a
-step that fails leaves the document and the view as they were.
+The stacks hold steps, each the file moves and the inverse operations of one group or of one
+command, as `design@rootpoint-protocol@asset-trash` makes them, the moves first; a group gathers
+both. A step applies whole or not at all: one that fails partway moves its files back and leaves
+the document and the view as they were, so an undo whose file move finds a file in the way replies
+`err` and keeps its step.
 
 A drag that sent one command a frame with no grouping would leave about sixty undo steps a second.
 The groups keep the session the only state and keep the grouping visible in a script, and the
@@ -195,7 +199,9 @@ or written, `Session::pack`, and replies `err` with none. A host path, the argum
 `render`, is read by the host's files as the host reads it.
 
 An asset path is a key of the map in memory, and relative to the root in a workspace, whose root
-never changes while it is open, so no command rewrites a path, in the document or in the stacks. A
+never changes while it is open, so no save and no open rewrites a path, in the document or in the
+stacks; only `asset-move` and `asset-relink` give one asset a new path,
+`design@rootpoint-protocol@asset-commands`. A
 save to any directory, the rival `rejected@rootpoint-protocol@free-save-path`, rewrites the paths
 against a base that each save and open changes, and compares paths of two bases, which a relative
 and an absolute form of one directory defeat; a canonical root leaves no two forms of one directory
@@ -273,6 +279,64 @@ its socket and never opens the workspace itself, so the lock keeps no agent out.
 watches a workspace a sync tool shares. On the owner's word: a client locks the workspace, through
 a lock in `.rootpoint/`, so that another client cannot take it, at least as long as no finer lock,
 per slide or per node, exists.
+
+### An asset is moved, relinked, replaced and removed by commands that name it by its id, each one undo step `##asset-commands`
+
+`asset-move <a> <asset-path>` moves the asset's file to a path that holds no file and that no other
+asset names, and gives the asset that path; it replies `err` for an asset whose file is missing,
+naming `asset-relink`. `asset-relink <a> <asset-path>` gives the asset the path of a file the store
+holds and no other asset names, and moves no file: the repair of a missing asset.
+`asset-replace <a> <host-path>` gives the asset's file the bytes of a host file. `asset-remove <a>`
+removes an asset nothing names, and `asset-remove <a> into=a<n>` first makes every image, text and
+named style that names `a` name `a<n>`, as `style remove … into=` does for a style,
+`design@rootpoint-model@style-removal`. `asset-remove-unused` removes every asset nothing names,
+one undo step, and none when no asset is unused, since an empty step would count as a change to
+save. Each other command is one undo step, its file moves in it,
+`design@rootpoint-protocol@asset-trash`. The query `assets [all|unused|missing|untracked]` replies
+one line, as every reply does, its entries separated by `; `, each `a<id> <path> <bytes|missing>
+uses=<uses|->`, its uses the areas and the named styles that name it; `assets untracked` replies
+the paths of the store's files no asset names, `design@rootpoint-protocol@table-of-added-assets`.
+
+An asset keeps its id through each command, `design@rootpoint-model@stable-ids`, so no slide
+changes at a move or a replace. A path another asset names is refused, since a move or a replace
+of one would change the other. On an asset whose path fails confinement, `asset-move` and
+`asset-replace` reply `err`, `asset-remove` removes the entry and moves no file, and
+`asset-relink` to a confined path repairs it, so such an asset can always leave the table and no
+command reaches outside the root, `design@rootpoint-protocol@store-confines-access`; the tests of
+`path@rootpoint-protocol@tests/asset_commands.rs` give `RecordingFiles` each command. The commands
+are the grammar every program that drives rootpoint uses, and the window's asset tab issues them,
+`design@rootpoint-app@actions-are-commands`.
+
+### A removed or replaced asset's file goes to the trash, which an undo takes it back from and an open of the workspace empties `##asset-trash`
+
+`asset-remove` moves the asset's file to the trash, and `asset-replace` writes the new bytes into
+the trash, then moves the old file there and the new one to the asset's path, so every change a
+command makes to the store's files is a move, which its undo step holds and runs back,
+`design@rootpoint-protocol@gesture-undo`. The trash is `.rootpoint/trash/<id>-<n>` in a workspace,
+`design@rootpoint-model@workspace-layout`, and `Session::trash`, by the same names, in memory;
+`<n>` counts the session's entries, so an asset replaced twice keeps both versions, and an entry
+an open failed to remove is never named again. `unpack` writes the trash in memory into the
+workspace's, so the undo steps it keeps find their files. An `open` of a workspace empties its
+trash, since no undo step of the new session reaches it, and a session in memory takes its trash
+with it: the trash holds a removed file only while an undo can bring it back, as the test
+`a_removal_goes_to_the_trash_and_its_undo_brings_the_file_back` of
+`path@rootpoint-protocol@tests/asset_commands.rs` shows across two sessions.
+
+A removal that deleted the file at once would leave the undo of `asset-remove` an asset with no
+file, against `design@rootpoint-app@no-discard-confirmation`, whose undo restores what an action
+discarded. A trash kept across sessions would keep every removed file, a video included, with no
+undo left to reach it.
+
+### The asset table holds the assets added, and a file no asset names stays untracked `##table-of-added-assets`
+
+An asset enters the table by `import`, `open-copy`, `open-pack` or `unpack`, and by no change on
+disk; a file under the root that no asset names is untracked, which `assets untracked` lists,
+`.rootpoint/` and `presentation.ron` left out, and which `pack` leaves out,
+`design@rootpoint-protocol@pack-container`. The rival, a table that mirrors the files on disk,
+`rejected@rootpoint-protocol@table-mirrors-the-disk`, gives an id to `.git/`, to a `README.md` and
+to an editor's backup files, and makes each change on disk an edit nobody made.
+`tripwire@rootpoint-protocol@untracked-file-lost-in-a-pack` watches an author who expected an
+untracked file packed.
 
 ## Packs
 

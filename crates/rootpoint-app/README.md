@@ -21,7 +21,7 @@ included, and a banner offers "Load the file", which makes it the presentation, 
 takes back, or "Keep mine", which writes the window's. Closing a window whose changes no file
 holds, in memory or in a workspace whose writes stopped or failed, asks first. The window reads an image or a font again when its file changes on disk. The window holds the
 authority to edit at start; `control` gives it to the socket, `release` gives it back, and the
-queries `tree`, `view`, `store`, `styles` and `render` need none. While the socket holds control, a banner
+queries `tree`, `view`, `store`, `styles`, `assets` and `render` need none. While the socket holds control, a banner
 over the toolbar says so beside a button "Take control", which takes it back; the window shows each
 change as it is made, and of the actions below it keeps only those that change the view or the
 window's own state: selecting by a click, Alt and the arrows, the outline or the node menu's

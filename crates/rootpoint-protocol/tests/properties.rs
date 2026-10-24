@@ -1,6 +1,7 @@
-//! Over random sequences of commands on a headless session, `undo`, `redo`, the groups, imports
-//! and copies of a directory included, the document stays valid, holds no cosmetic breach, an
-//! asset path that leads out of the root among them, and saves to a text that loads back equal. A
+//! Over random sequences of commands on a headless session, `undo`, `redo`, the groups, imports,
+//! copies of a directory and the asset commands included, the document stays valid, holds no
+//! cosmetic breach, an asset path that leads out of the root among them, and saves to a text that
+//! loads back equal. A
 //! breach reaches a document only by a file edited by hand, never by a command,
 //! `design@rootpoint-protocol@no-new-breach`; and the commands that give an asset a new path,
 //! `asset-move` and `asset-relink`, refuse one that fails confinement, so a path an undo or a redo

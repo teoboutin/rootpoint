@@ -484,8 +484,9 @@ no divider highlight, no resize cursor, no grip, no line of a split at the point
 the slide list. While the window holds it, every command of the socket but the queries, `control`
 and `release` replies `err the window has control`, or the refusal of a take-over.
 
-Two exceptions keep looking free. The socket's queries, `tree`, `view`, `store`, `styles` and `render`, need
-no authority, since they apply no operation and join no group. The window's inputs that change only
+Two exceptions keep looking free. The socket's queries, `tree`, `view`, `store`, `styles`, `assets`
+and `render`, need no authority, since they apply no operation and join no group. The window's
+inputs that change only
 the view need none either: a click selects, and never enters editing; Alt with an arrow, a row of
 the outline and the outline of its node under the pointer, the node menu's "Select", whose other
 entries are disabled, a row of the slide list, presenting and presenter mode's keys, and the button
@@ -641,8 +642,8 @@ owner asked for the assets to be watched.
 ### The window loads a `presentation.ron` changed outside rootpoint only when the author asks `##ron-loaded-on-request`
 
 No event of `presentation.ron` loads it: the guard of `design@rootpoint-app@ron-overwrite-guard`
-meets a change of it at the next write, and the banner's "Load the file" is the one load the window
-makes on its own. On the owner's word: the owner saw no reason to watch `presentation.ron`, whose
+meets a change of it at the next write, and the banner's "Load the file", at the author's request,
+is the one load the window makes of it. On the owner's word: the owner saw no reason to watch `presentation.ron`, whose
 correct editing, in the owner's opinion, is by the window or the text protocol.
 
 ## The browser build

@@ -93,6 +93,17 @@ author can type into it.
 fixture's first asset to those bytes and comparing the lengths of `save_ron`. A photo of 5 MB would
 be about 100 MB of text, and the file would no longer be a text a person reads or a diff shows.
 
+### Content that names an asset by its path `##asset-named-by-path`
+
+`live`. A move or a rename of an asset's file would rewrite every image and every style that names
+it, each one an operation, where an id makes it one operation on the asset alone. The file's
+grammar would change with it.
+
+### Folders stored in the presentation's file `##folders-in-the-file`
+
+`live`. A folder node holds no content: it is structure the paths already carry, which every move
+of a file would have to keep in step, and the file's grammar would gain a kind of entry.
+
 ### A file whose asset path is not confined, refused at load `##unconfined-path-refused-at-load`
 
 `live`. The store must refuse such a path at each access anyway, since a symlink out of the root is

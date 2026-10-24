@@ -103,7 +103,8 @@ A workspace, the store of `design@rootpoint-protocol@editing-modes` on disk, is 
 `presentation.ron` at its root and each asset as a file at its path below it, so the text stays
 readable and the assets stay ordinary files; `.rootpoint/` holds what is the machine's and not the
 presentation's, a `.gitignore` that ignores all of it, the lock of
-`design@rootpoint-protocol@workspace-lock` and the pointer to the window's socket. Neither
+`design@rootpoint-protocol@workspace-lock`, the pointer to the window's socket and the trash of
+`design@rootpoint-protocol@asset-trash`. Neither
 `presentation.ron` nor `.rootpoint/` is an asset path,
 `design@rootpoint-model@asset-path-confinement`, and `.rootpoint/` is never packed. The fixed name
 lets a script or an agent find the presentation without listing the directory, where a directory of
@@ -126,6 +127,13 @@ key of the map of a store in memory, `design@rootpoint-protocol@editing-modes`. 
 file is text only, as `goal@rootpoint@readable-save-file` and
 `goal@rootpoint-model@faithful-readable-file` ask: bytes held in it, the rival
 `rejected@rootpoint-model@bytes-in-the-file`, grow it about 20 times their size.
+
+### A folder of assets is the prefix their paths share, and the file stores no folder `##folders-from-paths`
+
+The asset table holds each asset's path, and nothing else names a folder: the folders a view shows
+are the prefixes of the paths, and a folder with no asset is no folder. The rival, folder nodes
+stored in the presentation's file, `rejected@rootpoint-model@folders-in-the-file`, stores structure
+that holds no content, which a move of a file must then keep in step with the paths.
 
 ### An asset path is confined below its root by `asset_path_is_confined` `##asset-path-confinement`
 
@@ -286,8 +294,11 @@ written in the file and print as `s<n>`, `n<n>` and `a<n>`. A duplicated slide's
 ids. A command or a script can then name a node across edits, saves and loads, as
 `goal@rootpoint@text-command-protocol` needs, and so could a link between dividers,
 `issue@rootpoint-model@linked-dividers`. The rival, naming a node by its position in the tree,
-`rejected@rootpoint-model@addressing-by-position`, shifts at every split or removal. Ids are part
-of every saved file and of the crate's public types.
+`rejected@rootpoint-model@addressing-by-position`, shifts at every split or removal. An asset keeps
+its id when its file moves or its bytes change, so content names it by its id and a move is one
+`Op::SetAssetPath` that changes no slide; content naming an asset by its path,
+`rejected@rootpoint-model@asset-named-by-path`, would rewrite every image and style that shows it
+at each move. Ids are part of every saved file and of the crate's public types.
 
 ## The file
 

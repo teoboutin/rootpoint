@@ -878,7 +878,7 @@ The runtime directory is `$XDG_RUNTIME_DIR/rootpoint/`, or `$TMPDIR/rootpoint/`,
 `/tmp/rootpoint-<uid>/`, where the variable is unset or relative; it is the user's alone, of mode
 0700, and one another user made first is refused. The window's
 socket there is `<name>-<hash>.sock` in a workspace, where `<name>` is the root's basename truncated
-to 40 bytes and `<hash>` the first 8 hexadecimal digits of the FNV-1a hash, 64 bits, of the
+to 40 bytes, or less where the socket's path would pass 103 bytes, and `<hash>` the first 8 hexadecimal digits of the FNV-1a hash, 64 bits, of the
 canonical root; and `memory-<pid>.sock` in memory. A workspace's socket is bound only while its lock
 is held; an in-memory socket needs no lock, since its pid makes its name unique. The bind removes a
 socket file at its path, and refuses and keeps any other file, as
@@ -937,8 +937,8 @@ listed by `assets untracked`, and is never packed.
 ### #asset-disk-changes
 
 In a workspace, `asset-move` renames the file through `Files::rename`, `asset-remove` moves it to
-`.rootpoint/trash/<id>-<n>`, `asset-replace` writes new bytes after moving the old ones to the trash,
-and undo moves them back; `asset-relink` sets an asset's path to a file already there, and moves no
+`.rootpoint/trash/<id>-<n>`, `asset-replace` writes the new bytes into the trash, then moves the old
+file there and the new one to the asset's path, and undo moves them back; `asset-relink` sets an asset's path to a file already there, and moves no
 file; in memory, the same moves happen between the map and `Session::trash`. The undo step of such
 a command holds its file moves with its operations, and a step whose file move fails applies none
 of them; `design@rootpoint-protocol@gesture-undo` is rewritten for it at #asset-commands. `open`
@@ -1079,7 +1079,7 @@ widened by D5:
 - **Shape B, asset changes held until an explicit save**: lost to #asset-disk-changes on #arg-10 and
   the owner's word of round 2.
 - **A reload of `presentation.ron` whenever it changes**, withdrawn by the session after #arg-15; and
-  **a reload that empties the undo stacks**, lost on `design@rootpoint-app@no-discard-confirmation`.
+  **a reload that empties the undo stacks**, lost on `design@rootpoint-protocol@reload-is-an-undo-step`.
   **No check before an autosave** lost to #ron-overwrite-guard on #arg-17.
 - **A binary format of rootpoint's own**, and **tar**: lost to #pack-container on #arg-13.
 - **A check of an asset's modification time at each draw**, and **an action "reload assets"**, the
@@ -1214,8 +1214,8 @@ at the new name and removes the old one, a shape the decision admits.
 4. #autosave-and-watch, landed, its spec deleted with its harvest: the autosave thread, the guard and
    `Op::ReplaceDocument`, the asset watcher. Fails alone on: AC1, AC3, and the guard's banner after
    an outside write.
-5. [#asset-commands](asset-commands.md): `asset-move`, `asset-replace`, `asset-remove`, `assets`,
-   the trash. Fails alone on: undo of a removal in a workspace, and AC4.
+5. #asset-commands, landed, its spec deleted with its harvest: `asset-move`, `asset-replace`,
+   `asset-remove`, `assets`, the trash. Fails alone on: undo of a removal in a workspace, and AC4.
 6. [#asset-manager](asset-manager.md): the asset tab. Fails alone on: each feature driving its
    command, checked against a second session.
 7. [#browser-packs](browser-packs.md): the browser opens a pack by its picker and saves by a

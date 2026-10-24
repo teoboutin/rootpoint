@@ -77,6 +77,17 @@ store, at `<asset-path>` or at the root under its file name; a name whose file h
 takes a suffix, `-2`, `-3` and on, before the extension, and one whose file holds the same bytes is
 used as it is. A file an asset already names adds no asset: the reply is that asset's id.
 
+An asset keeps its id through the asset commands. `asset-move <a> <asset-path>` moves its file to
+a path no file and no other asset holds; `asset-relink <a> <asset-path>` points it at a file the
+store holds, which repairs a missing asset; `asset-replace <a> <host-path>` gives its file the bytes
+of a host file; `asset-remove <a>` removes an asset nothing names, and with `into=a<n>` makes every
+image, text and style that names it name `a<n>` first; `asset-remove-unused` removes every asset
+nothing names, in one undo step, and replies their ids. A removed or replaced file goes to the
+trash, `.rootpoint/trash/` in a workspace, from which `undo` takes it back; the next `open` of the
+workspace empties it. `assets [all|unused|missing|untracked]` lists the assets, each
+`a<id> <path> <bytes|missing> uses=<areas and styles|->`, separated by `; `, or the paths of the
+store's files that no asset names, which `pack` leaves out.
+
 An asset path is always inside the root: it has no empty, `.` or `..` component, does not start
 with `/`, holds no `\`, has a first component other than `.rootpoint` and is neither
 `presentation.ron` nor `mimetype`. No command

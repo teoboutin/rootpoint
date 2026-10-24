@@ -14,11 +14,14 @@ reaches the edits it held. Whether such an open should ask too is not decided.
 ### What
 
 `design@rootpoint-app@no-discard-confirmation` makes the close of a window held in memory with
-`Session::unsaved` above 0 the one action that asks, since no undo reaches a closed window. The
-commands `open`, `open-copy`, `open-pack`, `new` and `sample` replace the session whole,
-`*self = Session::new()` in `Session::run_inner` of `path@rootpoint-protocol@src/session.rs`, so
-the undo stack of the presentation they replace goes with it: its edits are lost the same way, and
-nothing asks. Found by the self-consistency review of the slice of the hosts of a workspace, by
+`Session::unsaved` above 0 the one action that asks, since no undo reaches a closed window; D6 of
+`milestone@plans@asset-storage`, awaiting the owner, adds a workspace whose writes stopped or
+failed. The commands `open`, `open-copy`, `open-pack`, `new` and `sample`
+replace the session whole, `*self = Session::new()` in `Session::run_inner` of
+`path@rootpoint-protocol@src/session.rs`, so the undo stack of the presentation they replace goes
+with it: its edits are lost the same way, and nothing asks. The trash in memory goes with it too,
+`design@rootpoint-protocol@asset-trash`, so a removed asset's bytes are lost with the undo step
+that would bring them back. Found by the self-consistency review of the slice of the hosts of a workspace, by
 reading the code; not run in the window.
 
 ### Why it matters

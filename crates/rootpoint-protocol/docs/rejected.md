@@ -72,6 +72,12 @@ that recorded it, whose text is read by
 The paths the undo and redo stacks held were rewritten at each save, with the asset's bytes where no
 path from the new directory reached its file. The command `save <path>` was its interface.
 
+### An asset table that mirrors the files on disk `##table-mirrors-the-disk`
+
+`live`. Every file under the root would be an asset: `.git/`, a `README.md` and an editor's backup
+files would get ids, each file an editor writes would be an edit nobody made, and a pack would
+carry them all. Untracked files are the doubt the table of added assets leaves open.
+
 ### A pack in a binary format of rootpoint's own `##own-pack-format`
 
 `live`. It does what a zip does, an index of named entries, and only rootpoint opens it, where any
