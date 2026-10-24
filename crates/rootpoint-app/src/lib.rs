@@ -353,6 +353,7 @@ impl App {
                 | Command::Sample
                 | Command::Open { .. }
                 | Command::OpenCopy { .. }
+                | Command::OpenPack { .. }
                 | Command::Import { .. }
         );
         let reply = self.session.run(command, &mut *self.files);

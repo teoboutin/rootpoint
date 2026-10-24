@@ -5,6 +5,13 @@
 
 mod common;
 
+/// Write a presentation's text as `presentation.ron` of the directory `dir`.
+fn write_presentation_text(files: &mut common::MemoryFiles, dir: &str, text: &str) {
+    files
+        .files
+        .insert(format!("{dir}/presentation.ron"), text.as_bytes().to_vec());
+}
+
 use std::io::Write;
 use std::path::Path;
 
@@ -303,6 +310,64 @@ fn a_pack_with_a_symlink_entry_is_refused_whole() {
 }
 
 #[test]
+fn a_pack_with_a_directory_entry_above_its_root_is_refused_whole() {
+    refused(&[("../evil/", b"")]);
+}
+
+#[test]
+fn a_pack_whose_file_is_also_a_folder_is_refused_whole() {
+    refused(&[("a", b"a"), ("a/b", b"b")]);
+}
+
+/// A zip whose first entry is not `mimetype` is no pack, though `mimetype` comes second.
+#[test]
+fn a_zip_whose_first_entry_is_not_mimetype_is_refused() {
+    let ron = {
+        let mut files = MemoryFiles::default();
+        let mut s = Session::new();
+        ok(&mut s, &mut files, "sample");
+        save_ron(s.document())
+    };
+    let mut files = MemoryFiles::default();
+    files.files.insert(
+        "late.rpk".into(),
+        crafted(&[
+            ("presentation.ron", ron.as_bytes()),
+            ("mimetype", PACK_MIMETYPE.as_bytes()),
+        ]),
+    );
+    let mut s = Session::new();
+    assert!(matches!(
+        s.execute("open-pack late.rpk", &mut files),
+        Some(Reply::Err(_))
+    ));
+}
+
+/// Two assets a file edited by hand names at one path are packed as one file.
+#[test]
+fn two_assets_at_one_path_pack_as_one_file() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    ok(&mut s, &mut files, "sample");
+    let mut doc = s.document().clone();
+    let path = doc.assets.values().next().unwrap().path.clone();
+    apply(
+        &mut doc,
+        Op::AddAsset {
+            asset: Asset { path },
+        },
+    )
+    .unwrap();
+    write_presentation_text(&mut files, "ws", &save_ron(&doc));
+    files.files.insert("ws/splits.png".into(), b"png".to_vec());
+    ok(&mut s, &mut files, "open ws");
+    assert_eq!(ok(&mut s, &mut files, "pack d.rpk"), "missing=-");
+    let mut t = Session::new();
+    ok(&mut t, &mut files, "open-pack d.rpk");
+    assert_eq!(t.document(), s.document());
+}
+
+#[test]
 fn a_zip_that_is_no_pack_is_refused() {
     let mut files = MemoryFiles::default();
     files
@@ -374,6 +439,12 @@ fn unpack_makes_the_store_a_workspace() {
         Some(Reply::Err(_))
     ));
     assert!(matches!(s.store(), Store::Memory(_)));
+    // A path that is a file is no directory to unpack into.
+    files.files.insert("a-file".into(), b"x".to_vec());
+    assert!(matches!(
+        s.execute("unpack a-file", &mut files),
+        Some(Reply::Err(_))
+    ));
     ok(&mut s, &mut files, "unpack out");
     assert_eq!(ok(&mut s, &mut files, "store"), "workspace out unsaved=0");
     assert!(files.files.contains_key("out/splits.png"));

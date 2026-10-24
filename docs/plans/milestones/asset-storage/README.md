@@ -113,7 +113,9 @@ alone after the others; the repairs of a slice's review are reviewed again only 
 milestone. This replaces, for the branches, the one branch per slice of D1 and of
 `skill@knowledge-architect-planning@cutting-steps-and-slices`. On the same word, the work pauses for the
 owner only where the owner's word is needed to fill a gap, and otherwise goes on with sensible
-defaults, each reported to the owner.
+defaults, each reported to the owner. The relocation axis of the first slice's review could not
+read the diffs of `path@rootpoint-app@tests/actions.rs` and `path@rootpoint-app@tests/control.rs`;
+the review at the end of the milestone reads them.
 
 - **Gates.** `cargo x gates` runs every check a branch owes before it merges,
   `instructions@merge-gates`. Every slice keeps them passing, the gate `wasm` and the browser tests
@@ -496,7 +498,8 @@ container is the session's. Approved in round 2: "pack-container: approved", and
 is important. there does not seem to be too much of a cost using zip anyway, apart from needing it
 on wasm". Arguments: #arg-1, #arg-13. Shape: "Decided design" and #pack-commands. Harvest: a head of the
 protocol at #pack-commands, with `rejected` entries for a binary format of rootpoint's own and for
-tar, and one for the RON with embedded bytes, written at #rooted-assets. Guarded by T3 and T4.
+tar, and one for the RON with embedded bytes, written at #rooted-assets. The causes T3 and T4 stress #asset-tree-shape, #editing-modes and
+#browser-pack-save, which they guard.
 
 ### The browser build saves by downloading a pack `##browser-pack-save`
 
@@ -757,7 +760,7 @@ crates/rootpoint-protocol/src/session.rs   Session::pack: Option<String>, the pa
 crates/rootpoint-app/src/actions.rs        App::open_picked_pack(name, bytes)          (#pack-commands)
 crates/rootpoint-protocol/src/session.rs   enum Store { Memory(BTreeMap<String, Vec<u8>>), Workspace(String) }   (#rooted-assets)
 crates/rootpoint-protocol/src/session.rs   Session::store, Session::root               (#rooted-assets; Session::directory leaves)
-crates/rootpoint-protocol/src/session.rs   Session::unsaved: u64, the steps applied, undone or redone since the last open, save or pack   (#rooted-assets)
+crates/rootpoint-protocol/src/session.rs   Session::unsaved: u64, the steps applied, undone or redone since the last open or save, or a pack in memory   (#rooted-assets)
 crates/rootpoint-protocol/src/session.rs   Session::trash: BTreeMap<AssetId, Vec<u8>>, the trash in memory   (#asset-commands)
 crates/rootpoint-protocol/src/pack.rs      fn write_pack(ron: &str, assets: &[(String, Vec<u8>)]) -> Result<Vec<u8>, String>   (#pack-commands)
 crates/rootpoint-protocol/src/pack.rs      fn read_pack(&[u8]) -> Result<(String, BTreeMap<String, Vec<u8>>), String>   (#pack-commands)
@@ -1158,11 +1161,12 @@ AC2. Guards #asset-paths-only and #pack-container. Judged at #rooted-assets (the
 an asset, and `open-pack`, which runs `read_pack`), and at #asset-commands (`asset-move`,
 `asset-replace`, `asset-remove` and `asset-relink` of such an asset). Observable, each through the
 protocol tests' `RecordingFiles`, which records every path it is given: a RON whose asset path is
-absolute, holds `..`, starts with `.rootpoint` or is `presentation.ron` loads, each such asset named
+absolute, holds `..`, starts with `.rootpoint` or is `presentation.ron` or `mimetype` loads, each such asset named
 by `Document::breaches` and drawn as missing; each command on such an asset replies as "Decided
 design" of #asset-paths-only says; an `import` to such a path replies `err`; and a crafted pack
 with such entries and a symlink entry is refused whole. No path outside the root is given to the
-host's files, but by `import` and `open-copy`'s source. Response: the case is fixed in the slice
+host's files, but by the host paths a command names, as `import` and `open-copy`'s source and the
+file or directory of `pack`, `open-pack` and `unpack`. Response: the case is fixed in the slice
 that judges it; a case the design cannot keep inside the root reopens #asset-paths-only.
 
 ### The watcher watches only the directories that hold an asset of the table `##ac-watch-asset-dirs`

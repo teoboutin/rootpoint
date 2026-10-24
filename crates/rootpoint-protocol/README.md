@@ -33,8 +33,9 @@ prints each reply as it comes:
   `err`, also when the editor then ends the connection, as after a take-over; 2 when the socket
   cannot be reached, or stdin or the connection fails before any `err`, as when the editor is
   closed. A line holding a newline is refused before it is sent.
-- The host paths of `open`, `open-copy`, `import` and `render` are relative to the editor's working
-  directory, not to the client's; an asset's path is relative to the store's root, as below.
+- The host paths of `open`, `open-copy`, `open-pack`, `pack`, `unpack`, `import` and `render` are
+  relative to the editor's working directory, not to the client's; an asset's path is relative to
+  the store's root, as below.
 
 `control` asks for the authority to edit a running editor, and `release` gives it back, refused
 while the client holding it has a group open; headless, `control` replies `ok`, since a headless session has one
@@ -46,8 +47,9 @@ path below the root; `save` writes `presentation.ron` there. `new`, `sample` and
 which copies a directory's presentation and its assets' files, open in memory: the assets' bytes are
 the session's own, and `save` replies `err` until a pack holds the presentation. `store` replies
 `ok memory unsaved=<n>` or `ok workspace <root> unsaved=<n>`, the root absolute, with `n` the undo
-steps made, undone or redone since the store was opened or saved. The host paths of `open`,
-`open-copy`, `import` and `render` are relative to the working directory.
+steps made, undone or redone since the store was opened or saved, or, in memory, written as a pack.
+The host paths of `open`, `open-copy`, `open-pack`, `pack`, `unpack`, `import` and `render` are
+relative to the working directory.
 
 `pack <file>` writes the presentation and its assets' files as a pack, a zip file of extension
 `.rpk`: first an entry `mimetype` holding `application/x-rootpoint`, stored, then

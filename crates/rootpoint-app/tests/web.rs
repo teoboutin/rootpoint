@@ -225,6 +225,71 @@ fn a_second_directory_is_drawn_with_its_own_images() {
     );
 }
 
+/// Files held in memory that keep what is written, for a session that writes a pack.
+#[derive(Default)]
+struct Written(std::collections::BTreeMap<String, Vec<u8>>);
+
+impl rootpoint_protocol::Files for Written {
+    fn read(&mut self, path: &str) -> Result<Vec<u8>, String> {
+        self.0
+            .get(path)
+            .cloned()
+            .ok_or(format!("{path}: no such file"))
+    }
+    fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String> {
+        self.0.insert(path.to_owned(), bytes.to_vec());
+        Ok(())
+    }
+    fn exists(&mut self, path: &str) -> Result<bool, String> {
+        Ok(self.0.contains_key(path))
+    }
+    fn canonical(&mut self, path: &str) -> Result<String, String> {
+        Ok(path.to_owned())
+    }
+}
+
+/// The pack of a picked directory, as `open-copy` then `pack` write it.
+fn pack_of(picked: Vec<(String, Vec<u8>)>) -> Vec<u8> {
+    let dir = picked[0].0.split('/').next().unwrap().to_owned();
+    let mut files = Written(picked.into_iter().collect());
+    let mut session = rootpoint_protocol::Session::new();
+    for line in [format!("open-copy {dir}"), "pack p.rpk".to_owned()] {
+        let reply = session.run(
+            rootpoint_protocol::parse_command(&line).unwrap(),
+            &mut files,
+        );
+        assert!(
+            matches!(reply, rootpoint_protocol::Reply::Ok(_)),
+            "{line}: {reply}"
+        );
+    }
+    files.0.remove("p.rpk").unwrap()
+}
+
+/// A second pack whose presentation names the same paths is drawn with its own images, not the
+/// first's: opening a pack drops the decoded assets of the store it replaces.
+#[test]
+fn a_second_pack_is_drawn_with_its_own_images() {
+    let other = include_bytes!("data/sample-s1.png");
+    let mut app = App::in_memory();
+    app.open_picked_pack("a.rpk".to_owned(), pack_of(picked()));
+    app.present();
+    let first = presented_image(&mut app);
+    app.stop_presenting();
+    app.open_picked_pack("b.rpk".to_owned(), pack_of(picked_with("other", other)));
+    app.present();
+    let second = presented_image(&mut app);
+    let mut fresh = App::in_memory();
+    fresh.open_picked_pack("b.rpk".to_owned(), pack_of(picked_with("other", other)));
+    fresh.present();
+    let expected = presented_image(&mut fresh);
+    assert!(first != expected, "the two packs' images differ");
+    assert!(
+        second == expected,
+        "the second pack is drawn with its own image"
+    );
+}
+
 /// A directory that loads no presentation leaves the open one with its files: an edit that decodes
 /// its images again, undone, draws the same image as before.
 #[test]

@@ -1,6 +1,6 @@
 //! Files held in memory, by path: the file system of the browser build, which holds the files of a
-//! directory the author picked and the images picked since, by path, which `open-copy` and `import`
-//! copy into the session's map, per `design@rootpoint-app@picked-files-by-path`, and writes none,
+//! directory the author picked, the images and the packs picked since, by path, which `open-copy`,
+//! `import` and `open-pack` copy into the session's map, per `design@rootpoint-app@picked-files-by-path`, and writes none,
 //! per `design@rootpoint-app@browser-load-only`. It is built on every target, so the native tests
 //! check the actions that read it.
 
@@ -52,6 +52,9 @@ impl Files for MemoryFiles {
         Ok(path.to_owned())
     }
     fn list(&mut self, dir: &str) -> Result<Vec<String>, String> {
+        if self.0.borrow().contains_key(dir) {
+            return Err(format!("{dir}: not a directory"));
+        }
         let below = format!("{dir}/");
         Ok(self
             .0

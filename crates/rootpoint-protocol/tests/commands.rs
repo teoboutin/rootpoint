@@ -488,7 +488,7 @@ fn a_refused_command_changes_nothing() {
         "preview on now",
         "render s9 out.png",
         "render s1 out.png",
-        // A presentation held in memory has no file of its own to save to.
+        // A presentation held in memory, with no pack, has no file of its own to save to.
         "save",
         // A quoted word is a text or a path, never an id, an option or a verb.
         "text n2 \"x\" \"bold\"",
@@ -509,6 +509,10 @@ fn a_refused_command_changes_nothing() {
         "open-pack",
         "unpack",
         "open-pack missing.rpk",
+        // An empty path is the host's working directory.
+        "unpack \"\"",
+        "open \"\"",
+        "import cat.png \"\"",
         "sample s1",
         "begin now",
         // The style commands: a style of the table takes values, never a choice of style.

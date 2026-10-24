@@ -1,8 +1,6 @@
-//! A pack: a presentation and its assets in one zip file, `design@rootpoint-protocol@pack-container`.
-//! Its first entry is `mimetype`, stored, holding `PACK_MIMETYPE`, so a reader tells a pack by its
-//! first bytes, as EPUB's container does; then `presentation.ron`, deflated; then each asset's file
-//! at its asset path, stored, its bytes as they are. Unzipped by any tool, it gives the layout of a
-//! workspace.
+//! A pack: a presentation and its assets in one zip file, `design@rootpoint-protocol@pack-container`:
+//! first the entry `mimetype`, stored, holding `PACK_MIMETYPE`; then `presentation.ron`, deflated;
+//! then each asset's file at its asset path, stored, its bytes as they are.
 
 use std::collections::BTreeMap;
 use std::io::{Cursor, Read, Write};
@@ -33,7 +31,12 @@ pub(crate) fn write_pack(ron: &str, assets: &[(String, Vec<u8>)]) -> Result<Vec<
         .map_err(|e| e.to_string())?;
     zip.start_file(PRESENTATION, deflated).map_err(fail)?;
     zip.write_all(ron.as_bytes()).map_err(|e| e.to_string())?;
+    // Two assets a file edited by hand names at one path are one file of the pack.
+    let mut written = std::collections::BTreeSet::new();
     for (path, bytes) in assets {
+        if !written.insert(path) {
+            continue;
+        }
         zip.start_file(path.as_str(), stored).map_err(fail)?;
         zip.write_all(bytes).map_err(|e| e.to_string())?;
     }
@@ -41,9 +44,10 @@ pub(crate) fn write_pack(ron: &str, assets: &[(String, Vec<u8>)]) -> Result<Vec<
 }
 
 /// The RON text and the files of a pack, by asset path. Refused whole: a file whose first entry is
-/// not `mimetype` holding `PACK_MIMETYPE`, a pack with no `presentation.ron`, and an entry that is
-/// a symlink or whose name fails `asset_path_is_confined`. A directory entry, which a zip tool
-/// writes for each folder, holds no file and is skipped.
+/// not `mimetype` holding `PACK_MIMETYPE`, a pack with no `presentation.ron`, an entry that is a
+/// symlink or whose name, a directory's included, fails `asset_path_is_confined`, and a file whose
+/// name is the folder of another, which no directory can hold. A directory entry, which a zip tool
+/// writes for each folder, holds no file and is skipped once its name is checked.
 pub(crate) fn read_pack(bytes: &[u8]) -> Result<(String, BTreeMap<String, Vec<u8>>), String> {
     let fail = |e: zip::result::ZipError| format!("the pack: {e}");
     let mut zip = ZipArchive::new(Cursor::new(bytes)).map_err(fail)?;
@@ -66,6 +70,11 @@ pub(crate) fn read_pack(bytes: &[u8]) -> Result<(String, BTreeMap<String, Vec<u8
             return Err(format!("the pack's entry {name} is a symlink"));
         }
         if entry.is_dir() {
+            if !asset_path_is_confined(name.trim_end_matches('/')) {
+                return Err(format!(
+                    "the pack's entry {name} is not a path inside the root"
+                ));
+            }
             continue;
         }
         let mut held = Vec::new();
@@ -84,5 +93,12 @@ pub(crate) fn read_pack(bytes: &[u8]) -> Result<(String, BTreeMap<String, Vec<u8
         }
     }
     let ron = ron.ok_or(format!("the pack holds no {PRESENTATION}"))?;
+    if let Some(name) = files.keys().find(|name| {
+        files
+            .keys()
+            .any(|other| other.starts_with(&format!("{name}/")))
+    }) {
+        return Err(format!("the pack's entry {name} is a file and a folder"));
+    }
     Ok((ron, files))
 }

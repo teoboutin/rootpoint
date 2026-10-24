@@ -20,7 +20,8 @@ pub trait Files {
         Err(format!("{path}: unsupported"))
     }
     /// Every file below the directory, at any depth, as a path relative to it written with `/`, a
-    /// symlink included as a file; none for a directory that does not exist.
+    /// symlink included as a file; none for a directory that does not exist, and an error for a
+    /// path that is a file.
     fn list(&mut self, dir: &str) -> Result<Vec<String>, String> {
         Err(format!("{dir}: unsupported"))
     }

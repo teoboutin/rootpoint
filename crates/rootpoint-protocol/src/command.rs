@@ -233,7 +233,7 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         "open-copy" => Command::OpenCopy { dir: args.path()? },
         "import" => Command::Import {
             from: args.path()?,
-            to: args.optional_path(),
+            to: args.optional_path()?,
         },
         "store" => Command::Store,
         "pack" => Command::Pack { file: args.path()? },
@@ -625,21 +625,27 @@ impl<'a> Args<'a> {
         }
     }
 
-    /// The next word, bare or quoted, as a path.
+    /// The next word, bare or quoted, as a path. An empty path is refused: a host reads it as its
+    /// working directory, where `unpack ""` would write over files.
     pub(crate) fn path(&mut self) -> Result<String, ParseError> {
         let word = self
             .words
             .get(self.next)
             .ok_or_else(|| ParseError("missing a path".to_owned()))?;
         self.next += 1;
+        if word.text().is_empty() {
+            return Err(ParseError("an empty path".to_owned()));
+        }
         Ok(word.text().to_owned())
     }
 
-    /// The next word, bare or quoted, as a path, or `None` when the line has no more words.
-    pub(crate) fn optional_path(&mut self) -> Option<String> {
-        let word = self.words.get(self.next)?;
-        self.next += 1;
-        Some(word.text().to_owned())
+    /// The next word, bare or quoted, as a path, or `None` when the line has no more words; an
+    /// empty path is refused, as `path` refuses it.
+    pub(crate) fn optional_path(&mut self) -> Result<Option<String>, ParseError> {
+        if self.next == self.words.len() {
+            return Ok(None);
+        }
+        self.path().map(Some)
     }
 
     /// The next word parsed by `parse`, or `None` when the line has no more bare words. A quoted

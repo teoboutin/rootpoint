@@ -54,7 +54,8 @@ with their calls in `App::frame`, and the actions of `path@rootpoint-app@src/act
 differ there, open, save and adding an image; the Save button of `path@rootpoint-app@src/panels.rs`
 is under `cfg(not(target_arch = "wasm32"))`; the control socket is under `cfg(unix)`, which the
 wasm target is not, per `design@rootpoint-app@control-socket`. What a picker gives goes through an
-action of `actions.rs`, `App::open_directory` or `App::add_picked_image`, built on every target,
+action of `actions.rs`, `App::open_directory`, `App::add_picked_image` or `App::open_picked_pack`,
+built on every target,
 so the native tests check it. `path@rootpoint-app@tests/actions.rs` and
 `path@rootpoint-app@tests/web.rs` also run in a headless browser, the gate `wasm-test` of
 `path@xtask@src/main.rs`, per `design@xtask@browser-tests-gated`; a test added to either must

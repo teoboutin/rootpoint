@@ -754,7 +754,8 @@ fn the_picker_actions_issue_their_commands() {
         session.run(Command::Undo, &mut files)
     );
     same(&app, &session, "after undo");
-    // The browser build saves nothing, and a presentation held in memory has no file to save to.
+    // The browser build saves nothing, and a presentation held in memory, with no pack, has no
+    // file to save to.
     assert!(matches!(app.run(c("save")), Reply::Err(_)));
 }
 

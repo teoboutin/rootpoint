@@ -79,5 +79,5 @@ unzip tool opens a zip into the layout of a workspace.
 
 ### A pack as a tar file `##tar-pack`
 
-`live`. A tar has no index, so a reader reads the whole file to find one asset; and the file
-managers of Windows did not open one until recently, where every one opens a zip.
+`live`. A tar has no index, so a reader reads the whole file to find one asset, where the browser
+reads one asset of a zip by its central index.

@@ -1,8 +1,9 @@
 //! Runs protocol commands with no window: one command per line from stdin, one reply per command
 //! to stdout, until the end of its input. A host path, the argument of `open`, `open-copy`,
-//! `import` and `render`, is relative to the working directory; an asset's path, to the root of the
-//! workspace `open` opened, or a key of the map of a presentation held in memory. It has no
-//! autosave: a script writes `presentation.ron` by `save`.
+//! `open-pack`, `pack`, `unpack`, `import` and `render`, is relative to the working directory; an
+//! asset's path, to the root of the workspace open, or a key of the map of a presentation held in
+//! memory. It has no autosave: a script writes a workspace's `presentation.ron`, or the pack of a
+//! presentation held in memory, by `save`.
 
 use std::io::{BufRead, Write};
 

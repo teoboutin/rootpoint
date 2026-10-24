@@ -95,7 +95,8 @@ pub enum Store {
 pub struct Session {
     doc: Document,
     store: Store,
-    /// The undo steps pushed, undone or redone since the store was opened or last saved.
+    /// The undo steps pushed, undone or redone since the store was opened or last saved, or, in
+    /// memory, written as a pack.
     unsaved: u64,
     /// The host path of the pack last opened or written in memory, which `save` writes again.
     pack: Option<String>,

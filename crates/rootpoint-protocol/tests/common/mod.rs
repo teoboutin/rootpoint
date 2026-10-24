@@ -42,6 +42,9 @@ impl Files for MemoryFiles {
         Ok(path.to_owned())
     }
     fn list(&mut self, dir: &str) -> Result<Vec<String>, String> {
+        if self.files.contains_key(dir) {
+            return Err(format!("{dir}: not a directory"));
+        }
         let below = format!("{dir}/");
         Ok(self
             .files

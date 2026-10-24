@@ -35,7 +35,8 @@ const COLOURS: [(u8, u8, u8); 8] = [
 impl App {
     /// The native toolbar's buttons that open a pack or write the presentation, each named by
     /// where it writes, so the author sees what each one does: in memory, a pack or a workspace; in
-    /// a workspace, a pack.
+    /// a workspace, a pack. "Open pack…" is a button of its own beside Open, since the native file
+    /// dialog picks a file or a directory, never either.
     #[cfg(not(target_arch = "wasm32"))]
     fn file_buttons(&mut self, ui: &mut Ui) {
         if ui.button("Open pack…").clicked() {
@@ -69,8 +70,8 @@ impl App {
             if ui.button("Open…").clicked() {
                 self.open_dialog();
             }
-            // The browser build saves no file, so it shows no button that saves, per
-            // `design@rootpoint-app@browser-load-only`.
+            // The browser build saves no file, so it shows none of the buttons of a pack or a
+            // save, per `design@rootpoint-app@browser-load-only`.
             #[cfg(not(target_arch = "wasm32"))]
             self.file_buttons(ui);
             if ui.button("Sample").clicked() {
