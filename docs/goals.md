@@ -64,8 +64,9 @@ session in tests.
 ## The editor and presenter mode run in a web browser `##runs-in-browser`
 
 The tool also builds to WebAssembly, served as a static website, so a presentation can be edited
-and shown in a browser with no install. A packed presentation, carried as one file, can be opened
-and presented from any computer with a web browser. It is met when the same editing operations and
-presenter mode work in a browser build as in the native build, and when a packed file opens in
-that build. The owner may abandon this goal if it constrains the design more than its use
+and shown in a browser with no install. A packed presentation, carried as one file, can be opened,
+presented and saved again from any computer with a web browser. It is met when the same editing
+operations and presenter mode work in a browser build as in the native build, when a packed file
+opens in that build, and when a presentation edited there is saved as a packed file that opens
+again. The owner may abandon this goal if it constrains the design more than its use
 justifies.
