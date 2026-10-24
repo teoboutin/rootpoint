@@ -698,6 +698,7 @@ impl App {
             return if autosave.stopped() {
                 format!("Workspace {root}, not saved: the file changed outside rootpoint")
             } else if let Some(failure) = autosave.failure() {
+                // The default D7 of `milestone@plans@asset-storage`, awaiting the owner.
                 format!("Workspace {root}, not saved: {failure}")
             } else {
                 format!("Workspace {root}, saved")
@@ -719,7 +720,7 @@ impl App {
 
     /// Whether a close would lose edits no file holds: in memory, the edits since the last save; in
     /// a workspace, those its autosave did not write, since its guard stopped the writes or its
-    /// last write failed.
+    /// last write failed, the default D6 of `milestone@plans@asset-storage`, awaiting the owner.
     fn edits_not_written(&self) -> bool {
         #[cfg(not(target_arch = "wasm32"))]
         if let (Some(_), Some(autosave)) = (self.session.root(), &self.autosave) {

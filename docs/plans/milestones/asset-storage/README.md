@@ -106,16 +106,20 @@ C1 to C9, in the order of the section "Criteria" below; "Names" maps each.
 
 Before each slice, read `skill@knowledge-architect-planning@working-a-slice` whole, and follow it.
 The slices are built in the order of "Implementation sequence". On the owner's word, given when the
-implementation started, they are built on one branch, named after this milestone, which merges as
-`instructions@git-workflow` says after the last slice: each slice takes its audit, its work, its
+implementation started, they are built on one branch: each slice takes its audit, its work, its
 harvest and then one review, as the review before a merge would be, with the transcript axis run
 alone after the others; the repairs of a slice's review are reviewed again only at the end of the
-milestone. This replaces, for the branches, the one branch per slice of D1 and of
+milestone. The branch's name, this milestone's, and its merge after the last slice, as
+`instructions@git-workflow` says, are the session's reading of that word, D9. This replaces, for the branches, the one branch per slice of D1 and of
 `skill@knowledge-architect-planning@cutting-steps-and-slices`. On the same word, the work pauses for the
 owner only where it absolutely needs the owner's word to fill a gap, and otherwise goes on with
 sensible defaults, which `primer@decided-section` has the session report. The relocation axis of the first slice's review could not
 read the diffs of `path@rootpoint-app@tests/actions.rs` and `path@rootpoint-app@tests/control.rs`;
-the review at the end of the milestone reads them.
+the review at the end of the milestone reads them, and judges whether
+`design@rootpoint-protocol@workspace-lock` states the cost the review of #workspace-host found,
+that `.rootpoint/` leaves with a command that fails after creating it. The session's report to the
+owner at the end of the milestone carries the readings its commits say are reported to the owner:
+T1's re-entry, and the reading of `import` in "Readings".
 
 - **Gates.** `cargo x gates` runs every check a branch owes before it merges,
   `instructions@merge-gates`. Every slice keeps them passing, the gate `wasm` and the browser tests
@@ -1004,7 +1008,8 @@ One text slide of the sample, with no image: in memory or in a workspace, what e
 ### #unsaved-close-warning
 
 In memory, a close of the window, or of the page, while `Session::unsaved` is not 0 asks first; a
-workspace never asks. The native window cancels the close by
+workspace never asks while its autosave writes every step, and asks while its writes are stopped or
+failed, D6. The native window cancels the close by
 `ViewportCommand::CancelClose` and shows the question; the page installs a `beforeunload`
 listener. D3 puts to the owner the title of `design@rootpoint-app@no-discard-confirmation`, which
 this question contradicts.
@@ -1274,6 +1279,21 @@ at the new name and removes the old one, a shape the decision admits.
   only by Ctrl+S; no one of the three labels is true of either. Default: the label takes the
   states of the mapping table "The store's state to the state label". Found by the review of this
   document; it bears on #workspace-host.
+- **D6**, awaiting the owner, built at the repair of #autosave-and-watch: on #unsaved-close-warning,
+  whose decided design says "a workspace never asks", on the session's premise that its autosave
+  writes every step. The guard stops the writes, and a write can fail, so a close then loses the
+  edits since. Default: a close asks while the guard stops the writes or the last write failed, as
+  `design@rootpoint-app@no-discard-confirmation` now says; the rival is a workspace that never asks.
+- **D7**, awaiting the owner, built at the same repair: on D5's table, a row the owner's ruling did
+  not name, "a workspace, its last write failed", whose label reads "Workspace `<path>`, not saved:
+  `<reason>`"; the rival is the label "saved" over a write that failed.
+- **D8**, awaiting the owner, judged at the same repair: the rival of #socket-place "a bind through
+  `/proc/self/fd`", which #arg-19 refutes as "Linux only, and obscure", leaves the `rejected`
+  register, since it changes no interface and reasoning refutes it; named pipes keep an entry,
+  `rejected@rootpoint-app@named-pipes`. The rival is an entry written for it.
+- **D9**, awaiting the owner: the reading of the owner's word on the branch in "How the work is
+  done", a branch named after this milestone, which merges after the last slice once the owner has
+  ruled on every default above.
 
 ## Harvest
 
