@@ -120,8 +120,13 @@ the review at the end of the milestone reads them, and judges whether
 `design@rootpoint-protocol@workspace-lock` states the cost the review of #workspace-host found,
 that `.rootpoint/` leaves with a command that fails after creating it. The session's report to the
 owner at the end of the milestone carries the readings its commits say are reported to the owner:
-T1's re-entry, and the reading of `import` in "Readings"; the narrowing of T2's clause, which the
-window's own `save` met before its repair, as the owner's to make; whether an open that replaces a
+T1's re-entry; the decision-record axis's reading, in the message of "Repair the branch after the
+transcript review of the slice of rooted assets", that the owner's answer on where a copy from
+outside goes, given for the save rule, applies to the import of
+`design@rootpoint-protocol@import-copies-into-the-store`; the narrowing of T2's clause, which the
+window's own `save` met before its repair, as the owner's to make; whether
+`goal@rootpoint@runs-in-browser`, which names opening a pack and editing, should also name saving,
+which the owner counts part of that goal; whether an open that replaces a
 presentation held in memory asks first, a member the owner's word on the close does not name,
 `issue@rootpoint-app@open-discards-unsaved-edits`, its default an open that does not ask, as built;
 and, in its "Decided" section,
