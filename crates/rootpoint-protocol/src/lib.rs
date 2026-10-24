@@ -17,6 +17,6 @@ mod tree;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod workspace;
 
-pub use command::{Command, ParseError, StyleCommand, StyleOption, parse_command};
+pub use command::{AssetFilter, Command, ParseError, StyleCommand, StyleOption, parse_command};
 pub use files::Files;
 pub use session::{Reply, Session, Store, View, read_line};

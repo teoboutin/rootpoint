@@ -25,4 +25,13 @@ pub trait Files {
     fn list(&mut self, dir: &str) -> Result<Vec<String>, String> {
         Err(format!("{dir}: unsupported"))
     }
+    /// Move the file at `from` to `to`, creating the directories above `to`; `to` holds no file,
+    /// which the session checks first, since a native rename replaces one.
+    fn rename(&mut self, from: &str, _to: &str) -> Result<(), String> {
+        Err(format!("{from}: unsupported"))
+    }
+    /// Remove the file at the path.
+    fn remove(&mut self, path: &str) -> Result<(), String> {
+        Err(format!("{path}: unsupported"))
+    }
 }

@@ -250,6 +250,7 @@ impl crate::App {
                                 | Command::View
                                 | Command::Store
                                 | Command::Styles
+                                | Command::Assets { .. }
                                 | Command::Render { .. }
                                 | Command::Control
                                 | Command::Release
@@ -275,6 +276,7 @@ impl crate::App {
             | Command::View
             | Command::Store
             | Command::Styles
+            | Command::Assets { .. }
             | Command::Render { .. } => self.session.run(command, &mut *self.files),
             Command::Control => {
                 if self.controller != Controller::Socket {

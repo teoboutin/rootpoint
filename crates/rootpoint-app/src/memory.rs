@@ -63,4 +63,12 @@ impl Files for MemoryFiles {
             .filter_map(|k| k.strip_prefix(&below).map(str::to_owned))
             .collect())
     }
+
+    fn rename(&mut self, from: &str, _: &str) -> Result<(), String> {
+        Err(format!("{from}: the browser build saves no file"))
+    }
+
+    fn remove(&mut self, path: &str) -> Result<(), String> {
+        Err(format!("{path}: the browser build saves no file"))
+    }
 }

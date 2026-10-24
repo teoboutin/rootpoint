@@ -11,9 +11,11 @@ use rootpoint_model::{
 };
 use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
 
-use crate::command::{Command, StyleCommand, StyleOption, parse_command, quote, quote_always};
+use crate::command::{
+    AssetFilter, Command, StyleCommand, StyleOption, parse_command, quote, quote_always,
+};
 use crate::files::Files;
-use crate::store::{PRESENTATION, join, readable, unconfined, with_suffix, writable};
+use crate::store::{PRESENTATION, TRASH, join, readable, unconfined, with_suffix, writable};
 use crate::tree::slide_tree;
 
 /// The reply to one command: `ok` with its result, or `err` with the reason. It prints as one
@@ -67,20 +69,59 @@ pub fn read_line(line: &[u8]) -> Option<Result<Command, Reply>> {
     Some(parse_command(line).map_err(|e| Reply::Err(e.0)))
 }
 
-/// One undo step: the operations that revert one command, or every command of one group, applied
-/// in order.
-type Step = Vec<Op>;
+/// A place of the store a file moves between: an asset path, or an entry of the trash, which is
+/// `.rootpoint/trash/<name>` in a workspace and `Session::trash` in memory.
+#[derive(Clone, Debug, PartialEq)]
+enum Place {
+    Asset(String),
+    Trash(String),
+}
 
-/// A group opened by `begin`: the inverses of its edits, in the order they were applied, and the
+/// A file moved from one place of the store to another, which holds no file.
+#[derive(Clone, Debug, PartialEq)]
+struct Move {
+    from: Place,
+    to: Place,
+}
+
+/// One undo step: the file moves and the operations that revert one command, or every command of
+/// one group, each applied in order, the moves first. A move names its places by path, never by
+/// the document, so the moves and the operations are independent of each other.
+#[derive(Clone, Debug, Default)]
+struct Step {
+    ops: Vec<Op>,
+    moves: Vec<Move>,
+}
+
+impl Step {
+    fn ops(ops: Vec<Op>) -> Step {
+        Step {
+            ops,
+            moves: Vec::new(),
+        }
+    }
+
+    /// The step that applies `steps`' reverts in turn, the last first: the revert of a group from
+    /// the reverts of its commands, in the order they were applied.
+    fn undoing(steps: Vec<Step>) -> Step {
+        let mut all = Step::default();
+        for step in steps.into_iter().rev() {
+            all.ops.extend(step.ops);
+            all.moves.extend(step.moves);
+        }
+        all
+    }
+}
+
+/// A group opened by `begin`: the reverts of its commands, in the order they were applied, and the
 /// redo stack as it was at the `begin`, which `cancel` restores.
 struct Group {
-    inverses: Vec<Op>,
+    reverts: Vec<Step>,
     redo: Vec<Step>,
 }
 
 /// Where the session finds the files of its presentation. An asset path is a key of the map in
-/// memory, or relative to a workspace's root, which never changes while the workspace is open, so
-/// no command rewrites a path.
+/// memory, or relative to a workspace's root, which never changes while the workspace is open.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Store {
     /// The presentation is held in memory: its assets' files are this map, by asset path, and no
@@ -104,6 +145,13 @@ pub struct Session {
     redo: Vec<Step>,
     group: Option<Group>,
     view: View,
+    /// The trash in memory: the bytes of removed and replaced assets, by entry name, which an undo
+    /// or a redo moves back. A workspace's trash is `.rootpoint/trash/` below its root.
+    trash: BTreeMap<String, Vec<u8>>,
+    /// The entries the session put in the trash, which numbers the next one.
+    trashed: u64,
+    /// The files of the store the session moved, which `Session::files_moved` gives.
+    moved: u64,
 }
 
 impl Default for Session {
@@ -124,6 +172,9 @@ impl Session {
             redo: Vec::new(),
             group: None,
             view: View::default(),
+            trash: BTreeMap::new(),
+            trashed: 0,
+            moved: 0,
         }
     }
 
@@ -167,6 +218,13 @@ impl Session {
             Ok(command) => self.run(command, files),
             Err(reply) => reply,
         })
+    }
+
+    /// How many files of the store the session moved, by an asset command or by the undo or the
+    /// redo of one: a host that keeps assets decoded by their paths decodes them again when it
+    /// changes, since a path then holds other bytes.
+    pub fn files_moved(&self) -> u64 {
+        self.moved
     }
 
     /// Whether a group opened by `begin` is open.
@@ -248,6 +306,12 @@ impl Session {
                     files.write(&join(&dir, path), bytes)?;
                 }
                 files.write(&join(&dir, PRESENTATION), save_ron(&self.doc).as_bytes())?;
+                // The trash goes with the map, so that the undo steps, which stay, find their
+                // files in the workspace's trash.
+                for (entry, bytes) in &self.trash {
+                    files.write(&join(&dir, &format!("{TRASH}/{entry}")), bytes)?;
+                }
+                self.trash.clear();
                 self.store = Store::Workspace(files.canonical(&dir)?);
                 self.pack = None;
                 self.unsaved = 0;
@@ -269,6 +333,13 @@ impl Session {
                 } else {
                     Document::default()
                 };
+                // The trash of an earlier session is emptied, since no undo step of this one can
+                // take its files back; an entry that cannot be removed stays, and the session
+                // names its own entries around it.
+                let trash = join(&root, TRASH);
+                for entry in files.list(&trash).unwrap_or_default() {
+                    let _ = files.remove(&join(&trash, &entry));
+                }
                 *self = Session::new();
                 self.doc = doc;
                 self.store = Store::Workspace(root);
@@ -366,7 +437,7 @@ impl Session {
                 let undo = matches!(command, Command::Undo);
                 let from = if undo { &mut self.undo } else { &mut self.redo };
                 let step = from.pop().ok_or(format!("nothing to {command}"))?;
-                match self.apply_step(step.clone()) {
+                match self.apply_step(step.clone(), files) {
                     Ok(back) if undo => {
                         self.redo.push(back);
                         self.unsaved += 1;
@@ -388,7 +459,7 @@ impl Session {
                     return Err("a group is open".to_owned());
                 }
                 self.group = Some(Group {
-                    inverses: Vec::new(),
+                    reverts: Vec::new(),
                     redo: self.redo.clone(),
                 });
                 Ok(String::new())
@@ -409,8 +480,7 @@ impl Session {
             },
             Command::Cancel => {
                 let group = self.group.as_ref().ok_or("no group is open")?;
-                let step: Step = group.inverses.iter().rev().cloned().collect();
-                self.apply_step(step)?;
+                self.apply_step(Step::undoing(group.reverts.clone()), files)?;
                 let group = self.group.take().expect("checked above");
                 self.redo = group.redo;
                 Ok(String::new())
@@ -496,6 +566,138 @@ impl Session {
                     if self.view.preview { "on" } else { "off" }
                 ))
             }
+            Command::AssetMove { asset, to } => {
+                let from = self.confined_asset(asset)?;
+                self.free_path(asset, &to)?;
+                if !self.file_at(&from, files)? {
+                    return Err(format!(
+                        "{asset} has no file at {}: `asset-relink` gives it one",
+                        quote(&from)
+                    ));
+                }
+                if self.file_at(&to, files)? {
+                    return Err(format!("{} holds a file", quote(&to)));
+                }
+                self.change(
+                    Step {
+                        ops: vec![Op::SetAssetPath {
+                            id: asset,
+                            path: to.clone(),
+                        }],
+                        moves: vec![Move {
+                            from: Place::Asset(from),
+                            to: Place::Asset(to),
+                        }],
+                    },
+                    files,
+                )?;
+                Ok(String::new())
+            }
+            Command::AssetRelink { asset, to } => {
+                self.doc
+                    .assets
+                    .get(&asset)
+                    .ok_or(format!("no asset {asset}"))?;
+                self.free_path(asset, &to)?;
+                if !self.file_at(&to, files)? {
+                    return Err(format!("{} holds no file", quote(&to)));
+                }
+                self.edit(Op::SetAssetPath {
+                    id: asset,
+                    path: to,
+                })?;
+                Ok(String::new())
+            }
+            Command::AssetReplace { asset, from } => {
+                let path = self.confined_asset(asset)?;
+                let bytes = files.read(&from)?;
+                // The new bytes enter the trash first, so that every change of the store the step
+                // makes is a move, which its undo runs back.
+                let new = self.trash_entry(asset, files)?;
+                match &mut self.store {
+                    Store::Memory(_) => {
+                        self.trash.insert(new.clone(), bytes);
+                    }
+                    Store::Workspace(root) => {
+                        files.write(&join(root, &format!("{TRASH}/{new}")), &bytes)?;
+                    }
+                }
+                let mut moves = Vec::new();
+                if self.file_at(&path, files)? {
+                    let old = self.trash_entry(asset, files)?;
+                    moves.push(Move {
+                        from: Place::Asset(path.clone()),
+                        to: Place::Trash(old),
+                    });
+                }
+                moves.push(Move {
+                    from: Place::Trash(new.clone()),
+                    to: Place::Asset(path),
+                });
+                let step = Step {
+                    ops: Vec::new(),
+                    moves,
+                };
+                if let Err(e) = self.change(step, files) {
+                    // The new bytes leave the trash with the step that failed.
+                    match &self.store {
+                        Store::Memory(_) => drop(self.trash.remove(&new)),
+                        Store::Workspace(root) => {
+                            let _ = files.remove(&join(root, &format!("{TRASH}/{new}")));
+                        }
+                    }
+                    return Err(e);
+                }
+                Ok(String::new())
+            }
+            Command::AssetRemove { asset, into } => {
+                self.doc
+                    .assets
+                    .get(&asset)
+                    .ok_or(format!("no asset {asset}"))?;
+                let mut ops = match into {
+                    None => {
+                        let uses = self.asset_uses(asset);
+                        if !uses.is_empty() {
+                            return Err(format!("{asset} is used by {}", uses.join(" ")));
+                        }
+                        Vec::new()
+                    }
+                    Some(other) if other == asset => {
+                        return Err(format!("{asset} cannot replace itself"));
+                    }
+                    Some(other) => {
+                        self.existing_asset(other)?;
+                        self.renaming_ops(asset, other)
+                    }
+                };
+                ops.push(Op::RemoveAsset { id: asset });
+                let moves = self.trash_moves(&[asset], files)?;
+                self.change(Step { ops, moves }, files)?;
+                Ok(String::new())
+            }
+            Command::AssetRemoveUnused => {
+                let unused: Vec<AssetId> = self
+                    .doc
+                    .assets
+                    .keys()
+                    .copied()
+                    .filter(|&id| self.asset_uses(id).is_empty())
+                    .collect();
+                // No asset unused, no step: an empty step would count as a change to save.
+                if unused.is_empty() {
+                    return Ok(String::new());
+                }
+                let ops = unused.iter().map(|&id| Op::RemoveAsset { id }).collect();
+                let moves = self.trash_moves(&unused, files)?;
+                self.change(Step { ops, moves }, files)?;
+                Ok(unused
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<_>>()
+                    .join(" "))
+            }
+            Command::Assets { filter } => self.list_assets(filter, files),
             editing => {
                 let op = self.operation(editing)?;
                 self.edit(op)
@@ -503,20 +705,220 @@ impl Session {
         }
     }
 
+    /// The path of an asset of the table, refused when it fails confinement: a command that moves
+    /// or writes its file would reach outside the root,
+    /// `design@rootpoint-protocol@store-confines-access`.
+    fn confined_asset(&self, asset: AssetId) -> Result<String, String> {
+        let path = &self
+            .doc
+            .assets
+            .get(&asset)
+            .ok_or(format!("no asset {asset}"))?
+            .path;
+        if !asset_path_is_confined(path) {
+            return Err(unconfined(path));
+        }
+        Ok(path.clone())
+    }
+
+    /// Refuse a new path for `asset` that fails confinement, or that another asset names: two
+    /// assets of one file would both change at a move or a replace of either.
+    fn free_path(&self, asset: AssetId, path: &str) -> Result<(), String> {
+        if !asset_path_is_confined(path) {
+            return Err(unconfined(path));
+        }
+        match self
+            .doc
+            .assets
+            .iter()
+            .find(|(id, a)| **id != asset && a.path == path)
+        {
+            Some((other, _)) => Err(format!("{other} names {}", quote(path))),
+            None => Ok(()),
+        }
+    }
+
+    /// Whether the store holds a file at the asset path, which is confined.
+    fn file_at(&self, path: &str, files: &mut dyn Files) -> Result<bool, String> {
+        match &self.store {
+            Store::Memory(map) => Ok(map.contains_key(path)),
+            Store::Workspace(root) => {
+                let full = writable(root, path, files)?;
+                files.exists(&full)
+            }
+        }
+    }
+
+    /// The moves that take the files of the removed `assets` to the trash. An asset whose path
+    /// fails confinement, whose file is missing, or whose file another asset that stays names,
+    /// moves nothing.
+    fn trash_moves(
+        &mut self,
+        assets: &[AssetId],
+        files: &mut dyn Files,
+    ) -> Result<Vec<Move>, String> {
+        let mut moves = Vec::new();
+        for &id in assets {
+            let path = self.doc.assets[&id].path.clone();
+            let shared = self
+                .doc
+                .assets
+                .iter()
+                .any(|(other, a)| !assets.contains(other) && a.path == path);
+            let moved = moves
+                .iter()
+                .any(|m: &Move| m.from == Place::Asset(path.clone()));
+            if !asset_path_is_confined(&path) || shared || moved || !self.file_at(&path, files)? {
+                continue;
+            }
+            moves.push(Move {
+                from: Place::Asset(path),
+                to: Place::Trash(self.trash_entry(id, files)?),
+            });
+        }
+        Ok(moves)
+    }
+
+    /// What names the asset, as `assets` lists it: the areas whose image is it or whose own
+    /// font is it, in the order of the slides and their trees, then the named styles whose font
+    /// is it.
+    fn asset_uses(&self, asset: AssetId) -> Vec<String> {
+        let font = FontRef::Asset(asset);
+        let mut uses: Vec<String> = self
+            .doc
+            .slides
+            .iter()
+            .flat_map(|s| s.root.areas())
+            .filter(|a| match &a.content {
+                Content::Image(image) => image.asset == asset,
+                Content::Text(TextContent {
+                    style: StyleChoice::Custom(style),
+                    ..
+                }) => style.font == font,
+                Content::Text(_) => false,
+            })
+            .map(|a| a.id.to_string())
+            .collect();
+        uses.extend(
+            self.doc
+                .styles
+                .iter()
+                .filter(|(_, s)| s.font == font)
+                .map(|(name, _)| quote_always(name)),
+        );
+        uses
+    }
+
+    /// The operations that make every image, text and named style naming `asset` name `other`.
+    fn renaming_ops(&self, asset: AssetId, other: AssetId) -> Vec<Op> {
+        let font = FontRef::Asset(asset);
+        let mut ops = Vec::new();
+        for area in self.doc.slides.iter().flat_map(|s| s.root.areas()) {
+            let content = match &area.content {
+                Content::Image(image) if image.asset == asset => Content::Image(ImageContent {
+                    asset: other,
+                    fit: image.fit,
+                }),
+                Content::Text(TextContent {
+                    text,
+                    style: StyleChoice::Custom(style),
+                }) if style.font == font => Content::Text(TextContent {
+                    text: text.clone(),
+                    style: StyleChoice::Custom(TextStyle {
+                        font: FontRef::Asset(other),
+                        ..style.clone()
+                    }),
+                }),
+                _ => continue,
+            };
+            ops.push(Op::SetContent {
+                area: area.id,
+                content,
+            });
+        }
+        for (name, style) in &self.doc.styles {
+            if style.font == font {
+                ops.push(Op::SetStyle {
+                    name: name.clone(),
+                    style: TextStyle {
+                        font: FontRef::Asset(other),
+                        ..style.clone()
+                    },
+                });
+            }
+        }
+        ops
+    }
+
+    /// The reply of `assets`: each entry `a<id> <path> <bytes|missing> uses=<uses|->`, in the
+    /// order of the ids, or, for `untracked`, the paths of the store's files no asset names, its
+    /// own files left out; entries separated by `; `, as every list of a reply.
+    fn list_assets(&self, filter: AssetFilter, files: &mut dyn Files) -> Result<String, String> {
+        if filter == AssetFilter::Untracked {
+            let named: BTreeSet<&str> = self.doc.assets.values().map(|a| a.path.as_str()).collect();
+            let held = match &self.store {
+                Store::Memory(map) => map.keys().cloned().collect(),
+                Store::Workspace(root) => files.list(root)?,
+            };
+            return Ok(held
+                .iter()
+                .filter(|p| asset_path_is_confined(p) && !named.contains(p.as_str()))
+                .map(|p| quote(p))
+                .collect::<Vec<_>>()
+                .join("; "));
+        }
+        let mut entries = Vec::new();
+        for (&id, asset) in &self.doc.assets {
+            let uses = self.asset_uses(id);
+            let size = self.asset_bytes(id, files).ok().map(|b| b.len());
+            let keep = match filter {
+                AssetFilter::All => true,
+                AssetFilter::Unused => uses.is_empty(),
+                AssetFilter::Missing => size.is_none(),
+                AssetFilter::Untracked => unreachable!("handled above"),
+            };
+            if keep {
+                entries.push(format!(
+                    "{id} {} {} uses={}",
+                    quote(&asset.path),
+                    size.map_or("missing".to_owned(), |n| n.to_string()),
+                    if uses.is_empty() {
+                        "-".to_owned()
+                    } else {
+                        uses.join(",")
+                    }
+                ));
+            }
+        }
+        Ok(entries.join("; "))
+    }
+
     /// Apply an editing operation: its inverse joins the open group, or is an undo step of its
     /// own. The reply names the ids it created.
     fn edit(&mut self, op: Op) -> Result<String, String> {
         let before = ids(&self.doc);
         let inverse = self.apply_op(op)?;
+        self.record(Step::ops(vec![inverse.clone()]));
+        Ok(self.created(&before, &inverse))
+    }
+
+    /// Apply a step of moves and operations, as one command, and record its revert.
+    fn change(&mut self, step: Step, files: &mut dyn Files) -> Result<(), String> {
+        let revert = self.apply_step(step, files)?;
+        self.record(revert);
+        Ok(())
+    }
+
+    /// Record the revert of a command: it joins the open group, or is an undo step of its own.
+    fn record(&mut self, revert: Step) {
         match &mut self.group {
-            Some(group) => group.inverses.push(inverse.clone()),
+            Some(group) => group.reverts.push(revert),
             None => {
-                self.undo.push(vec![inverse.clone()]);
+                self.undo.push(revert);
                 self.unsaved += 1;
             }
         }
         self.redo.clear();
-        Ok(self.created(&before, &inverse))
     }
 
     /// Write the presentation and its assets' files as a pack at `file`, every asset read by the
@@ -690,7 +1092,6 @@ impl Session {
                     style: self.text_style(area),
                 }),
             },
-            Command::RemoveAsset { asset } => Op::RemoveAsset { id: asset },
             Command::Style(StyleCommand::Add { name, options }) => Op::AddStyle {
                 style: self.style_values(TextStyle::default(), options)?,
                 name,
@@ -827,30 +1228,129 @@ impl Session {
         Ok(inverse)
     }
 
-    /// Apply the operations of a step in order, and return the step that reverts it. A step that
-    /// fails partway leaves the document and the view as they were.
-    fn apply_step(&mut self, step: Step) -> Result<Step, String> {
-        let (doc, view) = (self.doc.clone(), self.view.clone());
-        let mut back = Vec::with_capacity(step.len());
-        for op in step {
-            match self.apply_op(op) {
-                Ok(inverse) => back.push(inverse),
+    /// Apply the moves of a step, then its operations, each in order, and return the step that
+    /// reverts it. A step that fails partway moves its files back and leaves the document and the
+    /// view as they were, so a step applies whole or not at all.
+    fn apply_step(&mut self, step: Step, files: &mut dyn Files) -> Result<Step, String> {
+        let mut moved: Vec<Move> = Vec::with_capacity(step.moves.len());
+        let mut failed = None;
+        for m in step.moves {
+            match self.move_file(&m, files) {
+                Ok(()) => moved.push(m),
                 Err(e) => {
-                    (self.doc, self.view) = (doc, view);
-                    return Err(e);
+                    failed = Some(e);
+                    break;
                 }
             }
         }
+        let (doc, view) = (self.doc.clone(), self.view.clone());
+        let mut back = Vec::with_capacity(step.ops.len());
+        if failed.is_none() {
+            for op in step.ops {
+                match self.apply_op(op) {
+                    Ok(inverse) => back.push(inverse),
+                    Err(e) => {
+                        (self.doc, self.view) = (doc, view);
+                        failed = Some(e);
+                        break;
+                    }
+                }
+            }
+        }
+        let back_moves: Vec<Move> = moved
+            .into_iter()
+            .rev()
+            .map(|m| Move {
+                from: m.to,
+                to: m.from,
+            })
+            .collect();
+        if let Some(e) = failed {
+            // The moves made are taken back; a move back that fails leaves its file in the place
+            // it reached, which the reply names with the first failure.
+            for m in &back_moves {
+                if let Err(back) = self.move_file(m, files) {
+                    return Err(format!("{e}; and then {back}"));
+                }
+            }
+            return Err(e);
+        }
         back.reverse();
-        Ok(back)
+        Ok(Step {
+            ops: back,
+            moves: back_moves,
+        })
+    }
+
+    /// Move one file of the store. The place it goes to must hold no file, since a native rename
+    /// would replace it; in a workspace, an asset path is checked as every access is,
+    /// `design@rootpoint-protocol@store-confines-access`.
+    fn move_file(&mut self, m: &Move, files: &mut dyn Files) -> Result<(), String> {
+        self.moved += 1;
+        let name = |place: &Place| match place {
+            Place::Asset(path) => quote(path),
+            Place::Trash(entry) => format!("the trash's {entry}"),
+        };
+        match &mut self.store {
+            Store::Memory(map) => {
+                let taken = match &m.to {
+                    Place::Asset(path) => map.contains_key(path),
+                    Place::Trash(entry) => self.trash.contains_key(entry),
+                };
+                if taken {
+                    return Err(format!("{} holds a file", name(&m.to)));
+                }
+                let bytes = match &m.from {
+                    Place::Asset(path) => map.remove(path),
+                    Place::Trash(entry) => self.trash.remove(entry),
+                }
+                .ok_or_else(|| format!("{}: no such file", name(&m.from)))?;
+                match &m.to {
+                    Place::Asset(path) => map.insert(path.clone(), bytes),
+                    Place::Trash(entry) => self.trash.insert(entry.clone(), bytes),
+                };
+                Ok(())
+            }
+            Store::Workspace(root) => {
+                let root = root.clone();
+                let from = match &m.from {
+                    Place::Asset(path) => readable(&root, path, files)?,
+                    Place::Trash(entry) => join(&root, &format!("{TRASH}/{entry}")),
+                };
+                let to = match &m.to {
+                    Place::Asset(path) => writable(&root, path, files)?,
+                    Place::Trash(entry) => join(&root, &format!("{TRASH}/{entry}")),
+                };
+                if files.exists(&to)? {
+                    return Err(format!("{} holds a file", name(&m.to)));
+                }
+                files.rename(&from, &to)
+            }
+        }
+    }
+
+    /// A name for a new entry of the trash, for the asset `id`: `<id>-<n>`, numbered by the
+    /// session's entries, and never one the trash holds, as an entry an open failed to empty.
+    fn trash_entry(&mut self, id: AssetId, files: &mut dyn Files) -> Result<String, String> {
+        loop {
+            self.trashed += 1;
+            let entry = format!("{id}-{}", self.trashed);
+            let taken = match &self.store {
+                Store::Memory(_) => self.trash.contains_key(&entry),
+                Store::Workspace(root) => files.exists(&join(root, &format!("{TRASH}/{entry}")))?,
+            };
+            if !taken {
+                return Ok(entry);
+            }
+        }
     }
 
     /// Close the open group, if any: its edits become one undo step, and an empty group none.
     fn end_group(&mut self) {
         if let Some(group) = self.group.take()
-            && !group.inverses.is_empty()
+            && !group.reverts.is_empty()
         {
-            self.undo.push(group.inverses.into_iter().rev().collect());
+            self.undo.push(Step::undoing(group.reverts));
             self.unsaved += 1;
         }
     }

@@ -6,7 +6,7 @@ mod common;
 use common::*;
 use rootpoint_model::*;
 use rootpoint_protocol::{
-    Command, Reply, Session, Store, StyleCommand, StyleOption, parse_command,
+    AssetFilter, Command, Reply, Session, Store, StyleCommand, StyleOption, parse_command,
 };
 
 #[test]
@@ -109,7 +109,39 @@ fn every_command_prints_back_as_it_parses() {
             fit: ImageFit::Fill,
         },
         Command::Clear { area: NodeId(4) },
-        Command::RemoveAsset { asset: AssetId(5) },
+        Command::AssetMove {
+            asset: AssetId(5),
+            to: "img/a cat.png".into(),
+        },
+        Command::AssetRelink {
+            asset: AssetId(5),
+            to: "cat.png".into(),
+        },
+        Command::AssetReplace {
+            asset: AssetId(5),
+            from: "/home/x/cat.png".into(),
+        },
+        Command::AssetRemove {
+            asset: AssetId(5),
+            into: None,
+        },
+        Command::AssetRemove {
+            asset: AssetId(5),
+            into: Some(AssetId(6)),
+        },
+        Command::AssetRemoveUnused,
+        Command::Assets {
+            filter: AssetFilter::All,
+        },
+        Command::Assets {
+            filter: AssetFilter::Unused,
+        },
+        Command::Assets {
+            filter: AssetFilter::Missing,
+        },
+        Command::Assets {
+            filter: AssetFilter::Untracked,
+        },
         Command::Sample,
         Command::Undo,
         Command::Redo,
@@ -329,14 +361,14 @@ fn each_editing_command_applies_its_operation() {
         apply(&mut expected, op).unwrap();
         assert!(s.document().same_content(&expected), "`{line}`");
     }
-    // remove-asset needs an asset no area uses.
+    // asset-remove needs an asset no area uses.
     let mut s = Session::new();
     let mut f = MemoryFiles::holding(&["dog.png"]);
     run(&mut s, &mut f, "import dog.png");
     let mut expected = s.document().clone();
     apply(&mut expected, Op::RemoveAsset { id: AssetId(1) }).unwrap();
     assert!(matches!(
-        s.execute("remove-asset a1", &mut f),
+        s.execute("asset-remove a1", &mut f),
         Some(Reply::Ok(_))
     ));
     assert!(s.document().same_content(&expected));
@@ -466,7 +498,11 @@ fn a_refused_command_changes_nothing() {
         "text n2 bold",
         "text n2 \"x\" size=-1",
         "image n2 a9 fit",
-        "remove-asset a5",
+        "asset-remove a5",
+        "asset-remove a1 into=a9",
+        "asset-remove a1 into=n2",
+        "assets everything",
+        "asset-move a9 x.png",
         "tree s9",
         "open-copy missing",
         "import missing.png",

@@ -412,6 +412,7 @@ impl App {
         );
         let root = self.session.root().map(str::to_owned);
         let unsaved = self.session.unsaved();
+        let moved = self.session.files_moved();
         #[cfg(not(target_arch = "wasm32"))]
         let (reloads, reopens) = (
             matches!(command, Command::Reload),
@@ -467,7 +468,8 @@ impl App {
         let _ = unsaved;
         #[cfg(not(unix))]
         let _ = root;
-        if rereads && matches!(reply, Reply::Ok(_)) {
+        // A move of the store's files, by an asset command or its undo, gives a path other bytes.
+        if rereads && matches!(reply, Reply::Ok(_)) || self.session.files_moved() != moved {
             self.assets.invalidate();
         }
         self.error = match &reply {

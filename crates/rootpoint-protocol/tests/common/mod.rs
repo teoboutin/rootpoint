@@ -52,6 +52,28 @@ impl Files for MemoryFiles {
             .filter_map(|k| k.strip_prefix(&below).map(str::to_owned))
             .collect())
     }
+
+    fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
+        if self.read_only {
+            return Err(format!("{to}: read-only"));
+        }
+        let bytes = self
+            .files
+            .remove(from)
+            .ok_or(format!("{from}: no such file"))?;
+        self.files.insert(to.to_owned(), bytes);
+        Ok(())
+    }
+
+    fn remove(&mut self, path: &str) -> Result<(), String> {
+        if self.read_only {
+            return Err(format!("{path}: read-only"));
+        }
+        self.files
+            .remove(path)
+            .map(drop)
+            .ok_or(format!("{path}: no such file"))
+    }
 }
 
 /// The native file system, paths relative to the working directory, which records every path it
@@ -88,6 +110,45 @@ impl Files for RecordingFiles {
         self.paths.push(path.to_owned());
         let canonical = std::fs::canonicalize(path).map_err(|e| format!("{path}: {e}"))?;
         Ok(canonical.to_str().unwrap().to_owned())
+    }
+
+    fn list(&mut self, dir: &str) -> Result<Vec<String>, String> {
+        self.paths.push(dir.to_owned());
+        let mut out = Vec::new();
+        let mut todo = vec![std::path::PathBuf::from(dir)];
+        while let Some(at) = todo.pop() {
+            let entries = match std::fs::read_dir(&at) {
+                Ok(entries) => entries,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(e) => return Err(format!("{}: {e}", at.display())),
+            };
+            for entry in entries {
+                let entry = entry.map_err(|e| e.to_string())?;
+                if entry.file_type().map_err(|e| e.to_string())?.is_dir() {
+                    todo.push(entry.path());
+                } else {
+                    let path = entry.path();
+                    let below = path.strip_prefix(dir).unwrap();
+                    out.push(below.to_str().unwrap().to_owned());
+                }
+            }
+        }
+        out.sort();
+        Ok(out)
+    }
+
+    fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
+        self.paths.push(from.to_owned());
+        self.paths.push(to.to_owned());
+        if let Some(dir) = std::path::Path::new(to).parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{to}: {e}"))?;
+        }
+        std::fs::rename(from, to).map_err(|e| format!("{from}: {e}"))
+    }
+
+    fn remove(&mut self, path: &str) -> Result<(), String> {
+        self.paths.push(path.to_owned());
+        std::fs::remove_file(path).map_err(|e| format!("{path}: {e}"))
     }
 }
 

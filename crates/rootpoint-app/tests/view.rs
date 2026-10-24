@@ -250,3 +250,31 @@ fn a_file_naming_a_missing_style_opens_and_the_status_names_it() {
         other => panic!("render gave {other}"),
     }
 }
+
+/// An asset whose bytes `asset-replace` changes is drawn with the new ones, and with the old ones
+/// again after its undo: the decoded assets are keyed on paths, so a move of the store's files
+/// drops them.
+#[test]
+fn a_replaced_asset_is_drawn_with_its_new_bytes_and_its_undo_with_the_old() {
+    let mut files = MemoryFiles::default();
+    files.0.borrow_mut().insert(
+        "two-colours.png".to_owned(),
+        include_bytes!("data/two-colours.png").to_vec(),
+    );
+    let mut app = App::new(Box::new(files.clone()));
+    ok(&mut app, "sample");
+    let third = app.session().document().slides[2].id;
+    ok(&mut app, &format!("select {third}"));
+    let ctx = Context::default();
+    while !frame(&ctx, &mut app).is_empty() {}
+    let asset = *app.session().document().assets.keys().next().unwrap();
+    ok(&mut app, &format!("asset-replace {asset} two-colours.png"));
+    let replaced = frame(&ctx, &mut app);
+    let size = replaced[0].1;
+    let new = expected(&app, &mut files, third, size);
+    assert_eq!(replaced[0].2, new);
+    ok(&mut app, "undo");
+    let undone = frame(&ctx, &mut app);
+    assert_eq!(undone[0].2, expected(&app, &mut files, third, size));
+    assert_ne!(undone[0].2, new, "the undo draws the old bytes");
+}

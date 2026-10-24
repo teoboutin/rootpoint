@@ -2,8 +2,9 @@
 //! and copies of a directory included, the document stays valid, holds no cosmetic breach, an
 //! asset path that leads out of the root among them, and saves to a text that loads back equal. A
 //! breach reaches a document only by a file edited by hand, never by a command,
-//! `design@rootpoint-protocol@no-new-breach`; and no command rewrites an asset path, so a path an
-//! undo or a redo brings back stays confined too.
+//! `design@rootpoint-protocol@no-new-breach`; and the commands that give an asset a new path,
+//! `asset-move` and `asset-relink`, refuse one that fails confinement, so a path an undo or a redo
+//! brings back stays confined too.
 
 mod common;
 
@@ -25,7 +26,7 @@ struct Step {
 
 fn step() -> impl Strategy<Value = Step> {
     (
-        0u8..26,
+        0u8..31,
         any::<usize>(),
         any::<usize>(),
         0.05f64..0.95,
@@ -124,7 +125,10 @@ fn line_for(doc: &Document, s: &Step) -> String {
             1 => format!("import image{}.png img/i{}.png", s.other % 5, s.pick % 3),
             _ => format!("import image{}.png ../i.png", s.other % 5),
         },
-        15 => format!("remove-asset {}", asset(s.other)),
+        15 => match s.flag {
+            true => format!("asset-remove {}", asset(s.other)),
+            false => format!("asset-remove {} into={}", asset(s.other), asset(s.pick)),
+        },
         16 => "undo".to_owned(),
         17 => "redo".to_owned(),
         18 => ["begin", "end", "cancel"][s.other % 3].to_owned(),
@@ -144,7 +148,32 @@ fn line_for(doc: &Document, s: &Step) -> String {
             1 => format!("style remove {} into=custom", style(s.pick)),
             _ => format!("style remove {} into={}", style(s.pick), style(s.other / 3)),
         },
+        // A new path among free ones, ones a file or an asset holds, and ones that fail
+        // confinement.
+        26 => format!("asset-move {} {}", asset(s.other), new_path(s.pick)),
+        27 => format!("asset-relink {} {}", asset(s.other), new_path(s.pick)),
+        28 => format!("asset-replace {} image{}.png", asset(s.other), s.pick % 5),
+        29 => "asset-remove-unused".to_owned(),
+        30 => [
+            "assets",
+            "assets unused",
+            "assets missing",
+            "assets untracked",
+        ][s.other % 4]
+            .to_owned(),
         _ => format!("select {}", node(s.pick)),
+    }
+}
+
+/// A path an asset command gives an asset.
+fn new_path(k: usize) -> String {
+    match k % 6 {
+        0 => format!("img/m{}.png", k % 4),
+        1 => format!("image{}.png", k % 5),
+        2 => format!("img/i{}.png", k % 3),
+        3 => "../m.png".to_owned(),
+        4 => ".rootpoint/m.png".to_owned(),
+        _ => "presentation.ron".to_owned(),
     }
 }
 

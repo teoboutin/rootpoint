@@ -79,7 +79,7 @@ fn no_command_names_a_missing_asset() {
     run(
         &mut s,
         &mut files,
-        "add-slide\nimport font.ttf\nremove-asset a3",
+        "add-slide\nimport font.ttf\nasset-remove a3",
     );
     for (line, asset) in [
         ("image n2 a3 fit", "a3"),

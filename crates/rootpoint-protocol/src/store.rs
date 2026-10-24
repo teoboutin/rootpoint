@@ -8,6 +8,10 @@ use crate::files::Files;
 /// The file of a workspace that holds its presentation, at its root.
 pub(crate) const PRESENTATION: &str = "presentation.ron";
 
+/// The directory of a workspace's trash, below its root: the files of removed and replaced
+/// assets, until the workspace is opened again.
+pub(crate) const TRASH: &str = ".rootpoint/trash";
+
 /// `path` below the directory `dir` of the host: the path itself when `dir` is empty.
 pub(crate) fn join(dir: &str, path: &str) -> String {
     if dir.is_empty() {

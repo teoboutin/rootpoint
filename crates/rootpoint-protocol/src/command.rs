@@ -105,8 +105,34 @@ pub enum Command {
     Clear {
         area: NodeId,
     },
-    RemoveAsset {
+    /// Move an asset's file to another asset path, which no file holds; the asset keeps its id.
+    AssetMove {
         asset: AssetId,
+        to: String,
+    },
+    /// Give an asset the path of a file already in the store, and move no file: the repair of a
+    /// missing asset.
+    AssetRelink {
+        asset: AssetId,
+        to: String,
+    },
+    /// Replace the bytes of an asset's file by those of a file of the host; the old ones go to the
+    /// trash.
+    AssetReplace {
+        asset: AssetId,
+        from: String,
+    },
+    /// Remove an asset, its file going to the trash. With `into`, what names it names that asset
+    /// instead; with none, the removal is refused while anything names it.
+    AssetRemove {
+        asset: AssetId,
+        into: Option<AssetId>,
+    },
+    /// Remove every asset nothing names, one undo step.
+    AssetRemoveUnused,
+    /// List the assets, or the store's files no asset names, a query.
+    Assets {
+        filter: AssetFilter,
     },
     /// Replace the document by the built-in sample.
     Sample,
@@ -148,6 +174,18 @@ pub enum Command {
     Style(StyleCommand),
     /// List the named styles, a query.
     Styles,
+}
+
+/// Which entries `assets` lists.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AssetFilter {
+    All,
+    /// The assets no area and no style names.
+    Unused,
+    /// The assets whose file the store cannot read.
+    Missing,
+    /// The files of the store no asset names, its own files left out.
+    Untracked,
 }
 
 /// A change of the table of named styles.
@@ -303,8 +341,25 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         "clear" => Command::Clear {
             area: parse_node(&args.word("an area")?)?,
         },
-        "remove-asset" => Command::RemoveAsset {
+        "asset-move" => Command::AssetMove {
             asset: parse_asset(&args.word("an asset")?)?,
+            to: args.path()?,
+        },
+        "asset-relink" => Command::AssetRelink {
+            asset: parse_asset(&args.word("an asset")?)?,
+            to: args.path()?,
+        },
+        "asset-replace" => Command::AssetReplace {
+            asset: parse_asset(&args.word("an asset")?)?,
+            from: args.path()?,
+        },
+        "asset-remove" => Command::AssetRemove {
+            asset: parse_asset(&args.word("an asset")?)?,
+            into: args.optional(parse_asset_into)?,
+        },
+        "asset-remove-unused" => Command::AssetRemoveUnused,
+        "assets" => Command::Assets {
+            filter: args.optional(parse_filter)?.unwrap_or(AssetFilter::All),
         },
         "sample" => Command::Sample,
         "undo" => Command::Undo,
@@ -437,7 +492,25 @@ impl fmt::Display for Command {
                 write!(f, "image {area} {asset} {fit}")
             }
             Command::Clear { area } => write!(f, "clear {area}"),
-            Command::RemoveAsset { asset } => write!(f, "remove-asset {asset}"),
+            Command::AssetMove { asset, to } => write!(f, "asset-move {asset} {}", quote(to)),
+            Command::AssetRelink { asset, to } => {
+                write!(f, "asset-relink {asset} {}", quote(to))
+            }
+            Command::AssetReplace { asset, from } => {
+                write!(f, "asset-replace {asset} {}", quote(from))
+            }
+            Command::AssetRemove { asset, into: None } => write!(f, "asset-remove {asset}"),
+            Command::AssetRemove {
+                asset,
+                into: Some(into),
+            } => write!(f, "asset-remove {asset} into={into}"),
+            Command::AssetRemoveUnused => f.write_str("asset-remove-unused"),
+            Command::Assets { filter } => f.write_str(match filter {
+                AssetFilter::All => "assets",
+                AssetFilter::Unused => "assets unused",
+                AssetFilter::Missing => "assets missing",
+                AssetFilter::Untracked => "assets untracked",
+            }),
             Command::Sample => f.write_str("sample"),
             Command::Undo => f.write_str("undo"),
             Command::Redo => f.write_str("redo"),
@@ -779,6 +852,26 @@ fn value_options(args: &mut Args) -> Result<Vec<StyleOption>, ParseError> {
         options.push(option);
     }
     Ok(options)
+}
+
+/// `into=a<n>`: the asset that names a removed one's uses.
+fn parse_asset_into(text: &str) -> Result<AssetId, ParseError> {
+    match text.strip_prefix("into=") {
+        Some(id) => parse_asset(id),
+        None => Err(ParseError(format!("`{text}` is not `into=a<n>`"))),
+    }
+}
+
+fn parse_filter(text: &str) -> Result<AssetFilter, ParseError> {
+    match text {
+        "all" => Ok(AssetFilter::All),
+        "unused" => Ok(AssetFilter::Unused),
+        "missing" => Ok(AssetFilter::Missing),
+        "untracked" => Ok(AssetFilter::Untracked),
+        other => Err(ParseError(format!(
+            "`{other}` is not `all`, `unused`, `missing` or `untracked`"
+        ))),
+    }
 }
 
 /// `into=custom`, or `into="<name>"`, a name bare or quoted: what the texts naming a removed style

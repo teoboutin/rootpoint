@@ -76,6 +76,18 @@ impl Files for NativeFiles {
         out.sort();
         Ok(out)
     }
+
+    /// Renames the file, creating the directories above its new path, as a write does.
+    fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
+        if let Some(dir) = std::path::Path::new(to).parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{to}: {e}"))?;
+        }
+        std::fs::rename(from, to).map_err(|e| format!("{from}: {e}"))
+    }
+
+    fn remove(&mut self, path: &str) -> Result<(), String> {
+        std::fs::remove_file(path).map_err(|e| format!("{path}: {e}"))
+    }
 }
 
 fn main() {
