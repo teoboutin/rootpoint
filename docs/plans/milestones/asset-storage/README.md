@@ -119,7 +119,15 @@ the review at the end of the milestone reads them, and judges whether
 `design@rootpoint-protocol@workspace-lock` states the cost the review of #workspace-host found,
 that `.rootpoint/` leaves with a command that fails after creating it. The session's report to the
 owner at the end of the milestone carries the readings its commits say are reported to the owner:
-T1's re-entry, and the reading of `import` in "Readings".
+T1's re-entry, and the reading of `import` in "Readings"; the narrowing of T2's clause, which the
+window's own `save` met before its repair, as the owner's to make; and, in its "Decided" section,
+the decisions the session took on the owner's word to go on with sensible defaults: a `save` while
+the guard stops the writes replies `err`; `Op::ReplaceDocument` keeps the larger id counter; no
+`rejected` entry for shape B, nor for a reload at each change; the split of the head of
+#asset-watch; the history edits of commit messages; the trash's entries named `<id>-<n>`; an
+import's file staged through the trash; a file two assets name refused for a move or a replace; an
+asset whose file a symlink places outside the root removed with its file left in place; and the
+thumbnail decoded by `rootpoint_render::decode_rgba`.
 
 - **Gates.** `cargo x gates` runs every check a branch owes before it merges,
   `instructions@merge-gates`. Every slice keeps them passing, the gate `wasm` and the browser tests
@@ -199,7 +207,7 @@ T1's re-entry, and the reading of `import` in "Readings".
   #c-pack-overhead, #c-unpack-anywhere, #c-visible-mode. "Measurement 1" of round 1 is #arg-1.
 - **T1 to T4, AC1 to AC5**: the labels under which the premortem's tripwires and acceptance
   criteria were put to the owner, "Premortem" below.
-- **D1 to D9**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
+- **D1 to D11**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
 
 ## What the work is
 
@@ -933,8 +941,8 @@ extension when the name is taken by other bytes and the same name when the bytes
 Content names an asset by its id; `Op::SetAssetPath` moves one asset. A folder is the set of asset
 paths that share a prefix; no folder is stored. The table holds the assets a command adds or brings,
 `import`, an open or a `reload`, and none a change on disk adds; a file under the root that no
-asset names is untracked, listed by `assets untracked` unless a component of its path starts with
-`.`, and is never packed.
+asset names is untracked, listed by `assets untracked`, and is never packed. D10, awaiting the
+owner, builds a list that leaves out a file whose path has a component that starts with `.`.
 
 ### #asset-disk-changes
 
@@ -982,7 +990,8 @@ The features, each change a command: the tree with a search by name; a filter, a
 missing, untracked; each asset's size, a thumbnail and its uses, each use a jump to its node; move
 and rename, by drag or by typing a path, `asset-move`; replace the bytes, keeping the id,
 `asset-replace`; relink a missing asset, offering first an untracked file of the same bytes,
-`asset-relink`; remove an unused asset, `asset-remove`, and all unused at once, one undo step,
+`asset-relink`, which D11, awaiting the owner, builds as the untracked files of the missing file's
+name first; remove an unused asset, `asset-remove`, and all unused at once, one undo step,
 `asset-remove-unused`; remove a used asset with a replacement, `asset-remove a3 into=a5`; import by
 drag and drop or by a picker, `import`; the total size. The asset tab is a tab of the side panel and
 keeps its width, `design@rootpoint-app@sidebar-width`.
@@ -1298,6 +1307,17 @@ at the new name and removes the old one, a shape the decision admits.
 - **D9**, awaiting the owner: the reading of the owner's word on the branch in "How the work is
   done", a branch named after this milestone, which merges after the last slice once the owner has
   ruled on every default above.
+- **D10**, awaiting the owner, built at the repair of #asset-commands: on #asset-tree-shape, whose
+  `assets untracked` lists every file no asset names, `.git/` included, which the rival of a table
+  that mirrors the disk names as noise. Default: the list leaves out a file whose path has a
+  component that starts with `.`, as `rootpoint_protocol::listed_untracked` builds it; such a path
+  is still a confined asset path, so an asset may name one, and a relink then offers none. The
+  rivals: leave out `.git/` alone, or follow the `.gitignore` files.
+- **D11**, awaiting the owner, built at #asset-manager: on #asset-manager-scope, whose relink offers
+  first "an untracked file of the same bytes", the session's proposal, whose premise fails: a
+  missing asset has no bytes to compare. Default: the untracked files of the missing file's name
+  first, then the others, as `App::relink_candidates` builds it. The rivals: those of its file's
+  extension first, or no file first.
 
 ## Harvest
 

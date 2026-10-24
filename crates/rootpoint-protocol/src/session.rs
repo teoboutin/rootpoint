@@ -1667,8 +1667,8 @@ fn trash_path(root: &str, entry: &str, files: &mut dyn Files) -> Result<String, 
 
 /// Whether `assets untracked` lists a file of the store that no asset names: one at a confined
 /// path, none of whose components starts with `.`, so that the files of `.git/` and a
-/// `.gitignore`, which no presentation shows, are left out with the store's own,
-/// `design@rootpoint-protocol@table-of-added-assets`.
+/// `.gitignore` are left out with the store's own, the default D10 of
+/// `milestone@plans@asset-storage`, awaiting the owner.
 pub fn listed_untracked(path: &str) -> bool {
     asset_path_is_confined(path) && !path.split('/').any(|c| c.starts_with('.'))
 }

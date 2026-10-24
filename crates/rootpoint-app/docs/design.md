@@ -224,8 +224,7 @@ style: a change meant for one image would otherwise change slides out of view. I
 document and the store, and keeps what it read from the files until the next command or watcher
 event, so a frame of the tab reads no file and renders no slide again, as a query run through
 `App::run` would. It keeps the panel's width, `design@rootpoint-app@sidebar-width`, its rows cut
-to it. A missing asset has no bytes, so its relink offers first the untracked files of its file's
-name. On the owner's word: the owner proposed an asset manager screen that edits the file tree,
+to it. On the owner's word: the owner proposed an asset manager screen that edits the file tree,
 searches, renames and filters the unused assets; its other features are the session's, which the
 owner approved.
 

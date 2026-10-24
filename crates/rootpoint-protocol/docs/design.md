@@ -349,8 +349,7 @@ An asset enters the table by a command, and by no change on disk: `import` adds 
 `open-copy`, `open-pack`, `sample` and `reload` bring the table of a file; and an undo brings back
 one removed. A file under the root that no asset names is untracked, which `pack` leaves out,
 `design@rootpoint-protocol@pack-container`, and which `assets untracked` lists, but for the store's
-own files and a file whose path has a component that starts with `.`, as the files of `.git/` and a
-`.gitignore`, which no presentation shows, `rootpoint_protocol::listed_untracked`. The rival, a table that mirrors the files on disk,
+own files. The rival, a table that mirrors the files on disk,
 `rejected@rootpoint-protocol@table-mirrors-the-disk`, gives an id to `.git/`, to a `README.md` and
 to an editor's backup files, and makes each change on disk an edit nobody made.
 `tripwire@rootpoint-protocol@untracked-file-lost-in-a-pack` watches an author who expected an
