@@ -78,6 +78,18 @@ pub struct App {
     /// The files, when the app holds them in memory, as the browser build does: the same files
     /// as `files`, which the actions that open a picked directory or add a picked image fill.
     held: Option<MemoryFiles>,
+    /// Whether the app is the native window, which takes a workspace's lock and moves its control
+    /// socket with the store, `App::native`.
+    #[cfg(not(target_arch = "wasm32"))]
+    native: bool,
+    /// The lock of the workspace the native window holds, `rootpoint_protocol::workspace::run`.
+    #[cfg(not(target_arch = "wasm32"))]
+    lock: Option<rootpoint_protocol::workspace::WorkspaceLock>,
+    /// The close of the window was asked while a presentation held in memory had unsaved edits:
+    /// the question shows until the author answers.
+    close_question: bool,
+    /// The author answered the question by closing: the next close is not cancelled.
+    closing: bool,
     /// The pickers and full screen of the page.
     #[cfg(target_arch = "wasm32")]
     web: web::Web,
@@ -218,6 +230,12 @@ impl App {
             listener: None,
             controller: Controller::Window,
             held: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            native: false,
+            #[cfg(not(target_arch = "wasm32"))]
+            lock: None,
+            close_question: false,
+            closing: false,
             #[cfg(target_arch = "wasm32")]
             web: web::Web::default(),
             tab: SideTab::default(),
@@ -225,6 +243,16 @@ impl App {
             menu: None,
             menu_serial: 0,
         }
+    }
+
+    /// The native window on `files`, the native file system: its commands take the lock of a
+    /// workspace they open and drop the old one, and the control socket it listens on moves with
+    /// the store, by the table of `design@rootpoint-app@control-socket`.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn native(files: Box<dyn Files>) -> Self {
+        let mut app = App::new(files);
+        app.native = true;
+        app
     }
 
     /// An editor on an empty session whose files are held in memory, as the browser build's are:
@@ -356,7 +384,26 @@ impl App {
                 | Command::OpenPack { .. }
                 | Command::Import { .. }
         );
+        let root = self.session.root().map(str::to_owned);
+        #[cfg(not(target_arch = "wasm32"))]
+        let reply = if self.native {
+            rootpoint_protocol::workspace::run(
+                &mut self.session,
+                command,
+                &mut *self.files,
+                &mut self.lock,
+            )
+        } else {
+            self.session.run(command, &mut *self.files)
+        };
+        #[cfg(target_arch = "wasm32")]
         let reply = self.session.run(command, &mut *self.files);
+        #[cfg(unix)]
+        if self.native && self.session.root() != root.as_deref() {
+            self.move_socket(root.as_deref());
+        }
+        #[cfg(not(unix))]
+        let _ = root;
         if rereads && matches!(reply, Reply::Ok(_)) {
             self.assets = Assets::default();
         }
@@ -437,9 +484,81 @@ impl App {
         lines
     }
 
+    /// The text of the state label: where the presentation is, and whether its edits are saved,
+    /// the store's state as `store` replies it. A workspace is saved by Ctrl+S, so it names the
+    /// changes since its save.
+    pub fn state_label(&self) -> String {
+        let changes = |n: u64| match n {
+            1 => "1 change".to_owned(),
+            n => format!("{n} changes"),
+        };
+        let unsaved = self.session.unsaved();
+        match (self.session.root(), self.session.pack()) {
+            (Some(root), _) if unsaved == 0 => format!("Workspace {root}, saved"),
+            (Some(root), _) => format!("Workspace {root}, {} since the save", changes(unsaved)),
+            (None, None) => "In memory, not saved".to_owned(),
+            (None, Some(pack)) if unsaved == 0 => format!("In memory, saved to {pack}"),
+            (None, Some(pack)) => format!("In memory, saved to {pack}, {} since", changes(unsaved)),
+        }
+    }
+
+    /// Whether the question before closing a window held in memory with unsaved edits shows.
+    pub fn close_question(&self) -> bool {
+        self.close_question
+    }
+
+    /// The close of the window was asked: in memory with unsaved edits, which no undo reaches once
+    /// the window is gone, the close is cancelled and the question asks first, unless the author
+    /// answered it by closing; a workspace never asks.
+    fn on_close(&mut self, ctx: &Context) {
+        let asked = ctx.input(|i| i.viewport().close_requested());
+        if !asked || self.closing {
+            return;
+        }
+        if self.session.root().is_none() && self.session.unsaved() > 0 {
+            ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
+            self.close_question = true;
+        }
+    }
+
+    /// The question before a close that would lose unsaved edits: "Close" closes, "Keep open"
+    /// keeps the window.
+    fn show_close_question(&mut self, ctx: &Context) {
+        if !self.close_question {
+            return;
+        }
+        let n = self.session.unsaved();
+        egui::Window::new("Close without saving?")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
+            .show(ctx, |ui| {
+                ui.label(format!(
+                    "{} held in memory {} not saved.",
+                    if n == 1 { "1 change" } else { "Changes" },
+                    if n == 1 { "is" } else { "are" }
+                ));
+                ui.horizontal(|ui| {
+                    let close = ui.button("Close");
+                    self.view.buttons.push(("Close".to_owned(), close.rect));
+                    if close.clicked() {
+                        self.closing = true;
+                        self.close_question = false;
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                    let keep = ui.button("Keep open");
+                    self.view.buttons.push(("Keep open".to_owned(), keep.rect));
+                    if keep.clicked() {
+                        self.close_question = false;
+                    }
+                });
+            });
+    }
+
     /// Show the editor for one frame. It takes a `Ui`, so a test drives it with
     /// `Context::run_ui`, with no window.
     pub fn frame(&mut self, ui: &mut Ui) {
+        self.on_close(ui.ctx());
         #[cfg(unix)]
         self.serve_socket();
         #[cfg(target_arch = "wasm32")]
@@ -468,6 +587,7 @@ impl App {
                 .send_viewport_cmd(ViewportCommand::Fullscreen(presenting));
             self.fullscreen = presenting;
         }
+        self.show_close_question(ui.ctx());
     }
 
     /// The browser build: open what the pickers read since the last frame; and leave presenter

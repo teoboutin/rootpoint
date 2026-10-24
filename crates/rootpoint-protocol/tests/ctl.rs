@@ -168,3 +168,51 @@ fn a_line_that_is_not_utf8_goes_on_and_a_line_with_a_newline_is_refused() {
             .any(|l| l.contains("add-slide"))
     );
 }
+
+/// Run `rootpoint-ctl` on `args` with `runtime` as its runtime directory's parent.
+fn ctl_in(runtime: &std::path::Path, args: &[&str]) -> (i32, String) {
+    let out = Command::new(env!("CARGO_BIN_EXE_rootpoint-ctl"))
+        .env("XDG_RUNTIME_DIR", runtime)
+        .args(args)
+        .output()
+        .unwrap();
+    (
+        out.status.code().unwrap(),
+        String::from_utf8(out.stdout).unwrap(),
+    )
+}
+
+/// `rootpoint-ctl <dir>` reaches the socket a workspace's pointer file names, and
+/// `rootpoint-ctl list` prints each socket of the runtime directory that answers, by name.
+#[test]
+fn it_finds_a_window_by_its_workspace_and_lists_the_sockets() {
+    use rootpoint_protocol::workspace::{pointer_file, socket_name};
+    let runtime = std::fs::canonicalize(socket_dir("ctl-list")).unwrap();
+    let dir = runtime.join("rootpoint");
+    std::fs::create_dir_all(&dir).unwrap();
+    let workspace = runtime.join("talk");
+    std::fs::create_dir_all(workspace.join(".rootpoint")).unwrap();
+    let name = socket_name(&dir, Some(workspace.to_str().unwrap()));
+    let path = dir.join(&name);
+    let socket = UnixListener::bind(&path).unwrap();
+    thread::spawn(move || {
+        for stream in socket.incoming() {
+            let mut stream = stream.unwrap();
+            let mut line = String::new();
+            BufReader::new(&stream).read_line(&mut line).unwrap();
+            writeln!(stream, "ok {}", line.trim_end()).unwrap();
+        }
+    });
+    std::fs::write(pointer_file(&workspace), path.to_str().unwrap()).unwrap();
+    // A socket nothing answers is left by a window that ended, and is not listed.
+    drop(UnixListener::bind(dir.join("stale.sock")).unwrap());
+    assert_eq!(
+        ctl_in(&runtime, &[workspace.to_str().unwrap(), "view"]),
+        (0, "ok view\n".to_owned())
+    );
+    assert_eq!(ctl_in(&runtime, &["list"]), (0, format!("{name}\n")));
+    // A workspace no window holds has no pointer file.
+    let other = runtime.join("other");
+    std::fs::create_dir_all(&other).unwrap();
+    assert_eq!(ctl_in(&runtime, &[other.to_str().unwrap(), "view"]).0, 2);
+}

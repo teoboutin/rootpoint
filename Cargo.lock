@@ -3217,6 +3217,7 @@ version = "0.0.0"
 dependencies = [
  "flate2",
  "image",
+ "libc",
  "proptest",
  "rootpoint-model",
  "rootpoint-render",

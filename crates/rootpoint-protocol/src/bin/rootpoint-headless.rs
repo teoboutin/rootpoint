@@ -2,12 +2,13 @@
 //! to stdout, until the end of its input. A host path, the argument of `open`, `open-copy`,
 //! `open-pack`, `pack`, `unpack`, `import` and `render`, is relative to the working directory; an
 //! asset's path, to the root of the workspace open, or a key of the map of a presentation held in
-//! memory. It has no autosave: a script writes a workspace's `presentation.ron`, or the pack of a
-//! presentation held in memory, by `save`.
+//! memory. A workspace it opens is locked to it until the store changes or the input ends, so a
+//! window or another script cannot open it meanwhile. It has no autosave: a script writes a
+//! workspace's `presentation.ron`, or the pack of a presentation held in memory, by `save`.
 
 use std::io::{BufRead, Write};
 
-use rootpoint_protocol::{Files, Session, read_line};
+use rootpoint_protocol::{Files, Session, read_line, workspace};
 
 // Ties this binary's build to its checkout.
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
@@ -80,6 +81,8 @@ impl Files for NativeFiles {
 fn main() {
     let mut session = Session::new();
     let mut files = NativeFiles;
+    // The lock of the workspace open, which keeps it to this process, `workspace::run`.
+    let mut lock = None;
     let stdout = std::io::stdout();
     let mut out = stdout.lock();
     // Lines are read as bytes, so that a line that is not UTF-8 gets its own reply and the
@@ -87,7 +90,7 @@ fn main() {
     for line in std::io::stdin().lock().split(b'\n') {
         let Ok(bytes) = line else { break };
         let reply = read_line(&bytes).map(|command| match command {
-            Ok(command) => session.run(command, &mut files),
+            Ok(command) => workspace::run(&mut session, command, &mut files, &mut lock),
             Err(reply) => reply,
         });
         if let Some(reply) = reply

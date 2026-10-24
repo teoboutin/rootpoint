@@ -48,28 +48,7 @@ impl Listener {
     /// refuses one is left by a run that ended, as one killed by a signal leaves it, and is
     /// removed first. Any other file at the path is refused, and left as it is.
     pub fn bind(path: &Path, wake: impl Fn() + Send + Sync + 'static) -> io::Result<Listener> {
-        if let Ok(meta) = std::fs::symlink_metadata(path) {
-            if !meta.file_type().is_socket() {
-                return Err(io::Error::new(
-                    io::ErrorKind::AlreadyExists,
-                    format!("{} exists and is no socket", path.display()),
-                ));
-            }
-            match UnixStream::connect(path) {
-                Ok(_) => {
-                    return Err(io::Error::new(
-                        io::ErrorKind::AddrInUse,
-                        format!("another window listens at {}", path.display()),
-                    ));
-                }
-                // Only a socket that refuses connections is a stale one; any other error, as a
-                // socket the user may not open, leaves the file as it is.
-                Err(e) if e.kind() == io::ErrorKind::ConnectionRefused => {
-                    std::fs::remove_file(path)?;
-                }
-                Err(e) => return Err(e),
-            }
-        }
+        clear_for_bind(path)?;
         let socket = UnixListener::bind(path)?;
         let inode = std::fs::symlink_metadata(path)?.ino();
         let (sender, requests) = mpsc::channel();
@@ -94,6 +73,21 @@ impl Listener {
         })
     }
 
+    /// Move the socket's file to `to`, by the rules of a bind there: a socket that answers at `to`
+    /// is another window's, and refused; one that refuses is removed first; any other file is
+    /// refused. The socket keeps its connections, and the file removed on drop is the new one.
+    pub fn rename_to(&mut self, to: &Path) -> io::Result<()> {
+        clear_for_bind(to)?;
+        std::fs::rename(&self.path, to)?;
+        self.path = to.to_owned();
+        Ok(())
+    }
+
+    /// The path of the socket's file.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
     /// The lines queued when it is called, in the order they came: at most one per connection,
     /// since a connection's thread waits for a line's reply before it reads the next, so a batch
     /// runs one line a frame. Taken at once, not read lazily while the frame runs them, since a
@@ -112,6 +106,31 @@ impl Drop for Listener {
         if std::fs::symlink_metadata(&self.path).is_ok_and(|m| m.ino() == self.inode) {
             let _ = std::fs::remove_file(&self.path);
         }
+    }
+}
+
+/// Make `path` free for a socket: a socket that accepts a connection is another window's, and is
+/// refused; a socket that refuses one is left by a run that ended, as one killed by a signal leaves
+/// it, and is removed. Any other file at the path is refused, and left as it is.
+fn clear_for_bind(path: &Path) -> io::Result<()> {
+    let Ok(meta) = std::fs::symlink_metadata(path) else {
+        return Ok(());
+    };
+    if !meta.file_type().is_socket() {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            format!("{} exists and is no socket", path.display()),
+        ));
+    }
+    match UnixStream::connect(path) {
+        Ok(_) => Err(io::Error::new(
+            io::ErrorKind::AddrInUse,
+            format!("another window listens at {}", path.display()),
+        )),
+        // Only a socket that refuses connections is a stale one; any other error, as a socket the
+        // user may not open, leaves the file as it is.
+        Err(e) if e.kind() == io::ErrorKind::ConnectionRefused => std::fs::remove_file(path),
+        Err(e) => Err(e),
     }
 }
 
@@ -145,6 +164,59 @@ impl crate::App {
     /// Take the lines of a control socket, which each frame then runs, at its start.
     pub fn listen(&mut self, listener: Listener) {
         self.listener = Some(listener);
+    }
+
+    /// The native window's socket: bind it in the runtime directory, created with mode 0700, at
+    /// the name of the store, and, in a workspace, write the pointer file that names it,
+    /// `design@rootpoint-app@control-socket`.
+    pub fn listen_at_store(&mut self, wake: impl Fn() + Send + Sync + 'static) -> io::Result<()> {
+        use std::os::unix::fs::DirBuilderExt;
+        let path = rootpoint_protocol::workspace::socket_path(self.session.root());
+        if let Some(dir) = path.parent() {
+            std::fs::DirBuilder::new()
+                .recursive(true)
+                .mode(0o700)
+                .create(dir)?;
+        }
+        self.listener = Some(Listener::bind(&path, wake)?);
+        if let Some(root) = self.session.root() {
+            std::fs::write(
+                rootpoint_protocol::workspace::pointer_file(Path::new(root)),
+                path.as_os_str().as_encoded_bytes(),
+            )?;
+        }
+        Ok(())
+    }
+
+    /// After a command changed the store, move the socket's file to the new store's name, write the
+    /// new workspace's pointer file and remove the old one's; the status line names a failure, and
+    /// the socket then stays where it was.
+    pub(crate) fn move_socket(&mut self, old_root: Option<&str>) {
+        let Some(listener) = self.listener.as_mut() else {
+            return;
+        };
+        let path = rootpoint_protocol::workspace::socket_path(self.session.root());
+        if path != listener.path()
+            && let Err(e) = listener.rename_to(&path)
+        {
+            self.error = Some(format!(
+                "the control socket stays at {}: {e}",
+                listener.path().display()
+            ));
+            return;
+        }
+        if let Some(old) = old_root {
+            let _ =
+                std::fs::remove_file(rootpoint_protocol::workspace::pointer_file(Path::new(old)));
+        }
+        if let Some(root) = self.session.root()
+            && let Err(e) = std::fs::write(
+                rootpoint_protocol::workspace::pointer_file(Path::new(root)),
+                path.as_os_str().as_encoded_bytes(),
+            )
+        {
+            self.error = Some(format!("the pointer to the control socket: {e}"));
+        }
     }
 
     /// Run every line the control socket received since the last frame, and send each reply.

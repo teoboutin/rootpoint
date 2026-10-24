@@ -7,7 +7,7 @@ the native half of `thread@asset-storage@unsaved-close-warning`, and the state l
 
 ## Builds
 
-- `planned@rootpoint-protocol@src/workspace.rs`, native only, `cfg(not(target_arch = "wasm32"))`:
+- `path@rootpoint-protocol@src/workspace.rs`, native only, `cfg(not(target_arch = "wasm32"))`:
   `WorkspaceLock`, which creates `.rootpoint/` with its `.gitignore` holding `*`, takes
   `File::try_lock` on `.rootpoint/lock`, writes its pid there, and holds the file until dropped;
   `runtime_dir` and `socket_path`, by the milestone's "Decided design" of #socket-place; and the

@@ -14,6 +14,8 @@ mod sample;
 mod session;
 mod store;
 mod tree;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod workspace;
 
 pub use command::{Command, ParseError, StyleCommand, StyleOption, parse_command};
 pub use files::Files;

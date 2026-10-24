@@ -218,9 +218,15 @@ impl Session {
                             .to_owned(),
                     );
                 };
-                // A directory that holds anything is refused, so an unpack overwrites no file;
-                // a path that is a file fails the listing.
-                if files.exists(&dir)? && !files.list(&dir)?.is_empty() {
+                // A directory that holds anything but `.rootpoint/`, which a host's lock creates
+                // first, is refused, so an unpack overwrites no file; a path that is a file fails
+                // the listing.
+                if files.exists(&dir)?
+                    && files
+                        .list(&dir)?
+                        .iter()
+                        .any(|p| p.split('/').next() != Some(".rootpoint"))
+                {
                     return Err(format!(
                         "{} holds files: unpack into an empty directory",
                         quote(&dir)

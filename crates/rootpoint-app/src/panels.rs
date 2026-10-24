@@ -97,6 +97,12 @@ impl App {
             if ui.button("Redo").clicked() {
                 self.redo();
             }
+            // The state label, at the right end: where the presentation is, and whether it is
+            // saved.
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let label = ui.label(self.state_label());
+                self.view.buttons.push(("state".to_owned(), label.rect));
+            });
         });
     }
 
