@@ -112,8 +112,8 @@ harvest and then one review, as the review before a merge would be, with the tra
 alone after the others; the repairs of a slice's review are reviewed again only at the end of the
 milestone. This replaces, for the branches, the one branch per slice of D1 and of
 `skill@knowledge-architect-planning@cutting-steps-and-slices`. On the same word, the work pauses for the
-owner only where the owner's word is needed to fill a gap, and otherwise goes on with sensible
-defaults, each reported to the owner. The relocation axis of the first slice's review could not
+owner only where it absolutely needs the owner's word to fill a gap, and otherwise goes on with
+sensible defaults, which `primer@decided-section` has the session report. The relocation axis of the first slice's review could not
 read the diffs of `path@rootpoint-app@tests/actions.rs` and `path@rootpoint-app@tests/control.rs`;
 the review at the end of the milestone reads them.
 

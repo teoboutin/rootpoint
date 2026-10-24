@@ -204,9 +204,9 @@ fn a_pack_s_first_entry_names_its_type_at_a_fixed_offset() {
     );
 }
 
-/// #c-pack-overhead: the pack's size, less its assets' bytes, the deflated `presentation.ron` and
-/// the media type, is at most 22 bytes plus, for each entry, 100 bytes and twice its name's length.
-/// The figures print with `--nocapture`.
+/// The bound of `design@rootpoint-protocol@pack-container`: the pack's size, less its assets'
+/// bytes, the deflated `presentation.ron` and the media type, is at most 22 bytes plus, for each
+/// entry, 100 bytes and twice its name's length. The figures print with `--nocapture`.
 #[test]
 fn a_pack_adds_only_the_zip_s_headers() {
     let mut files = MemoryFiles::default();

@@ -134,6 +134,9 @@ This slice judges `acceptance@asset-storage@ac-renamed-socket`.
 - A head of the app for the state label and for the writing actions named by where they write,
   `criterion@asset-storage@c-visible-mode`, the owner's requirement, built natively here and in the
   browser at #browser-packs, by the tests of `primer@design-heads`.
+- Add to `issue@rootpoint-app@abandoned-composition-undo-step` its new effect: the empty step an
+  abandoned composition leaves counts in `Session::unsaved`, so a window in memory asks on close
+  for an edit that changed nothing.
 - Write T1, guarding the lock's head, as
   `skill@knowledge-architect-decision-recording@ruled-tripwires` says.
 - Update `path@rootpoint-app@CLAUDE.md`, `path@rootpoint-protocol@CLAUDE.md` (its list of the parts
