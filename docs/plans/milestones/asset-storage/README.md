@@ -1186,7 +1186,7 @@ at the new name and removes the old one, a shape the decision admits.
    `open-copy`, `import`, `save` at the root, the sample in memory; the browser's picked directory
    in memory; the query `store`. Fails alone on: a round trip of the fixture, the reproduction of
    the save-mixes defect, and a confinement test.
-2. [#pack-commands](pack-commands.md): `pack`, `open-pack`, `unpack`, a save in memory to its pack; the zip crate
+2. #pack-commands, landed, its spec deleted with its harvest: `pack`, `open-pack`, `unpack`, a save in memory to its pack; the zip crate
    in the wasm gate. Fails alone on: a pack's round trip, and its extraction by `unzip`.
 3. [#workspace-host](workspace-host.md): the native window's command line, the workspace lock, the
    socket in the runtime directory, `rootpoint-ctl`, the state label and the warning on close in

@@ -71,3 +71,13 @@ that recorded it, whose text is read by
 `git show 5742b00:crates/rootpoint-protocol/docs/open-issues/save-mixes-relative-and-absolute.md`.
 The paths the undo and redo stacks held were rewritten at each save, with the asset's bytes where no
 path from the new directory reached its file. The command `save <path>` was its interface.
+
+### A pack in a binary format of rootpoint's own `##own-pack-format`
+
+`live`. It does what a zip does, an index of named entries, and only rootpoint opens it, where any
+unzip tool opens a zip into the layout of a workspace.
+
+### A pack as a tar file `##tar-pack`
+
+`live`. A tar has no index, so a reader reads the whole file to find one asset; and the file
+managers of Windows did not open one until recently, where every one opens a zip.

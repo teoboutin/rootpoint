@@ -15,10 +15,13 @@ window's own state: selecting by a click, Alt and the arrows, the outline or the
 "Select", showing a slide of the list, presenting, the button "Preview", switching the side panel's
 tab, and selecting a style in the Styles tab's list. It draws no grip, no divider highlight and no
 line of a split at the pointer, and a click on the selected text area only selects it. The toolbar
-opens a directory as a workspace (Ctrl+O), saves it to its `presentation.ron` (Ctrl+S), opens the
-built-in sample in memory, previews, presents, and undoes (Ctrl+Z) and redoes (Ctrl+Shift+Z or
-Ctrl+Y). A presentation held in memory, the sample or a new one, has no file to save to, and Save
-says so in the status line. The window shows the shown slide, scaled uniformly to the largest size that fits and
+opens a directory as a workspace (Ctrl+O), or a pack, a `.rpk` file, in memory ("Open pack…");
+saves (Ctrl+S) a workspace to its `presentation.ron`, and a presentation held in memory to the pack
+it was opened from or last written to, asking for one when there is none; writes a presentation held
+in memory as a pack ("Save as pack…") or as a workspace in an empty directory ("Save as workspace…",
+"Unpack to…" once a pack holds it), and a workspace as a pack ("Pack to…"); opens the built-in
+sample in memory, previews, presents, and undoes (Ctrl+Z) and redoes (Ctrl+Shift+Z or Ctrl+Y). The
+window shows the shown slide, scaled uniformly to the largest size that fits and
 letterboxed, and, under it, what the slide's render could not draw as the document asks: missing
 images, fonts not found, characters no font has, styles the document lacks, and text not drawn.
 

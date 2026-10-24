@@ -174,8 +174,10 @@ it is on disk; `Store::Workspace` names a directory of the host's files, its roo
 `Files::canonical` gives it, with `presentation.ron` at the root and each asset at its path below
 it. `new`, `sample` and `open-copy <dir>`, which copies a directory's presentation and the files of
 its assets into the map, open in memory; `open <dir>` opens a workspace, an empty presentation when
-the directory holds none. `save` writes `presentation.ron` at a workspace's root, and replies `err`
-in memory. A host path, the argument of `open`, `open-copy`, `import` and `render`, is read by the
+the directory holds none. `open-pack <file>` opens a pack in memory, its entries the map, and
+`unpack <dir>` writes a presentation held in memory into an empty directory, a workspace from then
+on. `save` writes `presentation.ron` at a workspace's root; in memory it writes the pack last opened
+or written, `Session::pack`, and replies `err` with none. A host path, the argument of `open`, `open-copy`, `import` and `render`, is read by the
 host's files as the host reads it.
 
 An asset path is a key of the map in memory, and relative to the root in a workspace, whose root
@@ -192,7 +194,8 @@ store in memory beside the workspace.
 
 ### `store` replies the store and the undo steps since its open or its save `##store-query`
 
-`store` replies `ok memory unsaved=<n>`, or `ok workspace <root> unsaved=<n>`, where `n` is
+`store` replies `ok memory unsaved=<n>`, with ` pack=<file>` once a pack is the one `save` writes,
+or `ok workspace <root> unsaved=<n>`, where `n` is
 `Session::unsaved`, the undo steps pushed, undone or redone since the store was opened or saved. It
 is the query of what the window's state shows, so an agent reads that view as the author sees it, as
 `goal@rootpoint-protocol@commands-drive-everything` asks of every view the window shows. With no
@@ -228,6 +231,30 @@ chose copies at the root, beside the presentation, over a subfolder for them, fo
 the author free, later than the first prototype, to arrange assets in subdirectories of any depth,
 a tree that packing, then
 unpacking elsewhere, keeps, which the `<asset-path>` of an import gives.
+
+## Packs
+
+### A pack is a zip whose first entry names its type, then the presentation and its assets' files `##pack-container`
+
+A pack, of extension `.rpk`, is a zip file: first the entry `mimetype`, stored with no compression
+and no extra field, holding `application/x-rootpoint`; then `presentation.ron`, deflated; then
+each asset's file at its asset path, stored. `pack <file>` writes one from any store, reading each
+asset through `design@rootpoint-protocol@store-confines-access`, so an asset it cannot read is left
+out and named after `missing=`. `open-pack <file>` refuses a file whose first entry is not that
+`mimetype`, a pack with no `presentation.ron`, and one with a symlink entry or an entry whose name
+fails `asset_path_is_confined`, whole. The pack carries no version of its own: the RON in it names
+its format's version, `design@rootpoint-model@save-format`.
+
+Any unzip tool extracts a pack into the layout of a workspace, a `mimetype` file aside, and the
+zip's central index lets a reader take one asset without reading the rest. On the owner's word: a
+pack can be unpacked without rootpoint, which the owner weighed as important. The first entry is EPUB's convention, read
+in EPUB 3.3, section 4.3.3: the `mimetype` file is the container's first, neither compressed nor
+encrypted, with no extra field in its header and no padding around the media type, so a reader
+tells a pack by its first bytes. A pack adds only the zip's headers to its contents: 318 bytes for
+the sample, measured by the test `a_pack_adds_only_the_zip_s_headers` of
+`path@rootpoint-protocol@tests/pack.rs`, where a RON with the bytes in it, the rival
+`rejected@rootpoint-model@bytes-in-the-file`, grows 20 times. The other rivals:
+`rejected@rootpoint-protocol@own-pack-format` and `rejected@rootpoint-protocol@tar-pack`.
 
 ## The built-in sample
 

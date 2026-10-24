@@ -121,8 +121,9 @@ file is text only, as `goal@rootpoint@readable-save-file` and
 ### An asset path is confined below its root by `asset_path_is_confined` `##asset-path-confinement`
 
 `asset_path_is_confined` holds for a path with no empty, `.` or `..` component, no leading `/` and
-no `\`, whose first component is not `.rootpoint` and which is not `presentation.ron`, the two files
-of a workspace that are no asset. It is the test of the confinement the store keeps at each access,
+no `\`, whose first component is not `.rootpoint` and which is neither `presentation.ron` nor
+`mimetype`, the files of a workspace and of a pack that are no asset: an asset named `mimetype` would
+give a pack two entries of that name, `design@rootpoint-protocol@pack-container`. It is the test of the confinement the store keeps at each access,
 `design@rootpoint-protocol@store-confines-access`, and of the commands that refuse to name a path
 that fails it, `design@rootpoint-protocol@no-new-breach`. The model checks nothing more: whether a
 file is at the path, and where a symlink leads, are the store's to check. A file that names another

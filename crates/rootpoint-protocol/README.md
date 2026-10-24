@@ -44,10 +44,20 @@ A session reads its presentation from a store. `open <dir>` opens a workspace: `
 at the directory's root, or an empty presentation when it has none, and each asset a file at its
 path below the root; `save` writes `presentation.ron` there. `new`, `sample` and `open-copy <dir>`,
 which copies a directory's presentation and its assets' files, open in memory: the assets' bytes are
-the session's own, and `save` replies `err`, since no file holds the presentation. `store` replies
+the session's own, and `save` replies `err` until a pack holds the presentation. `store` replies
 `ok memory unsaved=<n>` or `ok workspace <root> unsaved=<n>`, the root absolute, with `n` the undo
 steps made, undone or redone since the store was opened or saved. The host paths of `open`,
 `open-copy`, `import` and `render` are relative to the working directory.
+
+`pack <file>` writes the presentation and its assets' files as a pack, a zip file of extension
+`.rpk`: first an entry `mimetype` holding `application/x-rootpoint`, stored, then
+`presentation.ron`, deflated, then each asset's file at its path, stored. Its reply names, after
+`missing=`, the assets it had no bytes for, `-` for none. `open-pack <file>` opens a pack in memory,
+and refuses one whose first entry is not that `mimetype`, or that holds a symlink or an entry
+whose name is not an asset path. In memory, after `open-pack` or `pack`, `save` writes that pack
+again, and `store` names it, `pack=<file>`. `unpack <dir>` writes a presentation held in memory into
+an empty or absent directory, as `presentation.ron` and its assets' files, and the store is then a
+workspace there. Any unzip tool also extracts a pack into a workspace, its `mimetype` file aside.
 
 `import <host-path> [<asset-path>]` adds a file as an asset, and replies its id. In a workspace, a
 file below the root is added at its path there, with no copy. Any other file is copied into the
@@ -56,8 +66,8 @@ takes a suffix, `-2`, `-3` and on, before the extension, and one whose file hold
 used as it is. A file an asset already names adds no asset: the reply is that asset's id.
 
 An asset path is always inside the root: it has no empty, `.` or `..` component, does not start
-with `/`, holds no `\`, has a first component other than `.rootpoint` and is not
-`presentation.ron`. No command
+with `/`, holds no `\`, has a first component other than `.rootpoint` and is neither
+`presentation.ron` nor `mimetype`. No command
 reads or writes another path, nor a file a symlink places outside the root: a file edited by hand
 that names one still loads, and `render` draws the asset as a missing one; `import` to such a path
 replies `err`.

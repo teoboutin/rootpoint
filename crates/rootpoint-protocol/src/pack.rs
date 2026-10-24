@@ -1,7 +1,8 @@
-//! A pack: a presentation and its assets in one zip file. Its first entry is `mimetype`, stored,
-//! holding `PACK_MIMETYPE`, so a reader tells a pack by its first bytes, as EPUB's container does;
-//! then `presentation.ron`, deflated; then each asset's file at its asset path, stored, its bytes
-//! as they are. Unzipped by any tool, it gives the layout of a workspace.
+//! A pack: a presentation and its assets in one zip file, `design@rootpoint-protocol@pack-container`.
+//! Its first entry is `mimetype`, stored, holding `PACK_MIMETYPE`, so a reader tells a pack by its
+//! first bytes, as EPUB's container does; then `presentation.ron`, deflated; then each asset's file
+//! at its asset path, stored, its bytes as they are. Unzipped by any tool, it gives the layout of a
+//! workspace.
 
 use std::collections::BTreeMap;
 use std::io::{Cursor, Read, Write};
