@@ -1150,7 +1150,7 @@ T1 to T4 are written at the harvest of the slice that records the decision each 
 
 AC1. Guards #asset-disk-changes. Judged at #autosave-and-watch. Observable: a benchmark, outside the
 gates since timings vary, builds a document of 1000 slides as #arg-16 did, in the ignored test
-`autosave_gui_cost` of `planned@rootpoint-app@tests/autosave.rs`, and times the work the GUI
+`autosave_gui_cost` of `path@rootpoint-app@tests/autosave.rs`, and times the work the GUI
 thread does for one autosave, the clone and the hand-over, as a median of 21 runs, on the owner's
 AMD Ryzen 9 9950X; it fires above 1 ms, a bound the owner may reset. Response: the clone is replaced by a
 cheaper snapshot, or the serialization moves to the GUI thread's idle time; #asset-disk-changes is

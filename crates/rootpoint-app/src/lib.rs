@@ -6,6 +6,8 @@ const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod actions;
 mod assets;
+#[cfg(not(target_arch = "wasm32"))]
+pub mod autosave;
 #[cfg(unix)]
 pub mod control;
 pub mod editing;
@@ -15,6 +17,8 @@ mod menu;
 mod panels;
 pub mod selection;
 mod view;
+#[cfg(not(target_arch = "wasm32"))]
+mod watch;
 #[cfg(target_arch = "wasm32")]
 mod web;
 
@@ -85,6 +89,19 @@ pub struct App {
     /// The lock of the workspace the native window holds, `rootpoint_protocol::workspace::run`.
     #[cfg(not(target_arch = "wasm32"))]
     lock: Option<rootpoint_protocol::workspace::WorkspaceLock>,
+    /// The autosave of the workspace the native window holds.
+    #[cfg(not(target_arch = "wasm32"))]
+    autosave: Option<autosave::Autosave>,
+    /// The watcher of the directories of that workspace's assets.
+    #[cfg(not(target_arch = "wasm32"))]
+    watch: Option<watch::Watch>,
+    /// The window's context, kept at its first frame, through which the autosave's thread and the
+    /// watcher ask for a frame; they may start before it, at an open of the command line.
+    #[cfg(not(target_arch = "wasm32"))]
+    repaint: std::sync::Arc<std::sync::OnceLock<Context>>,
+    /// Why "Load the file" failed, which the banner names until the author answers again.
+    #[cfg(not(target_arch = "wasm32"))]
+    reload_error: Option<String>,
     /// The close of the window was asked while a presentation held in memory had unsaved edits:
     /// the question shows until the author answers.
     close_question: bool,
@@ -234,6 +251,14 @@ impl App {
             native: false,
             #[cfg(not(target_arch = "wasm32"))]
             lock: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            autosave: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            watch: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            repaint: std::sync::Arc::new(std::sync::OnceLock::new()),
+            #[cfg(not(target_arch = "wasm32"))]
+            reload_error: None,
             close_question: false,
             closing: false,
             #[cfg(target_arch = "wasm32")]
@@ -385,6 +410,7 @@ impl App {
                 | Command::Import { .. }
         );
         let root = self.session.root().map(str::to_owned);
+        let unsaved = self.session.unsaved();
         #[cfg(not(target_arch = "wasm32"))]
         let reply = if self.native {
             rootpoint_protocol::workspace::run(
@@ -402,10 +428,16 @@ impl App {
         if self.native && self.session.root() != root.as_deref() {
             self.move_socket(root.as_deref());
         }
+        #[cfg(not(target_arch = "wasm32"))]
+        if self.native {
+            self.follow_workspace(root.as_deref(), unsaved);
+        }
+        #[cfg(target_arch = "wasm32")]
+        let _ = unsaved;
         #[cfg(not(unix))]
         let _ = root;
         if rereads && matches!(reply, Reply::Ok(_)) {
-            self.assets = Assets::default();
+            self.assets.invalidate();
         }
         self.error = match &reply {
             Reply::Ok(_) => None,
@@ -484,6 +516,114 @@ impl App {
         lines
     }
 
+    /// While the guard has stopped the autosave, a banner over the toolbar says that
+    /// `presentation.ron` was changed outside rootpoint, with "Load the file" and "Keep mine".
+    #[cfg(not(target_arch = "wasm32"))]
+    fn outside_change_banner(&mut self, ui: &mut Ui) {
+        if !self.autosave.as_ref().is_some_and(|a| a.stopped()) {
+            return;
+        }
+        Panel::top("outside-change").show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("presentation.ron was changed outside rootpoint");
+                let load = ui.button("Load the file");
+                self.view
+                    .buttons
+                    .push(("Load the file".to_owned(), load.rect));
+                if load.clicked() {
+                    self.load_outside_file();
+                }
+                let keep = ui.button("Keep mine");
+                self.view.buttons.push(("Keep mine".to_owned(), keep.rect));
+                if keep.clicked() {
+                    self.keep_mine();
+                }
+            });
+            if let Some(reason) = &self.reload_error {
+                ui.label(format!("The file does not load: {reason}"));
+            }
+        });
+    }
+
+    /// What the autosave's thread and the watcher call to ask the window for a frame, once its
+    /// first frame has given the context.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn waker(&self) -> std::sync::Arc<dyn Fn() + Send + Sync> {
+        let repaint = self.repaint.clone();
+        std::sync::Arc::new(move || {
+            if let Some(ctx) = repaint.get() {
+                ctx.request_repaint();
+            }
+        })
+    }
+
+    /// The autosave of the workspace the native window holds, if any, for the tests.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn autosave(&self) -> Option<&autosave::Autosave> {
+        self.autosave.as_ref()
+    }
+
+    /// How many times the assets were decoded, for the tests.
+    pub fn asset_decodings(&self) -> u64 {
+        self.assets.decodings()
+    }
+
+    /// After a command of the native window: a store that became a workspace starts its autosave
+    /// and its watcher, one that left it stops them; a command that changed the undo steps sends
+    /// the autosave a clone of the document; and the watcher follows the directories of the
+    /// assets.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn follow_workspace(&mut self, old_root: Option<&str>, old_unsaved: u64) {
+        let root = self.session.root().map(std::path::PathBuf::from);
+        if self.session.root() != old_root {
+            self.autosave = root
+                .clone()
+                .map(|root| autosave::Autosave::start(root, self.waker()));
+            self.watch = root
+                .as_ref()
+                .and_then(|_| watch::Watch::new(self.waker()).ok());
+            self.reload_error = None;
+        } else if self.session.unsaved() != old_unsaved
+            && let Some(autosave) = &self.autosave
+        {
+            autosave.save(self.session.document().clone());
+        }
+        if let (Some(watch), Some(root)) = (&mut self.watch, &root) {
+            let dirs = self
+                .session
+                .document()
+                .assets
+                .values()
+                .filter(|a| rootpoint_model::asset_path_is_confined(&a.path))
+                .filter_map(|a| root.join(&a.path).parent().map(|d| d.to_path_buf()))
+                .collect();
+            watch.set(dirs);
+        }
+    }
+
+    /// At each frame of the native window: an event of the watcher that names the file of an asset
+    /// of the table drops the decoded assets, which the frame then decodes again; an event of any
+    /// other file decodes nothing.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn take_watched(&mut self) {
+        let (Some(watch), Some(root)) = (&self.watch, self.session.root()) else {
+            return;
+        };
+        let root = std::path::Path::new(root);
+        let assets: std::collections::BTreeSet<std::path::PathBuf> = self
+            .session
+            .document()
+            .assets
+            .values()
+            .map(|a| root.join(&a.path))
+            .collect();
+        if watch.take().iter().any(|path| assets.contains(path)) {
+            self.assets.invalidate();
+            // The slide is rendered again with the new bytes, as after a command.
+            self.view.drawn = None;
+        }
+    }
+
     /// The text of the state label: where the presentation is, and whether its edits are saved,
     /// the store's state as `store` replies it. A workspace is saved by Ctrl+S, so it names the
     /// changes since its save.
@@ -493,6 +633,15 @@ impl App {
             n => format!("{n} changes"),
         };
         let unsaved = self.session.unsaved();
+        // A workspace that autosaves is saved, unless the guard stopped the writes.
+        #[cfg(not(target_arch = "wasm32"))]
+        if let (Some(root), Some(autosave)) = (self.session.root(), &self.autosave) {
+            return if autosave.stopped() {
+                format!("Workspace {root}, not saved: the file changed outside rootpoint")
+            } else {
+                format!("Workspace {root}, saved")
+            };
+        }
         match (self.session.root(), self.session.pack()) {
             (Some(root), _) if unsaved == 0 => format!("Workspace {root}, saved"),
             (Some(root), _) => format!("Workspace {root}, {} since the save", changes(unsaved)),
@@ -561,6 +710,11 @@ impl App {
         // The places of the buttons are this frame's, in presenter mode as in the editor.
         self.view.buttons.clear();
         self.on_close(ui.ctx());
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.repaint.get_or_init(|| ui.ctx().clone());
+            self.take_watched();
+        }
         #[cfg(unix)]
         self.serve_socket();
         #[cfg(target_arch = "wasm32")]
@@ -638,6 +792,8 @@ impl App {
                 });
             });
         }
+        #[cfg(not(target_arch = "wasm32"))]
+        self.outside_change_banner(ui);
         Panel::top("toolbar").show(ui, |ui| self.toolbar(ui));
         Panel::bottom("status").show(ui, |ui| {
             for line in self.status() {

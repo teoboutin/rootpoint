@@ -43,6 +43,9 @@ pub enum Command {
     Unpack {
         dir: String,
     },
+    /// Read `presentation.ron` at a workspace's root again, and make it the document, one undo
+    /// step.
+    Reload,
     Tree {
         slide: Option<SlideId>,
     },
@@ -239,6 +242,7 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         "pack" => Command::Pack { file: args.path()? },
         "open-pack" => Command::OpenPack { file: args.path()? },
         "unpack" => Command::Unpack { dir: args.path()? },
+        "reload" => Command::Reload,
         "tree" => Command::Tree {
             slide: args.optional(parse_slide)?,
         },
@@ -384,6 +388,7 @@ impl fmt::Display for Command {
             Command::Pack { file } => write!(f, "pack {}", quote(file)),
             Command::OpenPack { file } => write!(f, "open-pack {}", quote(file)),
             Command::Unpack { dir } => write!(f, "unpack {}", quote(dir)),
+            Command::Reload => f.write_str("reload"),
             Command::Tree { slide: None } => f.write_str("tree"),
             Command::Tree { slide: Some(s) } => write!(f, "tree {s}"),
             Command::Render { slide, path, size } => {

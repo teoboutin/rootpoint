@@ -190,6 +190,10 @@ fn every_operation_is_undone_by_its_inverse() {
             id: asset,
             path: "img/dog.png".to_owned(),
         },
+        // A reload of a file changed outside the editor, here an empty document.
+        Op::ReplaceDocument {
+            document: Box::new(Document::default()),
+        },
     ];
     for op in ops {
         round_trip(&doc, op);

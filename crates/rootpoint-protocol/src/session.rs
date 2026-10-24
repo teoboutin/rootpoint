@@ -200,6 +200,17 @@ impl Session {
                     .to_owned()),
             },
             Command::Pack { file } => self.write_pack(&file, files),
+            Command::Reload => {
+                let Store::Workspace(root) = &self.store else {
+                    return Err("a presentation held in memory has no file to reload".to_owned());
+                };
+                let doc = read_presentation(&join(root, PRESENTATION), files)?;
+                // The reply names no id: every id of the file is new to the editor.
+                self.edit(Op::ReplaceDocument {
+                    document: Box::new(doc),
+                })?;
+                Ok(String::new())
+            }
             Command::OpenPack { file } => {
                 let bytes = files.read(&file)?;
                 let (text, map) =

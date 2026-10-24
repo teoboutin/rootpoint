@@ -34,6 +34,7 @@ fn every_command_prints_back_as_it_parses() {
             file: "talk.rpk".into(),
         },
         Command::Unpack { dir: "out".into() },
+        Command::Reload,
         Command::Tree { slide: None },
         Command::Tree {
             slide: Some(SlideId(3)),

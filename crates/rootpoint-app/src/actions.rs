@@ -701,6 +701,40 @@ impl App {
         }
     }
 
+    /// The banner's "Load the file": `reload` makes the file changed outside rootpoint the
+    /// document, one undo step, and the autosave resumes from it; a file that does not load is
+    /// named in the banner, which stays.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn load_outside_file(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        match self.run(Command::Reload) {
+            Reply::Ok(_) => {
+                self.reload_error = None;
+                if let Some(autosave) = &self.autosave {
+                    autosave.resume(self.session.document().clone());
+                }
+            }
+            Reply::Err(reason) => self.reload_error = Some(reason),
+        }
+    }
+
+    /// The banner's "Keep mine": the window's document is written over the file changed outside
+    /// rootpoint, and the autosave resumes.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn keep_mine(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.reload_error = None;
+        if let Some(autosave) = &self.autosave {
+            autosave.keep_mine(self.session.document().clone());
+        }
+    }
+
     /// Open the built-in sample, in memory.
     pub fn open_sample(&mut self) {
         if self.socket_holds() {

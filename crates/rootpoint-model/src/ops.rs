@@ -116,6 +116,11 @@ pub enum Op {
         users: Vec<NodeId>,
         into: Option<Replacement>,
     },
+    /// Replace the whole document, as a reload of its file changed outside the editor does; the
+    /// inverse holds the document replaced, so an undo brings the editor's own back.
+    ReplaceDocument {
+        document: Box<Document>,
+    },
 }
 
 /// What the texts naming a removed style name instead.
@@ -365,6 +370,12 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
         // A replacement naming a style the table lacks is accepted, as every reference to a missing
         // style is but the one a rename refuses above: the commands refuse it,
         // `design@rootpoint-protocol@no-new-breach`.
+        Op::ReplaceDocument { document } => {
+            let old = std::mem::replace(doc, *document);
+            Ok(Op::ReplaceDocument {
+                document: Box::new(old),
+            })
+        }
         Op::RemoveStyle { name, into } => {
             let style = doc
                 .styles

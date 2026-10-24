@@ -347,3 +347,35 @@ fn the_headless_binary_writes_through_no_dangling_symlink() {
     assert!(out.starts_with("ok\nerr "), "{out}");
     assert!(!dir.join("out/escaped.png").exists());
 }
+
+/// `reload` reads `presentation.ron` at a workspace's root again and makes it the document, one
+/// undo step that brings the session's own back; a file that does not load, and a store in memory,
+/// reply `err` and change nothing.
+#[test]
+fn reload_makes_the_file_the_document_one_undo_step() {
+    let mut files = MemoryFiles::default();
+    let mut s = Session::new();
+    run(&mut s, &mut files, "open w\nadd-slide\nsave");
+    let mut outside = Session::new();
+    run(&mut outside, &mut files, "add-slide\nadd-slide\nadd-slide");
+    write_presentation(&outside, &mut files, "w");
+    ok(&mut s, &mut files, "add-slide");
+    let mine = s.document().clone();
+    assert_eq!(ok(&mut s, &mut files, "reload"), "");
+    assert_eq!(s.document(), outside.document());
+    ok(&mut s, &mut files, "undo");
+    assert_eq!(s.document(), &mine);
+    files
+        .files
+        .insert("w/presentation.ron".into(), b"not ron".to_vec());
+    assert!(matches!(
+        s.execute("reload", &mut files),
+        Some(Reply::Err(_))
+    ));
+    assert_eq!(s.document(), &mine);
+    ok(&mut s, &mut files, "new");
+    assert!(matches!(
+        s.execute("reload", &mut files),
+        Some(Reply::Err(_))
+    ));
+}

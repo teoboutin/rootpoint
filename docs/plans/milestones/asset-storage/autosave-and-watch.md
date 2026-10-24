@@ -10,7 +10,7 @@ The fourth slice of `milestone@plans@asset-storage`. It lands the autosave of
   document it replaced, and the command `reload`, which reads `presentation.ron` at the root and
   applies it, one undo step; `err` naming the error of `load_ron` when the file does not load, and
   `err` in memory, where no file holds the presentation.
-- `planned@rootpoint-app@src/autosave.rs`: a thread that receives a clone of the document at the end
+- `path@rootpoint-app@src/autosave.rs`: a thread that receives a clone of the document at the end
   of each undo step, keeps only the newest while a write runs, compares `presentation.ron`'s bytes
   with its baseline, and writes to a temporary file at the root then renames it, with the native
   file system; or stops and reports the difference to the window. Its baseline is read when the
@@ -29,7 +29,7 @@ The fourth slice of `milestone@plans@asset-storage`. It lands the autosave of
 - The banner "presentation.ron was changed outside rootpoint", with "Load the file" (`reload`) and
   "Keep mine"; after either, autosave resumes. A `reload` that fails names its error in the banner,
   which stays.
-- `planned@rootpoint-app@src/watch.rs`: a watcher of the directories that hold an asset of the
+- `path@rootpoint-app@src/watch.rs`: a watcher of the directories that hold an asset of the
   table, not recursive, which wakes the window by `Context::request_repaint`. The crate is `notify`
   8.2.0, the current release, 9.0.0 being a release candidate, a dependency of the app on native
   targets only. Read at the audit in its documentation: each watch counts toward
@@ -45,7 +45,7 @@ The fourth slice of `milestone@plans@asset-storage`. It lands the autosave of
   autosave runs reads "Workspace `<path>`, saved", and that of one the guard stopped reads
   "Workspace `<path>`, not saved: the file changed outside rootpoint", by the milestone's table
   "The store's state to the state label".
-- `autosave_gui_cost` in `planned@rootpoint-app@tests/autosave.rs`, `#[ignore]`, run by
+- `autosave_gui_cost` in `path@rootpoint-app@tests/autosave.rs`, `#[ignore]`, run by
   `cargo test -p rootpoint-app --release --test autosave -- --ignored`, for AC1.
 
 ## Claims

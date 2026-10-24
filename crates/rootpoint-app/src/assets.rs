@@ -21,6 +21,8 @@ pub(crate) struct Assets {
     decoded: Option<(Option<String>, BTreeMap<AssetId, Use>)>,
     fonts: FontSet,
     images: ImageSet,
+    /// How many times the sets were built, for the tests.
+    decodings: u64,
 }
 
 impl Assets {
@@ -61,6 +63,7 @@ impl Assets {
         }
         self.fonts = FontSet::new();
         self.images = ImageSet::new();
+        self.decodings += 1;
         for (id, used) in &key.1 {
             // An asset that cannot be read or decoded is left out: the render draws it grey, or
             // in the built-in sans, and its report names it.
@@ -75,6 +78,16 @@ impl Assets {
             }
         }
         self.decoded = Some(key);
+    }
+
+    /// Drop what was decoded, so that the next refresh decodes every asset again: the files may
+    /// hold other bytes at the same paths.
+    pub(crate) fn invalidate(&mut self) {
+        self.decoded = None;
+    }
+
+    pub(crate) fn decodings(&self) -> u64 {
+        self.decodings
     }
 
     pub(crate) fn sets(&mut self) -> (&mut FontSet, &ImageSet) {

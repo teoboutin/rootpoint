@@ -28,6 +28,8 @@ rootpoint-render = { path = "../rootpoint-render" }
 # winit with its default features: among them, Wayland's libraries are loaded at run time, and its
 # windows get client-side decorations.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# The watcher of a workspace's assets; native only, as the browser build watches no file.
+notify = "8.2.0"
 rfd = "0.17.2"
 winit = "0.30.13"
 
