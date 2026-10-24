@@ -6,8 +6,8 @@
 //! the invariants the types' doc comments state are checked, not assumed. A structural breach, one
 //! that leaves the layout or the identity of the nodes undefined, is refused: no later operation
 //! meets a broken tree. A cosmetic breach, a reference to a missing target that has a defined
-//! stand-in inside one area's drawing, or an asset whose path leads out of its root, which no store
-//! reads and which is drawn as a missing one, is accepted, and `Document::breaches` names it so that
+//! stand-in inside one area's drawing, or an asset whose path fails `asset_path_is_confined`, which
+//! no store reads and which is drawn as a missing one, is accepted, and `Document::breaches` names it so that
 //! the renderer's stand-in is reported.
 
 use std::collections::BTreeSet;
@@ -31,8 +31,8 @@ pub enum Breach {
     UnknownFont { area: NodeId, name: String },
     /// A text names a style the table lacks; it is drawn with `TextStyle::default()`.
     MissingStyle { area: NodeId, name: String },
-    /// An asset's path leads out of the root of its store: no store reads or writes it, so an
-    /// image that shows it is drawn grey, and a text in its font in the built-in sans.
+    /// An asset's path fails `asset_path_is_confined`: no store reads or writes it, so an image
+    /// that shows it is drawn grey, and a text in its font in the built-in sans.
     UnconfinedAsset { asset: AssetId },
 }
 

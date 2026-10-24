@@ -6,7 +6,7 @@ editor, through its control socket. Every reply is one line, starting with `ok` 
 
 Its public API: `Session` runs commands on one document, its undo history and its view state;
 `Command` and `parse_command` are the grammar, and `read_line` the rule for one line that every
-host follows; `Files` is the trait through which a session reads and writes files, which its host
+host follows; `Store` is where a session finds its presentation's files; `Files` is the trait through which a session reads and writes files, which its host
 implements; on Unix, `control::Connection` and `control::send` are the client of a running
 editor's control socket.
 
@@ -56,7 +56,8 @@ takes a suffix, `-2`, `-3` and on, before the extension, and one whose file hold
 used as it is. A file an asset already names adds no asset: the reply is that asset's id.
 
 An asset path is always inside the root: it has no empty, `.` or `..` component, does not start
-with `/`, holds no `\`, does not start with `.rootpoint` and is not `presentation.ron`. No command
+with `/`, holds no `\`, has a first component other than `.rootpoint` and is not
+`presentation.ron`. No command
 reads or writes another path, nor a file a symlink places outside the root: a file edited by hand
 that names one still loads, and `render` draws the asset as a missing one; `import` to such a path
 replies `err`.

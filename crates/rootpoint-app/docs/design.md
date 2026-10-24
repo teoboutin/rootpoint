@@ -538,10 +538,7 @@ runs `import`, which copies it into the map. The session reads through `Files` a
 per `design@rootpoint-protocol@session-files`, so the document is the one its file holds and a
 script of the same commands reproduces it, as `goal@rootpoint@headless-core` asks of every
 operation. The rival, `open` of the picked directory as a workspace, would be a store whose `save`
-writes to files that refuse every write, `design@rootpoint-app@browser-load-only`. The decoded
-assets are keyed on the root and the assets' paths, and a map has no root, so `App::run` drops them
-after a command that replaces the store, and after an `import`, which can write the file of an asset
-drawn missing until then.
+writes to files that refuse every write, `design@rootpoint-app@browser-load-only`.
 
 ### In the browser, presenter mode asks the page for full screen, and ends when the page leaves it `##page-full-screen`
 

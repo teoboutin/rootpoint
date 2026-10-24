@@ -14,4 +14,6 @@ style naming an asset id at or above the id counter included. A reference to an 
 lacks, below the counter, to a built-in family the binary does not carry, or to a style the table
 lacks, is a cosmetic breach: the file loads and the operation applies, the renderer draws a
 stand-in, and `Document::breaches` names each area that draws one; a style of the table whose font
-the table lacks is named once a text names it.
+the table lacks is named once a text names it. An asset is the path of its file, never its bytes;
+`asset_path_is_confined` tells a path below its store's root, and an asset whose path fails it is a
+cosmetic breach too, named by its id and drawn as a missing one.

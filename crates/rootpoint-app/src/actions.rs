@@ -725,8 +725,13 @@ impl App {
             self.error = Some("this editor holds no files in memory".to_owned());
             return;
         };
-        held.insert(name.clone(), bytes);
-        self.add_asset(name);
+        // The file held before under the name comes back when the import is refused, so a refused
+        // action leaves the held files as they were.
+        let before = held.replace_one(&name, Some(bytes));
+        self.add_asset(name.clone());
+        if self.error.is_some() {
+            held.replace_one(&name, before);
+        }
     }
 
     /// Ctrl+O: ask for a presentation directory, whose files the next frames read, then open it

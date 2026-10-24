@@ -66,7 +66,11 @@ impl Files for RecordingFiles {
 
     fn exists(&mut self, path: &str) -> Result<bool, String> {
         self.paths.push(path.to_owned());
-        std::fs::exists(path).map_err(|e| format!("{path}: {e}"))
+        match std::fs::symlink_metadata(path) {
+            Ok(_) => Ok(true),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(format!("{path}: {e}")),
+        }
     }
 
     fn canonical(&mut self, path: &str) -> Result<String, String> {

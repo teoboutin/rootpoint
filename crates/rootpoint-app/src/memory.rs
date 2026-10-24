@@ -20,8 +20,13 @@ impl MemoryFiles {
         std::mem::replace(&mut *self.0.borrow_mut(), files)
     }
 
-    pub(crate) fn insert(&self, path: String, bytes: Vec<u8>) {
-        self.0.borrow_mut().insert(path, bytes);
+    /// Hold these bytes at the path, or nothing, and give back what was held there before.
+    pub(crate) fn replace_one(&self, path: &str, bytes: Option<Vec<u8>>) -> Option<Vec<u8>> {
+        let mut files = self.0.borrow_mut();
+        match bytes {
+            Some(bytes) => files.insert(path.to_owned(), bytes),
+            None => files.remove(path),
+        }
     }
 }
 

@@ -78,8 +78,9 @@ struct Group {
     redo: Vec<Step>,
 }
 
-/// Where the session finds the files of its presentation. Every asset path is relative to the
-/// store's root, which never changes while the store is open, so no command rewrites a path.
+/// Where the session finds the files of its presentation. An asset path is a key of the map in
+/// memory, or relative to a workspace's root, which never changes while the workspace is open, so
+/// no command rewrites a path.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Store {
     /// The presentation is held in memory: its assets' files are this map, by asset path, and no
@@ -764,8 +765,9 @@ impl Session {
     }
 
     /// An asset's bytes: its entry of the map in memory, or its file below a workspace's root.
-    /// A path that leads out of the root is refused, whatever the file names, so no read reaches
-    /// outside it (`design@rootpoint-protocol@store-confines-access`). It is public so that a host decoding
+    /// A path that fails confinement, or whose file a symlink places outside the root, is refused,
+    /// whatever the file names, so no read reaches outside the root
+    /// (`design@rootpoint-protocol@store-confines-access`). It is public so that a host decoding
     /// assets, as the app does, reads them by this one rule and never joins a path itself.
     pub fn asset_bytes(&self, id: AssetId, files: &mut dyn Files) -> Result<Vec<u8>, String> {
         let asset = self.doc.assets.get(&id).ok_or(format!("no asset {id}"))?;

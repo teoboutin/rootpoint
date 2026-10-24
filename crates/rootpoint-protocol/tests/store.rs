@@ -160,14 +160,17 @@ fn no_read_of_a_workspace_reaches_outside_its_root() {
     assert_eq!(files.outside(&root), Vec::<String>::new());
 }
 
-/// AC2 of the milestone, for `import`: a write through a symlink out of the root, and an import
-/// to a path that fails confinement, reply `err` and write nothing.
+/// AC2 of the milestone, for `import`: a write through a symlink out of the root, its target there
+/// or missing, and an import to a path that fails confinement, reply `err` and write nothing.
 #[test]
 fn no_import_writes_outside_its_root() {
     let dir = std::fs::canonicalize(scratch("confined-write")).unwrap();
     let root = workspace_naming(&dir, &[]);
     std::os::unix::fs::symlink(dir.join("away"), root.join("linked")).unwrap();
     std::os::unix::fs::symlink(dir.join("away/outside.png"), root.join("taken.png")).unwrap();
+    // Two symlinks whose targets are missing: a write would create the target outside the root.
+    std::os::unix::fs::symlink(dir.join("away/new.png"), root.join("dangling.png")).unwrap();
+    std::os::unix::fs::symlink(dir.join("away/new"), root.join("nowhere")).unwrap();
     let root_text = root.to_str().unwrap();
     let source = dir.join("outside.png");
     let source = source.to_str().unwrap();
@@ -175,11 +178,16 @@ fn no_import_writes_outside_its_root() {
     let mut s = Session::new();
     run_ok(&mut s, &mut files, &format!("open {root_text}"));
     let away = std::fs::read_dir(dir.join("away")).unwrap().count();
+    let absolute = dir.join("cat.png");
     for to in [
         "linked/cat.png",
         "taken.png",
+        "dangling.png",
+        "nowhere/cat.png",
         "../cat.png",
         ".rootpoint/cat.png",
+        "presentation.ron",
+        absolute.to_str().unwrap(),
     ] {
         let before = s.document().clone();
         let reply = s.execute(&format!("import {source} {to}"), &mut files);
@@ -188,6 +196,7 @@ fn no_import_writes_outside_its_root() {
     }
     assert_eq!(std::fs::read_dir(dir.join("away")).unwrap().count(), away);
     assert!(!dir.join("cat.png").exists());
+    assert!(!dir.join("away/new.png").exists() && !dir.join("away/new").exists());
     // Outside the root, only the file imported was given to the host's files.
     let outside = files.outside(&root);
     assert!(outside.iter().all(|p| p == source), "{outside:?}");
@@ -227,6 +236,7 @@ fn an_import_copies_a_file_under_a_name_no_other_bytes_hold() {
         files.files.insert("a/cat.png".into(), b"one".to_vec());
         files.files.insert("b/cat.png".into(), b"two".to_vec());
         files.files.insert("c/cat.png".into(), b"one".to_vec());
+        files.files.insert("d/cat.png".into(), b"three".to_vec());
         files.files.insert("w/img/dog.png".into(), b"dog".to_vec());
         files
     };
@@ -239,21 +249,34 @@ fn an_import_copies_a_file_under_a_name_no_other_bytes_hold() {
         assert_eq!(ok(&mut s, &mut files, "import a/cat.png"), "a1");
         assert_eq!(ok(&mut s, &mut files, "import b/cat.png"), "a2");
         assert_eq!(ok(&mut s, &mut files, "import c/cat.png"), "a1");
-        assert_eq!(ok(&mut s, &mut files, "import b/cat.png img/x.png"), "a3");
+        assert_eq!(ok(&mut s, &mut files, "import d/cat.png"), "a3");
+        assert_eq!(ok(&mut s, &mut files, "import b/cat.png img/x.png"), "a4");
+        assert_eq!(ok(&mut s, &mut files, "import a/cat.png img/x.png"), "a5");
         let paths: Vec<&str> = s
             .document()
             .assets
             .values()
             .map(|a| a.path.as_str())
             .collect();
-        assert_eq!(paths, ["cat.png", "cat-2.png", "img/x.png"]);
+        assert_eq!(
+            paths,
+            [
+                "cat.png",
+                "cat-2.png",
+                "cat-3.png",
+                "img/x.png",
+                "img/x-2.png"
+            ]
+        );
         let held = |path: &str| match s.store() {
             Store::Memory(map) => map.get(path).cloned(),
             Store::Workspace(root) => files.files.get(&format!("{root}/{path}")).cloned(),
         };
         assert_eq!(held("cat.png"), Some(b"one".to_vec()));
         assert_eq!(held("cat-2.png"), Some(b"two".to_vec()));
+        assert_eq!(held("cat-3.png"), Some(b"three".to_vec()));
         assert_eq!(held("img/x.png"), Some(b"two".to_vec()));
+        assert_eq!(held("img/x-2.png"), Some(b"one".to_vec()));
     }
     let mut files = host();
     let mut s = Session::new();
@@ -309,4 +332,18 @@ fn store_replies_the_store_and_the_steps_since_the_save() {
         "workspace \"my talk\" unsaved=0"
     );
     assert!(files.files.contains_key("my talk/presentation.ron"));
+}
+
+/// The headless binary's own files take a symlink whose target is missing for a file there, so an
+/// import to it is refused and creates no file outside the root.
+#[test]
+fn the_headless_binary_writes_through_no_dangling_symlink() {
+    let dir = std::fs::canonicalize(scratch("dangling-headless")).unwrap();
+    std::fs::create_dir_all(dir.join("ws")).unwrap();
+    std::fs::create_dir_all(dir.join("out")).unwrap();
+    std::fs::write(dir.join("src.png"), b"bytes").unwrap();
+    std::os::unix::fs::symlink(dir.join("out/escaped.png"), dir.join("ws/cat.png")).unwrap();
+    let out = headless("open ws\nimport src.png cat.png\n", &dir);
+    assert!(out.starts_with("ok\nerr "), "{out}");
+    assert!(!dir.join("out/escaped.png").exists());
 }

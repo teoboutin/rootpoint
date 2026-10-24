@@ -51,8 +51,8 @@ of `App::frame` places its synthetic pointer on them;
 The code built for the wasm target alone is under `cfg(target_arch = "wasm32")`: the entry point in
 `path@rootpoint-app@src/main.rs`, the pickers and full screen in `path@rootpoint-app@src/web.rs`
 with their calls in `App::frame`, and the actions of `path@rootpoint-app@src/actions.rs` that
-differ there, open, save and adding an image; the Save buttons of `path@rootpoint-app@src/panels.rs`
-are under `cfg(not(target_arch = "wasm32"))`; the control socket is under `cfg(unix)`, which the
+differ there, open, save and adding an image; the Save button of `path@rootpoint-app@src/panels.rs`
+is under `cfg(not(target_arch = "wasm32"))`; the control socket is under `cfg(unix)`, which the
 wasm target is not, per `design@rootpoint-app@control-socket`. What a picker gives goes through an
 action of `actions.rs`, `App::open_directory` or `App::add_picked_image`, built on every target,
 so the native tests check it. `path@rootpoint-app@tests/actions.rs` and

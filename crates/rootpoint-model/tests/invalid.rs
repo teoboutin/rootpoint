@@ -1,7 +1,7 @@
 //! A file or an operation that would make a structural breach of the document is refused. The
 //! cases are the counterexamples the review of the model found before validation existed. A
-//! cosmetic breach, a reference to a missing target the renderer draws a stand-in for, is accepted
-//! and named by `Document::breaches`.
+//! cosmetic breach, a reference to a missing target the renderer draws a stand-in for, or an asset
+//! whose path fails `asset_path_is_confined`, is accepted and named by `Document::breaches`.
 
 use rootpoint_model::*;
 

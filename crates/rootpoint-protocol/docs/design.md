@@ -34,14 +34,14 @@ removal, so a script's later command would name another area,
 `rejected@rootpoint-model@addressing-by-position`. A style is named by its name instead,
 `design@rootpoint-model@style-key`.
 
-### A command refuses a target the document lacks, so no command creates a cosmetic breach `##no-new-breach`
+### A command refuses what would put a cosmetic breach in the document, so no command creates one `##no-new-breach`
 
 A command that names a target the document lacks is refused before any operation: `image` and the
 `font` option of `text`, `style add` and `style set` reply `err no asset a<n>` for an asset the
 table does not hold, `text … style="<name>"` and `style remove … into="<name>"` refuse a style
 the table lacks, or one whose font is a missing target, and `import` refuses an asset path that
-leads out of the root, `design@rootpoint-protocol@store-confines-access`. The refusal is the command's, since the
-operations accept a reference to a missing target but for the exceptions
+fails `asset_path_is_confined`, `design@rootpoint-protocol@store-confines-access`. The refusal is
+the command's, since the operations accept a reference to a missing target but for the exceptions
 `design@rootpoint-model@cosmetic-fallbacks` names. So a breach reaches a document only through a
 file: a command that copies or moves an area, as `duplicate-slide` and `swap` do, carries the breach
 a file brought, and creates none in a document that has none. The property test of
@@ -175,22 +175,31 @@ it is on disk; `Store::Workspace` names a directory of the host's files, its roo
 it. `new`, `sample` and `open-copy <dir>`, which copies a directory's presentation and the files of
 its assets into the map, open in memory; `open <dir>` opens a workspace, an empty presentation when
 the directory holds none. `save` writes `presentation.ron` at a workspace's root, and replies `err`
-in memory. `store` replies the store and `Session::unsaved`, the undo steps pushed, undone or
-redone since the store was opened or saved, so an agent reads the state the window shows. A host
-path, the argument of `open`, `open-copy`, `import` and `render`, is read by the host's files as
-the host reads it.
+in memory. A host path, the argument of `open`, `open-copy`, `import` and `render`, is read by the
+host's files as the host reads it.
 
-The root never changes while a store is open, and an asset path is relative to it in both stores,
-so no command rewrites a path, in the document or in the stacks: the paths of a save to any
-directory, rewritten against a base each save and load changed, were the cause of every defect of
-that rule, `rejected@rootpoint-protocol@free-save-path`, and a canonical root leaves no two forms
-of one directory to compare. The map is the session's, not a host's, so a presentation in memory
+An asset path is a key of the map in memory, and relative to the root in a workspace, whose root
+never changes while it is open, so no command rewrites a path, in the document or in the stacks. A
+save to any directory, the rival `rejected@rootpoint-protocol@free-save-path`, rewrites the paths
+against a base that each save and open changes, and compares paths of two bases, which a relative
+and an absolute form of one directory defeat; a canonical root leaves no two forms of one directory
+to compare. Its cost: a `.ron` file outside a workspace is not opened by itself, but as the
+directory that holds it. The map is the session's, not a host's, so a presentation in memory
 behaves the same headless and in the window, as `goal@rootpoint@headless-core` asks: a map of the
 host would need every host to build the same map, and a way for a command to switch the host's
 store, which the session cannot ask of `Files`. On the owner's word: the native build keeps the
 store in memory beside the workspace.
 
-### The store refuses every access to an asset path that leads out of its root `##store-confines-access`
+### `store` replies the store and the undo steps since its open or its save `##store-query`
+
+`store` replies `ok memory unsaved=<n>`, or `ok workspace <root> unsaved=<n>`, where `n` is
+`Session::unsaved`, the undo steps pushed, undone or redone since the store was opened or saved. It
+is the query of what the window's state shows, so an agent reads that view as the author sees it, as
+`goal@rootpoint-protocol@commands-drive-everything` asks of every view the window shows. With no
+query, an agent would have to infer the store from the commands it sent, which miss those the window
+ran.
+
+### The store refuses every access to an asset path that is not confined below its root `##store-confines-access`
 
 Every read of an asset, and every write of an import, goes through one check of the store, in
 `path@rootpoint-protocol@src/store.rs`: a path that fails `asset_path_is_confined` is refused, and in
@@ -216,7 +225,8 @@ the import of a missing asset's file gives that asset its bytes.
 
 On the owner's word: a file from outside the workspace is imported by a copy into it; the owner
 chose copies at the root, beside the presentation, over a subfolder for them, for now, and wants
-the author free to arrange assets in subdirectories of any depth, a tree that packing, then
+the author free, later than the first prototype, to arrange assets in subdirectories of any depth,
+a tree that packing, then
 unpacking elsewhere, keeps, which the `<asset-path>` of an import gives.
 
 ## The built-in sample

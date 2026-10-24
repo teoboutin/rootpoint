@@ -9,8 +9,9 @@
 pub trait Files {
     fn read(&mut self, path: &str) -> Result<Vec<u8>, String>;
     fn write(&mut self, path: &str, bytes: &[u8]) -> Result<(), String>;
-    /// Whether a file is at the path: an error when the host cannot tell, so that a save never
-    /// takes a file it cannot read for a missing one, and writes over it.
+    /// Whether anything is at the path, a file, a directory or a symlink, whatever its target: an
+    /// error when the host cannot tell. A write to a symlink would follow it, so the store's check
+    /// takes a symlink whose target is missing for one there, which `canonical` then refuses.
     fn exists(&mut self, path: &str) -> Result<bool, String>;
     /// The path of an existing file or directory with every symlink resolved, absolute natively;
     /// a host with no symlinks gives the path itself. The store compares it with its root, so that

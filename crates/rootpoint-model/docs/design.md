@@ -110,22 +110,23 @@ presented from any computer with a web browser and an internet connection, throu
 served from a static site. It serves `goal@rootpoint@readable-save-file` and
 `goal@rootpoint@runs-in-browser`.
 
-### An asset is a path inside the root of its store, and the file holds no asset's bytes `##asset-paths-only`
+### An asset is the path of its file, never its bytes in the presentation's file `##asset-paths-only`
 
-`Asset { path }`: the path of the asset's file, `/`-separated, relative to the root of the store the
-presentation is read from, `design@rootpoint-protocol@editing-modes`. `asset_path_is_confined`
-holds for a path with no empty, `.` or `..` component, no leading `/` and no `\`, whose first
-component is not `.rootpoint` and which is not `presentation.ron`, the two files of a workspace
-that are no asset. The model checks nothing more: whether a file is at the path, and where a
-symlink leads, are the store's to check at each access,
-`design@rootpoint-protocol@store-confines-access`. A file that names another path loads, a cosmetic
-breach, `design@rootpoint-model@cosmetic-fallbacks`.
-
-The file is text only, as `goal@rootpoint@readable-save-file` and
+`Asset { path }`: the path of the asset's file, `/`-separated, relative to a workspace's root, or a
+key of the map of a store in memory, `design@rootpoint-protocol@editing-modes`. The presentation's
+file is text only, as `goal@rootpoint@readable-save-file` and
 `goal@rootpoint-model@faithful-readable-file` ask: bytes held in it, the rival
-`rejected@rootpoint-model@bytes-in-the-file`, grow it about 20 times their size. On the owner's
-word: the owner set that the assets stay confined inside the workspace, that no path leading out of
-it is accepted, and that a file from outside is imported by a copy into it.
+`rejected@rootpoint-model@bytes-in-the-file`, grow it about 20 times their size.
+
+### An asset path is confined below its root by `asset_path_is_confined` `##asset-path-confinement`
+
+`asset_path_is_confined` holds for a path with no empty, `.` or `..` component, no leading `/` and
+no `\`, whose first component is not `.rootpoint` and which is not `presentation.ron`, the two files
+of a workspace that are no asset. It is the test of the confinement the store keeps at each access,
+`design@rootpoint-protocol@store-confines-access`, and of the commands that refuse to name a path
+that fails it, `design@rootpoint-protocol@no-new-breach`. The model checks nothing more: whether a
+file is at the path, and where a symlink leads, are the store's to check. A file that names another
+path loads, a cosmetic breach, `design@rootpoint-model@cosmetic-fallbacks`.
 
 ### A text area has one style for all its text `##text-style-per-area`
 
@@ -233,22 +234,23 @@ Each is structural. A file edited by hand is a purpose,
 ### A cosmetic breach of a document is accepted, drawn with a stand-in, and named `##cosmetic-fallbacks`
 
 A breach is cosmetic when it is a reference to a missing target that has a defined stand-in, whose
-effect stays inside one area's drawing: an image or a text font naming an asset the table lacks,
-drawn grey or in the built-in sans, a `FontRef::Builtin` naming a family outside `BUILTIN_FAMILIES`,
-drawn in the built-in sans, and a text naming a style the table lacks, drawn with
-`TextStyle::default()`; or an asset of the table whose path fails `asset_path_is_confined`, which
-no store reads, so that every area showing it draws the stand-in of a missing asset. `Document::breaches` names each, as `Breach`, and the renderer's report, the
-window's status line and the reply of `render` name what was drawn with a stand-in. `load_ron` loads
-such a file, and `apply` accepts an operation whose result holds a breach, so the inverse of an edit
-of such an area, which brings back what a file was loaded with, is never refused. Two operations
-refuse what no undo meets. `Op::RemoveAsset` refuses an asset an area or a style of the table uses:
-it refuses a removal, not a reference, and the inverse of `Op::AddAsset` removes an id the counter
-has just given, which no area can name. `Op::RenameStyle` refuses a rename while a text names the
-new name, a style the table lacks, since its inverse would rename that text back with the others;
-after a rename from a name, no text names it. No command creates a breach in a document that has
-none, `design@rootpoint-protocol@no-new-breach`. Which files load is part of the save format.
+effect stays inside the drawing of each area that names it: an image or a text font naming an asset
+the table lacks, drawn grey or in the built-in sans, a `FontRef::Builtin` naming a family outside
+`BUILTIN_FAMILIES`, drawn in the built-in sans, and a text naming a style the table lacks, drawn
+with `TextStyle::default()`; or an asset of the table whose path fails `asset_path_is_confined`,
+which no store reads, so that every area showing it draws the stand-in of a missing asset.
+`Document::breaches` names each, as `Breach`, and the renderer's report, the window's status line
+and the reply of `render` name what was drawn with a stand-in. `load_ron` loads such a file, and
+`apply` accepts an operation whose result holds a breach, so the inverse of an edit of such an area,
+which brings back what a file was loaded with, is never refused. Two operations refuse what no undo
+meets. `Op::RemoveAsset` refuses an asset an area or a style of the table uses: it refuses a
+removal, not a reference, and the inverse of `Op::AddAsset` removes an id the counter has just
+given, which no area can name. `Op::RenameStyle` refuses a rename while a text names the new name, a
+style the table lacks, since its inverse would rename that text back with the others; after a rename
+from a name, no text names it. No command creates a breach in a document that has none,
+`design@rootpoint-protocol@no-new-breach`. Which files load is part of the save format.
 
-A file whose asset path leads out of the root loads too. The store refuses each access to such a
+A file whose asset path fails `asset_path_is_confined` loads too. The store refuses each access to such a
 path, `design@rootpoint-protocol@store-confines-access`, and that check is needed whatever the file
 names, since a symlink out of the root is the disk's state, met only at a read; the file's layout
 and the identity of its nodes are defined. The rival, a refusal at load,

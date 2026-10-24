@@ -66,8 +66,8 @@ better, `design@rootpoint-protocol@final-preview`; its tripwire brings this desi
 
 `live`. Every asset path was relative to a directory that each save and load changed, so a save
 compared paths of two bases: a relative and an absolute form of one directory never matched, and
-a save copied an asset already inside its target beside itself, the defect
-`save-mixes-relative-and-absolute` reproduced, its text read by
+a save copied an asset already inside its target beside itself, a defect reproduced in the issue
+that recorded it, whose text is read by
 `git show 5742b00:crates/rootpoint-protocol/docs/open-issues/save-mixes-relative-and-absolute.md`.
 The paths the undo and redo stacks held were rewritten at each save, with the asset's bytes where no
 path from the new directory reached its file. The command `save <path>` was its interface.

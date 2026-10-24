@@ -93,7 +93,7 @@ author can type into it.
 fixture's first asset to those bytes and comparing the lengths of `save_ron`. A photo of 5 MB would
 be about 100 MB of text, and the file would no longer be a text a person reads or a diff shows.
 
-### A file whose asset path leads out of the root, refused at load `##unconfined-path-refused-at-load`
+### A file whose asset path is not confined, refused at load `##unconfined-path-refused-at-load`
 
 `live`. The store must refuse such a path at each access anyway, since a symlink out of the root is
 the disk's state and is met only at a read, so a refusal at load is a second mechanism for the paths

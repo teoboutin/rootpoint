@@ -205,7 +205,7 @@ milestone. This replaces, for the branches, the one branch per slice of D1 and o
 - The session has a directory, `Session::directory`: the parent of the path last given to `load`,
   as given, or to `save`, with `.` and `..` removed; the empty path after `new` and `sample`. `load <path>` and `save <path>` read and write one `.ron` file through the
   host's files; `Session::save` copies every asset outside the target's directory, and every
-  embedded one, beside the saved file, per `asset-save-rule`, now `design@rootpoint-protocol@import-copies-into-the-store`, and
+  embedded one, beside the saved file, per `asset-save-rule`, its shape now `rejected@rootpoint-protocol@free-save-path`, and
   rewrites the paths in the undo and redo stacks, per
   `save-updates-sources`, now `rejected@rootpoint-protocol@free-save-path`, the one place outside the sample that writes
   `Embedded`.
@@ -265,18 +265,18 @@ referencing each, and the slice that updates it:
 | decision | outcome | referencing texts, and the slice that updates each |
 | --- | --- | --- |
 | `asset-source`, now `design@rootpoint-model@asset-paths-only` | reversed by #asset-paths-only: an asset is a path, `Embedded` leaves | `register@rootpoint-protocol@design` line 178 (#rooted-assets); `pack-and-unpack`, closed on this branch |
-| `design@rootpoint-model@image-storage` | rewritten by #editing-modes and #workspace-layout; its owner's ground, assets as files beside a readable text, and packing as the final goal, stands | `register@rootpoint-app@design` line 523 and `register@rootpoint-protocol@design` line 180 (#workspace-host, and #browser-packs where they name the browser) |
-| `asset-save-rule`, now `design@rootpoint-protocol@import-copies-into-the-store` | reversed: no save copies assets; an import copies a file from outside into the store | `register@rootpoint-protocol@design` line 210 (#rooted-assets); `pack-and-unpack`, closed on this branch |
+| `design@rootpoint-model@image-storage` | rewritten by #editing-modes and #workspace-layout; its owner's ground, assets as files beside a readable text, and packing as the final goal, stands | `register@rootpoint-app@design` line 523 (#workspace-host, and #browser-packs where it names the browser) |
+| `asset-save-rule`, now `rejected@rootpoint-protocol@free-save-path`, and `design@rootpoint-protocol@import-copies-into-the-store` for the import | reversed: no save copies assets; an import copies a file from outside into the store | `register@rootpoint-protocol@design` line 210 (#rooted-assets); `pack-and-unpack`, closed on this branch |
 | `save-updates-sources`, now `rejected@rootpoint-protocol@free-save-path` | reversed: the root never changes during a session, so no save rewrites a path | none |
 | `design@rootpoint-protocol@builtin-sample` | rewritten: `sample` opens in memory, its images in the map; its owner's ground stands | none |
 | `design@rootpoint-protocol@session-files` | rewritten: the session reads through the host's files under a workspace's root, or from its map | `register@rootpoint-app@design` line 537, `path@rootpoint-protocol@CLAUDE.md` line 6, `path@rootpoint-protocol@src/files.rs` line 3, `register@rootpoint@design` line 43 (#rooted-assets); `save-mixes-relative-and-absolute`, closed on this branch |
 | `design@rootpoint-protocol@ctl-sends-a-line-or-a-batch` | rewritten by #socket-place: `rootpoint-ctl` takes a workspace or a socket, and `list` | `register@rootpoint-app@design` line 508, `path@rootpoint-protocol@tests/ctl.rs` line 3 (#workspace-host) |
-| `design@rootpoint-app@browser-load-only` | reversed by #browser-pack-save, on the owner's word of round 2 | `register@rootpoint-app@design` line 556, `path@rootpoint-app@src/actions.rs` line 797, `path@rootpoint-app@src/memory.rs` line 4, `path@rootpoint-app@src/panels.rs` line 43, `register@rootpoint-protocol@design` line 181 (#browser-packs); `page-close-loses-edits` and `pack-and-unpack`, closed on this branch |
+| `design@rootpoint-app@browser-load-only` | reversed by #browser-pack-save, on the owner's word of round 2 | `register@rootpoint-app@design` lines 541 and 555, `path@rootpoint-app@src/actions.rs` line 748, `path@rootpoint-app@src/memory.rs` line 4, `path@rootpoint-app@src/panels.rs` line 43, `path@rootpoint-app@tests/actions.rs` line 528 (#browser-packs); `page-close-loses-edits` and `pack-and-unpack`, closed on this branch |
 | `design@rootpoint-app@picked-files-by-path` | rewritten: a picked directory opens in memory, its files copied into the map | `path@rootpoint-app@src/actions.rs` line 741, `path@rootpoint-app@src/memory.rs` line 3 (#rooted-assets); `changed-asset-not-read-again`, closed on this branch |
-| `design@rootpoint-app@control-socket` | rewritten by #socket-place: the socket starts with the window, in the runtime directory; `--control` leaves | `path@rootpoint-app@CLAUDE.md` line 56, `issue@rootpoint-app@socket-waits-for-a-frame`, `path@rootpoint-app@src/control.rs` line 1, `path@rootpoint-app@tests/control.rs` line 1, `path@rootpoint-app@tests/listener_drop.rs` line 1, `path@rootpoint-app@tests/presenter.rs` line 228 (#workspace-host) |
+| `design@rootpoint-app@control-socket` | rewritten by #socket-place: the socket starts with the window, in the runtime directory; `--control` leaves | `path@rootpoint-app@CLAUDE.md` line 56, `issue@rootpoint-app@socket-waits-for-a-frame`, `path@rootpoint-app@src/control.rs` line 1, `path@rootpoint-app@tests/control.rs` line 1, `path@rootpoint-app@tests/listener_drop.rs` line 1, `path@rootpoint-app@tests/presenter.rs` line 233 (#workspace-host) |
 | `design@rootpoint-app@only-a-stale-socket-is-replaced` | rewritten by #workspace-lock: a workspace's socket is bound only under its lock, so a second window is refused before its bind; the refusal of a file that is no socket stands | its own last sentence, which cites `spec@asset-storage@workspace-host` (#workspace-host); `two-windows-bind-one-path`, closed on this branch |
 | `design@rootpoint-app@no-discard-confirmation` | its title contradicted by #unsaved-close-warning; its ground is the owner's, so D3 puts the rewrite to the owner | its own line 272, which cites `issue@rootpoint-app@browser-autosave`, and `register@rootpoint-app@rejected` line 93 (#workspace-host, on D3) |
-| `design@rootpoint-protocol@gesture-undo` | rewritten by #asset-disk-changes: a step holds its file moves, and `load` leaves its list of the commands that close a group | none (#asset-commands, and #rooted-assets for `load`) |
+| `design@rootpoint-protocol@gesture-undo` | rewritten by #asset-disk-changes: a step holds its file moves, and `load` leaves its list of the commands that close a group | none (#asset-commands; `load` left its list at #rooted-assets) |
 | `design@rootpoint-model@cosmetic-fallbacks` | its test widened by #asset-paths-only, on D4: a cosmetic breach is a reference to a missing target, or an asset whose path fails confinement, each with its stand-in; the owner's principle, its ground, stands | `register@rootpoint-model@design` lines 165 and 216, `path@rootpoint-model@src/ops.rs` lines 295 and 311, `path@rootpoint-model@src/validate.rs` line 3 and its module and `Breach` docs, `register@rootpoint-protocol@design` line 44 (#rooted-assets) |
 | `rejected@rootpoint-app@socket-holds-control-at-start` | names `--control`, which leaves; its argument stands | its own text (#workspace-host) |
 | `design@rootpoint-render@caller-supplies-assets` | reworded: an asset's path is relative to a root only the caller knows | `register@rootpoint-protocol@design` line 140, `path@rootpoint-render@CLAUDE.md` line 9 (#rooted-assets) |
@@ -1041,7 +1041,7 @@ widened by D5:
 
 ## Losing alternatives
 
-- **Packing as `Embedded` bytes in the RON**, the shape of `asset-source`, now `design@rootpoint-model@asset-paths-only`, and
+- **Packing as `Embedded` bytes in the RON**, the shape of `asset-source`, now `rejected@rootpoint-model@bytes-in-the-file`, and
   of the closed `pack-and-unpack`: lost to #pack-container and #asset-paths-only on
   #arg-1, 20.3 bytes of text per byte of asset, against #c-pack-overhead.
 - **A free save path and directory, as today**: lost to #editing-modes on #arg-4.
@@ -1210,7 +1210,8 @@ at the new name and removes the old one, a shape the decision admits.
 
 ## Defaults awaiting the owner
 
-- **D1**, ruled: the owner accepted it in the message "all five defaults accepted, proced". Its text: on #editing-modes and the sequence: the work is a milestone of seven slices, in the order
+- **D1**, ruled: the owner accepted it in the message "all five defaults accepted, proced"; its one
+  branch per slice was replaced by the owner's later word, as "How the work is done" says. Its text: on #editing-modes and the sequence: the work is a milestone of seven slices, in the order
   above, each on its own branch. The session's default, put to the owner at the hand-off; it blocks
   this branch's merge.
 - **D2**, ruled: the owner accepted it in the message "all five defaults accepted, proced". Its text: on #asset-paths-only: the session's reading of the owner's word of round 4, that "should
