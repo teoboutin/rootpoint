@@ -122,8 +122,8 @@ rather than selecting its split, since a drag starts there. The selection is the
 ### The side panel shows the shown slide's whole tree as an outline, one row per node `##tree-outline`
 
 Under a row for the slide, each node has a row in depth-first order, indented by its depth: a split
-with its axis, a text with its style's name and the start of its text, an image with its file's
-name. The selection's row is highlighted, and the overlay outlines the node of the row under the
+with its axis, a text with its style's name and the start of its text, an image with its asset's
+path. The selection's row is highlighted, and the overlay outlines the node of the row under the
 pointer. An outline grows downward, one row per node; the nearest rival, a tree drawn top-down like
 an organization chart, needs a column per area, and a slide of 10 areas does not fit a panel of 260
 points. The keys move as the outline reads, `design@rootpoint-app@selection-keys`, so a change of
@@ -208,6 +208,26 @@ slide that shows it. The rival, controls of the selection that change the named 
 names, would change slides out of view with a click meant for one text. It is a reason respected by
 every control of both tabs, and the Styles tab, a tab of the side panel, keeps the panel's width,
 `design@rootpoint-app@sidebar-width`.
+
+### Only the Assets tab changes an asset, beside the uses it lists `##assets-tab`
+
+The Assets tab, a tab of the side panel, `path@rootpoint-app@src/asset_tab.rs`, is the one part of
+the window that moves, relinks, replaces and removes an asset, by the commands of
+`design@rootpoint-protocol@asset-commands`, each an action of
+`design@rootpoint-app@actions-are-commands`; the Selection tab and the node menu choose which asset
+an image shows, and change none. It shows the tree of the asset paths, its folders the prefixes the
+paths share, `design@rootpoint-model@folders-from-paths`, with a search and the filters of
+`assets`, and, for the selected asset, its size, its thumbnail and its uses, each a button to its
+node or its style. An asset an image shows on several slides is then changed only from the view that
+lists those slides, for the reason `design@rootpoint-app@styles-tab-edits-styles` gives for a
+style: a change meant for one image would otherwise change slides out of view. It reads the
+document and the store, and keeps what it read from the files until the next command or watcher
+event, so a frame of the tab reads no file and renders no slide again, as a query run through
+`App::run` would. It keeps the panel's width, `design@rootpoint-app@sidebar-width`, its rows cut
+to it. A missing asset has no bytes, so its relink offers first the untracked files of its file's
+name. On the owner's word: the owner proposed an asset manager screen that edits the file tree,
+searches, renames and filters the unused assets; its other features are the session's, which the
+owner approved.
 
 ### A subtree is selected for a spanning split by moving up to its node, and no rectangle selects `##span-selection`
 
@@ -489,9 +509,10 @@ and `render`, need no authority, since they apply no operation and join no group
 inputs that change only
 the view need none either: a click selects, and never enters editing; Alt with an arrow, a row of
 the outline and the outline of its node under the pointer, the node menu's "Select", whose other
-entries are disabled, a row of the slide list, presenting and presenter mode's keys, and the button
-"Preview"; and the window's own state, the side panel's tab, a style selected in the list of the
-Styles tab and the node menu itself. The view stays the session's one view,
+entries are disabled, a row of the slide list, a use's button of the Assets tab, presenting and
+presenter mode's keys, and the button "Preview"; and the window's own state, the side panel's tab,
+a style selected in the list of the Styles tab, an asset selected in the Assets tab, its search and
+its filter, and the node menu itself. The view stays the session's one view,
 `design@rootpoint-protocol@view-state`: an author inspects any slide while the agent edits another,
 since an editing command names its nodes by id and reads no view,
 `design@rootpoint-protocol@protocol-addressing`. The socket's view commands still need the

@@ -56,7 +56,8 @@ is under `cfg(not(target_arch = "wasm32"))`, and so are the autosave and the wat
 `path@rootpoint-app@src/autosave.rs` and `path@rootpoint-app@src/watch.rs`, with the banner and
 the fields of `App` that hold them; the control socket is under `cfg(unix)`, which the wasm target
 is not, per `design@rootpoint-app@control-socket`. What a picker gives goes through an
-action of `actions.rs`, `App::open_directory`, `App::add_picked_image` or `App::open_picked_pack`,
+action of `actions.rs`, `App::open_directory`, `App::add_picked_image`, `App::open_picked_pack` or
+`App::replace_with_picked`,
 built on every target,
 so the native tests check it. `path@rootpoint-app@tests/actions.rs` and
 `path@rootpoint-app@tests/web.rs` also run in a headless browser, the gate `wasm-test` of

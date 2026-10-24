@@ -1218,7 +1218,7 @@ at the new name and removes the old one, a shape the decision admits.
    an outside write.
 5. #asset-commands, landed, its spec deleted with its harvest: `asset-move`, `asset-replace`,
    `asset-remove`, `assets`, the trash. Fails alone on: undo of a removal in a workspace, and AC4.
-6. [#asset-manager](asset-manager.md): the asset tab. Fails alone on: each feature driving its
+6. #asset-manager, landed, its spec deleted with its harvest: the asset tab. Fails alone on: each feature driving its
    command, checked against a second session.
 7. [#browser-packs](browser-packs.md): the browser opens a pack by its picker and saves by a
    download, the warning on leaving the page, the sample's slide on the modes. Fails alone on: the

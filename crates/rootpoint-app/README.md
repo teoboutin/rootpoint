@@ -67,6 +67,14 @@ images, fonts not found, characters no font has, styles the document lacks, and 
 - The side panel's Styles tab lists the named styles, each with the number of areas that name it,
   and changes the one selected in its list: its name, its values, a new style, a copy, or its
   removal, which asks what the areas naming it take instead, a custom copy first.
+- The side panel's Assets tab shows the assets as a tree of their folders, with a search and a
+  filter, all, unused, missing or untracked, and the total size. The selected asset shows its size,
+  its thumbnail and its uses, each a button to its node or its style; its path moves it when typed,
+  and a drag of its row onto a folder's moves it there; Replace… gives its file other bytes, Remove
+  asset removes it while nothing names it, a removal into another asset makes its uses name that
+  one, and a missing asset is relinked to a file the presentation does not name. Import… and a file
+  dropped on the window add an asset; Remove unused removes every asset nothing names. Each change
+  is one undo step.
 - A text is edited in place, on the slide: a click on the selected text area, or a double-click on
   any text area, puts the caret where it clicked. Typing, Backspace and Delete, the arrows with
   Ctrl for words and with Shift to select, Home and End, a drag or a Shift+click to select, Ctrl+A,
