@@ -14,6 +14,23 @@ The sixth slice of `milestone@plans@asset-storage`. It lands the window's half o
   of the same bytes offered first), remove, remove all unused, remove with a replacement, and
   import by a file dialog or by a drop of a file on the window. The total size of the assets is
   shown at the tab's foot.
+  - The tab reads the document and the store, and runs no query through `App::run`, which would
+    render the slide again at each frame. What it reads from the files, each asset's size and the
+    untracked files, is kept until the next command or watcher event, so a frame reads no file.
+  - A missing asset has no bytes to compare, so the relink offers first the untracked files of its
+    file's name, then the other untracked files, then a path typed.
+  - The thumbnail is the selected image asset's, decoded once per selection and per change of the
+    store's files, by `rootpoint_render::decode_rgba`, a public function `ImageSet::insert_bytes`
+    also uses, and drawn as an egui texture at most 128 points wide; a font shows no thumbnail.
+  - A drag of an asset's row onto a folder's row, or onto the root's, runs `asset-move` to that
+    folder under the asset's file name, through egui 0.37's `Ui::dnd_drag_source` and
+    `Ui::dnd_drop_zone`.
+  - A dropped file is `RawInput::dropped_files`, each an `egui::DroppedFileHandle`: natively its
+    `path()` is absolute, read in `path@elsewhere@egui-0.37.0/src/data/input/dropped_file.rs`, and the window runs
+    `import <path>`; in the browser, `path@elsewhere@eframe-0.37.0/src/web/events.rs` gives the file's name as
+    its path and `bytes_async()` reads it, so `path@rootpoint-app@src/web.rs` reads it as it reads a
+    picked image, and `App::add_picked_image` imports it. Replace in the browser takes a picked
+    file the same way, held in `MemoryFiles` under its name, then `asset-replace`.
 - Each action is a function of `path@rootpoint-app@src/actions.rs` running the commands of
   #asset-commands through `App::run`, per `design@rootpoint-app@actions-are-commands`.
 - The node menu's image entries, labelled by `App::asset_name`, and the outline's image rows, per
