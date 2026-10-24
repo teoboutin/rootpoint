@@ -103,10 +103,13 @@ above, with these differences:
 - Open (Ctrl+O) asks for a directory, with the browser's directory picker, and opens a copy of its
   `presentation.ron` in memory, its images and fonts copied from the directory's files. The browser
   reads every file of the directory, at any depth, when it is picked.
-- It saves nothing: it has no Save button, and Ctrl+S says so in the status line. Its changes are
-  lost when the page is closed or reloaded; F5 presents and does not reload.
-- Add an image asks for a PNG or JPEG file, which is copied into the presentation under its name,
-  or the name with a number when another file with other bytes has it.
+- Open pack… asks for a `.rpk` file and opens it in memory. Save as pack… writes the presentation
+  as a pack, which the browser downloads, and Save, or Ctrl+S, downloads it again once a pack was
+  opened or saved. It has no workspace. The page asks before it is closed or reloaded while a change
+  is in no download; F5 presents and does not reload.
+- Add an image, and Import… of the asset tab, ask for a PNG, a JPEG or a font file, which is copied
+  into the presentation under its name, or the name with a number when another file with other
+  bytes has it.
 - Present asks the browser for full screen; when the browser leaves full screen, as it does on
   Esc, presenter mode ends.
 - It has no control socket.

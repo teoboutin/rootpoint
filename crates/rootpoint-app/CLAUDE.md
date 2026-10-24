@@ -51,8 +51,9 @@ of `App::frame` places its synthetic pointer on them;
 The code built for the wasm target alone is under `cfg(target_arch = "wasm32")`: the entry point in
 `path@rootpoint-app@src/main.rs`, the pickers and full screen in `path@rootpoint-app@src/web.rs`
 with their calls in `App::frame`, and the actions of `path@rootpoint-app@src/actions.rs` that
-differ there, open, save, adding an image or a font and replacing an asset's bytes; the Save button of `path@rootpoint-app@src/panels.rs`
-is under `cfg(not(target_arch = "wasm32"))`, and so are the autosave and the watcher,
+differ there, open, open a pack, save, save as a pack, adding an image or a font and replacing an
+asset's bytes; the native file buttons of `path@rootpoint-app@src/panels.rs`, which write a pack at a
+path or a directory, are under `cfg(not(target_arch = "wasm32"))`, and so are the autosave and the watcher,
 `path@rootpoint-app@src/autosave.rs` and `path@rootpoint-app@src/watch.rs`, with the banner and
 the fields of `App` that hold them; the control socket is under `cfg(unix)`, which the wasm target
 is not, per `design@rootpoint-app@control-socket`. What a picker gives goes through an

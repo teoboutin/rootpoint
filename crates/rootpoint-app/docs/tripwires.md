@@ -60,3 +60,14 @@ git's `autocrlf` or a sync tool's normalising, would make it.
 documents instead of the bytes.
 **Re-entry:** at its firing, as the session proposed and the owner approved; and the
 standing-state review before every merge, the home's standing re-entry.
+
+## Guarding `design@rootpoint-app@browser-pack-save`: a presentation too large for the page's memory `##browser-pack-too-large`
+
+T4 of the premortem of the milestone on asset storage, recorded on the owner's word. The browser
+build holds every byte of a presentation in memory, and wasm32 addresses at most 4 GB.
+
+**Fires when:** a presentation fails to open or to save in the browser build by its size.
+**Response:** read the assets from the zip's index when they are drawn, or give the browser the
+store of `issue@rootpoint-app@browser-autosave`.
+**Re-entry:** at its firing, or at the design of video, as the session proposed and the owner
+approved; and the standing-state review before every merge, the home's standing re-entry.

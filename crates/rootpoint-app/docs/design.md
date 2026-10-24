@@ -307,7 +307,9 @@ nor a step the author cannot find, `issue@rootpoint-protocol@history-browsing`.
 
 The close of a window held in memory while `Session::unsaved` is not 0 is the one action that asks
 before it acts, since no undo reaches a closed window: the window cancels the close by
-`ViewportCommand::CancelClose` and asks "Close without saving?", with "Close" and "Keep open". A
+`ViewportCommand::CancelClose` and asks "Close without saving?", with "Close" and "Keep open". The
+page of the browser build asks the same of its close or its reload, by its `beforeunload`, the
+browser's own question, `design@rootpoint-app@browser-pack-save`. A
 workspace whose autosave writes every undo step never asks,
 `design@rootpoint-app@workspace-autosave`, and nothing unsaved asks nothing.
 
@@ -668,19 +670,23 @@ correct editing, in the owner's opinion, is by the window or the text protocol.
 
 ## The browser build
 
-### The browser build opens a directory the author picks and the built-in sample, and saves nothing `##browser-load-only`
+### The browser build opens a pack or a picked directory in memory, and saves by downloading a pack `##browser-pack-save`
 
-Built for the wasm target, the editor opens the built-in sample at start, and Open asks for a
-directory with the browser's directory picker and opens a copy of its `presentation.ron` in memory. Its
-edits stay in memory: it shows no Save button, Ctrl+S says that it saves nothing, and its files,
-`MemoryFiles`, refuse every write. Saving in the browser comes with packing, which writes a
-presentation into one file, `design@rootpoint-model@workspace-layout`; until then
-`goal@rootpoint@runs-in-browser` is met but for its packed file.
+Built for the wasm target, the editor opens the built-in sample at start; Open asks for a directory
+with the browser's directory picker and opens a copy of its `presentation.ron` in memory, and Open
+pack… asks for a `.rpk` file and runs `open-pack` on its bytes. Its edits stay in memory. "Save as
+pack…" runs `pack` into its files, `MemoryFiles`, which keep the writes, and hands the bytes to the
+page, which downloads them; Ctrl+S, once a pack is the session's target, runs `save` and downloads
+it again, `App::pack_for_download`. It holds no workspace, since a page holds no directory it may
+write, so `MemoryFiles` moves and removes no file. A pack is the one file that carries a
+presentation from the browser to any computer, `design@rootpoint-model@workspace-layout`, as
+`goal@rootpoint@runs-in-browser` asks; the page asks before it unloads while an edit is in no file,
+`design@rootpoint-app@no-discard-confirmation`. `tripwire@rootpoint-app@browser-pack-too-large`
+watches a presentation too large for the page's memory.
 
-On the owner's word: for the prototype, the owner chose a browser build that loads only over one
-that opens a presentation through the file picker and saves it by a download, judging that it
-reduces the work without losing much of the features; and proposed opening a whole directory
-rather than file by file.
+On the owner's word: the owner set that the browser build saves, as part of the owner's goal, the
+build that only loaded having been a temporary measure while the owner thought on the asset
+management; and proposed opening a whole directory rather than file by file.
 
 ### A picked directory opens as a copy in memory: its files held by their paths, its presentation's assets copied into the session's map `##picked-files-by-path`
 
@@ -691,8 +697,9 @@ directory's `presentation.ron` and the files of its assets into the session's ma
 runs `import`, which copies it into the map. The session reads through `Files` as it reads a disk,
 per `design@rootpoint-protocol@session-files`, so the document is the one its file holds and a
 script of the same commands reproduces it, as `goal@rootpoint@headless-core` asks of every
-operation. The rival, `open` of the picked directory as a workspace, would be a store whose `save`
-writes to files that refuse every write, `design@rootpoint-app@browser-load-only`.
+operation. The rival, `open` of the picked directory as a workspace, would be a workspace whose
+files live in the page's memory alone, which `MemoryFiles` neither moves nor removes,
+`design@rootpoint-app@browser-pack-save`.
 
 ### In the browser, presenter mode asks the page for full screen, and ends when the page leaves it `##page-full-screen`
 
@@ -706,7 +713,7 @@ presenter mode ends when the page leaves full screen while presenting, as Esc en
 ### In the browser, no key of the editor reaches the browser's own action `##editor-keys-kept-from-browser`
 
 A key's default action in the browser, a reload or a step back in the history, leaves the page and
-loses every edit held in memory, `design@rootpoint-app@browser-load-only`. eframe 0.37.0 prevents
+loses every edit held in memory since the last download, `design@rootpoint-app@browser-pack-save`. eframe 0.37.0 prevents
 the default of some keys itself, in `should_prevent_default_for_key` of
 `path@elsewhere@src/web/events.rs`: every arrow key, so Alt with an arrow,
 `design@rootpoint-app@selection-keys`, never goes back in the history, and Ctrl with O or S. It

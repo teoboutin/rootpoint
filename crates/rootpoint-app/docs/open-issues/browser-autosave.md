@@ -5,17 +5,15 @@ kind: todo
 
 ## Summary
 
-The browser build edits a presentation in memory only, and saves nothing. Once
-`milestone@plans@asset-storage` lands, it keeps a presentation only by a download of its pack, and
-a page closed or reloaded after its warning has been dismissed, or a tab the browser discards,
-loses every edit since the last download.
+The browser build edits a presentation in memory only, and keeps it only by a download of its
+pack, `design@rootpoint-app@browser-pack-save`: a page closed or reloaded after its warning has been
+dismissed, or a tab the browser discards, loses every edit since the last download.
 
 ## Details
 
 ### What
 
-The milestone gives the browser build one mode, in memory, and a save that downloads a pack. The
-owner observed that the browser build could save on its own as the native workspace does, into a
+The browser build has one mode, in memory, and a save that downloads a pack. The owner observed that the browser build could save on its own as the native workspace does, into a
 store of the page's origin that is not `localStorage`, whose size is limited to a few megabytes,
 and suggested, as a "maybe", a todo issue for later. Two leads, from the browsers' documentation as recalled
 in the discussion and not read for this entry: IndexedDB, a database of the origin whose quota is

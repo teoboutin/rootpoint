@@ -588,7 +588,8 @@ fn the_menu_actions_issue_their_commands() {
         App::redo,
         |_| vec![c("redo")],
     );
-    // The browser build's Save writes no file, `design@rootpoint-app@browser-load-only`.
+    // The browser build's Save downloads a pack, `design@rootpoint-app@browser-pack-save`, which
+    // `path@rootpoint-app@tests/web.rs` checks.
     #[cfg(not(target_arch = "wasm32"))]
     check("save", &["open out", "add-slide"], App::save, |_| {
         vec![c("save")]
@@ -829,8 +830,8 @@ fn the_picker_actions_issue_their_commands() {
         Reply::Ok(_)
     ));
     same(&app, &session, "replace an asset by a picked file");
-    // The browser build saves nothing, and a presentation held in memory, with no pack, has no
-    // file to save to.
+    // A presentation held in memory, with no pack its target, has no file the `save` command
+    // writes: the browser build's Save then packs it, `App::pack_for_download`.
     assert!(matches!(app.run(c("save")), Reply::Err(_)));
 }
 

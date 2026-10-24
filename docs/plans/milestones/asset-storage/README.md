@@ -246,8 +246,8 @@ milestone leaves.
   gives `load` and `save` relative to the working directory, a guard against the defect the
   milestone closes, `save-mixes-relative-and-absolute`.
 - The browser build, `App::in_memory`, opens the sample, or a directory the author picks, whose
-  files `App::open_directory` holds in `MemoryFiles`; it saves nothing, per
-  `design@rootpoint-app@browser-load-only`.
+  files `App::open_directory` holds in `MemoryFiles`; it saves nothing, per `browser-load-only`,
+  now `design@rootpoint-app@browser-pack-save`.
 - `Assets::refresh` of `path@rootpoint-app@src/assets.rs` decodes the assets again only when the
   session's directory, or an asset's source or use, changes.
 
@@ -294,7 +294,7 @@ referencing each, and the slice that updates it:
 | `design@rootpoint-protocol@builtin-sample` | rewritten: `sample` opens in memory, its images in the map; its owner's ground stands | none |
 | `design@rootpoint-protocol@session-files` | rewritten: the session reads through the host's files under a workspace's root, or from its map | `register@rootpoint-app@design` line 537, `path@rootpoint-protocol@CLAUDE.md` line 6, `path@rootpoint-protocol@src/files.rs` line 3, `register@rootpoint@design` line 43 (#rooted-assets); `save-mixes-relative-and-absolute`, closed on this branch |
 | `design@rootpoint-protocol@ctl-sends-a-line-or-a-batch` | rewritten by #socket-place: `rootpoint-ctl` takes a workspace or a socket, and `list` | `register@rootpoint-app@design` line 508, `path@rootpoint-protocol@tests/ctl.rs` line 3 (#workspace-host) |
-| `design@rootpoint-app@browser-load-only` | reversed by #browser-pack-save, on the owner's word of round 2 | `register@rootpoint-app@design` lines 541 and 555, `path@rootpoint-app@src/actions.rs` line 748, `path@rootpoint-app@src/memory.rs` line 4, `path@rootpoint-app@src/panels.rs` line 43, `path@rootpoint-app@tests/actions.rs` line 528 (#browser-packs); `page-close-loses-edits` and `pack-and-unpack`, closed on this branch |
+| `browser-load-only`, now `design@rootpoint-app@browser-pack-save` | reversed by #browser-pack-save, on the owner's word of round 2 | `register@rootpoint-app@design` lines 541 and 555, `path@rootpoint-app@src/actions.rs` line 748, `path@rootpoint-app@src/memory.rs` line 4, `path@rootpoint-app@src/panels.rs` line 43, `path@rootpoint-app@tests/actions.rs` line 528 (#browser-packs); `page-close-loses-edits` and `pack-and-unpack`, closed on this branch |
 | `design@rootpoint-app@picked-files-by-path` | rewritten: a picked directory opens in memory, its files copied into the map | `path@rootpoint-app@src/actions.rs` line 741, `path@rootpoint-app@src/memory.rs` line 3 (#rooted-assets); `changed-asset-not-read-again`, closed on this branch |
 | `design@rootpoint-app@control-socket` | rewritten by #socket-place: the socket starts with the window, in the runtime directory; `--control` leaves | `path@rootpoint-app@CLAUDE.md` line 56, `issue@rootpoint-app@socket-waits-for-a-frame`, `path@rootpoint-app@src/control.rs` line 1, `path@rootpoint-app@tests/control.rs` line 1, `path@rootpoint-app@tests/listener_drop.rs` line 1, `path@rootpoint-app@tests/presenter.rs` line 233 (#workspace-host) |
 | `design@rootpoint-app@only-a-stale-socket-is-replaced` | rewritten by #workspace-lock: a workspace's socket is bound only under its lock, so a second window is refused before its bind; the refusal of a file that is no socket stands | its own last sentence, which cited the spec of #workspace-host (#workspace-host); `two-windows-bind-one-path`, closed on this branch |
@@ -527,7 +527,7 @@ Proposed by the session in round 1. Approved in round 2: "browser-pack-save: acc
 of my goal, closing design@rootpoint-app@browser-load-only, which was only a temporary measure while
 i was putting more thought on the asset management mechanism", and Q3: "yes, it should save".
 Arguments: #arg-14. Shape: #browser-packs. Harvest: the reversal of
-`design@rootpoint-app@browser-load-only` at #browser-packs.
+`browser-load-only` at #browser-packs, now `design@rootpoint-app@browser-pack-save`.
 
 ### The sample has a slide that explains the two modes and the pack `##sample-explains-modes`
 
@@ -1235,7 +1235,7 @@ at the new name and removes the old one, a shape the decision admits.
    `asset-remove`, `assets`, the trash. Fails alone on: undo of a removal in a workspace, and AC4.
 6. #asset-manager, landed, its spec deleted with its harvest: the asset tab. Fails alone on: each feature driving its
    command, checked against a second session.
-7. [#browser-packs](browser-packs.md): the browser opens a pack by its picker and saves by a
+7. #browser-packs, landed, its spec deleted with its harvest: the browser opens a pack by its picker and saves by a
    download, the warning on leaving the page, the sample's slide on the modes. Fails alone on: the
    browser tests of a pack's round trip.
 
@@ -1331,7 +1331,9 @@ at the new name and removes the old one, a shape the decision admits.
 ## Harvest
 
 The harvest of each slice is the row in its spec. This document leaves in the commit that completes
-the harvest of #browser-packs, the last slice; its row: every acceptance criterion reported once
+its own harvest, once the owner has ruled on every default awaiting the owner, D6 to D11, as
+`skill@knowledge-architect-planning@plan-document-leaves` asks, every slice having landed; its
+row: every acceptance criterion reported once
 more, as `skill@knowledge-architect-planning@acceptance-criteria` says; each tripwire T1 to T4
 written with its decision; and `issue@rootpoint-app@browser-autosave` re-read against what the
 browser build then holds.
