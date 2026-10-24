@@ -769,6 +769,9 @@ crates/rootpoint-app/src/watch.rs          the asset watcher                    
 crates/rootpoint-app/src/asset_tab.rs      the asset tab                               (#asset-manager)
 crates/rootpoint-app/src/lib.rs            SideTab::Assets (SideTab exists, with Selection and Styles)   (#asset-manager)
 crates/rootpoint-app/src/lib.rs            App::state_label(&self) -> String, the state label's text, read by tests   (#workspace-host)
+crates/rootpoint-app/src/lib.rs            App::native(files), the window that takes the locks and moves the socket   (#workspace-host)
+crates/rootpoint-protocol/src/workspace.rs fn socket_name(root: Option<&str>) -> String, fn run(…, lock: &mut Option<WorkspaceLock>) -> Reply   (#workspace-host)
+crates/rootpoint-app/src/control.rs        Listener::rename_to(path)                   (#workspace-host)
 crates/rootpoint-app/tests/autosave.rs     autosave_gui_cost, an #[ignore] test, the AC1 benchmark:
                                            cargo test -p rootpoint-app --release --test autosave -- --ignored   (#autosave-and-watch)
 
@@ -1075,9 +1078,11 @@ widened by D5:
 
 ## Readings
 
-- `unix(7)` on the owner's AMD Ryzen 9 9950X, `char sun_path[108]`, the limit of #arg-7. The 104 bytes of
-  macOS is not read; #workspace-host's audit reads it where it decides the fallback of
-  `$TMPDIR`.
+- `unix(7)` on the owner's AMD Ryzen 9 9950X, `char sun_path[108]`, the limit of #arg-7. The 104
+  bytes of macOS, read at #workspace-host's audit in xnu's `bsd/sys/un.h`: `char sun_path[104]`.
+  macOS's per-user temporary directory, `_CS_DARWIN_USER_TEMP_DIR` of `confstr(3)`, is "created
+  with access permissions of 0700"; that `$TMPDIR` names it is the reply of round 2 as recalled, not
+  read.
 - The zip format, through the crate #pack-commands chooses, and the convention of a first entry `mimetype`
   stored with no compression, of EPUB's container. Read at #pack-commands's audit in EPUB 3.3,
   section 4.3.3, "OCF ZIP container media type identification": the `mimetype` file is the first
