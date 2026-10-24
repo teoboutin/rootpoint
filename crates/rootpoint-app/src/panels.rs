@@ -194,7 +194,7 @@ impl App {
 
     /// A button whose place the frame records by its label, so a test can click it; it does nothing
     /// while `enabled` is false.
-    fn button(&mut self, ui: &mut Ui, label: &str, enabled: bool) -> bool {
+    pub(crate) fn button(&mut self, ui: &mut Ui, label: &str, enabled: bool) -> bool {
         let response = ui.add_enabled(enabled, egui::Button::new(label));
         self.view.buttons.push((label.to_owned(), response.rect));
         response.clicked()
@@ -209,7 +209,7 @@ impl App {
         }
     }
 
-    /// The side panel: its two tabs, the selection's and the styles'. While the socket holds the
+    /// The side panel: its tabs, the selection's, the styles' and the assets'. While the socket holds the
     /// authority to edit, every control that sends an edit is disabled, and the outline and the
     /// list of styles, which change only what the window shows, still work, per
     /// `design@rootpoint-app@one-controller-at-a-time`.
@@ -217,11 +217,13 @@ impl App {
         ui.horizontal(|ui| {
             self.tab(ui, SideTab::Selection, "Selection");
             self.tab(ui, SideTab::Styles, "Styles");
+            self.tab(ui, SideTab::Assets, "Assets");
         });
         ui.separator();
         match self.tab {
             SideTab::Selection => self.selection_tab(ui),
             SideTab::Styles => self.styles_tab(ui),
+            SideTab::Assets => self.assets_tab(ui),
         }
     }
 
@@ -747,10 +749,10 @@ impl App {
             .collect()
     }
 
-    /// An asset's file name, the last component of its path.
+    /// An asset's path, which tells two files of one name in two folders apart.
     pub(crate) fn asset_name(&self, id: AssetId) -> String {
         match self.session.document().assets.get(&id) {
-            Some(a) => a.path.rsplit('/').next().unwrap_or(&a.path).to_owned(),
+            Some(a) => a.path.clone(),
             None => String::new(),
         }
     }

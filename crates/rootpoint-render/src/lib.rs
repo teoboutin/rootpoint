@@ -10,7 +10,7 @@ mod text;
 use std::ops::Range;
 use std::sync::Arc;
 
-pub use images::{DecodeError, ImageSet};
+pub use images::{DecodeError, ImageSet, decode_rgba};
 use parley::Layout;
 use rootpoint_model::{
     AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, StyleChoice,

@@ -6,7 +6,7 @@ The sixth slice of `milestone@plans@asset-storage`. It lands the window's half o
 
 ## Builds
 
-- `planned@rootpoint-app@src/asset_tab.rs`: the asset tab, beside the Styles tab, keeping the panel's
+- `path@rootpoint-app@src/asset_tab.rs`: the asset tab, beside the Styles tab, keeping the panel's
   width, `design@rootpoint-app@sidebar-width`. It shows the tree of asset paths, folders built from
   their prefixes, with a search by name and the filter of `assets`; for the selected asset, its size,
   a thumbnail and its uses, each use a button that selects its node; and the actions: move or rename

@@ -625,6 +625,118 @@ impl App {
         });
     }
 
+    /// The Assets tab's move: give the asset a new path, its file moved there, by `asset-move`.
+    pub fn move_asset(&mut self, asset: AssetId, to: String) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.run(Command::AssetMove { asset, to });
+    }
+
+    /// A drop of an asset's row on a folder's row: move it into that folder, `""` the root, under
+    /// its file name.
+    pub fn move_asset_to_folder(&mut self, asset: AssetId, folder: &str) {
+        let path = self.asset_name(asset);
+        let name = path.rsplit('/').next().unwrap_or(&path);
+        let to = if folder.is_empty() {
+            name.to_owned()
+        } else {
+            format!("{folder}/{name}")
+        };
+        if to != path {
+            self.move_asset(asset, to);
+        }
+    }
+
+    /// Relink a missing asset to a file the store holds, by `asset-relink`.
+    pub fn relink_asset(&mut self, asset: AssetId, to: String) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.run(Command::AssetRelink { asset, to });
+    }
+
+    /// Give an asset's file the bytes of a host file, by `asset-replace`.
+    pub fn replace_asset(&mut self, asset: AssetId, from: String) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.run(Command::AssetReplace { asset, from });
+    }
+
+    /// Replace an asset's bytes by a file the author picked, held in memory under its name, as
+    /// `App::add_picked_image` holds a picked image; a refused replace gives the held files back.
+    pub fn replace_with_picked(&mut self, asset: AssetId, name: String, bytes: Vec<u8>) {
+        if self.socket_holds() {
+            return;
+        }
+        let Some(held) = self.held.clone() else {
+            self.error = Some("this editor holds no files in memory".to_owned());
+            return;
+        };
+        let before = held.replace_one(&name, Some(bytes));
+        self.replace_asset(asset, name.clone());
+        if self.error.is_some() {
+            held.replace_one(&name, before);
+        }
+    }
+
+    /// Remove an asset nothing names, by `asset-remove`; its file goes to the trash.
+    pub fn remove_asset(&mut self, asset: AssetId) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.run(Command::AssetRemove { asset, into: None });
+    }
+
+    /// Remove an asset, what names it naming `into` instead, by `asset-remove … into=`.
+    pub fn remove_asset_into(&mut self, asset: AssetId, into: AssetId) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.run(Command::AssetRemove {
+            asset,
+            into: Some(into),
+        });
+    }
+
+    /// Remove every asset nothing names, one undo step, by `asset-remove-unused`.
+    pub fn remove_unused_assets(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        self.run(Command::AssetRemoveUnused);
+    }
+
+    /// A use's button of the Assets tab: select its node, which shows its slide.
+    pub fn show_use(&mut self, node: NodeId) {
+        self.end_gestures();
+        self.run(Command::Select { node });
+    }
+
+    /// The files dropped on the window this frame, each imported: natively by its path; in the
+    /// browser its bytes are read first, then imported as a picked image.
+    pub(crate) fn take_dropped_files(&mut self, ctx: &eframe::egui::Context) {
+        let dropped = ctx.input_mut(|i| std::mem::take(&mut i.raw.dropped_files));
+        if dropped.is_empty() || self.socket_holds() {
+            return;
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        for file in dropped {
+            if let Some(path) = self.utf8(file.path()) {
+                self.add_asset(path);
+            }
+        }
+        #[cfg(target_arch = "wasm32")]
+        self.web.read_dropped(dropped);
+    }
+
     /// Undo the last step: a drag or a stay in editing still open ends first, and is that
     /// step.
     pub fn undo(&mut self) {
@@ -908,14 +1020,14 @@ impl App {
         }
     }
 
-    /// Ask for an image file, and add it as an asset by `import`.
+    /// Ask for an image or a font file, and add it as an asset by `import`.
     #[cfg(not(target_arch = "wasm32"))]
     pub(crate) fn add_asset_dialog(&mut self) {
         if self.socket_holds() {
             return;
         }
         let Some(file) = rfd::FileDialog::new()
-            .add_filter("image", &["png", "jpg", "jpeg"])
+            .add_filter("image or font", &["png", "jpg", "jpeg", "ttf", "otf"])
             .pick_file()
         else {
             return;
@@ -923,6 +1035,30 @@ impl App {
         if let Some(path) = self.utf8(&file) {
             self.add_asset(path);
         }
+    }
+
+    /// Ask for the file whose bytes replace an asset's, and replace them by `asset-replace`.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) fn replace_asset_dialog(&mut self, asset: AssetId) {
+        if self.socket_holds() {
+            return;
+        }
+        let Some(file) = rfd::FileDialog::new().pick_file() else {
+            return;
+        };
+        if let Some(path) = self.utf8(&file) {
+            self.replace_asset(asset, path);
+        }
+    }
+
+    /// Ask for the file whose bytes replace an asset's, which the next frames read, then replace
+    /// them with `App::replace_with_picked`.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn replace_asset_dialog(&mut self, asset: AssetId) {
+        if self.socket_holds() {
+            return;
+        }
+        self.web.pick_replacement(asset);
     }
 
     /// A path as UTF-8, which the protocol's commands hold, or `None` with the status naming it.

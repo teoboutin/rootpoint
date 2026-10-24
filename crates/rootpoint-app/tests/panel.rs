@@ -1,5 +1,5 @@
 //! The side panel: its width is the same in every state of its content,
-//! `design@rootpoint-app@sidebar-width`; and the Styles tab, the only part of the window that
+//! `design@rootpoint-app@sidebar-width`, the Assets tab's included; and the Styles tab, the only part of the window that
 //! changes a named style, with the dialog of a style's removal.
 
 use eframe::egui::{Context, Event, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
@@ -228,8 +228,80 @@ fn the_side_panel_s_width_is_the_same_in_every_state_of_its_content() {
     click(&ctx, &mut app, "style Subtitle");
     assert_eq!(app.selected_style(), Some("Subtitle"));
     widths.push(("the Styles tab, a style selected", width(&ctx, &mut app)));
+    // The Assets tab, an asset of a long path selected, its thumbnail drawn.
+    ok(
+        &mut app,
+        &format!("asset-move a19 {}/splits.png", "folder".repeat(20)),
+    );
+    click(&ctx, &mut app, "Assets");
+    click(&ctx, &mut app, "asset a19");
+    assert_eq!(app.selected_asset(), Some(rootpoint_model::AssetId(19)));
+    widths.push(("the Assets tab, an asset selected", width(&ctx, &mut app)));
     let first = widths[0].1;
     for (state, w) in &widths {
         assert_eq!(*w, first, "{state}: {widths:?}");
     }
+}
+
+/// A use's button of the Assets tab selects its node and shows its slide.
+#[test]
+fn a_use_s_button_selects_its_node_and_shows_its_slide() {
+    let mut app = App::new(Box::new(MemoryFiles::default()));
+    let ctx = Context::default();
+    ok(&mut app, "sample");
+    frame(&ctx, &mut app);
+    click(&ctx, &mut app, "Assets");
+    click(&ctx, &mut app, "asset a19");
+    click(&ctx, &mut app, "use n17");
+    assert_eq!(
+        app.session().view().selected,
+        Some(rootpoint_model::NodeId(17))
+    );
+    let slide = app
+        .session()
+        .document()
+        .slides
+        .iter()
+        .find(|s| s.root.find(rootpoint_model::NodeId(17)).is_some())
+        .unwrap()
+        .id;
+    assert_eq!(app.shown_slide(), Some(slide));
+}
+
+/// A drag of an asset's row onto a folder's row moves the asset into that folder, by
+/// `asset-move`.
+#[test]
+fn an_asset_dragged_onto_a_folder_moves_there() {
+    let mut app = App::new(Box::new(MemoryFiles::default()));
+    let ctx = Context::default();
+    ok(&mut app, "sample");
+    ok(&mut app, "asset-move a19 img/splits.png");
+    frame(&ctx, &mut app);
+    click(&ctx, &mut app, "Assets");
+    let from = app
+        .button_rect("asset a19")
+        .expect("the asset's row")
+        .center();
+    let to = app.button_rect("folder ").expect("the root's row").center();
+    let button = |pos, pressed| Event::PointerButton {
+        pos,
+        button: PointerButton::Primary,
+        pressed,
+        modifiers: Modifiers::NONE,
+    };
+    frame_with(
+        &ctx,
+        &mut app,
+        vec![Event::PointerMoved(from), button(from, true)],
+    );
+    for i in 1..=10 {
+        let at = from + (to - from) * (i as f32 / 10.0);
+        frame_with(&ctx, &mut app, vec![Event::PointerMoved(at)]);
+    }
+    frame_with(&ctx, &mut app, vec![button(to, false)]);
+    frame(&ctx, &mut app);
+    assert_eq!(
+        app.session().document().assets[&rootpoint_model::AssetId(19)].path,
+        "splits.png"
+    );
 }

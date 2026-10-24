@@ -27,23 +27,9 @@ impl ImageSet {
 
     /// Decode the bytes of an image file, PNG or JPEG, as the image of the asset `id`.
     pub fn insert_bytes(&mut self, id: AssetId, bytes: &[u8]) -> Result<(), DecodeError> {
-        let error = |e: image::ImageError| DecodeError(e.to_string());
-        let mut decoder = image::ImageReader::new(std::io::Cursor::new(bytes))
-            .with_guessed_format()
-            .map_err(|e| DecodeError(e.to_string()))?
-            .into_decoder()
-            .map_err(error)?;
-        // A photograph's EXIF orientation is applied, so that it is drawn upright.
-        let orientation = decoder.orientation().map_err(error)?;
-        let mut decoded = image::DynamicImage::from_decoder(decoder).map_err(error)?;
-        decoded.apply_orientation(orientation);
-        let rgba = decoded.to_rgba8();
-        let (width, height) = rgba.dimensions();
-        let too_big = |side: u32| DecodeError(format!("a side of {side} pixels exceeds 65535"));
-        let width = u16::try_from(width).map_err(|_| too_big(width))?;
-        let height = u16::try_from(height).map_err(|_| too_big(height))?;
+        let (width, height, rgba) = decode_rgba(bytes)?;
         let pixmap = Pixmap::from_parts(
-            rgba.into_raw(),
+            rgba,
             width,
             height,
             PixelMetadata {
@@ -58,4 +44,26 @@ impl ImageSet {
     pub(crate) fn get(&self, id: AssetId) -> Option<&Arc<Pixmap>> {
         self.images.get(&id)
     }
+}
+
+/// Decode the bytes of an image file, PNG or JPEG, as its width, its height and its pixels, RGBA
+/// with straight alpha, row by row: what the renderer draws, which a caller showing the image
+/// elsewhere, as the editor's thumbnail, decodes the same way.
+pub fn decode_rgba(bytes: &[u8]) -> Result<(u16, u16, Vec<u8>), DecodeError> {
+    let error = |e: image::ImageError| DecodeError(e.to_string());
+    let mut decoder = image::ImageReader::new(std::io::Cursor::new(bytes))
+        .with_guessed_format()
+        .map_err(|e| DecodeError(e.to_string()))?
+        .into_decoder()
+        .map_err(error)?;
+    // A photograph's EXIF orientation is applied, so that it is drawn upright.
+    let orientation = decoder.orientation().map_err(error)?;
+    let mut decoded = image::DynamicImage::from_decoder(decoder).map_err(error)?;
+    decoded.apply_orientation(orientation);
+    let rgba = decoded.to_rgba8();
+    let (width, height) = rgba.dimensions();
+    let too_big = |side: u32| DecodeError(format!("a side of {side} pixels exceeds 65535"));
+    let width = u16::try_from(width).map_err(|_| too_big(width))?;
+    let height = u16::try_from(height).map_err(|_| too_big(height))?;
+    Ok((width, height, rgba.into_raw()))
 }

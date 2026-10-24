@@ -296,3 +296,41 @@ fn a_replaced_asset_is_drawn_with_its_new_bytes_and_its_undo_with_the_old() {
     assert_eq!(undone[0].2, expected(&app, &mut files, third, size));
     assert_ne!(undone[0].2, new, "the undo draws the old bytes");
 }
+
+/// A file dropped on the window, natively, is imported by its path.
+#[test]
+fn a_file_dropped_on_the_window_is_imported() {
+    #[derive(Debug)]
+    struct Dropped(std::path::PathBuf);
+    impl eframe::egui::DroppedFile for Dropped {
+        fn path(&self) -> &std::path::Path {
+            &self.0
+        }
+        fn bytes(&self) -> Result<Vec<u8>, String> {
+            Err("the test reads no bytes".to_owned())
+        }
+    }
+    let files = MemoryFiles::default();
+    files.0.borrow_mut().insert(
+        "dropped.png".to_owned(),
+        include_bytes!("data/two-colours.png").to_vec(),
+    );
+    let mut app = App::new(Box::new(files.clone()));
+    ok(&mut app, "sample");
+    let ctx = Context::default();
+    let input = RawInput {
+        dropped_files: vec![std::sync::Arc::new(Dropped("dropped.png".into()))],
+        ..Default::default()
+    };
+    let mut out = ctx.run_ui(input, |ui| app.frame(ui));
+    out.textures_delta.clear();
+    assert!(
+        app.session()
+            .document()
+            .assets
+            .values()
+            .any(|a| a.path == "dropped.png"),
+        "{:?}",
+        app.status()
+    );
+}

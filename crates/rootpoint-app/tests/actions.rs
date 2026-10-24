@@ -102,6 +102,7 @@ fn check(
     }
     assert_eq!(app.session().document(), session.document(), "{name}");
     assert_eq!(app.session().view(), session.view(), "{name}");
+    assert_eq!(app.session().store(), session.store(), "{name}: the store");
     assert_eq!(
         *files_a.0.borrow(),
         *files_b.0.borrow(),
@@ -490,6 +491,68 @@ fn the_style_actions_issue_their_commands() {
 
 /// A control of the selection never changes a named style: a size on a text naming Body makes the
 /// text custom at that size, and Body keeps its own.
+/// The Assets tab's actions, on the sample's image `a19`, shown by `n14` and `n17`, and `cat.png`
+/// imported as `a20`, which nothing names.
+#[test]
+fn the_asset_actions_issue_their_commands() {
+    let imported = &["import cat.png"];
+    check(
+        "move an asset",
+        imported,
+        |a| a.move_asset(AssetId(19), "img/splits.png".to_owned()),
+        |_| vec![c("asset-move a19 img/splits.png")],
+    );
+    check(
+        "drop an asset on a folder",
+        &["import cat.png", "asset-move a19 img/splits.png"],
+        |a| a.move_asset_to_folder(AssetId(20), "img"),
+        |_| vec![c("asset-move a20 img/cat.png")],
+    );
+    check(
+        "drop an asset on the root",
+        &["import cat.png", "asset-move a20 img/cat.png"],
+        |a| a.move_asset_to_folder(AssetId(20), ""),
+        |_| vec![c("asset-move a20 cat.png")],
+    );
+    check(
+        "replace an asset",
+        imported,
+        |a| a.replace_asset(AssetId(20), "other.png".to_owned()),
+        |_| vec![c("asset-replace a20 other.png")],
+    );
+    check(
+        "remove an asset",
+        imported,
+        |a| a.remove_asset(AssetId(20)),
+        |_| vec![c("asset-remove a20")],
+    );
+    check(
+        "remove an asset into another",
+        imported,
+        |a| a.remove_asset_into(AssetId(19), AssetId(20)),
+        |_| vec![c("asset-remove a19 into=a20")],
+    );
+    check(
+        "remove the unused assets",
+        imported,
+        App::remove_unused_assets,
+        |_| vec![c("asset-remove-unused")],
+    );
+    check(
+        "a use's button",
+        &[],
+        |a| a.show_use(NodeId(17)),
+        |_| vec![c("select n17")],
+    );
+    // A store in memory holds no file no asset names, so the relink here names the asset's own.
+    check(
+        "relink an asset",
+        imported,
+        |a| a.relink_asset(AssetId(20), "cat.png".to_owned()),
+        |_| vec![c("asset-relink a20 cat.png")],
+    );
+}
+
 #[test]
 fn a_control_of_the_selection_never_changes_a_named_style() {
     let mut app = App::new(Box::new(MemoryFiles::default()));
@@ -754,6 +817,18 @@ fn the_picker_actions_issue_their_commands() {
         session.run(Command::Undo, &mut files)
     );
     same(&app, &session, "after undo");
+    // A file picked to replace an asset's bytes is held under its name, then `asset-replace`.
+    let last = *app.session().document().assets.keys().last().unwrap();
+    app.replace_with_picked(last, "new.png".to_owned(), vec![7, 7]);
+    files
+        .0
+        .borrow_mut()
+        .insert("new.png".to_owned(), vec![7, 7]);
+    assert!(matches!(
+        session.run(c(&format!("asset-replace {last} new.png")), &mut files),
+        Reply::Ok(_)
+    ));
+    same(&app, &session, "replace an asset by a picked file");
     // The browser build saves nothing, and a presentation held in memory, with no pack, has no
     // file to save to.
     assert!(matches!(app.run(c("save")), Reply::Err(_)));

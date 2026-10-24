@@ -5,6 +5,7 @@
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod actions;
+mod asset_tab;
 mod assets;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod autosave;
@@ -21,6 +22,8 @@ mod view;
 mod watch;
 #[cfg(target_arch = "wasm32")]
 mod web;
+
+pub use asset_tab::AssetUse;
 
 #[cfg(not(target_arch = "wasm32"))]
 use eframe::egui::ViewportCommand;
@@ -115,6 +118,8 @@ pub struct App {
     tab: SideTab,
     /// The Styles tab's own state, the window's and not the session's.
     styles_tab: StylesTab,
+    /// The Assets tab's own state, the window's and not the session's.
+    asset_tab: asset_tab::AssetTab,
     /// The node menu, while it is open: the window's own state, not the session's.
     menu: Option<menu::NodeMenu>,
     /// How many times the node menu was opened.
@@ -129,6 +134,8 @@ pub enum SideTab {
     Selection,
     /// The table of named styles.
     Styles,
+    /// The asset table, its files and their uses.
+    Assets,
 }
 
 /// The state of the Styles tab: the style selected in its list, the name field's text while it is
@@ -266,6 +273,7 @@ impl App {
             web: web::Web::default(),
             tab: SideTab::default(),
             styles_tab: StylesTab::default(),
+            asset_tab: asset_tab::AssetTab::default(),
             menu: None,
             menu_serial: 0,
         }
@@ -477,6 +485,8 @@ impl App {
             Reply::Err(reason) => Some(reason.clone()),
         };
         self.view.drawn = None;
+        // What the Assets tab read from the files may have changed with any command.
+        self.asset_tab.listing = None;
         if let (Some(node), Some(slide)) = (self.session.view().selected, self.shown_slide())
             && let Some(slide) = self.session.document().slide(slide)
         {
@@ -679,8 +689,9 @@ impl App {
             self.view.drawn = None;
         }
         // A directory removed and made again, as a checkout does, lost its watch with the old one:
-        // the watches are set again after any event.
+        // the watches are set again after any event, and the Assets tab reads the files again.
         if !changed.is_empty() {
+            self.asset_tab.listing = None;
             self.watch_assets();
         }
     }
@@ -796,6 +807,7 @@ impl App {
         self.serve_socket();
         #[cfg(target_arch = "wasm32")]
         self.serve_pickers(ui.ctx());
+        self.take_dropped_files(ui.ctx());
         self.view.take_control = None;
         // A loss of focus releases a drag and leaves a stay in editing and its group, per
         // `design@rootpoint-app@gesture-groups`.
@@ -832,6 +844,9 @@ impl App {
             match picked {
                 web::Picked::Directory(files) => self.open_directory(files),
                 web::Picked::Image(name, bytes) => self.add_picked_image(name, bytes),
+                web::Picked::Replacement(asset, name, bytes) => {
+                    self.replace_with_picked(asset, name, bytes)
+                }
                 web::Picked::Failed(reason) => self.error = Some(reason),
             }
         }

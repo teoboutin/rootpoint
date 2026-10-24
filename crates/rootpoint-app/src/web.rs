@@ -16,8 +16,10 @@ pub(crate) enum Picked {
     /// Each file of the directory, by its path under the directory picked, that directory's name
     /// its first component.
     Directory(Vec<(String, Vec<u8>)>),
-    /// An image, by its file name.
+    /// An image, by its file name, or a file dropped on the window.
     Image(String, Vec<u8>),
+    /// The new bytes of an asset, by the name of the file picked.
+    Replacement(rootpoint_model::AssetId, String, Vec<u8>),
     /// A file that could not be read, and why.
     Failed(String),
 }
@@ -46,18 +48,40 @@ impl Web {
 
     /// Ask for a directory, with the browser's directory picker.
     pub(crate) fn pick_directory(&mut self) {
-        self.pick("", true);
+        self.pick("", true, None);
     }
 
     /// Ask for one image file.
     pub(crate) fn pick_image(&mut self) {
-        self.pick("image/png,image/jpeg", false);
+        self.pick("image/png,image/jpeg", false, None);
+    }
+
+    /// Ask for the file whose bytes replace an asset's.
+    pub(crate) fn pick_replacement(&mut self, asset: rootpoint_model::AssetId) {
+        self.pick("", false, Some(asset));
+    }
+
+    /// Read the files dropped on the window, as a picker reads the files it is given.
+    pub(crate) fn read_dropped(&mut self, files: Vec<eframe::egui::DroppedFileHandle>) {
+        let (inbox, ctx) = (self.inbox.clone(), self.ctx.clone());
+        wasm_bindgen_futures::spawn_local(async move {
+            for file in files {
+                let name = file.path().display().to_string();
+                inbox.borrow_mut().push(match file.bytes_async().await {
+                    Ok(bytes) => Picked::Image(name, bytes),
+                    Err(e) => Picked::Failed(format!("{name} could not be read: {e}")),
+                });
+            }
+            if let Some(ctx) = ctx {
+                ctx.request_repaint();
+            }
+        });
     }
 
     /// Show the browser's file picker: an `<input type="file">`, with `webkitdirectory` for a
     /// directory. The click comes from a frame drawn after the author's key or click, which the
     /// browser still counts as the author's activation.
-    fn pick(&mut self, accept: &str, directory: bool) {
+    fn pick(&mut self, accept: &str, directory: bool, replacing: Option<rootpoint_model::AssetId>) {
         let Some(input) = web_sys::window()
             .and_then(|w| w.document())
             .and_then(|d| d.create_element("input").ok())
@@ -117,7 +141,10 @@ impl Web {
                         files.push(file);
                         Some(Picked::Directory(files))
                     }
-                    Some((name, bytes)) => Some(Picked::Image(name, bytes)),
+                    Some((name, bytes)) => Some(match replacing {
+                        Some(asset) => Picked::Replacement(asset, name, bytes),
+                        None => Picked::Image(name, bytes),
+                    }),
                 };
                 inbox.borrow_mut().extend(picked);
                 if let Some(ctx) = ctx {
