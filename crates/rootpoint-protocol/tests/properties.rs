@@ -174,6 +174,7 @@ fn new_path(k: usize) -> String {
         2 => format!("img/i{}.png", k % 3),
         3 => "../m.png".to_owned(),
         4 => ".rootpoint/m.png".to_owned(),
+        5 if k % 12 < 6 => "mimetype".to_owned(),
         _ => "presentation.ron".to_owned(),
     }
 }

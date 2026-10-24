@@ -19,4 +19,4 @@ pub mod workspace;
 
 pub use command::{AssetFilter, Command, ParseError, StyleCommand, StyleOption, parse_command};
 pub use files::Files;
-pub use session::{Reply, Session, Store, View, read_line};
+pub use session::{Reply, Session, Store, View, listed_untracked, read_line};

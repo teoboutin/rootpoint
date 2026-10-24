@@ -166,6 +166,12 @@ fn a_move_keeps_every_slide() {
 fn a_relink_repairs_a_missing_asset() {
     let (root, mut s, mut files) = workspace("relink");
     run_ok(&mut s, &mut files, "save");
+    // The store's own files, and those of a folder whose name starts with `.`, as `.git/`, are
+    // never listed.
+    std::fs::create_dir_all(root.join(".rootpoint")).unwrap();
+    std::fs::write(root.join(".rootpoint/kept.png"), b"x").unwrap();
+    std::fs::create_dir_all(root.join(".git")).unwrap();
+    std::fs::write(root.join(".git/HEAD"), b"x").unwrap();
     std::fs::rename(root.join("img/a.png"), root.join("moved.png")).unwrap();
     assert_eq!(
         run_ok(&mut s, &mut files, "assets missing"),
@@ -237,8 +243,8 @@ fn a_removal_into_another_asset_renames_every_use() {
     assert!(s.document().same_content(&before));
 }
 
-/// A workspace whose presentation names, beside `img/a.png`, an asset for each path that fails
-/// confinement, unused, and the files those paths would reach.
+/// A workspace whose presentation names an asset for each path that fails confinement, unused, and
+/// the files those paths would reach; `img/a.png` is a file no asset names.
 fn workspace_with_unconfined(name: &str) -> (PathBuf, PathBuf, Session, RecordingFiles) {
     let dir = std::fs::canonicalize(scratch(name)).unwrap();
     let root = dir.join("root");
@@ -253,6 +259,7 @@ fn workspace_with_unconfined(name: &str) -> (PathBuf, PathBuf, Session, Recordin
         dir.join("outside.png").to_str().unwrap().to_owned(),
         ".rootpoint/outside.png".to_owned(),
         "presentation.ron".to_owned(),
+        "mimetype".to_owned(),
     ] {
         apply(
             &mut doc,
@@ -313,4 +320,207 @@ fn no_asset_command_reaches_outside_the_root() {
         .filter(|p| *p != new)
         .collect();
     assert_eq!(outside, Vec::<String>::new());
+}
+
+fn reply(s: &mut Session, files: &mut dyn Files, line: &str) -> Reply {
+    s.run(rootpoint_protocol::parse_command(line).unwrap(), files)
+}
+
+/// The workspace of `workspace`, and a directory `outside` beside its root.
+fn workspace_beside(name: &str) -> (PathBuf, PathBuf, Session, RecordingFiles) {
+    let (root, s, files) = workspace(&format!("{name}/root"));
+    let outside = root.parent().unwrap().join("outside");
+    let _ = std::fs::remove_dir_all(&outside);
+    std::fs::create_dir_all(&outside).unwrap();
+    (root, outside, s, files)
+}
+
+/// An `open` empties no `.rootpoint/trash` that a symlink places outside the root: the files of
+/// the directory it names stay.
+#[test]
+fn an_open_empties_no_trash_a_symlink_places_outside() {
+    let dir = std::fs::canonicalize(scratch("r5-trash-symlink-open")).unwrap();
+    let root = dir.join("root");
+    let victim = dir.join("victim");
+    std::fs::create_dir_all(root.join(".rootpoint")).unwrap();
+    std::fs::create_dir_all(victim.join("sub")).unwrap();
+    std::fs::write(victim.join("thesis.txt"), b"years of work").unwrap();
+    std::fs::write(victim.join("sub/notes.txt"), b"notes").unwrap();
+    std::os::unix::fs::symlink(&victim, root.join(".rootpoint/trash")).unwrap();
+    let mut files = RecordingFiles::default();
+    let mut s = Session::new();
+    run_ok(&mut s, &mut files, &format!("open {}", root.display()));
+    assert!(
+        victim.join("thesis.txt").exists(),
+        "open deleted a file outside the root"
+    );
+    assert!(
+        victim.join("sub/notes.txt").exists(),
+        "open deleted a file outside the root"
+    );
+}
+
+/// A removal moves no file through a trash that a symlink places outside the root.
+#[test]
+fn a_removal_moves_no_file_through_a_trash_symlink() {
+    let (root, outside, mut s, mut files) = workspace_beside("r5-trash-symlink-remove");
+    std::fs::create_dir_all(root.join(".rootpoint")).unwrap();
+    let _ = std::fs::remove_dir_all(root.join(".rootpoint/trash"));
+    std::os::unix::fs::symlink(&outside, root.join(".rootpoint/trash")).unwrap();
+    let _ = reply(&mut s, &mut files, "asset-remove a4");
+    let escaped: Vec<_> = std::fs::read_dir(&outside).unwrap().collect();
+    assert!(
+        escaped.is_empty(),
+        "the file of a4 left the root: {escaped:?}"
+    );
+}
+
+/// In memory as in a workspace, a move onto a folder of the map is refused, so the map can always
+/// be unpacked.
+#[test]
+fn in_memory_a_move_onto_a_folder_is_refused() {
+    let mut mem = MemoryFiles::holding(&["cat.png", "dog.png"]);
+    let mut s = Session::new();
+    run(
+        &mut s,
+        &mut mem,
+        "add-slide\nimport cat.png img/cat.png\nimport dog.png",
+    );
+    assert!(
+        s.document()
+            .assets
+            .values()
+            .any(|a| a.path == "img/cat.png")
+    );
+    let moved = reply(&mut s, &mut mem, "asset-move a4 img");
+    let unpack_dir = std::fs::canonicalize(scratch("r5-unpack-dir")).unwrap();
+    let mut files = RecordingFiles::default();
+    let unpacked = reply(
+        &mut s,
+        &mut files,
+        &format!("unpack {}", unpack_dir.join("w").display()),
+    );
+    assert!(
+        matches!(moved, Reply::Err(_)),
+        "memory accepted a move onto the directory `img` ({moved}); the unpack then gave {unpacked}"
+    );
+}
+
+/// The undo of an import takes its file back, so the undo of a move before it finds its path free.
+#[test]
+fn the_undo_of_a_move_after_an_undone_import_succeeds() {
+    let mut mem = MemoryFiles::holding(&["cat.png", "other.png"]);
+    let mut s = Session::new();
+    run(&mut s, &mut mem, "add-slide\nimport cat.png");
+    run_ok(&mut s, &mut mem, "asset-move a3 moved.png");
+    run_ok(&mut s, &mut mem, "import other.png cat.png");
+    run_ok(&mut s, &mut mem, "undo");
+    let undo = reply(&mut s, &mut mem, "undo");
+    assert!(
+        matches!(undo, Reply::Ok(_)),
+        "the undo of the move gave {undo}"
+    );
+}
+
+/// The trash keeps no bytes no step reaches: a replace undone, then an edit, which clears the redo
+/// stack, takes the replace's new bytes out of the trash.
+#[test]
+fn the_trash_holds_no_entry_no_step_reaches() {
+    let (root, outside, mut s, mut files) = workspace_beside("r5-trash-orphan");
+    std::fs::write(outside.join("new.png"), b"new bytes").unwrap();
+    for _ in 0..3 {
+        run_ok(
+            &mut s,
+            &mut files,
+            &format!("asset-replace a4 {}", outside.join("new.png").display()),
+        );
+        run_ok(&mut s, &mut files, "undo");
+        run_ok(&mut s, &mut files, "add-slide");
+    }
+    // No step left can move anything back from the trash: the undo stack holds only the
+    // add-slides and the imports, the redo stack is empty.
+    let entries: Vec<String> = match std::fs::read_dir(root.join(".rootpoint/trash")) {
+        Ok(rd) => rd
+            .map(|e| e.unwrap().file_name().into_string().unwrap())
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+    assert_eq!(entries, Vec::<String>::new(), "unreachable trash entries");
+}
+
+/// A move or a replace of a file another asset names too is refused: it would change that asset.
+#[test]
+fn a_file_two_assets_name_is_neither_moved_nor_replaced() {
+    let mut doc = Document::default();
+    for _ in 0..2 {
+        apply(
+            &mut doc,
+            Op::AddAsset {
+                asset: Asset {
+                    path: "cat.png".to_owned(),
+                },
+            },
+        )
+        .unwrap();
+    }
+    let ids: Vec<AssetId> = doc.assets.keys().copied().collect();
+    let dir = std::fs::canonicalize(scratch("r5-shared-move")).unwrap();
+    std::fs::write(dir.join("presentation.ron"), save_ron(&doc)).unwrap();
+    std::fs::write(dir.join("cat.png"), b"cat").unwrap();
+    let mut files = RecordingFiles::default();
+    let mut s = Session::new();
+    run_ok(&mut s, &mut files, &format!("open {}", dir.display()));
+    let moved = reply(
+        &mut s,
+        &mut files,
+        &format!("asset-move {} dog.png", ids[0]),
+    );
+    let other = s.asset_bytes(ids[1], &mut files);
+    assert!(
+        other.is_ok(),
+        "after `{moved}`, {} lost its file: {other:?}",
+        ids[1]
+    );
+    std::fs::write(dir.join("new.png"), b"new").unwrap();
+    let replaced = reply(
+        &mut s,
+        &mut files,
+        &format!("asset-replace {} {}/new.png", ids[0], dir.display()),
+    );
+    assert!(matches!(replaced, Reply::Err(_)), "{replaced}");
+    assert_eq!(s.asset_bytes(ids[1], &mut files).unwrap(), b"cat");
+}
+
+/// An asset whose file is a symlink out of the root can still leave the table, and a replace of
+/// it, refused, leaves nothing in the trash.
+#[test]
+fn an_asset_whose_file_leads_out_of_the_root_leaves_the_table() {
+    let (root, outside, s, mut files) = workspace_beside("symlinked-asset");
+    std::fs::write(outside.join("away.png"), b"away").unwrap();
+    std::os::unix::fs::symlink(outside.join("away.png"), root.join("l.png")).unwrap();
+    drop(s);
+    let mut doc = Document::default();
+    apply(
+        &mut doc,
+        Op::AddAsset {
+            asset: Asset {
+                path: "l.png".to_owned(),
+            },
+        },
+    )
+    .unwrap();
+    std::fs::write(root.join("presentation.ron"), save_ron(&doc)).unwrap();
+    let mut s = Session::new();
+    run_ok(&mut s, &mut files, &format!("open {}", root.display()));
+    let id = *s.document().assets.keys().next().unwrap();
+    std::fs::write(outside.join("new.png"), b"new").unwrap();
+    refused(
+        &mut s,
+        &mut files,
+        &format!("asset-replace {id} {}/new.png", outside.display()),
+    );
+    assert_eq!(trash(&root), Vec::<String>::new());
+    run_ok(&mut s, &mut files, &format!("asset-remove {id}"));
+    assert!(s.document().assets.is_empty());
+    assert_eq!(std::fs::read(outside.join("away.png")).unwrap(), b"away");
 }

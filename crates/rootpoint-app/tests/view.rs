@@ -39,6 +39,24 @@ impl Files for MemoryFiles {
     fn canonical(&mut self, path: &str) -> Result<String, String> {
         Ok(path.to_owned())
     }
+
+    fn rename(&mut self, from: &str, to: &str) -> Result<(), String> {
+        let bytes = self
+            .0
+            .borrow_mut()
+            .remove(from)
+            .ok_or(format!("{from}: no such file"))?;
+        self.0.borrow_mut().insert(to.to_owned(), bytes);
+        Ok(())
+    }
+
+    fn remove(&mut self, path: &str) -> Result<(), String> {
+        self.0
+            .borrow_mut()
+            .remove(path)
+            .map(drop)
+            .ok_or(format!("{path}: no such file"))
+    }
 }
 
 /// Write the app's document as `presentation.ron` of the directory `dir`, as `save` would in a

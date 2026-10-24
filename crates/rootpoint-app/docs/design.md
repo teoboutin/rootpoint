@@ -642,8 +642,8 @@ owner asked for the assets to be watched.
 ### The window loads a `presentation.ron` changed outside rootpoint only when the author asks `##ron-loaded-on-request`
 
 No event of `presentation.ron` loads it: the guard of `design@rootpoint-app@ron-overwrite-guard`
-meets a change of it at the next write, and the banner's "Load the file", at the author's request,
-is the one load the window makes of it. On the owner's word: the owner saw no reason to watch `presentation.ron`, whose
+meets a change of it at the next write, and the file is loaded only by a command an author or a
+script sends: `open`, or `reload`, which the banner's "Load the file" runs. On the owner's word: the owner saw no reason to watch `presentation.ron`, whose
 correct editing, in the owner's opinion, is by the window or the text protocol.
 
 ## The browser build

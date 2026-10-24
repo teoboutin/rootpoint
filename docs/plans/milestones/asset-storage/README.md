@@ -199,7 +199,7 @@ T1's re-entry, and the reading of `import` in "Readings".
   #c-pack-overhead, #c-unpack-anywhere, #c-visible-mode. "Measurement 1" of round 1 is #arg-1.
 - **T1 to T4, AC1 to AC5**: the labels under which the premortem's tripwires and acceptance
   criteria were put to the owner, "Premortem" below.
-- **D1 to D5**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
+- **D1 to D9**: the labels of the defaults put to the owner, "Defaults awaiting the owner" below.
 
 ## What the work is
 
@@ -840,7 +840,8 @@ later comparison sees two forms of one directory, the cause of the save-mixes de
 `goal@rootpoint-protocol@commands-drive-everything` asks whatever reading of its "mode" applies.
 
 Asset paths never change when the store changes, since they are relative to the root in both, so no
-command rewrites a path in the document or in the stacks. `Session::directory` and the stack rewrite
+save and no open rewrites a path in the document or in the stacks; only `asset-move` and
+`asset-relink` give one asset a new path, #asset-commands. `Session::directory` and the stack rewrite
 of `save-updates-sources`, now `rejected@rootpoint-protocol@free-save-path`, leave.
 
 ### #workspace-layout
@@ -930,9 +931,10 @@ extension when the name is taken by other bytes and the same name when the bytes
 ### #asset-tree-shape
 
 Content names an asset by its id; `Op::SetAssetPath` moves one asset. A folder is the set of asset
-paths that share a prefix; no folder is stored. The table holds the assets added by `import`,
-`open-copy`, `open-pack` or `unpack`; a file under the root that no asset names is untracked,
-listed by `assets untracked`, and is never packed.
+paths that share a prefix; no folder is stored. The table holds the assets a command adds or brings,
+`import`, an open or a `reload`, and none a change on disk adds; a file under the root that no
+asset names is untracked, listed by `assets untracked` unless a component of its path starts with
+`.`, and is never packed.
 
 ### #asset-disk-changes
 
@@ -1008,8 +1010,8 @@ One text slide of the sample, with no image: in memory or in a workspace, what e
 ### #unsaved-close-warning
 
 In memory, a close of the window, or of the page, while `Session::unsaved` is not 0 asks first; a
-workspace never asks while its autosave writes every step, and asks while its writes are stopped or
-failed, D6. The native window cancels the close by
+workspace never asks. D6, awaiting the owner, builds a close that asks while a workspace's writes
+are stopped or failed. The native window cancels the close by
 `ViewportCommand::CancelClose` and shows the question; the page installs a `beforeunload`
 listener. D3 puts to the owner the title of `design@rootpoint-app@no-discard-confirmation`, which
 this question contradicts.
@@ -1283,7 +1285,9 @@ at the new name and removes the old one, a shape the decision admits.
   whose decided design says "a workspace never asks", on the session's premise that its autosave
   writes every step. The guard stops the writes, and a write can fail, so a close then loses the
   edits since. Default: a close asks while the guard stops the writes or the last write failed, as
-  `design@rootpoint-app@no-discard-confirmation` now says; the rival is a workspace that never asks.
+  `App::edits_not_written` builds it; the rival, which
+  `design@rootpoint-app@no-discard-confirmation` states until the ruling, is a workspace that never
+  asks.
 - **D7**, awaiting the owner, built at the same repair: on D5's table, a row the owner's ruling did
   not name, "a workspace, its last write failed", whose label reads "Workspace `<path>`, not saved:
   `<reason>`"; the rival is the label "saved" over a write that failed.

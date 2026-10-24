@@ -14,7 +14,8 @@ reaches the edits it held. Whether such an open should ask too is not decided.
 ### What
 
 `design@rootpoint-app@no-discard-confirmation` makes the close of a window held in memory with
-`Session::unsaved` above 0 the one action that asks, since no undo reaches a closed window; D6 of
+`Session::unsaved` above 0 the one action that asks before it acts, since no undo reaches a closed
+window; D6 of
 `milestone@plans@asset-storage`, awaiting the owner, adds a workspace whose writes stopped or
 failed. The commands `open`, `open-copy`, `open-pack`, `new` and `sample`
 replace the session whole, `*self = Session::new()` in `Session::run_inner` of

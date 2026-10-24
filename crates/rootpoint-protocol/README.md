@@ -85,8 +85,11 @@ image, text and style that names it name `a<n>` first; `asset-remove-unused` rem
 nothing names, in one undo step, and replies their ids. A removed or replaced file goes to the
 trash, `.rootpoint/trash/` in a workspace, from which `undo` takes it back; the next `open` of the
 workspace empties it. `assets [all|unused|missing|untracked]` lists the assets, each
-`a<id> <path> <bytes|missing> uses=<areas and styles|->`, separated by `; `, or the paths of the
-store's files that no asset names, which `pack` leaves out.
+`a<id> <path> <bytes|missing> uses=<areas and styles|->`, separated by `; `, `missing` for a file
+it cannot read or a path outside the root, or the paths of the store's files that no asset names,
+which `pack` leaves out, but for those whose path has a component that starts with `.`, as
+`.git/`. The undo of an `import` takes the file it wrote out again. A move or a replace of a file
+two assets name, which only a file edited by hand holds, is refused.
 
 An asset path is always inside the root: it has no empty, `.` or `..` component, does not start
 with `/`, holds no `\`, has a first component other than `.rootpoint` and is neither
