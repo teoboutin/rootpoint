@@ -1,0 +1,13 @@
+**Generated — do not edit.** `cargo klarch index`
+
+7 entries
+
+| title |
+| --- |
+| [Slice: the asset commands and the trash](asset-commands.md) |
+| [Slice: the asset tab](asset-manager.md) |
+| [Slice: autosave, its guard, and the asset watcher](autosave-and-watch.md) |
+| [Slice: packs in the browser, and the sample's slide on the modes](browser-packs.md) |
+| [Slice: packs](pack-commands.md) |
+| [Slice: assets at paths inside a root, and the session's store](rooted-assets.md) |
+| [Slice: the window as the host of a workspace](workspace-host.md) |
