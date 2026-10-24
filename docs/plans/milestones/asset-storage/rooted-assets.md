@@ -24,8 +24,9 @@ actions, rewired onto the new commands.
   arithmetic of `Session::save` (`normalize`, `inside` and `relative` of
   `path@rootpoint-protocol@src/save.rs`, as far as nothing else uses them) and the stack rewrite of
   `design@rootpoint-protocol@save-updates-sources`.
-- `Session::asset_bytes` reads from the map, or from the host's files at the root joined with the
-  asset path, refusing a read whose `Files::canonical` path is not under the root.
+- The store's one check of every access to an asset, by the milestone's "Decided design" of
+  #asset-paths-only: `Session::asset_bytes` and every write, rename and removal of an asset go
+  through it, `open-copy` against its source directory included.
 - The commands `open <dir>`, `open-copy <dir>`, `import <host-path> [<asset-path>]`, `save` with no
   argument and `store`, by the milestone's table of #editing-modes; `load`, `save <path>` and
   `asset` leave; `new` and `sample` open in memory, the sample's images in the map. A `save` in
@@ -60,17 +61,19 @@ actions, rewired onto the new commands.
 - **Confinement**, AC2's first half, `acceptance@asset-storage@ac-confined-paths`: a file whose
   asset path is absolute, holds `..`, starts with `.rootpoint` or is `presentation.ron` loads, with
   each such asset named by `Document::breaches` and drawn as missing, and no read or write reaches
-  outside the root, through a native `Files` that records every path it is given; `import` to such
-  an asset path replies `err`; a read through a symlink out of the root replies `err`. One test per
-  case; shown to fail with the store's check removed.
+  outside the root, through `RecordingFiles`; `render` draws it as missing; `open-copy` leaves it
+  out of the map; `import` to such an asset path replies `err`; a read, and an import's write,
+  through a symlink out of the root reply `err`. One test per case; shown to fail with the store's
+  check removed, and the breach's part with `Document::breaches` omitting the variant.
 - **`open-copy` reads every asset of the presentation into the map**, and then no command reads the
   host's files for an asset: a test opens a copy, removes the files from the host, and renders.
 - **`import` copies from outside the root**, at the root under its name, with `-2` before the
   extension when the name holds other bytes, and the same name when it holds the same bytes.
 - **`store` replies the store and `Session::unsaved`**, which an edit raises and a `save` resets.
 - **No command rewrites an asset path when the store changes**: the property test of
-  `path@rootpoint-protocol@tests/properties.rs` replaces `asset` by `import`, adds `open-copy`, and
-  checks that every asset path in the document and the stacks is confined after each command.
+  `path@rootpoint-protocol@tests/properties.rs` replaces `asset` by `import`, adds `open-copy`, and,
+  from its empty document, checks that every asset path in the document and the stacks is confined
+  after each command.
 - **The window's actions match a second session**, in `path@rootpoint-app@tests/actions.rs`, for
   Open, Save and adding an image, natively and in the wasm test.
 
@@ -136,8 +139,10 @@ and a read through a symlink.
   of `primer@design-heads`.
 - Reverse `design@rootpoint-model@asset-source` to `Asset { path }` and confinement, with a
   `rejected` entry for the bytes embedded in the RON, its reason #arg-1's measurement; add the
-  unconfined path to the members of `design@rootpoint-model@cosmetic-fallbacks`, as D4 rules,
-  with the refusal at load as its rival.
+  test of `design@rootpoint-model@cosmetic-fallbacks` by the unconfined asset, as D4 rules, with
+  the refusal at load as its rival, in a `rejected` entry if it meets a test of
+  `skill@knowledge-architect-decision-recording`, in the head's body otherwise; update the texts the
+  milestone's table lists for it, `path@rootpoint-model@src/validate.rs`'s docs included.
 - Reverse `design@rootpoint-protocol@asset-save-rule` into the import's rule, and remove
   `design@rootpoint-protocol@save-updates-sources`, with a `rejected` entry for a free save path if
   it meets a test of `skill@knowledge-architect-decision-recording`.

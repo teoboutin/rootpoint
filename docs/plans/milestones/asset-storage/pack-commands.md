@@ -35,6 +35,8 @@ headless. The browser's picker and download wait for #browser-packs.
 - **Confinement at a pack's opening**, AC2's second half, `acceptance@asset-storage@ac-confined-paths`:
   `open-pack` of a crafted zip with an entry `../x`, an entry `/x`, an entry `.rootpoint/lock` and
   a symlink entry is refused whole, and the store is unchanged; one test per case.
+- **`pack` of an asset whose path fails confinement** writes the pack with no bytes for it, names it
+  in its reply, and gives the host's files no path outside the root, AC2.
 - **`unpack` makes the store a workspace**, refuses a directory that holds a file, and a `save` then
   writes `presentation.ron` there.
 - **A pack opens in the wasm test**: a test of `path@rootpoint-app@tests/actions.rs` opens a pack's
@@ -67,7 +69,7 @@ The milestone's section on `thread@asset-storage@pack-container` holds the shape
 
 ## Acceptance criteria
 
-This slice judges the second half of `acceptance@asset-storage@ac-confined-paths`, at `open-pack`.
+This slice judges `acceptance@asset-storage@ac-confined-paths` at `pack` and at `open-pack`.
 
 ## Harvest
 

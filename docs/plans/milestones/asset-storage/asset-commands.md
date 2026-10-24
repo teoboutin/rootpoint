@@ -12,9 +12,11 @@ in both stores, headless.
 - The commands `asset-move <a> <asset-path>`, `asset-relink <a> <asset-path>`,
   `asset-replace <a> <host-path>`, `asset-remove <a> [into=<a>]`, `asset-remove-unused` and
   `assets [all|unused|missing|untracked]`, the last one reply line per asset; `remove-asset` leaves.
-  A move to a path that holds a file, a relink to a path that holds none, and a removal of a used
-  asset with no `into=` reply `err`, so no command creates a breach,
-  `design@rootpoint-protocol@no-new-breach`. `asset-remove-unused` is one undo step.
+  A move to a path that holds a file, a relink to a path that holds no file, a move or a relink to
+  a path that fails confinement, and a removal of a used asset with no `into=` reply `err`, so no
+  command creates a breach or names a file that is not there, `design@rootpoint-protocol@no-new-breach`.
+  On an asset whose path fails confinement, each command replies as the milestone's "Decided
+  design" of #asset-paths-only says. `asset-remove-unused` is one undo step.
 - The trash: in a workspace, `.rootpoint/trash/<id>`, filled by a removal and by a replace, emptied
   by `open` of the workspace; in memory, `Session::trash`. An undo step holds the file moves of its
   command with its operations, and undo and redo apply both, a step whose move fails applying
@@ -34,6 +36,10 @@ in both stores, headless.
 - **`assets untracked`** lists a file under the root that no asset names, and never `.rootpoint/`
   or `presentation.ron`.
 - **No command creates a breach**: the property test gains the six commands.
+- **AC2 on the asset commands**, `acceptance@asset-storage@ac-confined-paths`: on an asset loaded
+  with a path that fails confinement, `asset-move` and `asset-replace` reply `err`, `asset-remove`
+  removes the entry and moves no file, and `asset-relink` to a confined path repairs it, each giving
+  `RecordingFiles` no path outside the root.
 
 ## Audit subjects
 
@@ -59,7 +65,8 @@ shape.
 
 ## Acceptance criteria
 
-This slice judges `acceptance@asset-storage@ac-trash-emptied`.
+This slice judges `acceptance@asset-storage@ac-trash-emptied`, and
+`acceptance@asset-storage@ac-confined-paths` on the asset commands.
 
 ## Harvest
 
