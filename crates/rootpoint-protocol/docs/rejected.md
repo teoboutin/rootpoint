@@ -81,3 +81,20 @@ unzip tool opens a zip into the layout of a workspace.
 
 `live`. A tar has no index, so a reader reads the whole file to find one asset, where the browser
 reads one asset of a zip by its central index.
+
+### The control socket at `.rootpoint/control.sock`, inside the workspace `##socket-in-the-workspace`
+
+`live`. The path of a Unix socket is limited to 108 bytes on Linux, `char sun_path[108]` of
+`unix(7)`, and 104 on macOS, `char sun_path[104]` of xnu's `bsd/sys/un.h`, the closing NUL
+included. `/.rootpoint/control.sock` takes 24 of them, so a workspace whose path is longer than about
+83 bytes could hold no socket, and refusing it would refuse an ordinary directory of a deep tree.
+
+### A control socket in the abstract namespace, by `/proc/self/fd`, over TCP or as named pipes `##socket-without-file-permissions`
+
+`live`. An abstract-namespace socket of Linux has no file and no file permissions, so any user of
+the machine can connect and drive the editor. A bind through `/proc/self/fd` is Linux only. TCP on
+localhost lets any local process connect, so the protocol would need a token, and a macOS firewall
+asks the user first. Named pipes have no connections, one pipe pair per client set up by hand. A
+socket file in a directory of mode 0700 lets no other user reach a window. TCP with a token stays
+the candidate for Windows, where the socket is not built, and a client that finds the socket by its
+workspace would not see the change.

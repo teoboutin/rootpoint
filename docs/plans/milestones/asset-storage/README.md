@@ -269,7 +269,7 @@ referencing each, and the slice that updates it:
 | decision | outcome | referencing texts, and the slice that updates each |
 | --- | --- | --- |
 | `asset-source`, now `design@rootpoint-model@asset-paths-only` | reversed by #asset-paths-only: an asset is a path, `Embedded` leaves | `register@rootpoint-protocol@design` line 178 (#rooted-assets); `pack-and-unpack`, closed on this branch |
-| `design@rootpoint-model@image-storage` | rewritten by #editing-modes and #workspace-layout; its owner's ground, assets as files beside a readable text, and packing as the final goal, stands | `register@rootpoint-app@design` line 523 (#workspace-host, and #browser-packs where it names the browser) |
+| `image-storage`, now `design@rootpoint-model@workspace-layout` | rewritten by #editing-modes and #workspace-layout; its owner's ground, assets as files beside a readable text, and packing as the final goal, stands | `register@rootpoint-app@design` line 523 (#workspace-host, and #browser-packs where it names the browser) |
 | `asset-save-rule`, now `rejected@rootpoint-protocol@free-save-path`, and `design@rootpoint-protocol@import-copies-into-the-store` for the import | reversed: no save copies assets; an import copies a file from outside into the store | `register@rootpoint-protocol@design` line 210 (#rooted-assets); `pack-and-unpack`, closed on this branch |
 | `save-updates-sources`, now `rejected@rootpoint-protocol@free-save-path` | reversed: the root never changes during a session, so no save rewrites a path | none |
 | `design@rootpoint-protocol@builtin-sample` | rewritten: `sample` opens in memory, its images in the map; its owner's ground stands | none |
@@ -278,7 +278,7 @@ referencing each, and the slice that updates it:
 | `design@rootpoint-app@browser-load-only` | reversed by #browser-pack-save, on the owner's word of round 2 | `register@rootpoint-app@design` lines 541 and 555, `path@rootpoint-app@src/actions.rs` line 748, `path@rootpoint-app@src/memory.rs` line 4, `path@rootpoint-app@src/panels.rs` line 43, `path@rootpoint-app@tests/actions.rs` line 528 (#browser-packs); `page-close-loses-edits` and `pack-and-unpack`, closed on this branch |
 | `design@rootpoint-app@picked-files-by-path` | rewritten: a picked directory opens in memory, its files copied into the map | `path@rootpoint-app@src/actions.rs` line 741, `path@rootpoint-app@src/memory.rs` line 3 (#rooted-assets); `changed-asset-not-read-again`, closed on this branch |
 | `design@rootpoint-app@control-socket` | rewritten by #socket-place: the socket starts with the window, in the runtime directory; `--control` leaves | `path@rootpoint-app@CLAUDE.md` line 56, `issue@rootpoint-app@socket-waits-for-a-frame`, `path@rootpoint-app@src/control.rs` line 1, `path@rootpoint-app@tests/control.rs` line 1, `path@rootpoint-app@tests/listener_drop.rs` line 1, `path@rootpoint-app@tests/presenter.rs` line 233 (#workspace-host) |
-| `design@rootpoint-app@only-a-stale-socket-is-replaced` | rewritten by #workspace-lock: a workspace's socket is bound only under its lock, so a second window is refused before its bind; the refusal of a file that is no socket stands | its own last sentence, which cites `spec@asset-storage@workspace-host` (#workspace-host); `two-windows-bind-one-path`, closed on this branch |
+| `design@rootpoint-app@only-a-stale-socket-is-replaced` | rewritten by #workspace-lock: a workspace's socket is bound only under its lock, so a second window is refused before its bind; the refusal of a file that is no socket stands | its own last sentence, which cited the spec of #workspace-host (#workspace-host); `two-windows-bind-one-path`, closed on this branch |
 | `design@rootpoint-app@no-discard-confirmation` | its title contradicted by #unsaved-close-warning; its ground is the owner's, so D3 puts the rewrite to the owner | its own line 272, which cites `issue@rootpoint-app@browser-autosave`, and `register@rootpoint-app@rejected` line 93 (#workspace-host, on D3) |
 | `design@rootpoint-protocol@gesture-undo` | rewritten by #asset-disk-changes: a step holds its file moves, and `load` leaves its list of the commands that close a group | none (#asset-commands; `load` left its list at #rooted-assets) |
 | `design@rootpoint-model@cosmetic-fallbacks` | its test widened by #asset-paths-only, on D4: a cosmetic breach is a reference to a missing target, or an asset whose path fails confinement, each with its stand-in; the owner's principle, its ground, stands | `register@rootpoint-model@design` lines 165 and 216, `path@rootpoint-model@src/ops.rs` lines 295 and 311, `path@rootpoint-model@src/validate.rs` line 3 and its module and `Breach` docs, `register@rootpoint-protocol@design` line 44 (#rooted-assets) |
@@ -409,7 +409,7 @@ Proposed by the owner in round 1 ("a text-only ron file (with a fixed name at ro
 `.rootpoint/` holds, its `.gitignore` included. Approved in round 2: "workspace-layout: accepted.
 two talks can no longer share images, i had not seen that comming, but this is a rare case anyway
 imo. cost accepted." Arguments: #arg-5. Shape: "Decided design". Harvest: a head of the model,
-rewriting `design@rootpoint-model@image-storage`, at #workspace-host.
+rewriting `image-storage`, now `design@rootpoint-model@workspace-layout`, at #workspace-host.
 
 ### A workspace is held by one process, by `File::try_lock` on `.rootpoint/lock` `##workspace-lock`
 
@@ -1197,7 +1197,7 @@ at the new name and removes the old one, a shape the decision admits.
    the save-mixes defect, and a confinement test.
 2. #pack-commands, landed, its spec deleted with its harvest: `pack`, `open-pack`, `unpack`, a save in memory to its pack; the zip crate
    in the wasm gate. Fails alone on: a pack's round trip, and its extraction by `unzip`.
-3. [#workspace-host](workspace-host.md): the native window's command line, the workspace lock, the
+3. #workspace-host, landed, its spec deleted with its harvest: the native window's command line, the workspace lock, the
    socket in the runtime directory, `rootpoint-ctl`, the state label and the warning on close in
    memory. Fails alone on: the lock's refusal, and the bind race test.
 4. [#autosave-and-watch](autosave-and-watch.md): the autosave thread, the guard and

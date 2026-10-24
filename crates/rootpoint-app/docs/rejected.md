@@ -40,7 +40,7 @@ an authority that comes and goes. It would change what the socket's clients cons
 
 ### The socket holding the authority to edit when the window starts `##socket-holds-control-at-start`
 
-`live`. A window just opened with `--control` would refuse its author's every edit until the
+`live`. A window just opened would refuse its author's every edit until the
 agent released it, and a client would not need `control` before its first edit, which changes what
 the socket's clients consume. `design@rootpoint-app@one-controller-at-a-time` gives the window the
 authority at start.
@@ -90,7 +90,8 @@ the test `f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation` of
 `live`. Undo restores what a removal, a slide's removal or a change of a text to an image took, since
 each is an operation whose inverse restores it. The dialog would cost a click on every removal the
 author meant, and would protect only content whose undo history is gone: a closed window, a reloaded
-page, `issue@rootpoint-app@browser-autosave`, or a redo stack a later edit cleared. The owner,
+page, `issue@rootpoint-app@browser-autosave`, or a redo stack a later edit cleared; a close of a
+window held in memory with unsaved edits asks instead, `design@rootpoint-app@no-discard-confirmation`. The owner,
 who proposed it, withdrew it for that reason. In its place the owner named, as leads for later
 work and not for now: more detail on what the history holds, fetching a step from it and applying
 it again or at least trying to, and maybe keeping the branches of the history,

@@ -21,8 +21,10 @@ The fourth slice of `milestone@plans@asset-storage`. It lands the autosave of
   table, not recursive, which wakes the window by `Context::request_repaint`; `Assets::refresh`
   decodes again an asset whose file's modification time changed. The crate is chosen at the audit,
   and built for native targets only.
-- The state label's states "before #autosave-and-watch" leave, as
-  `spec@asset-storage@workspace-host` says.
+- The state label's states "before #autosave-and-watch" leave: the label of a workspace whose
+  autosave runs reads "Workspace `<path>`, saved", and that of one the guard stopped reads
+  "Workspace `<path>`, not saved: the file changed outside rootpoint", by the milestone's table
+  "The store's state to the state label".
 - `autosave_gui_cost` in `planned@rootpoint-app@tests/autosave.rs`, `#[ignore]`, run by
   `cargo test -p rootpoint-app --release --test autosave -- --ignored`, for AC1.
 

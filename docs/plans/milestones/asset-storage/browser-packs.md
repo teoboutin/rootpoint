@@ -59,7 +59,7 @@ None is judged at this slice; the milestone's last report on every criterion is 
   `path@rootpoint-app@src/actions.rs`, `path@rootpoint-app@src/memory.rs` and
   `path@rootpoint-app@src/panels.rs`.
 - Add the browser's half to the head of the warning on close written at #workspace-host.
-- Rewrite `design@rootpoint-model@image-storage` where it names the browser.
+- Rewrite `image-storage`, now `design@rootpoint-model@workspace-layout`, where it names the browser.
 - Update `path@rootpoint-app@README.md`, whose section on the browser build says it saves nothing
   and loses its changes on a reload.
 - Re-read `issue@rootpoint-app@browser-autosave` against what the browser build then holds.

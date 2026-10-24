@@ -22,6 +22,9 @@ ok s1 n4:beside(0.5)[n2 text "" style="Body" | n3 text "" style="Body"]
 The binary `rootpoint-ctl`, on Unix, sends commands to a running editor's control socket and
 prints each reply as it comes:
 
+- `rootpoint-ctl <workspace-dir | socket>` reaches the window that holds the workspace, by its
+  `.rootpoint/socket`, or the socket at the path; `rootpoint-ctl list` prints the name of each
+  window's socket that answers.
 - `rootpoint-ctl <socket> <words>…` sends one line: the words joined with single spaces, so a line
   holding a quoted text is given as one word, `rootpoint-ctl /tmp/rp 'text n3 "two words"'`.
 - `rootpoint-ctl <socket>` sends the lines of its stdin, a batch, over one connection; a line that
@@ -46,7 +49,10 @@ at the directory's root, or an empty presentation when it has none, and each ass
 path below the root; `save` writes `presentation.ron` there. `new`, `sample` and `open-copy <dir>`,
 which copies a directory's presentation and its assets' files, open in memory: the assets' bytes are
 the session's own, and `save` replies `err` until a pack holds the presentation. `store` replies
-`ok memory unsaved=<n>` or `ok workspace <root> unsaved=<n>`, the root absolute, with `n` the undo
+`ok memory unsaved=<n>` or `ok workspace <root> unsaved=<n>`, the root absolute. `open` and
+`unpack`, in `rootpoint-headless` and in the window, take the lock of the workspace, which keeps it
+to one process: another one's open replies `err <dir> is open in another process, pid <pid>`.
+In `store`'s reply, `n` counts the undo
 steps made, undone or redone since the store was opened or saved, or, in memory, written as a pack.
 The host paths of `open`, `open-copy`, `open-pack`, `pack`, `unpack`, `import` and `render` are
 relative to the working directory.

@@ -1,12 +1,17 @@
 # rootpoint-app
 
-The editor of rootpoint, in a window: the binary `rootpoint`. `rootpoint [--control <socket>]
-[<dir>]` opens the directory given as a workspace, its `presentation.ron` and its assets' files,
-or an empty presentation in memory. With `--control`, on Unix, the
-window listens on a socket at that path for the commands of the text protocol, which
-`rootpoint-ctl` of the protocol crate sends; the window exits with an error when another window
-listens there, refuses a path that holds another kind of file, and removes the socket when it
-closes; a socket left by a run that was killed is replaced at the next start. The window holds the
+The editor of rootpoint, in a window: the binary `rootpoint`. `rootpoint [<dir> | <file>.rpk]`
+opens the directory given as a workspace, its `presentation.ron` and its assets' files, or the pack
+given in memory, or an empty presentation in memory. A workspace is held by one process at a time:
+another window, or `rootpoint-headless`, that opens it is refused, naming the process that holds
+it, and the lock goes when the window closes or opens another store. On Unix the window listens,
+from its start, on a socket for the commands of the text protocol, which `rootpoint-ctl` of the
+protocol crate sends: in `$XDG_RUNTIME_DIR/rootpoint/`, named after the workspace, or
+`memory-<pid>.sock` in memory, the socket following the store; a workspace's `.rootpoint/socket`
+names it, so `rootpoint-ctl <dir>` reaches the window. A socket left by a run that was killed is
+replaced, and the window removes its socket when it closes. The toolbar ends with the state label:
+"In memory, not saved", "In memory, saved to `<file>`" or "Workspace `<path>`, saved", with the
+changes not saved yet; closing a window held in memory with changes not saved asks first. The window holds the
 authority to edit at start; `control` gives it to the socket, `release` gives it back, and the
 queries `tree`, `view`, `store`, `styles` and `render` need none. While the socket holds control, a banner
 over the toolbar says so beside a button "Take control", which takes it back; the window shows each

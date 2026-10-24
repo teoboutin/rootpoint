@@ -21,7 +21,7 @@ Seen by the review of the slice that built the socket, under Xvfb: with the wind
 every command got its reply, so the wake works there. Not reproduced: a window minimized, or
 covered on a desktop that stops drawing covered windows, was not tested; whether eframe 0.37.0 or
 the desktop skips frames then is not established. What would make it reproducible: start
-`rootpoint --control <path>`, minimize the window, and time a `rootpoint-ctl <path> view`.
+`rootpoint <dir>`, minimize the window, and time a `rootpoint-ctl <dir> view`.
 
 ### Why it matters
 

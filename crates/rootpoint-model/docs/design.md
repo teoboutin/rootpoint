@@ -97,17 +97,25 @@ Outside the renderer, the editor has one kind to enter for typing, the text, per
 area with nothing in it, a kind that in the owner's view is noise in both the GUI and the
 implementation.
 
-### Images and other assets are files beside the presentation file `##image-storage`
+### A presentation is edited as a workspace: `presentation.ron` at a directory's root, its assets as files below it, and `.rootpoint/` for the machine `##workspace-layout`
 
-The editing form of a presentation is its text file with its assets as files beside it, each named
-by a path relative to the presentation file, so the text stays readable and the assets stay
-ordinary files.
+The editing form of a presentation is a workspace, a directory holding `presentation.ron` at its
+root and each asset as a file at its path below it, so the text stays readable and the assets stay
+ordinary files; `.rootpoint/` holds what is the machine's and not the presentation's, a
+`.gitignore` that ignores all of it, the lock of `design@rootpoint-protocol@workspace-lock` and the
+pointer to the window's socket. Neither is an asset path,
+`design@rootpoint-model@asset-path-confinement`, and neither is packed. The fixed name lets a script
+or an agent find the presentation without listing the directory, where a directory of several
+`.ron` files is ambiguous; its cost is one presentation per directory, so two talks that share an
+image each keep a copy.
 
-On the owner's word: the owner chose this form for prototyping, and, as the owner thinks, it stays
-the preferred editing method in the long term, and packing would be the final goal, by commands that pack a
-presentation and its assets into one file and unpack it again, so that one file can be carried and
-presented from any computer with a web browser and an internet connection, through the web app
-served from a static site. It serves `goal@rootpoint@readable-save-file` and
+On the owner's word: the owner proposed the text file of a fixed name at the workspace's root and
+the `.rootpoint/` beside it, and accepted the copies of shared images as a cost; the owner chose
+this form for prototyping, and, as the owner thinks, it stays the preferred editing method in the
+long term, and packing would be the final goal, by commands that pack a presentation and its assets
+into one file and unpack it again, so that one file can be carried and presented from any computer
+with a web browser and an internet connection, through the web app served from a static site,
+`design@rootpoint-protocol@pack-container`. It serves `goal@rootpoint@readable-save-file` and
 `goal@rootpoint@runs-in-browser`.
 
 ### An asset is the path of its file, never its bytes in the presentation's file `##asset-paths-only`

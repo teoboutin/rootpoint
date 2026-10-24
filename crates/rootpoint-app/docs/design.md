@@ -81,6 +81,16 @@ it, which `path@rootpoint-app@tests/presenter.rs` compares, and which
 editor text that is no slide content, so they are not the slide text that
 `rejected@rootpoint-render@toolkit-painter` keeps out of the toolkit.
 
+### The window always shows where its presentation is and whether it is saved, and names where each writing action writes `##visible-mode`
+
+The state label, `App::state_label`, at the right end of the toolbar, reads "In memory, not saved";
+"In memory, saved to `<file>`", with ", n changes since" once there are; or "Workspace `<path>`,
+saved", with "n changes since the save" in place of "saved" once there are. Each action that writes
+is named by what it writes: "Save as pack…", "Save as workspace…", "Unpack to…", "Pack to…". The
+label shows the store `store` replies, `design@rootpoint-protocol@store-query`. On the owner's
+word: the owner set that the window conveys which state it is in, and what each of its actions
+does.
+
 ## Selecting
 
 ### In the final view a press starts no gesture `##final-view-presses`
@@ -259,7 +269,7 @@ minimum sizes in Blender, 29 pixels times the interface scale, and egui_tiles, 3
 
 ## Removing
 
-### No action of the window that discards content asks a confirmation, since undo restores what it took `##no-discard-confirmation`
+### No action of the window that undo can reverse asks a confirmation `##no-discard-confirmation`
 
 Delete, the Selection tab's Remove, a slide's removal and a change of a text to an image act at
 once.
@@ -272,7 +282,10 @@ does not reach content whose history is gone, after a closed window or a reloade
 `issue@rootpoint-app@browser-autosave`, nor a step a later edit cleared from the redo stack,
 nor a step the author cannot find, `issue@rootpoint-protocol@history-browsing`.
 
-## Moving content
+The close of a window held in memory while `Session::unsaved` is not 0 is the one action that asks,
+since no undo reaches a closed window: the window cancels the close by `ViewportCommand::CancelClose`
+and asks "Close without saving?", with "Close" and "Keep open". A workspace never asks, and nothing
+unsaved asks nothing.
 
 ### An area is swapped with another, or moved to its edge, by dragging its grip, with a hint of the drop's effect `##swap-gesture`
 
@@ -383,8 +396,17 @@ ends it, removing the composing text.
 
 ### The window runs the lines of its control socket on its own thread, at the start of each frame `##control-socket`
 
-With `--control <path>`, the window listens on a Unix domain socket at that path,
-`rootpoint_app::control::Listener`. Each connection has a thread of its own, which reads one line,
+The native window listens on a Unix domain socket from its start, `rootpoint_app::control::Listener`,
+in the runtime directory, `$XDG_RUNTIME_DIR/rootpoint/`, or `$TMPDIR/rootpoint/`, then
+`/tmp/rootpoint-<uid>/` where the variable is unset, created with mode 0700. Its name follows the
+store, `rootpoint_protocol::workspace::socket_name`: `<name>-<hash>.sock` in a workspace, the
+root's name cut to 40 bytes, or less where the path would pass the 103 bytes a socket's address
+holds, and the first 8 hexadecimal digits of the FNV-1a hash of the canonical root; and
+`memory-<pid>.sock` in memory. A workspace's `.rootpoint/socket` holds the socket's path, so a
+client finds the window from the workspace. When a command changes the store, the window renames
+its socket's file to the new name, `Listener::rename_to`, writes the new workspace's pointer file
+and removes the old one's; a socket keeps its connections when its file is renamed, which the test
+`a_renamed_socket_answers_at_its_new_path` checks. Each connection has a thread of its own, which reads one line,
 queues it on a channel to the GUI's thread, calls the window's wake-up, and waits for the reply
 before it reads the next; `App::frame` takes the lines queued when it starts, at most one per
 connection, so a batch runs one line a frame, and only the GUI's thread touches the session. Every
@@ -397,21 +419,29 @@ reply. A connection carries any number of lines, a batch, `design@rootpoint-app@
 listener is built on Unix only: the browser build has no socket, and its window holds the
 authority to edit always.
 
-So an agent drives the running window as `goal@rootpoint-app@live-agent-edits` asks, and the
-session stays the one state, as `goal@rootpoint@headless-core` asks of every operation. The lines
+So an agent drives the running window as `goal@rootpoint-app@live-agent-edits` asks, from the
+moment the window opens, a new presentation in memory included, and the session stays the one
+state, as `goal@rootpoint@headless-core` asks of every operation. The lines
 go to the session and not the session to the lines, since eframe gives the app, which owns the
-session, to the GUI's thread alone, as `&mut self` of `eframe::App::ui`.
+session, to the GUI's thread alone, as `&mut self` of `eframe::App::ui`. The hash tells two workspaces of one name apart, where the name alone would
+make the second wait for the first's socket. The socket lies outside the workspace, since a
+socket's path holds at most 103 bytes, `rejected@rootpoint-protocol@socket-in-the-workspace`, and is
+a file in a directory of mode 0700, which no other user reaches,
+`rejected@rootpoint-protocol@socket-without-file-permissions`.
 
 ### The window replaces only a socket nothing answers, and refuses any other file at its path `##only-a-stale-socket-is-replaced`
 
-At start, a socket at the path that accepts a connection is another window's, and the window
-refuses to start; a socket that refuses connections is left by a run that ended, as a run killed
-by a signal leaves it, and is removed before the bind; a socket that fails to connect for another
-reason, and any file that is no socket, is refused and kept. The window removes the socket's file
-when it closes, if it is still the one it bound, by its inode. The rival, removing whatever refuses
-a connection, deleted the presentation an author gave as the socket's path, since a regular file
-refuses a connection too. The window's bind is not atomic against another window that starts at
-the same moment on the same path; `spec@asset-storage@workspace-host` schedules its repair.
+At a bind or a rename, a socket at the path that accepts a connection is another window's, and is
+refused; a socket that refuses connections is left by a run that ended, as a run killed by a signal
+leaves it, and is removed first; a socket that fails to connect for another reason, and any file
+that is no socket, is refused and kept. The window removes the socket's file when it closes, if it
+is still the one it bound, by its inode. The rival, removing whatever refuses a connection, deleted
+the presentation an author gave as the socket's path, since a regular file refuses a connection
+too. Two windows starting at one moment on one workspace cannot both replace a stale socket and
+bind, since only the holder of the workspace's lock binds its socket,
+`design@rootpoint-protocol@workspace-lock`; the test `two_opens_of_one_workspace_bind_one_socket`
+of `path@rootpoint-app@tests/workspace.rs` opens one workspace from two threads, 200 times, and
+one open succeeds each time.
 
 ### The window and its control socket are two controllers, and one holds the authority to edit at a time `##one-controller-at-a-time`
 
@@ -428,7 +458,7 @@ no divider highlight, no resize cursor, no grip, no line of a split at the point
 the slide list. While the window holds it, every command of the socket but the queries, `control`
 and `release` replies `err the window has control`, or the refusal of a take-over.
 
-Two exceptions keep looking free. The socket's queries, `tree`, `view`, `styles` and `render`, need
+Two exceptions keep looking free. The socket's queries, `tree`, `view`, `store`, `styles` and `render`, need
 no authority, since they apply no operation and join no group. The window's inputs that change only
 the view need none either: a click selects, and never enters editing; Alt with an arrow, a row of
 the outline and the outline of its node under the pointer, the node menu's "Select", whose other
@@ -520,7 +550,7 @@ Built for the wasm target, the editor opens the built-in sample at start, and Op
 directory with the browser's directory picker and opens a copy of its `presentation.ron` in memory. Its
 edits stay in memory: it shows no Save button, Ctrl+S says that it saves nothing, and its files,
 `MemoryFiles`, refuse every write. Saving in the browser comes with packing, which writes a
-presentation into one file, `design@rootpoint-model@image-storage`; until then
+presentation into one file, `design@rootpoint-model@workspace-layout`; until then
 `goal@rootpoint@runs-in-browser` is met but for its packed file.
 
 On the owner's word: for the prototype, the owner chose a browser build that loads only over one

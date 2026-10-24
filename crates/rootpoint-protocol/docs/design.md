@@ -76,19 +76,23 @@ and not of the window's listener alone, `rejected@rootpoint-protocol@listener-ve
 taken by a client's first edit would tell the window nothing when the agent is done,
 `rejected@rootpoint-protocol@implicit-control`.
 
-### `rootpoint-ctl` sends one command from its arguments, or a batch from its stdin, and exits by the replies `##ctl-sends-a-line-or-a-batch`
+### `rootpoint-ctl` sends one command from its arguments, or a batch from its stdin, to a window it finds by its workspace or its socket, and exits by the replies `##ctl-sends-a-line-or-a-batch`
 
-`rootpoint-ctl <socket> <words>…` joins the words with single spaces into one line; with no words,
-it sends the lines of its stdin, as bytes, over one connection, a batch,
-`design@rootpoint-app@socket-batch`. It prints each reply as it comes, and exits 0 when every reply
-is `ok`, a line with no command getting none; 1 when one is `err`, also when the connection then
-ends, as after the refusal of a take-over; and 2 when the socket cannot be reached, or stdin or the
-connection fails before any `err`, as when the window is closed. `path@rootpoint-protocol@README.md`
-states the contract for its users. `rootpoint_protocol::control::Connection` is the client it is
-built on, Unix only. A command whose connection ends with no reply is an error, never the empty
-answer of a comment, and a line holding a newline is refused before it is sent: the client knows
-which of its lines are commands, by `read_line`, so an agent never reads an edit the window never
-ran as done, nor one it ran as none.
+`rootpoint-ctl <workspace-dir | socket> <words>…` joins the words with single spaces into one line;
+with no words, it sends the lines of its stdin, as bytes, over one connection, a batch,
+`design@rootpoint-app@socket-batch`. A directory names the socket in its pointer file,
+`.rootpoint/socket`, which the window holding the workspace writes; `rootpoint-ctl list` prints the
+file name of each socket of the runtime directory that accepts a connection. It prints each reply
+as it comes, and exits 0 when every reply is `ok`, a line with no command getting none; 1 when one
+is `err`, also when the connection then ends, as after the refusal of a take-over; and 2 when the
+socket cannot be reached, or stdin or the connection fails before any `err`, as when the window is
+closed. `path@rootpoint-protocol@README.md` states the contract for its users.
+`rootpoint_protocol::control::Connection` is the client it is built on, Unix only. A command whose
+connection ends with no reply is an error, never the empty answer of a comment, and a line holding a
+newline is refused before it is sent: the client knows which of its lines are commands, by
+`read_line`, so an agent never reads an edit the window never ran as done, nor one it ran as none.
+A client finds the window from the workspace it works in, so where the socket is, the runtime
+directory today, can change with no change to what a client types.
 
 ## The session
 
@@ -232,6 +236,28 @@ chose copies at the root, beside the presentation, over a subfolder for them, fo
 the author free, later than the first prototype, to arrange assets in subdirectories of any depth,
 a tree that packing, then
 unpacking elsewhere, keeps, which the `<asset-path>` of an import gives.
+
+### A workspace is held by one process, by `File::try_lock` on its `.rootpoint/lock` `##workspace-lock`
+
+`WorkspaceLock`, in `path@rootpoint-protocol@src/workspace.rs`, creates the workspace's
+`.rootpoint/` with a `.gitignore` that ignores everything in it, takes `File::try_lock` on
+`.rootpoint/lock`, writes its pid there, and holds the file until dropped. A native host runs every
+command through `workspace::run`: before `open <dir>` of a directory that exists, and before
+`unpack <dir>` of a presentation held in memory, it takes the lock of `<dir>`, or replies
+`err <dir> is open in another process, pid <pid>` and runs nothing; after an `ok` that changed the
+session's root, it holds the new lock and drops the old one. The lock of the workspace held is kept
+when it is opened again, since `File::try_lock` is `flock` on Linux, which refuses a second
+descriptor of one file in one process as in another. The headless binary and the window both run
+it, and the session never does, `design@rootpoint-protocol@session-files`; it is the protocol's,
+since `design@rootpoint@gui-only-in-app` keeps the headless binary out of the app.
+
+The kernel releases the lock when the process ends, so a crash leaves no stale lock, where a file
+holding a pid, the rival, stays held after a crash until someone removes it by hand. Only the
+holder binds the workspace's socket, `design@rootpoint-app@control-socket`, so two windows cannot
+both bind it. The lock is between processes: inside one window, the authority to edit stays
+`design@rootpoint-app@one-controller-at-a-time`. `tripwire@rootpoint-protocol@workspace-on-two-machines`
+watches a workspace a sync tool shares. On the owner's word: a client locks the workspace, through
+a lock in `.rootpoint/`, so that another client cannot take it, as long as no finer lock exists.
 
 ## Packs
 
