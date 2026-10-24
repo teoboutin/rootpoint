@@ -321,8 +321,8 @@ fn git(root: &Path, args: &[&str]) {
     assert!(status.success(), "git {args:?}");
 }
 
-/// AC3 of `milestone@plans@asset-storage`: a commit in a git repository at the root decodes nothing, though an asset
-/// lies at the root; a changed asset file is decoded again.
+/// A commit in a git repository at the root decodes nothing, though an asset lies at the root; a
+/// changed asset file is decoded again, `design@rootpoint-app@asset-watch`.
 #[test]
 fn the_watcher_decodes_a_changed_asset_and_nothing_of_git() {
     let root = scratch("watch-assets");
@@ -403,10 +403,10 @@ fn a_directory_made_again_is_watched_again() {
     );
 }
 
-/// AC1 of `milestone@plans@asset-storage`: the GUI thread's share of one autosave, the clone of the
-/// document and its hand-over, as the median of 21 runs, at 50, 200 and 1000 slides, beside the
-/// median of `save_ron`, which the thread runs; the bound is on the share at 1000 slides. Outside
-/// the gates, since timings vary:
+/// The measurement of `design@rootpoint-app@workspace-autosave`: the GUI thread's share of one
+/// autosave, the clone of the document and its hand-over, as the median of 21 runs, at 50, 200 and
+/// 1000 slides, beside the median of `save_ron`, which the thread runs; the bound is on the share at
+/// 1000 slides, `tripwire@rootpoint-app@autosave-gui-cost`. Outside the gates, since timings vary:
 /// `cargo test -p rootpoint-app --release --test autosave -- --ignored --nocapture`.
 #[test]
 #[ignore]
@@ -453,5 +453,8 @@ fn autosave_gui_cost() {
     }
     autosave.hold(false);
     let _ = &mut workspace;
-    assert!(share < Duration::from_millis(1), "AC1 fires: {share:?}");
+    assert!(
+        share < Duration::from_millis(1),
+        "the GUI thread's share passes its bound: {share:?}"
+    );
 }

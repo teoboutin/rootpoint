@@ -201,8 +201,8 @@ fn scratch(name: &str) -> PathBuf {
     std::fs::canonicalize(dir).unwrap()
 }
 
-/// AC5 of `milestone@plans@asset-storage`: a socket file renamed while bound accepts connections at its new path,
-/// and the listener dropped after the rename removes the renamed file.
+/// A socket file renamed while bound accepts connections at its new path, and the listener dropped
+/// after the rename removes the renamed file, `design@rootpoint-app@socket-place`.
 #[test]
 fn a_renamed_socket_answers_at_its_new_path() {
     let dir = scratch("renamed-socket");

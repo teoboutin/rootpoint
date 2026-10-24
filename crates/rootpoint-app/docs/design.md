@@ -87,7 +87,8 @@ The state label, `App::state_label`, at the right end of the toolbar, reads "In 
 "In memory, saved to `<file>`", with ", n changes since" once there are; or, in a workspace, which
 saves itself, `design@rootpoint-app@workspace-autosave`, "Workspace `<path>`, saved", "Workspace
 `<path>`, not saved: the file changed outside rootpoint" while the guard of
-`design@rootpoint-app@ron-overwrite-guard` stops the writes. A window with no autosave, as `App::new` in the tests, reads
+`design@rootpoint-app@ron-overwrite-guard` stops the writes, and "Workspace `<path>`, not saved:
+`<reason>`" when the last write failed. A window with no autosave, as `App::new` in the tests, reads
 "n changes since the save" in place of "saved" once there are. Each action that writes is named by
 what it writes: "Save as pack…", "Save as workspace…", "Unpack to…", "Pack to…"; Save writes to
 the store the label names. The label shows the store `store` replies,
@@ -305,13 +306,17 @@ does not reach content whose history is gone, after a closed window or a reloade
 `issue@rootpoint-app@browser-autosave`, nor a step a later edit cleared from the redo stack,
 nor a step the author cannot find, `issue@rootpoint-protocol@history-browsing`.
 
-The close of a window held in memory while `Session::unsaved` is not 0 is the one action that asks
-before it acts, since no undo reaches a closed window: the window cancels the close by
-`ViewportCommand::CancelClose` and asks "Close without saving?", with "Close" and "Keep open". The
-page of the browser build asks the same of its close or its reload, by its `beforeunload`, the
-browser's own question, `design@rootpoint-app@browser-pack-save`. A
-workspace whose autosave writes every undo step never asks,
-`design@rootpoint-app@workspace-autosave`, and nothing unsaved asks nothing.
+The close of a window whose edits are in no file is the one action that asks before it acts, since
+no undo reaches a closed window: the window cancels the close by `ViewportCommand::CancelClose` and
+asks "Close without saving?", with "Close" and "Keep open". Its edits are in no file when it holds
+its presentation in memory with an undo step since the save, or an edit of a group still open, as
+a text typed in place; and, in a workspace, while the guard of
+`design@rootpoint-app@ron-overwrite-guard` stops the autosave's writes or its last write failed.
+The page of the browser build asks the same of its close or its reload, by its `beforeunload`, the
+browser's own question, `design@rootpoint-app@browser-pack-save`. A workspace whose autosave wrote
+every undo step does not ask, `design@rootpoint-app@workspace-autosave`, and nothing unsaved asks
+nothing. An open, an `open-pack` or a `sample` that replaces a presentation held in memory does
+not ask either, on the owner's word: the owner chose an open that does not ask.
 
 ## Moving content
 

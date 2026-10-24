@@ -179,8 +179,9 @@ impl App {
         self.asset_tab.listing.as_ref().expect("built above")
     }
 
-    /// The untracked files a relink of the asset offers, those of its file's name first, the
-    /// default D11 of `milestone@plans@asset-storage`, awaiting the owner.
+    /// The untracked files a relink of the asset offers, those of its file's name first, since a
+    /// file moved outside rootpoint usually keeps its name, and a missing file has no bytes to
+    /// compare.
     pub fn relink_candidates(&mut self, asset: AssetId) -> Vec<String> {
         let name = self.asset_name(asset);
         let name = name.rsplit('/').next().unwrap_or("").to_owned();

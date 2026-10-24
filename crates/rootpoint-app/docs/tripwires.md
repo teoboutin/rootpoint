@@ -55,7 +55,9 @@ T2 of the premortem of the milestone on asset storage, recorded on the owner's w
 
 **Fires when:** the banner "presentation.ron was changed outside rootpoint" shows while no program
 other than rootpoint wrote the file, as a tool that rewrites its bytes with no change of content,
-git's `autocrlf` or a sync tool's normalising, would make it.
+git's `autocrlf` or a sync tool's normalising, would make it. A write by the window itself that
+shows the banner is a defect of the code, whose baseline missed that write, and fires nothing, on
+the owner's word.
 **Response:** reopen `design@rootpoint-app@ron-overwrite-guard`, toward a comparison of the parsed
 documents instead of the bytes.
 **Re-entry:** at its firing, as the session proposed and the owner approved; and the
@@ -71,3 +73,18 @@ build holds every byte of a presentation in memory, and wasm32 addresses at most
 store of `issue@rootpoint-app@browser-autosave`.
 **Re-entry:** at its firing, or at the design of video, as the session proposed and the owner
 approved; and the standing-state review before every merge, the home's standing re-entry.
+
+## Guarding `design@rootpoint-app@workspace-autosave`: an autosave that costs the window more than its bound `##autosave-gui-cost`
+
+AC1 of the milestone on asset storage, an acceptance criterion the owner ruled, kept as a tripwire
+on the owner's word.
+
+**Fires when:** the ignored test `autosave_gui_cost` of `path@rootpoint-app@tests/autosave.rs`, run
+by `cargo test -p rootpoint-app --release --test autosave -- --ignored --nocapture` on the owner's
+AMD Ryzen 9 9950X, gives a median above 1 ms for the GUI thread's share of one autosave, the clone
+of the document and its hand-over, at 1000 slides; 1 ms is the owner's threshold, which the owner
+may reset.
+**Response:** replace the clone by a cheaper snapshot, or move the serialization to the GUI thread's
+idle time; reopen `design@rootpoint-app@workspace-autosave` only if no snapshot meets the bound.
+**Re-entry:** a change of `path@rootpoint-app@src/autosave.rs`, or of what the window hands it, runs
+the test; and the standing-state review before every merge, the home's standing re-entry.

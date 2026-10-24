@@ -20,6 +20,9 @@ slide's tree of splits gives a clear hierarchy of which content and which change
 with no risk of conflict, from which such a design starts; the owner thought a survey of prior art
 would become worth running once the scope expands so.
 
+Such a lock is inside one window: the lock of a workspace,
+`design@rootpoint-protocol@workspace-lock`, stays one per process whatever it becomes.
+
 ### Why it matters
 
 `goal@rootpoint-app@live-agent-edits` shares the window with one agent at a time; an author who

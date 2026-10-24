@@ -402,8 +402,9 @@ fn a_zip_that_is_no_pack_is_refused() {
     }
 }
 
-/// AC2 of `milestone@plans@asset-storage`, at `pack`: an asset whose path fails confinement gets no bytes in the
-/// pack, the reply names it, and no path outside the root reaches the host's files.
+/// At `pack`, an asset whose path fails confinement gets no bytes in the pack, the reply names it,
+/// and no path outside the root reaches the host's files,
+/// `design@rootpoint-protocol@store-confines-access`.
 #[test]
 fn a_pack_writes_no_bytes_of_an_unconfined_asset() {
     let dir = std::fs::canonicalize(scratch("pack-unconfined")).unwrap();

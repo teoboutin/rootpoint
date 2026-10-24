@@ -11,9 +11,8 @@ use common::*;
 use rootpoint_model::*;
 use rootpoint_protocol::{Reply, Session, Store};
 
-/// The reproduction of the save-mixes defect, `milestone@plans@asset-storage`'s "Names": the same
-/// file imported through a relative and an absolute form of the root is one asset at one path, and
-/// is never copied beside itself.
+/// The same file imported through a relative and an absolute form of the root is one asset at one
+/// path, and is never copied beside itself, `design@rootpoint-protocol@editing-modes`.
 #[test]
 fn a_file_imported_through_two_forms_of_the_root_is_one_asset() {
     for absolute_first in [false, true] {
@@ -115,9 +114,10 @@ fn run_ok(s: &mut Session, files: &mut RecordingFiles, line: &str) -> String {
     }
 }
 
-/// AC2 of `milestone@plans@asset-storage`, for the RON, `render` and `open-copy`: a file naming paths outside the
-/// root loads, names each as a breach and draws each as missing, and no path outside the root
-/// reaches the host's files; a symlink out of the root is refused at its read.
+/// `design@rootpoint-protocol@store-confines-access`, for the RON, `render` and `open-copy`: a file
+/// naming paths outside the root loads, names each as a breach and draws each as missing, and no
+/// path outside the root reaches the host's files; a symlink out of the root is refused at its
+/// read.
 #[test]
 fn no_read_of_a_workspace_reaches_outside_its_root() {
     let dir = std::fs::canonicalize(scratch("confined-read")).unwrap();
@@ -160,8 +160,8 @@ fn no_read_of_a_workspace_reaches_outside_its_root() {
     assert_eq!(files.outside(&root), Vec::<String>::new());
 }
 
-/// AC2 of `milestone@plans@asset-storage`, for `import`: a write through a symlink out of the root, its target there
-/// or missing, and an import to a path that fails confinement, reply `err` and write nothing.
+/// `design@rootpoint-protocol@store-confines-access`, for `import`: a write through a symlink out of
+/// the root, its target there or missing, and an import to a path that fails confinement, reply `err` and write nothing.
 #[test]
 fn no_import_writes_outside_its_root() {
     let dir = std::fs::canonicalize(scratch("confined-write")).unwrap();

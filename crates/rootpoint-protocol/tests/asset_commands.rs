@@ -64,7 +64,7 @@ fn trash(root: &Path) -> Vec<String> {
     }
 }
 
-/// AC4 of `milestone@plans@asset-storage`: a removal moves the file to the trash, its undo moves
+/// A removal moves the file to the trash, `design@rootpoint-protocol@asset-trash`: its undo moves
 /// it back with its bytes, its redo moves it again; a new session's open of the workspace empties
 /// the trash.
 #[test]
@@ -278,10 +278,11 @@ fn workspace_with_unconfined(name: &str) -> (PathBuf, PathBuf, Session, Recordin
     (dir, root, s, files)
 }
 
-/// AC2 of `milestone@plans@asset-storage`, on the asset commands: on an asset whose path fails
-/// confinement, `asset-move` and `asset-replace` reply `err`, `asset-remove` removes the entry and
-/// moves no file, its undo restoring the entry, and `asset-relink` to a confined path repairs it;
-/// no path outside the root reaches the host's files, but the host file `asset-replace` reads.
+/// `design@rootpoint-protocol@store-confines-access`, on the asset commands: on an asset whose
+/// path fails confinement, `asset-move` and `asset-replace` reply `err`, `asset-remove` removes the
+/// entry and moves no file, its undo restoring the entry, and `asset-relink` to a confined path
+/// repairs it; no path outside the root reaches the host's files, but the host file
+/// `asset-replace` reads.
 #[test]
 fn no_asset_command_reaches_outside_the_root() {
     let (dir, root, mut s, mut files) = workspace_with_unconfined("confined-commands");
