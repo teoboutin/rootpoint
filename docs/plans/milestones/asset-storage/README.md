@@ -749,7 +749,10 @@ crates/rootpoint-protocol/tests/common/mod.rs   RecordingFiles, native files tha
 crates/rootpoint-model/src/ops.rs          Op::SetAssetPath { id, path }               (#rooted-assets; Op::SetAssetSource leaves)
 crates/rootpoint-model/src/ops.rs          Op::ReplaceDocument { document }            (#autosave-and-watch)
 crates/rootpoint-protocol/src/files.rs     Files::canonical                            (#rooted-assets)
-crates/rootpoint-protocol/src/files.rs     Files::list, Files::rename, Files::remove   (#asset-commands)
+crates/rootpoint-protocol/src/files.rs     Files::list                                 (#pack-commands)
+crates/rootpoint-protocol/src/files.rs     Files::rename, Files::remove                (#asset-commands)
+crates/rootpoint-protocol/src/session.rs   Session::pack: Option<String>, the pack last opened or written in memory   (#pack-commands)
+crates/rootpoint-app/src/actions.rs        App::open_picked_pack(name, bytes)          (#pack-commands)
 crates/rootpoint-protocol/src/session.rs   enum Store { Memory(BTreeMap<String, Vec<u8>>), Workspace(String) }   (#rooted-assets)
 crates/rootpoint-protocol/src/session.rs   Session::store, Session::root               (#rooted-assets; Session::directory leaves)
 crates/rootpoint-protocol/src/session.rs   Session::unsaved: u64, the steps applied, undone or redone since the last open, save or pack   (#rooted-assets)
@@ -875,7 +878,7 @@ the runtime directory that accepts a connection, with its file name.
 
 `Asset { path }`. `asset_path_is_confined` holds for an asset path with no empty, `.` or `..`
 component, no leading `/`, no `\`, a first component other than `.rootpoint`, and other than
-`presentation.ron`. `load_ron` loads a file whose asset fails it: the path is a cosmetic breach,
+`presentation.ron` and, from #pack-commands, `mimetype`, a pack's first entry. `load_ron` loads a file whose asset fails it: the path is a cosmetic breach,
 `Breach::UnconfinedAsset`, named by `Document::breaches`, its image drawn grey and its font the
 built-in sans, as a missing file's are, by D4. `Document::breaches` gives one per asset of the
 table whose path fails, used or not, after the breaches of the areas, in the order of the ids.
@@ -1074,8 +1077,12 @@ widened by D5:
   macOS is not read; #workspace-host's audit reads it where it decides the fallback of
   `$TMPDIR`.
 - The zip format, through the crate #pack-commands chooses, and the convention of a first entry `mimetype`
-  stored with no compression, of EPUB's container, which #pack-commands's audit reads in the EPUB Open
-  Container Format before it writes the entry.
+  stored with no compression, of EPUB's container. Read at #pack-commands's audit in EPUB 3.3,
+  section 4.3.3, "OCF ZIP container media type identification": the `mimetype` file is the first
+  file of the container, holds the media type in US-ASCII with no leading or trailing padding or
+  whitespace and no byte order mark, is neither compressed nor encrypted, and has no extra field in
+  its ZIP header; and section 4.3.2 allows only stored and Deflate entries. The pack follows that
+  shape with its own media type.
 - The browser's storage, IndexedDB and the Origin Private File System, is not read: it is the lead
   of `issue@rootpoint-app@browser-autosave`, outside the work.
 

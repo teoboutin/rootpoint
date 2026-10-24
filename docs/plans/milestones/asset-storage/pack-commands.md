@@ -10,14 +10,42 @@ headless. The browser's picker and download wait for #browser-packs.
   `mimetype`, stored, holding `PACK_MIMETYPE`, then `presentation.ron`, deflated, then each asset of
   the table at its asset path, stored; and `read_pack`, which reads one and refuses a pack whose
   first entry is not that `mimetype`, an entry whose name fails confinement, and a symlink entry.
-- A zip crate as a dependency of the protocol crate, pure Rust, built by the gate `wasm`, chosen at
-  the audit. `zip` 0.6.6 is in the local cargo registry at the time of writing; the audit reads the
-  current version and its features, and enables no feature that links C code.
+- `zip` 9.1.0 as a dependency of the protocol crate, its default features off and `deflate-flate2`
+  on, beside `flate2` 1.1 named with its feature `rust_backend` alone: zip names `flate2` with its
+  default features off, and only its default feature `deflate` would pick a backend, zopfli and
+  zlib-rs. `rust_backend` is `miniz_oxide`, pure Rust, already in `Cargo.lock` through `png`. On the
+  wasm target zip pulls `getrandom` 0.4 with `wasm_js`; a scratch crate of the same dependencies
+  built for `wasm32-unknown-unknown` at the audit.
+- `Files::list(dir) -> Result<Vec<String>, String>`, every file under `dir`, recursively, as paths
+  relative to it, a default method replying `Err("unsupported")`, implemented by `NativeFiles` of
+  both binaries, the app's `MemoryFiles` and the protocol tests' `MemoryFiles`: `unpack` refuses a
+  directory that holds anything, and is its first caller, before #asset-commands.
+- `mimetype` is no asset path: `asset_path_is_confined` refuses it, as it refuses
+  `presentation.ron`, since it is the name of a pack's first entry, and an asset of that name would
+  give the zip two entries of one name.
 - The commands `pack <file>`, `open-pack <file>` and `unpack <dir>`, by the milestone's table of
   #editing-modes. In memory, `save` writes the pack last opened by `open-pack` or written by `pack`.
+  - `Session::pack: Option<String>`, that pack's host path, in memory only: `open-pack` and a `pack`
+    in memory set it and reset `Session::unsaved`; a `pack` in a workspace changes neither; a
+    command that opens a store drops it. `store` replies `ok memory unsaved=<n> pack=<file>` once it
+    is set.
+  - `pack` replies `ok missing=<ids>`, the assets it wrote no bytes for, `-` for none, the form of
+    `render`'s `missing=`; a `save` that writes the pack replies as `pack` does.
+  - `unpack <dir>` refuses a directory that holds anything, by `Files::list`, and a path that is a
+    file; it writes `presentation.ron` and each file of the map, then the store is a workspace at
+    the directory's canonical path, with no pack and `Session::unsaved` 0. A write that fails leaves
+    the files written before it, and the store unchanged.
+  - `read_pack` skips a directory entry, which a zip tool writes for each folder, and refuses a pack
+    with no `presentation.ron`. `write_pack` gives every entry one fixed time, so a presentation
+    packs to the same bytes.
 - In the native window, each a dialog and its command, labelled by #c-visible-mode: in memory,
   "Save as pack…" (`pack`), and "Save as workspace…" (`unpack`), shown as "Unpack to…" when a pack is
-  the session's target; in a workspace, "Pack to…" (`pack`). Open accepts a `.rpk` file.
+  the session's target; in a workspace, "Pack to…" (`pack`). Open accepts a `.rpk` file: as a button
+  "Open pack…" beside Open, since the native file dialog picks a file or a directory, never either.
+  Save (Ctrl+S) in memory with no pack opens "Save as pack…", as Save with no file asked for one.
+- `App::open_picked_pack(name, bytes)` in `path@rootpoint-app@src/actions.rs`, built on every
+  target: the bytes are held in `MemoryFiles` under the name, and `open-pack` opens them; a refused
+  pack leaves the held files as they were. #browser-packs gives it the page's picker.
 
 ## Claims
 
