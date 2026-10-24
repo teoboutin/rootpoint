@@ -58,10 +58,10 @@ impl WorkspaceLock {
 }
 
 /// Run one command as a native host runs every command: before `open <dir>` of a directory that
-/// exists, and before `unpack <dir>` of a presentation held in memory, take the lock of `<dir>`,
-/// or reply `err` naming the process that holds it; after a reply `ok` that changed the session's
-/// root, hold the new lock and drop the old one. The lock of the workspace already open is kept,
-/// since a second lock of one file is refused in one process as in another.
+/// exists, and before `unpack <dir>` of a presentation held in memory to a path that is no file,
+/// take the lock of `<dir>`, or reply `err` naming the process that holds it; after a reply `ok`
+/// that changed the session's root, hold the new lock and drop the old one. The lock of the
+/// workspace already open is kept, since a second lock of one file is refused in one process as in another.
 pub fn run(
     session: &mut Session,
     command: Command,
@@ -82,22 +82,20 @@ pub fn run(
             .is_some_and(|d| session.root().is_some_and(|root| Path::new(root) == d))
     };
     // The `.rootpoint/` a lock creates for a command that then fails leaves with it, so a refused
-    // open or unpack leaves no trace in a directory that is no workspace.
+    // open or unpack leaves no `.rootpoint/` in a directory that is no workspace. It is removed
+    // while the lock is still held, and never when the lock is refused, since another process may
+    // have created it and hold it; anything at the path, a symlink included, is never taken as
+    // made here.
     let mut made = None;
     let new = match target {
         Some(dir) if !held(&dir) => {
             let machine = Path::new(&dir).join(".rootpoint");
-            if !machine.exists() {
+            if std::fs::symlink_metadata(&machine).is_err() {
                 made = Some(machine);
             }
             match WorkspaceLock::take(Path::new(&dir)) {
                 Ok(new) => Some(new),
-                Err(reason) => {
-                    if let Some(made) = made {
-                        let _ = std::fs::remove_dir_all(made);
-                    }
-                    return Reply::Err(reason);
-                }
+                Err(reason) => return Reply::Err(reason),
             }
         }
         _ => None,
@@ -106,9 +104,9 @@ pub fn run(
     let reply = session.run(command, files);
     if matches!(reply, Reply::Ok(_)) && session.root() != before.as_deref() {
         *lock = new;
-    } else if let Some(made) = made {
-        drop(new);
+    } else if let (Some(made), Some(_held)) = (made, &new) {
         let _ = std::fs::remove_dir_all(made);
+        drop(new);
     }
     reply
 }

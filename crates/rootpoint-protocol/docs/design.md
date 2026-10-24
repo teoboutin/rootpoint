@@ -201,8 +201,9 @@ never changes while it is open, so no save and no open rewrites a path, in the d
 stacks; only `asset-move` and `asset-relink` give one asset a new path,
 `design@rootpoint-protocol@asset-commands`. A
 save to any directory, the rival `rejected@rootpoint-protocol@free-save-path`, rewrites the paths
-against a base that each save and open changes, and compares paths of two bases, which a relative
-and an absolute form of one directory defeat; a canonical root leaves no two forms of one directory
+against a base that each save and open changes, the cause of every defect of that rule, and
+compares paths of two bases, which a relative and an absolute form of one directory defeat; a
+canonical root leaves no two forms of one directory
 to compare. Its cost: a `.ron` file outside a workspace is not opened by itself, but as the
 directory that holds it. The map is the session's, not a host's, so a presentation in memory
 behaves the same headless and in the window, as `goal@rootpoint@headless-core` asks: a map of the
@@ -259,7 +260,7 @@ unpacking elsewhere, keeps, which the `<asset-path>` of an import gives.
 `.rootpoint/` with a `.gitignore` that ignores everything in it, takes `File::try_lock` on
 `.rootpoint/lock`, writes its pid there, and holds the file until dropped. A native host runs every
 command through `workspace::run`: before `open <dir>` of a directory that exists, and before
-`unpack <dir>` of a presentation held in memory, it takes the lock of `<dir>`, or replies
+`unpack <dir>` of a presentation held in memory to a path that is no file, it takes the lock of `<dir>`, or replies
 `err <dir> is open in another process, pid <pid>` and runs nothing; after an `ok` that changed the
 session's root, it holds the new lock and drops the old one. The lock of the workspace held is kept
 when it is opened again, since `File::try_lock` is `flock` on Linux, which refuses a second
@@ -279,7 +280,7 @@ watches a workspace a sync tool shares. On the owner's word: a client locks the 
 a lock in `.rootpoint/`, so that another client cannot take it, at least as long as no finer lock,
 per slide or per node, exists.
 
-### A change of an asset is a command that names it by its id, and is one undo step `##asset-commands`
+### The asset table and its files change only by commands, each one undo step at most `##asset-commands`
 
 The commands are `asset-move`, `asset-relink`, `asset-replace`, `asset-remove` and
 `asset-remove-unused`, beside `import`, which adds one. `asset-move <a> <asset-path>` moves the
@@ -311,7 +312,7 @@ the tests of `path@rootpoint-protocol@tests/asset_commands.rs` give `RecordingFi
 A change of an asset is a command, so a script or an agent makes every change the author can, one
 line each with a one-line reply, as `goal@rootpoint-protocol@commands-drive-everything` asks.
 
-### Every change of the store's files is a move into or out of the trash, which holds a file only while a step reaches it `##asset-trash`
+### Every change of the store's files is a move, and a file a change discards stays in the trash while a step reaches it `##asset-trash`
 
 `asset-remove` moves the asset's file to the trash; `asset-replace` writes the new bytes into the
 trash, then moves the old file there and the new one to the asset's path; and `import` writes the
@@ -322,9 +323,9 @@ files is then a move, which its undo step holds and runs back,
 The trash is `.rootpoint/trash/<id>-<n>` in a workspace, `import-<n>` for an import's file,
 `design@rootpoint-model@workspace-layout`, and `Session::trash`, by the same names, in memory; `<n>`
 counts the session's entries, so an asset replaced twice keeps both versions, and an entry an open
-failed to remove is never named again. A trash that a symlink places outside the root, by
-`.rootpoint/` or by `trash/`, is refused, and an open empties none, so that no access reaches
-outside the root. `unpack` writes the trash in memory into the
+failed to remove is never named again. A trash whose `.rootpoint/` or `trash/` resolves to another
+path than its own, as a symlink makes it, is refused, and an open empties none, so that no access
+reaches outside the root, `design@rootpoint-protocol@store-confines-access`. `unpack` writes the trash in memory into the
 workspace's, so the undo steps it keeps find their files. The trash holds a file only while a step
 reaches it: an edit that clears the redo stack, and a `cancel`, remove the entries no step reaches
 any more; an `open` of a workspace empties its trash, since no undo step of the new session reaches
@@ -355,7 +356,7 @@ An asset enters the table by a command, and by no change on disk: `import` adds 
 `open-copy`, `open-pack`, `sample` and `reload` bring the table of a file; and an undo brings back
 one removed. A file under the root that no asset names is untracked, which `pack` leaves out,
 `design@rootpoint-protocol@pack-container`, and which `assets untracked` lists, but for
-`.rootpoint/` and `presentation.ron`. The rival, a table that mirrors the files on disk,
+`.rootpoint/`, `presentation.ron` and a pack's `mimetype`. The rival, a table that mirrors the files on disk,
 `rejected@rootpoint-protocol@table-mirrors-the-disk`, gives an id to `.git/`, to a `README.md` and
 to an editor's backup files, and makes each change on disk an edit nobody made.
 `tripwire@rootpoint-protocol@untracked-file-lost-in-a-pack` watches an author who expected an
@@ -416,8 +417,7 @@ time from `path@rootpoint-protocol@sample/`. `sample` replaces the session's doc
 memory, its images in the session's map at the paths its text names, with empty stacks, as
 `open-copy` does, `design@rootpoint-protocol@editing-modes`. So the sample opens in the GUI and headless by one
 command, and the command is the interface every client of the protocol uses. Its slides say how
-to split, select, drag and swap, and where a presentation is saved, in memory, in a workspace or in a
-pack, and its images stay under 50 KB in all.
+to split, select, drag and swap, and its images stay under 50 KB in all.
 
 On the owner's word: the owner wants the sample kept as a permanent feature of every build, a
 tutorial and a demonstrator anywhere, not only in the browser. The rival, a file the app's `Files`

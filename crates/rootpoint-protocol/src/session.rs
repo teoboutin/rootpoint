@@ -227,9 +227,21 @@ impl Session {
         self.moved
     }
 
+    /// Note that the host wrote the presentation to its store itself, as the window's autosave
+    /// does at its `save`: the undo steps since the save count from 0 again.
+    pub fn mark_saved(&mut self) {
+        self.unsaved = 0;
+    }
+
     /// Whether a group opened by `begin` is open.
     pub fn group_open(&self) -> bool {
         self.group.is_some()
+    }
+
+    /// Whether the open group holds an edit: a step `Session::unsaved` counts only once the group
+    /// ends, as a text typed in place is until its editing ends.
+    pub fn group_changed(&self) -> bool {
+        self.group.as_ref().is_some_and(|g| !g.reverts.is_empty())
     }
 
     /// Run one command. A command that fails changes neither the document nor the view.
@@ -624,7 +636,7 @@ impl Session {
                         quote(&from)
                     ));
                 }
-                if self.file_at(&to, files)? {
+                if self.taken_at(&to, files)? {
                     return Err(format!("{} holds a file", quote(&to)));
                 }
                 self.change(
@@ -795,13 +807,26 @@ impl Session {
     }
 
     /// Whether the store holds anything at the asset path, which is confined: a file, or, in
-    /// memory as on disk, a folder of files below it or a file where a folder of it would be.
-    fn file_at(&self, path: &str, files: &mut dyn Files) -> Result<bool, String> {
+    /// memory as on disk, a folder of files below it or a file where a folder of it would be. A
+    /// move goes to no such path.
+    fn taken_at(&self, path: &str, files: &mut dyn Files) -> Result<bool, String> {
         match &self.store {
             Store::Memory(map) => Ok(held_in(map, path)),
             Store::Workspace(root) => {
                 let full = writable(root, path, files)?;
                 files.exists(&full)
+            }
+        }
+    }
+
+    /// Whether the store holds a file at the asset path, which is confined, and not a folder: what
+    /// an asset's path names. A folder lists, where a file refuses to.
+    fn file_at(&self, path: &str, files: &mut dyn Files) -> Result<bool, String> {
+        match &self.store {
+            Store::Memory(map) => Ok(map.contains_key(path)),
+            Store::Workspace(root) => {
+                let full = writable(root, path, files)?;
+                Ok(files.exists(&full)? && files.list(&full).is_err())
             }
         }
     }

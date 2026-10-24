@@ -1,9 +1,10 @@
 //! Files held in memory, by path: the file system of the browser build, which holds the files of a
 //! directory the author picked, the images and the packs picked since, by path, which `open-copy`,
-//! `import` and `open-pack` copy into the session's map, per `design@rootpoint-app@picked-files-by-path`, and the pack the
-//! session writes, which the page downloads. It moves and removes no file, since the browser build
-//! holds no workspace. It is built on every target, so the native tests check the actions that
-//! read it.
+//! `import` and `open-pack` copy into the session's map, per
+//! `design@rootpoint-app@picked-files-by-path`, and the pack the session writes, which the page
+//! downloads. It moves and removes no file, since the browser build holds no workspace,
+//! `design@rootpoint-app@browser-pack-save`. It is built on every target, so the native tests check
+//! the actions that read it.
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;

@@ -172,9 +172,10 @@ impl crate::App {
     /// A socket that cannot be bound leaves the window without one, and the status line says why,
     /// rather than keeping the window from starting.
     pub fn listen_at_store(&mut self, wake: impl Fn() + Send + Sync + 'static) {
-        if let Err(e) = self.try_listen_at_store(wake) {
-            self.error = Some(format!("the window has no control socket: {e}"));
-        }
+        self.socket_error = match self.try_listen_at_store(wake) {
+            Ok(()) => None,
+            Err(e) => Some(format!("the window has no control socket: {e}")),
+        };
     }
 
     fn try_listen_at_store(&mut self, wake: impl Fn() + Send + Sync + 'static) -> io::Result<()> {

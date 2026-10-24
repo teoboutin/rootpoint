@@ -91,7 +91,8 @@ the test `f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation` of
 each is an operation whose inverse restores it. The dialog would cost a click on every removal the
 author meant, and would protect only content whose undo history is gone: a closed window, a reloaded
 page, `issue@rootpoint-app@browser-autosave`, or a redo stack a later edit cleared; a close of a
-window held in memory with unsaved edits asks instead, `design@rootpoint-app@no-discard-confirmation`. The owner,
+window held in memory with unsaved edits, or of the browser's page, asks instead,
+`design@rootpoint-app@no-discard-confirmation`. The owner,
 who proposed it, withdrew it for that reason. In its place the owner named, as leads for later
 work and not for now: more detail on what the history holds, fetching a step from it and applying
 it again or at least trying to, and maybe keeping the branches of the history,
@@ -132,7 +133,7 @@ by hand, where one Unix socket accepts every client.
 ### A control socket over TCP on localhost `##tcp-socket`
 
 `live`. Any local process, of any user, can connect to a port of localhost, so the protocol would need
-a token to tell its client apart, and macOS's firewall asks the user before an app listens. It stays
+a token to tell its client apart. It stays
 the candidate for Windows, where the Unix socket is not built; a client that finds the window by
 its workspace would not see the change.
 

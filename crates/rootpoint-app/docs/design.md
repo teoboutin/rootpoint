@@ -609,10 +609,11 @@ The thread is what keeps an undo step within its bound. The test `autosave_gui_c
 `cargo test -p rootpoint-app --release --test autosave -- --ignored --nocapture`, times the
 medians of 21 runs at 50, 200 and 1000 slides of the sample, whose document holds no image's
 bytes: on telmon, an AMD Ryzen 9 9950X, the GUI thread's share, the clone and its hand-over, is
-0.011, 0.048 and 0.244 ms, and `save_ron`, which the rival would run on the GUI thread before its
-write, is 0.160, 0.628 and 3.167 ms, linear in the slides. The bound on the share is 1 ms, which
-the owner accepted; one frame at 60 Hz is 16.7 ms. The thread also takes the time of a slow `fsync`, as on a USB stick,
-which no frame waits for.
+0.010, 0.046 and 0.231 ms, and `save_ron`, which the rival would run on the GUI thread before its
+write, is 0.179, 0.725 and 3.586 ms, linear in the slides. The test asserts a share below 1 ms at
+1000 slides, a sixteenth of one frame at 60 Hz, 16.7 ms, where `save_ron` alone takes more than a
+fifth of the frame. The thread also takes the time of a slow `fsync`, as on a USB stick, which no
+frame waits for.
 
 With every step written, the files on disk agree with the window but for one step at most, so a
 watcher, git or an agent reading the directory sees the tree the window shows, which an explicit
@@ -677,16 +678,17 @@ with the browser's directory picker and opens a copy of its `presentation.ron` i
 pack… asks for a `.rpk` file and runs `open-pack` on its bytes. Its edits stay in memory. "Save as
 pack…" runs `pack` into its files, `MemoryFiles`, which keep the writes, and hands the bytes to the
 page, which downloads them; Ctrl+S, once a pack is the session's target, runs `save` and downloads
-it again, `App::pack_for_download`. It holds no workspace, since a page holds no directory it may
-write, so `MemoryFiles` moves and removes no file. A pack is the one file that carries a
+it again, and with none packs as "Save as pack…" does, `App::pack_for_download`. It holds no
+workspace, memory being its one mode on the owner's word, so `MemoryFiles` moves and removes no
+file; a store of the page's origin stays a lead of `issue@rootpoint-app@browser-autosave`. A pack is the one file that carries a
 presentation from the browser to any computer, `design@rootpoint-model@workspace-layout`, as
 `goal@rootpoint@runs-in-browser` asks; the page asks before it unloads while an edit is in no file,
 `design@rootpoint-app@no-discard-confirmation`. `tripwire@rootpoint-app@browser-pack-too-large`
 watches a presentation too large for the page's memory.
 
-On the owner's word: the owner set that the browser build saves, as part of the owner's goal, the
-build that only loaded having been a temporary measure while the owner thought on the asset
-management; and proposed opening a whole directory rather than file by file.
+On the owner's word: the owner set memory as the browser build's one mode, and that the browser
+build saves, which the owner counts part of the goal of the browser build,
+`goal@rootpoint@runs-in-browser`; and proposed opening a whole directory rather than file by file.
 
 ### A picked directory opens as a copy in memory: its files held by their paths, its presentation's assets copied into the session's map `##picked-files-by-path`
 
@@ -712,8 +714,9 @@ presenter mode ends when the page leaves full screen while presenting, as Esc en
 
 ### In the browser, no key of the editor reaches the browser's own action `##editor-keys-kept-from-browser`
 
-A key's default action in the browser, a reload or a step back in the history, leaves the page and
-loses every edit held in memory since the last download, `design@rootpoint-app@browser-pack-save`. eframe 0.37.0 prevents
+A key's default action in the browser, a reload or a step back in the history, leaves the page,
+which holds its edits in memory alone, `design@rootpoint-app@browser-pack-save`, after the page's
+question when an edit is in no download: a key the editor uses would raise that question, or leave. eframe 0.37.0 prevents
 the default of some keys itself, in `should_prevent_default_for_key` of
 `path@elsewhere@src/web/events.rs`: every arrow key, so Alt with an arrow,
 `design@rootpoint-app@selection-keys`, never goes back in the history, and Ctrl with O or S. It

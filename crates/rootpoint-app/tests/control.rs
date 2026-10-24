@@ -151,7 +151,12 @@ impl Files for DirFiles {
     }
 
     fn exists(&mut self, path: &str) -> Result<bool, String> {
-        std::fs::exists(self.0.join(path)).map_err(|e| format!("{path}: {e}"))
+        // Anything at the path, a symlink whose target is missing included, as `Files::exists` asks.
+        match std::fs::symlink_metadata(self.0.join(path)) {
+            Ok(_) => Ok(true),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(format!("{path}: {e}")),
+        }
     }
 
     fn canonical(&mut self, path: &str) -> Result<String, String> {
@@ -465,6 +470,34 @@ fn while_the_socket_holds_control_no_window_action_edits() {
     // The view actions act.
     app.show_slide(rootpoint_model::SlideId(7));
     assert_eq!(app.shown_slide(), Some(rootpoint_model::SlideId(7)));
+}
+
+/// While the socket holds control, the window's Save writes no file: in a workspace, whose `save`
+/// would write `presentation.ron`, the file stays as it was.
+#[test]
+fn while_the_socket_holds_control_save_writes_nothing() {
+    let dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("frozen-save-files");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("ws")).unwrap();
+    let (mut app, path) = listening("frozen-save", Box::new(DirFiles(dir.clone())));
+    let opened = app.run(rootpoint_protocol::parse_command("open ws").unwrap());
+    assert!(matches!(opened, Reply::Ok(_)), "{opened}");
+    assert!(matches!(
+        app.run(rootpoint_protocol::parse_command("add-slide").unwrap()),
+        Reply::Ok(_)
+    ));
+    assert_eq!(one(&mut app, &path, "control"), "ok");
+    app.save();
+    assert!(
+        !dir.join("ws/presentation.ron").exists(),
+        "the window saved while the socket held control"
+    );
+    app.take_control();
+    app.save();
+    assert!(
+        dir.join("ws/presentation.ron").exists(),
+        "Save writes once the window holds control"
+    );
 }
 
 /// The socket's `control` closes the dialog of a style's removal, as it ends a gesture, and the

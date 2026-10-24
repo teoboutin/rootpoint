@@ -616,3 +616,24 @@ fn in_a_workspace_an_import_at_a_folder_s_name_takes_a_suffix() {
         "on disk: {got}; in memory: {in_memory}"
     );
 }
+
+/// In a workspace, an import whose `to` lies below a file is refused, as in memory, and leaves no
+/// file in the trash.
+#[test]
+fn in_a_workspace_an_import_below_a_file_is_refused_and_leaves_no_trash() {
+    let root = std::fs::canonicalize(scratch("import-below-file")).unwrap();
+    std::fs::write(root.join("logo"), b"a file").unwrap();
+    let outside = root.parent().unwrap().join("import-below-file-x.png");
+    std::fs::write(&outside, b"x").unwrap();
+    let mut files = RecordingFiles::default();
+    let mut s = Session::new();
+    run_ok(&mut s, &mut files, &format!("open {}", root.display()));
+    run_ok(&mut s, &mut files, "add-slide");
+    let got = reply(
+        &mut s,
+        &mut files,
+        &format!("import {} logo/x.png", outside.display()),
+    );
+    assert!(matches!(got, Reply::Err(_)), "{got}");
+    assert_eq!(trash(&root), Vec::<String>::new(), "{got}");
+}

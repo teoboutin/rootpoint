@@ -22,7 +22,12 @@ impl Files for NativeFiles {
     }
 
     fn exists(&mut self, path: &str) -> Result<bool, String> {
-        std::fs::exists(path).map_err(|e| format!("{path}: {e}"))
+        // Anything at the path, a symlink whose target is missing included, as `Files::exists` asks.
+        match std::fs::symlink_metadata(path) {
+            Ok(_) => Ok(true),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(format!("{path}: {e}")),
+        }
     }
 
     fn canonical(&mut self, path: &str) -> Result<String, String> {

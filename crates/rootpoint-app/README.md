@@ -8,7 +8,7 @@ it, and the lock goes when the window closes or opens another store. On Unix the
 from its start, on a socket for the commands of the text protocol, which `rootpoint-ctl` of the
 protocol crate sends: in `$XDG_RUNTIME_DIR/rootpoint/`, named after the workspace, or
 `memory-<pid>.sock` in memory, the socket following the store; a workspace's `.rootpoint/socket`
-names it, so `rootpoint-ctl <dir>` reaches the window. Where `$XDG_RUNTIME_DIR` is unset, the
+names it, so `rootpoint-ctl <dir>` reaches the window. Where `$XDG_RUNTIME_DIR` is unset or relative, the
 sockets are in `$TMPDIR/rootpoint/`, then `/tmp/rootpoint-<uid>/`, a directory of the user's alone.
 A socket left by a run that was killed is replaced, a path that holds another kind of file is
 refused and kept, and the window removes its socket when it closes; a window whose socket cannot
@@ -105,7 +105,7 @@ above, with these differences:
   reads every file of the directory, at any depth, when it is picked.
 - Open pack… asks for a `.rpk` file and opens it in memory. Save as pack… writes the presentation
   as a pack, which the browser downloads, and Save, or Ctrl+S, downloads it again once a pack was
-  opened or saved. It has no workspace. The page asks before it is closed or reloaded while a change
+  opened or saved, or packs it as Save as pack… does before. It has no workspace. The page asks before it is closed or reloaded while a change
   is in no download; F5 presents and does not reload.
 - Add an image, and Import… of the asset tab, ask for a PNG, a JPEG or a font file, which is copied
   into the presentation under its name, or the name with a number when another file with other

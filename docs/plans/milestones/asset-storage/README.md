@@ -15,8 +15,9 @@ packed and shown:
   the browser builds.
 
 It is written for the sessions that implement its slices, which did not witness the discussion that
-produced it. Each slice's spec leaves when that slice lands; this document leaves with the last
-slice, in the commit that completes its harvest.
+produced it. Each slice's spec leaves when that slice lands; this document leaves in the commit
+that completes its own harvest, once every slice has landed and the owner has ruled on its
+defaults.
 
 - Where this document, or a slice's spec, and a design home disagree on a point that "What is
   already decided" does not list as reversed or rewritten, the design home wins.
@@ -120,7 +121,10 @@ the review at the end of the milestone reads them, and judges whether
 that `.rootpoint/` leaves with a command that fails after creating it. The session's report to the
 owner at the end of the milestone carries the readings its commits say are reported to the owner:
 T1's re-entry, and the reading of `import` in "Readings"; the narrowing of T2's clause, which the
-window's own `save` met before its repair, as the owner's to make; and, in its "Decided" section,
+window's own `save` met before its repair, as the owner's to make; whether an open that replaces a
+presentation held in memory asks first, a member the owner's word on the close does not name,
+`issue@rootpoint-app@open-discards-unsaved-edits`, its default an open that does not ask, as built;
+and, in its "Decided" section,
 the decisions the session took on the owner's word to go on with sensible defaults: a `save` while
 the guard stops the writes replies `err`; `Op::ReplaceDocument` keeps the larger id counter; no
 `rejected` entry for shape B, nor for a reload at each change; the split of the head of
@@ -246,7 +250,7 @@ milestone leaves.
   gives `load` and `save` relative to the working directory, a guard against the defect the
   milestone closes, `save-mixes-relative-and-absolute`.
 - The browser build, `App::in_memory`, opens the sample, or a directory the author picks, whose
-  files `App::open_directory` holds in `MemoryFiles`; it saves nothing, per `browser-load-only`,
+  files `App::open_directory` holds in `MemoryFiles`; it saved nothing, per `browser-load-only`,
   now `design@rootpoint-app@browser-pack-save`.
 - `Assets::refresh` of `path@rootpoint-app@src/assets.rs` decodes the assets again only when the
   session's directory, or an asset's source or use, changes.
@@ -1300,12 +1304,13 @@ at the new name and removes the old one, a shape the decision admits.
   whose decided design says "a workspace never asks", on the session's premise that its autosave
   writes every step. The guard stops the writes, and a write can fail, so a close then loses the
   edits since. Default: a close asks while the guard stops the writes or the last write failed, as
-  `App::edits_not_written` builds it; the rival, which
+  `App::edits_not_written` builds it and `path@rootpoint-app@README.md` states it; the rival, which
   `design@rootpoint-app@no-discard-confirmation` states until the ruling, is a workspace that never
   asks.
 - **D7**, awaiting the owner, built at the same repair: on D5's table, a row the owner's ruling did
   not name, "a workspace, its last write failed", whose label reads "Workspace `<path>`, not saved:
-  `<reason>`"; the rival is the label "saved" over a write that failed.
+  `<reason>`", which `path@rootpoint-app@README.md` states; the rival is the label "saved" over a
+  write that failed.
 - **D8**, awaiting the owner, judged at the same repair: the rival of #socket-place "a bind through
   `/proc/self/fd`", which #arg-19 refutes as "Linux only, and obscure", leaves the `rejected`
   register, since it changes no interface and reasoning refutes it; named pipes keep an entry,
@@ -1316,7 +1321,9 @@ at the new name and removes the old one, a shape the decision admits.
 - **D10**, awaiting the owner, built at the repair of #asset-commands: on #asset-tree-shape, whose
   `assets untracked` lists every file no asset names, `.git/` included, which the rival of a table
   that mirrors the disk names as noise. Default: the list leaves out a file whose path has a
-  component that starts with `.`, as `rootpoint_protocol::listed_untracked` builds it, where
+  component that starts with `.`, files of tools such as `.git/` that no presentation shows, as
+  `rootpoint_protocol::listed_untracked` builds it and
+  `path@rootpoint-protocol@README.md` states it, where
   `design@rootpoint-protocol@table-of-added-assets` states the rival until the ruling; such a path
   is still a confined asset path, so an asset may name one, and a relink then offers no such file
   but by a path typed. The

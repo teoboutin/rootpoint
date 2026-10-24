@@ -92,8 +92,8 @@ which `pack` leaves out, but for those whose path has a component that starts wi
 two assets name, which only a file edited by hand holds, is refused.
 
 An asset path is always inside the root: it has no empty, `.` or `..` component, does not start
-with `/`, holds no `\`, has a first component other than `.rootpoint` and is neither
-`presentation.ron` nor `mimetype`. No command
+with `/`, holds no `\`, and has a first component other than `.rootpoint`, `presentation.ron` and
+`mimetype`. No command
 reads or writes another path, nor a file a symlink places outside the root: a file edited by hand
 that names one still loads, and `render` draws the asset as a missing one; `import` to such a path
 replies `err`.

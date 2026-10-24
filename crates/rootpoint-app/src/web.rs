@@ -1,7 +1,8 @@
-//! What the browser build does through the page: the pickers that read a presentation directory
-//! or an image file, and full screen. A picker reads its files in a task of the page, after the
-//! frame that asked for them, so it puts them in an inbox that `App::frame` empties, waking the
-//! window when they are read.
+//! What the browser build does through the page: the pickers that read a presentation directory,
+//! a pack or an asset's file, the reading of a file dropped on the window, the download of a pack,
+//! full screen, and the question before the page unloads. A picker reads its files in a task of the
+//! page, after the frame that asked for them, so it puts them in an inbox that `App::frame`
+//! empties, waking the window when they are read.
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -101,7 +102,15 @@ impl Web {
         };
         anchor.set_href(&url);
         anchor.set_download(name);
+        // An anchor in the document, which some browsers need for the click to download.
+        let body = document.body();
+        if let Some(body) = &body {
+            let _ = body.append_child(&anchor);
+        }
         anchor.click();
+        if let Some(body) = &body {
+            let _ = body.remove_child(&anchor);
+        }
         let _ = web_sys::Url::revoke_object_url(&url);
     }
 
@@ -236,8 +245,10 @@ impl Web {
 }
 
 /// Ask before the page unloads while `unsaved` holds: a listener of the window's `beforeunload`
-/// prevents the event's default and sets its `returnValue`, which a browser reads as the question.
-/// It holds the flag weakly, so an app dropped asks nothing.
+/// prevents the event's default, which a browser reads as the question, and sets a return value
+/// that is not empty, which older browsers read instead.
+/// It holds the flag weakly, so an app dropped asks nothing,
+/// `design@rootpoint-app@no-discard-confirmation`.
 pub(crate) fn warn_before_unload(unsaved: std::rc::Weak<std::cell::Cell<bool>>) {
     let Some(window) = web_sys::window() else {
         return;
@@ -245,7 +256,10 @@ pub(crate) fn warn_before_unload(unsaved: std::rc::Weak<std::cell::Cell<bool>>) 
     let listener = Closure::<dyn FnMut(web_sys::Event)>::new(move |e: web_sys::Event| {
         if unsaved.upgrade().is_some_and(|flag| flag.get()) {
             e.prevent_default();
-            let _ = js_sys::Reflect::set(&e, &"returnValue".into(), &"".into());
+            // Browsers before the default's prevention asked on a return value that is not empty.
+            if let Some(unload) = e.dyn_ref::<web_sys::BeforeUnloadEvent>() {
+                unload.set_return_value("unsaved");
+            }
         }
     });
     let _ =

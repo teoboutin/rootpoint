@@ -37,7 +37,7 @@ impl App {
     /// writes, so the author sees what each one does: in memory, a pack or, natively, a workspace;
     /// in a workspace, a pack. "Open pack…" is a button of its own beside Open, since a file dialog
     /// picks a file or a directory, never either. The browser build writes a pack only, which the
-    /// page downloads.
+    /// page downloads, `design@rootpoint-app@browser-pack-save`.
     fn file_buttons(&mut self, ui: &mut Ui) {
         if ui.button("Open pack…").clicked() {
             self.open_pack_dialog();

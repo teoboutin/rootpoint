@@ -42,6 +42,9 @@ impl Files for Counted {
         Ok(path.to_owned())
     }
     fn list(&mut self, dir: &str) -> Result<Vec<String>, String> {
+        if self.files.borrow().contains_key(dir) {
+            return Err(format!("{dir}: not a directory"));
+        }
         let below = format!("{dir}/");
         Ok(self
             .files
@@ -341,6 +344,7 @@ fn a_change_of_the_table_or_the_files_reads_them_again() {
             .insert(path.to_owned(), png(size, size));
     }
     let reads = files.reads.clone();
+    let held = files.files.clone();
     let mut app = App::new(Box::new(files));
     let ctx = Context::default();
     ok(&mut app, "open ws");
@@ -360,5 +364,93 @@ fn a_change_of_the_table_or_the_files_reads_them_again() {
     assert!(
         count(&reads) > before,
         "a new asset makes the tab read the files"
+    );
+    // A change of the table alone, a relink, and of the files alone, a replace.
+    held.borrow_mut().insert("ws/c.png".to_owned(), png(8, 8));
+    let before = count(&reads);
+    ok(&mut app, "asset-relink a4 c.png");
+    frame(&ctx, &mut app);
+    assert!(
+        count(&reads) > before,
+        "a relink makes the tab read the files"
+    );
+    let before = count(&reads);
+    ok(&mut app, "asset-replace a3 ws/c.png");
+    frame(&ctx, &mut app);
+    assert!(
+        count(&reads) > before,
+        "a replace makes the tab read the files"
+    );
+}
+
+/// A press of a key in the frame after the last.
+fn press(ctx: &Context, app: &mut App, key: eframe::egui::Key) {
+    let event = Event::Key {
+        key,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: Modifiers::NONE,
+    };
+    frame_with(ctx, app, vec![event]);
+}
+
+/// A path typed in the move field, then Esc, sends nothing.
+#[test]
+fn esc_leaves_a_typed_path_unsent() {
+    let files = Counted::default();
+    let mut app = App::new(Box::new(files));
+    let ctx = Context::default();
+    ok(&mut app, "sample");
+    frame(&ctx, &mut app);
+    app.show_tab(SideTab::Assets);
+    frame(&ctx, &mut app);
+    click(&ctx, &mut app, "asset a19");
+    let before = app.session().document().assets[&AssetId(19)].path.clone();
+    let use_ = app.button_rect("use n14").expect("the use's button");
+    click_at(
+        &ctx,
+        &mut app,
+        Pos2::new(use_.left() + 80.0, use_.bottom() + 14.0),
+    );
+    press(&ctx, &mut app, eframe::egui::Key::End);
+    frame_with(&ctx, &mut app, vec![Event::Text("x".to_owned())]);
+    press(&ctx, &mut app, eframe::egui::Key::Escape);
+    frame(&ctx, &mut app);
+    assert_eq!(app.session().document().assets[&AssetId(19)].path, before);
+}
+
+/// A missing asset is relinked to a path typed in its relink field, and not when Esc leaves it.
+#[test]
+fn a_missing_asset_is_relinked_to_a_typed_path() {
+    let files = Counted::default();
+    for path in ["ws/a.png", "ws/b.png"] {
+        files.files.borrow_mut().insert(path.to_owned(), png(4, 4));
+    }
+    let held = files.files.clone();
+    let mut app = App::new(Box::new(files));
+    let ctx = Context::default();
+    ok(&mut app, "open ws");
+    let id = ok(&mut app, "import ws/a.png");
+    held.borrow_mut().remove("ws/a.png");
+    app.show_tab(SideTab::Assets);
+    frame(&ctx, &mut app);
+    click(&ctx, &mut app, &format!("asset {id}"));
+    let field = app.button_rect("relink path").expect("the relink field");
+    click_at(&ctx, &mut app, field.center());
+    frame_with(&ctx, &mut app, vec![Event::Text("b.png".to_owned())]);
+    press(&ctx, &mut app, eframe::egui::Key::Escape);
+    frame(&ctx, &mut app);
+    let asset = AssetId(id[1..].parse().unwrap());
+    assert_eq!(app.session().document().assets[&asset].path, "a.png");
+    click_at(&ctx, &mut app, field.center());
+    frame_with(&ctx, &mut app, vec![Event::Text("b.png".to_owned())]);
+    press(&ctx, &mut app, eframe::egui::Key::Enter);
+    frame(&ctx, &mut app);
+    assert_eq!(
+        app.session().document().assets[&asset].path,
+        "b.png",
+        "{:?}",
+        app.status()
     );
 }

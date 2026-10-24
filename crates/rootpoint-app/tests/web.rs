@@ -438,3 +438,67 @@ fn the_page_asks_before_it_unloads_only_with_an_edit() {
     assert!(!unload(), "a saved pack asks nothing");
     drop(app);
 }
+
+/// Enter editing the sample's text area n3 in place, and type into it: the stay's group is open.
+fn type_in_place(app: &mut App) {
+    use rootpoint_model::NodeId;
+    let doc = app.session().document();
+    let view = Rect::from_min_size(Pos2::ZERO, Vec2::new(960.0, 540.0));
+    let layout = rootpoint_app::hit::Layout::new(doc, SlideId(1), view, [960, 540]).unwrap();
+    let p = layout.rect(NodeId(3)).unwrap().center();
+    app.select_node(NodeId(3));
+    app.edit_at(NodeId(3), p, &layout);
+    assert_eq!(app.editing(), Some(NodeId(3)));
+    app.type_str("typed and never saved");
+    assert!(app.session().group_open());
+}
+
+/// Text typed in place after a pack is saved, its editing not ended, is a change in no file: the
+/// state label counts it.
+#[test]
+fn text_typed_in_place_is_counted_as_unsaved() {
+    let mut app = App::in_memory();
+    app.open_sample();
+    let (name, bytes) = app.pack_for_download(true).expect("a pack");
+    app.open_picked_pack(name, bytes);
+    assert_eq!(app.state_label(), "In memory, saved to presentation.rpk");
+    type_in_place(&mut app);
+    assert_eq!(
+        app.state_label(),
+        "In memory, saved to presentation.rpk, 1 change since"
+    );
+}
+
+/// The page asks before it unloads with text typed in place, its editing not ended.
+#[cfg(target_arch = "wasm32")]
+#[test]
+fn the_page_asks_before_it_unloads_with_text_typed_in_place() {
+    let unload = || {
+        let init = web_sys::EventInit::new();
+        init.set_cancelable(true);
+        let event = web_sys::Event::new_with_event_init_dict("beforeunload", &init).unwrap();
+        web_sys::window().unwrap().dispatch_event(&event).unwrap();
+        event.default_prevented()
+    };
+    let mut app = App::in_memory();
+    app.open_sample();
+    app.pack_for_download(true).expect("a pack");
+    assert!(!unload(), "nothing unsaved asks nothing");
+    type_in_place(&mut app);
+    assert!(unload(), "text typed in place, in no file, asks");
+    drop(app);
+}
+
+/// An editor whose files are held in memory holds no workspace: an unpack, or an open, is refused.
+#[test]
+fn an_editor_in_memory_holds_no_workspace() {
+    let mut app = App::in_memory();
+    app.open_sample();
+    app.unpack_to("ws".to_owned());
+    assert_eq!(app.session().root(), None);
+    let reply = app.run(rootpoint_protocol::parse_command("open ws").unwrap());
+    assert!(
+        matches!(reply, rootpoint_protocol::Reply::Err(_)),
+        "{reply}"
+    );
+}

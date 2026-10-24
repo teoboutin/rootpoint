@@ -106,7 +106,10 @@ pub struct App {
     /// Why "Load the file" failed, which the banner names until the author answers again.
     #[cfg(not(target_arch = "wasm32"))]
     reload_error: Option<String>,
-    /// The close of the window was asked while a presentation held in memory had unsaved edits:
+    /// Why the window has no control socket, which the status line names while it has none.
+    #[cfg(unix)]
+    socket_error: Option<String>,
+    /// The close of the window was asked while edits were in no file, `App::edits_not_written`:
     /// the question shows until the author answers.
     close_question: bool,
     /// The author answered the question by closing: the next close is not cancelled.
@@ -270,6 +273,8 @@ impl App {
             repaint: std::sync::Arc::new(std::sync::OnceLock::new()),
             #[cfg(not(target_arch = "wasm32"))]
             reload_error: None,
+            #[cfg(unix)]
+            socket_error: None,
             close_question: false,
             closing: false,
             #[cfg(target_arch = "wasm32")]
@@ -296,12 +301,14 @@ impl App {
 
     /// An editor on an empty session whose files are held in memory, as the browser build's are:
     /// `App::open_directory` and `App::add_picked_image` put the picked files in, which `open-copy`
-    /// and `import` copy into the session's map, and a save writes none.
+    /// and `import` copy into the session's map, and a pack it writes is held there for the page's
+    /// download, `App::pack_for_download`.
     pub fn in_memory() -> Self {
         let files = MemoryFiles::default();
         let mut app = App::new(Box::new(files.clone()));
         app.held = Some(files);
-        // The page asks before it unloads while edits are in no file, as the window's close does.
+        // The page asks before it unloads while edits are in no file, as the window's close does,
+        // `design@rootpoint-app@no-discard-confirmation`.
         #[cfg(target_arch = "wasm32")]
         web::warn_before_unload(std::rc::Rc::downgrade(&app.unload_warning));
         app
@@ -430,6 +437,8 @@ impl App {
         let unsaved = self.session.unsaved();
         let moved = self.session.files_moved();
         let assets = self.session.document().assets.clone();
+        // A command that writes a file of the host, which may lie in the store.
+        let writes = matches!(command, Command::Render { .. } | Command::Pack { .. });
         #[cfg(not(target_arch = "wasm32"))]
         let (reloads, reopens) = (
             matches!(command, Command::Reload),
@@ -442,6 +451,12 @@ impl App {
             && (rereads || matches!(command, Command::Unpack { .. }))
         {
             autosave.wait_idle();
+        }
+        // The files held in memory keep a pack the page downloads, and hold no workspace,
+        // `design@rootpoint-app@browser-pack-save`.
+        if self.held.is_some() && matches!(command, Command::Open { .. } | Command::Unpack { .. }) {
+            self.error = Some("this editor holds no workspace".to_owned());
+            return Reply::Err("this editor holds no workspace".to_owned());
         }
         #[cfg(not(target_arch = "wasm32"))]
         let reply = match (&command, &self.autosave) {
@@ -459,6 +474,8 @@ impl App {
                 } else if let Some(failure) = autosave.failure() {
                     Reply::Err(failure)
                 } else {
+                    // `store` then counts the steps since this save, as headless.
+                    self.session.mark_saved();
                     Reply::Ok(String::new())
                 }
             }
@@ -500,6 +517,7 @@ impl App {
         // What the Assets tab read from the files changes with the store, its files or its table;
         // an edit of a slide, as each frame of a drag sends, reads no file again.
         if rereads
+            || writes
             || self.session.files_moved() != moved
             || self.session.root() != root.as_deref()
             || self.session.document().assets != assets
@@ -530,6 +548,8 @@ impl App {
     /// `Report::missing_glyphs`.
     pub fn status(&self) -> Vec<String> {
         let mut lines: Vec<String> = self.error.iter().cloned().collect();
+        #[cfg(unix)]
+        lines.extend(self.socket_error.iter().cloned());
         let report = &self.view.report;
         let mut list = |what: &str, mut ids: Vec<String>| {
             // An asset used by two areas is named once.
@@ -661,7 +681,7 @@ impl App {
         } else if let Some(autosave) = &self.autosave {
             if reloaded {
                 autosave.resume(self.session.document().clone());
-            } else if self.session.unsaved() != old_unsaved {
+            } else if self.session.unsaved() > old_unsaved {
                 autosave.save(self.session.document().clone());
             }
         }
@@ -709,9 +729,18 @@ impl App {
             self.view.drawn = None;
         }
         // A directory removed and made again, as a checkout does, lost its watch with the old one:
-        // the watches are set again after any event, and the Assets tab reads the files again.
+        // the watches are set again after any event. The Assets tab reads the files again after an
+        // event of a file of the store, and not after the autosave's own writes of
+        // `presentation.ron` and of `.rootpoint/`, which come at each step.
         if !changed.is_empty() {
-            self.asset_tab.listing = None;
+            let own = |path: &std::path::Path| {
+                path.strip_prefix(root).is_ok_and(|below| {
+                    !rootpoint_protocol::listed_untracked(&below.to_string_lossy())
+                }) && !assets.contains(path)
+            };
+            if changed.iter().any(|path| !own(path)) {
+                self.asset_tab.listing = None;
+            }
             self.watch_assets();
         }
     }
@@ -725,7 +754,8 @@ impl App {
             1 => "1 change".to_owned(),
             n => format!("{n} changes"),
         };
-        let unsaved = self.session.unsaved();
+        // An open group's edits, as a text typed in place, count as one change until it ends.
+        let unsaved = self.session.unsaved() + u64::from(self.session.group_changed());
         #[cfg(not(target_arch = "wasm32"))]
         if let (Some(root), Some(autosave)) = (self.session.root(), &self.autosave) {
             return if autosave.stopped() {
@@ -746,7 +776,7 @@ impl App {
         }
     }
 
-    /// Whether the question before closing a window held in memory with unsaved edits shows.
+    /// Whether the question before closing a window whose edits are in no file shows.
     pub fn close_question(&self) -> bool {
         self.close_question
     }
@@ -759,7 +789,8 @@ impl App {
         if let (Some(_), Some(autosave)) = (self.session.root(), &self.autosave) {
             return autosave.stopped() || autosave.failure().is_some();
         }
-        self.session.root().is_none() && self.session.unsaved() > 0
+        self.session.root().is_none()
+            && (self.session.unsaved() > 0 || self.session.group_changed())
     }
 
     /// The close of the window was asked: with edits no file holds, which no undo reaches once the

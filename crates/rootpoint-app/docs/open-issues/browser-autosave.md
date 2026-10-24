@@ -13,10 +13,11 @@ dismissed, or a tab the browser discards, loses every edit since the last downlo
 
 ### What
 
-The browser build has one mode, in memory, and a save that downloads a pack. The owner observed that the browser build could save on its own as the native workspace does, into a
-store of the page's origin that is not `localStorage`, whose size is limited to a few megabytes,
-and suggested, as a "maybe", a todo issue for later. Two leads, from the browsers' documentation as recalled
-in the discussion and not read for this entry: IndexedDB, a database of the origin whose quota is
+The browser build has one mode, in memory, and a save that downloads a pack. The owner observed
+that the browser build could save on its own as the native workspace does, into a store of the
+page's origin that is not `localStorage`, whose size is limited to a few megabytes, and suggested,
+as a "maybe", a todo issue for later. Two leads, from the browsers' documentation as recalled in
+the discussion and not read for this entry: IndexedDB, a database of the origin whose quota is
 a share of the disk; and the Origin Private File System, a tree of files of the origin, which
 could implement `Files` as the native workspace's directory does, and so give the browser build a
 workspace rather than only a copy.
@@ -25,7 +26,12 @@ workspace rather than only a copy.
 
 `goal@rootpoint-app@browser-window` asks the browser build to edit as the native window does, and
 the native window's workspace loses no edit when it closes. In the browser, an author who forgets
-to download loses the work of the session.
+to download loses the work of the session. A download the author cancels counts as a save too:
+the `pack` or `save` that `App::pack_for_download` runs resets the count of unsaved steps once the
+pack is written into `MemoryFiles`, before the page hands it to the browser, which tells the page
+nothing of the download's outcome (an assumption, not tested: a headless Firefox under geckodriver
+writes no downloaded file, so no test observes one), so the label reads saved and the page no
+longer asks before it unloads.
 
 ### What would close it
 

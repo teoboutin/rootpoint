@@ -93,15 +93,15 @@ pub(crate) fn read_pack(bytes: &[u8]) -> Result<(String, BTreeMap<String, Vec<u8
         }
     }
     let ron = ron.ok_or(format!("the pack holds no {PRESENTATION}"))?;
-    // A file of the pack, its two own included, cannot be the folder of another.
-    let mut names: Vec<&str> = files.keys().map(String::as_str).collect();
-    names.extend([MIMETYPE, PRESENTATION]);
-    if let Some(name) = names.iter().find(|name| {
-        files
-            .keys()
-            .any(|other| other.starts_with(&format!("{name}/")))
-    }) {
-        return Err(format!("the pack's entry {name} is a file and a folder"));
+    // A file of the pack, its two own included, cannot be the folder of another: each folder of
+    // each path is looked up among the files, in time linear in the entries and their depth.
+    for path in files.keys() {
+        for (at, _) in path.match_indices('/') {
+            let folder = &path[..at];
+            if files.contains_key(folder) || folder == MIMETYPE || folder == PRESENTATION {
+                return Err(format!("the pack's entry {folder} is a file and a folder"));
+            }
+        }
     }
     Ok((ron, files))
 }

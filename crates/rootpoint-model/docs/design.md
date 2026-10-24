@@ -105,7 +105,7 @@ readable and the assets stay ordinary files; `.rootpoint/` holds what is the mac
 presentation's, a `.gitignore` that ignores all of it, the lock of
 `design@rootpoint-protocol@workspace-lock`, the pointer to the window's socket and the trash of
 `design@rootpoint-protocol@asset-trash`. Neither
-`presentation.ron` nor `.rootpoint/` is an asset path,
+`presentation.ron` nor `.rootpoint/`, nor a pack's `mimetype`, is an asset path,
 `design@rootpoint-model@asset-path-confinement`, and `.rootpoint/` is never packed. The fixed name
 lets a script or an agent find the presentation without listing the directory, where a directory of
 several `.ron` files is ambiguous; its cost is one presentation per directory, so two talks that
@@ -128,19 +128,21 @@ file is text only, as `goal@rootpoint@readable-save-file` and
 `goal@rootpoint-model@faithful-readable-file` ask: bytes held in it, the rival
 `rejected@rootpoint-model@bytes-in-the-file`, grow it about 20 times their size.
 
-### A folder of assets is the prefix their paths share, and the file stores no folder `##folders-from-paths`
+### A folder of assets is a prefix of their paths, and the file stores no folder `##folders-from-paths`
 
 The asset table holds each asset's path, and nothing else names a folder: a folder is a prefix of
 the paths, and a folder with no asset is no folder. The rival, folder nodes
 stored in the presentation's file, `rejected@rootpoint-model@folders-in-the-file`, stores structure
 that holds no content, which a move of a file must then keep in step with the paths.
 
-### An asset path is confined below its root by `asset_path_is_confined` `##asset-path-confinement`
+### An asset path is relative, below its root, outside `.rootpoint/`, and never a file of the store `##asset-path-confinement`
 
 `asset_path_is_confined` holds for a path with no empty, `.` or `..` component, no leading `/` and
-no `\`, whose first component is not `.rootpoint` and which is neither `presentation.ron` nor
-`mimetype`, the files of a workspace and of a pack that are no asset: an asset named `mimetype` would
-give a pack two entries of that name, `design@rootpoint-protocol@pack-container`. It is the test of the confinement the store keeps at each access,
+no `\`, whose first component is not `.rootpoint`, `presentation.ron` or `mimetype`, the files of a
+workspace and of a pack that are no asset: an asset named `mimetype` would give a pack two entries
+of that name, `design@rootpoint-protocol@pack-container`, and one below a folder `mimetype/` or
+`presentation.ron/` would be a file and a folder of one name, which no directory holds and
+`open-pack` refuses. It is the test of the confinement the store keeps at each access,
 `design@rootpoint-protocol@store-confines-access`, and of the commands that refuse to name a path
 that fails it, `design@rootpoint-protocol@no-new-breach`. The model checks nothing more: whether a
 file is at the path, and where a symlink leads, are the store's to check. A file that names another

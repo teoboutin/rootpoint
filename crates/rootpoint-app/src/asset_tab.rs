@@ -1,9 +1,10 @@
 //! The Assets tab of the side panel: the tree of the asset paths, their folders built from the
 //! paths' prefixes, with a search and the filters of `assets`; the selected asset's size, its
-//! thumbnail and its uses; and the actions on it, each a command of `path@rootpoint-app@src/actions.rs`.
-//! The tab reads the document and the store and runs no query through `App::run`, which would render
-//! the slide again; what it reads from the files is kept until a command changes the store, its
-//! files or its table, or a watcher event comes, so a frame reads no file.
+//! thumbnail and its uses; and the actions on it, each a command of
+//! `path@rootpoint-app@src/actions.rs`. The tab reads the document and the store and runs no query
+//! through `App::run`, which would render the slide again; what it reads from the files is kept
+//! until a command changes the store, its files or its table, or writes a file, or a watcher event
+//! names a file other than the autosave's own, so a frame reads no file.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -55,7 +56,8 @@ pub(crate) struct AssetTab {
     pub(crate) relink_edit: Option<String>,
     /// The asset a removal with a replacement names.
     pub(crate) replacement: Option<AssetId>,
-    /// What the tab read from the files, dropped at each command and watcher event.
+    /// What the tab read from the files, dropped when a command changes the store, its files or its
+    /// table, or writes a file, and at a watcher event of a file other than the autosave's own.
     pub(crate) listing: Option<Listing>,
     /// The selected image's texture, with what it was decoded from: the asset, its path and the
     /// files the session had moved.
@@ -150,7 +152,7 @@ impl App {
         self.asset_tab.relink_edit = None;
     }
 
-    /// What the tab reads from the files, read once until the next command.
+    /// What the tab reads from the files, read once until it is dropped.
     pub(crate) fn listing(&mut self) -> &Listing {
         if self.asset_tab.listing.is_none() {
             let doc = self.session.document();

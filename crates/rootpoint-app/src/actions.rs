@@ -800,8 +800,9 @@ impl App {
     /// Write the presentation held in memory as a pack into the files held in memory, and give its
     /// name and its bytes, which the browser build hands to the page as a download: `save` when a
     /// pack is the session's target and `new_pack` is false, `pack` to that pack's name, or to
-    /// `presentation.rpk`, otherwise. None, with the status saying why, when the command fails or
-    /// the app holds no files in memory. Built on every target, so the native tests check it.
+    /// `presentation.rpk`, otherwise. None while the control socket holds the authority to edit,
+    /// and, with the status saying why, when the command fails or the app holds no files in
+    /// memory. Built on every target, so the native tests check it.
     pub fn pack_for_download(&mut self, new_pack: bool) -> Option<(String, Vec<u8>)> {
         if self.socket_holds() {
             return None;
@@ -972,7 +973,8 @@ impl App {
         }
     }
 
-    /// "Save as pack…": write a pack, and hand its bytes to the page, which downloads them.
+    /// "Save as pack…": write a pack, and hand its bytes to the page, which downloads them,
+    /// `design@rootpoint-app@browser-pack-save`.
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn pack_dialog(&mut self) {
         if let Some((name, bytes)) = self.pack_for_download(true) {
