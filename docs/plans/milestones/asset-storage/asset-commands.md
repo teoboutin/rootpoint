@@ -7,34 +7,40 @@ in both stores, headless.
 ## Builds
 
 - `Files::rename(from, to)` and `Files::remove(path)`, in `path@rootpoint-protocol@src/files.rs`,
-  implemented natively and by `MemoryFiles`.
-- The commands `asset-move <a> <asset-path>`, `asset-replace <a> <host-path>`,
-  `asset-remove <a> [into=<a>]` and `assets [all|unused|missing|untracked]`, the last one reply line
-  per asset; `remove-asset` leaves. A move to a path that holds another asset's file, or a removal
-  of a used asset with no `into=`, replies `err`, so no command creates a breach,
-  `design@rootpoint-protocol@no-new-breach`.
+  default methods replying `Err("unsupported")`, implemented by `NativeFiles`, the app's
+  `MemoryFiles` and the protocol tests' `MemoryFiles`.
+- The commands `asset-move <a> <asset-path>`, `asset-relink <a> <asset-path>`,
+  `asset-replace <a> <host-path>`, `asset-remove <a> [into=<a>]`, `asset-remove-unused` and
+  `assets [all|unused|missing|untracked]`, the last one reply line per asset; `remove-asset` leaves.
+  A move to a path that holds a file, a relink to a path that holds none, and a removal of a used
+  asset with no `into=` reply `err`, so no command creates a breach,
+  `design@rootpoint-protocol@no-new-breach`. `asset-remove-unused` is one undo step.
 - The trash: in a workspace, `.rootpoint/trash/<id>`, filled by a removal and by a replace, emptied
-  when the workspace opens; in memory, a second map. Undo and redo move bytes between the trash and
-  the asset path with the operation they belong to.
+  by `open` of the workspace; in memory, `Session::trash`. An undo step holds the file moves of its
+  command with its operations, and undo and redo apply both, a step whose move fails applying
+  neither.
 
 ## Claims
 
 - **Undo restores a removed asset's file with its bytes**, in a workspace and in memory; shown to
   fail with the trash bypassed.
-- **AC4**, `acceptance@asset-storage@ac-trash-emptied`: a removal, a close and an open leave
-  `.rootpoint/trash/` empty.
+- **AC4**, `acceptance@asset-storage@ac-trash-emptied`: a removal, a new session and an `open` of
+  the workspace leave `.rootpoint/trash/` empty.
 - **A move keeps every slide**: after `asset-move`, every area and style that named the asset draws
-  it, and `presentation.ron` holds the new path.
+  it, and `presentation.ron` holds the new path once saved.
+- **A relink repairs a missing asset**: an asset whose file is gone, relinked to an untracked file,
+  draws it, and `assets missing` no longer lists it.
 - **`asset-remove` with `into=`** makes every area and style name the replacement, one undo step.
 - **`assets untracked`** lists a file under the root that no asset names, and never `.rootpoint/`
   or `presentation.ron`.
-- **No command creates a breach**: the property test gains the four commands.
+- **No command creates a breach**: the property test gains the six commands.
 
 ## Audit subjects
 
 - `path@rootpoint-protocol@src/session.rs`, `path@rootpoint-protocol@src/command.rs`,
   `path@rootpoint-protocol@tests/properties.rs`, `path@rootpoint-model@src/ops.rs`.
 - `design@rootpoint-model@cosmetic-fallbacks`, `design@rootpoint-protocol@no-new-breach`,
+  `design@rootpoint-protocol@gesture-undo`, `design@rootpoint-model@stable-ids`,
   `design@rootpoint-model@style-removal`, whose `into=` the asset removal mirrors.
 
 ## Fails alone on
@@ -57,9 +63,12 @@ This slice judges `acceptance@asset-storage@ac-trash-emptied`.
 
 ## Harvest
 
-- Heads of the protocol for the asset commands and the trash, and of the model for
-  `thread@asset-storage@asset-tree-shape`; `rejected` entries for content naming an asset by its
-  path and for a table that mirrors the disk, #arg-9, by the tests of
+- Heads of the protocol for the asset commands and the trash; rewrite
+  `design@rootpoint-protocol@gesture-undo` for a step that holds file moves.
+- The three decisions of `thread@asset-storage@asset-tree-shape`, as its harvest says: ids kept,
+  read first as a member of `design@rootpoint-model@stable-ids`; folders from the paths; a table of
+  added assets. `rejected` entries for content naming an asset by its path, for folders stored in
+  the RON and for a table that mirrors the disk, #arg-9, by the tests of
   `skill@knowledge-architect-decision-recording`.
-- Write T3, guarding the tree's head.
+- Write T3, guarding the head of the table of added assets.
 - Update `path@rootpoint-protocol@README.md` for the commands.

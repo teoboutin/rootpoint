@@ -269,7 +269,7 @@ content back. The rival, a dialog before an action that discards content,
 `rejected@rootpoint-app@removal-guard`, costs a click on every removal the author meant. On the
 owner's word: the owner chose undo over a dialog to keep content from being lost by mistake. Undo
 does not reach content whose history is gone, after a closed window or a reloaded page,
-`milestone@plans@asset-storage`, nor a step a later edit cleared from the redo stack,
+`issue@rootpoint-app@browser-autosave`, nor a step a later edit cleared from the redo stack,
 nor a step the author cannot find, `issue@rootpoint-protocol@history-browsing`.
 
 ## Moving content
@@ -411,8 +411,7 @@ reason, and any file that is no socket, is refused and kept. The window removes 
 when it closes, if it is still the one it bound, by its inode. The rival, removing whatever refuses
 a connection, deleted the presentation an author gave as the socket's path, since a regular file
 refuses a connection too. The window's bind is not atomic against another window that starts at
-the same moment on the same path, until the workspace lock of `spec@asset-storage@workspace-host`
-runs the two binds one after the other.
+the same moment on the same path; `spec@asset-storage@workspace-host` schedules its repair.
 
 ### The window and its control socket are two controllers, and one holds the authority to edit at a time `##one-controller-at-a-time`
 

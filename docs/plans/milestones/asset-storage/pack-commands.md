@@ -6,35 +6,44 @@ headless. The browser's picker and download wait for #browser-packs.
 
 ## Builds
 
-- `planned@rootpoint-protocol@src/pack.rs`: `pack`, which writes a zip of the entry `mimetype`, stored,
-  holding `PACK_MIMETYPE`, then `presentation.ron`, deflated, then each asset of the table at its
-  asset path, stored; and `unpack`, which reads one and refuses a pack whose first entry is not that
-  `mimetype`, an entry whose name fails confinement, and a symlink entry.
+- `planned@rootpoint-protocol@src/pack.rs`: `write_pack`, which writes a zip of the entry
+  `mimetype`, stored, holding `PACK_MIMETYPE`, then `presentation.ron`, deflated, then each asset of
+  the table at its asset path, stored; and `read_pack`, which reads one and refuses a pack whose
+  first entry is not that `mimetype`, an entry whose name fails confinement, and a symlink entry.
 - A zip crate as a dependency of the protocol crate, pure Rust, built by the gate `wasm`, chosen at
   the audit. `zip` 0.6.6 is in the local cargo registry at the time of writing; the audit reads the
   current version and its features, and enables no feature that links C code.
 - The commands `pack <file>`, `open-pack <file>` and `unpack <dir>`, by the milestone's table of
-  `thread@asset-storage@editing-modes`. In memory, `save` writes the pack last opened by `open-pack`
-  or written by `pack`, and replies `err` when there is none.
-- In the native window: "Save as pack…" and "Unpack to…" in memory, "Pack to…" in a workspace, each
-  a file or directory dialog and its command; Open accepts a `.rpk` file.
+  #editing-modes. In memory, `save` writes the pack last opened by `open-pack` or written by `pack`.
+- In the native window, each a dialog and its command, labelled by #c-visible-mode: in memory,
+  "Save as pack…" (`pack`), and "Save as workspace…" (`unpack`), shown as "Unpack to…" when a pack is
+  the session's target; in a workspace, "Pack to…" (`pack`). Open accepts a `.rpk` file.
 
 ## Claims
 
 - **A pack round-trips**: `sample`, `pack s.rpk`, `open-pack s.rpk` gives a document equal to the
   sample's, and the same asset bytes; shown to fail by a pack that leaves out an asset.
-- **A pack unzips with a common tool into a workspace that opens to the same presentation**: a test
-  that runs where `unzip` is installed extracts a pack and runs `open` on the directory; the test is
-  skipped, saying so, where `unzip` is missing. #c-unpack-anywhere.
+- **A pack then an unpack elsewhere keeps the tree of assets**, as the closed `pack-and-unpack`
+  asked: a workspace whose assets are `path@elsewhere@img/a.png`, `path@elsewhere@img/b/c.png` and `path@elsewhere@fonts/f.ttf` is packed,
+  unpacked into another directory, and opened: the same document, the same paths, the same bytes.
+- **A pack unzips with a common tool into a workspace that opens to the same presentation**: the
+  same fixture, extracted by `unzip` where it is installed, then `open`; the test is skipped,
+  saying so, where `unzip` is missing. #c-unpack-anywhere.
 - **The pack's first entry is `mimetype`, stored**, read by its offset in the file's first bytes.
-- **The overhead stays within 1%** of the assets' bytes for the sample and for a test presentation
-  of one asset of 1 MB, #c-pack-overhead; the measurement is printed in the commit.
-- **Confinement at unpack**, AC2's second half, `acceptance@asset-storage@ac-confined-paths`: a
-  crafted zip with an entry `../x`, an entry `/x`, an entry `.rootpoint/lock` and a symlink entry is
-  refused whole, and nothing is written; one test per case.
-- **`unpack` makes the store a workspace**, and a `save` then writes `presentation.ron` there.
+- **#c-pack-overhead holds**, for the sample and for the fixture above, its figures printed in the
+  commit.
+- **Confinement at a pack's opening**, AC2's second half, `acceptance@asset-storage@ac-confined-paths`:
+  `open-pack` of a crafted zip with an entry `../x`, an entry `/x`, an entry `.rootpoint/lock` and
+  a symlink entry is refused whole, and the store is unchanged; one test per case.
+- **`unpack` makes the store a workspace**, refuses a directory that holds a file, and a `save` then
+  writes `presentation.ron` there.
 - **A pack opens in the wasm test**: a test of `path@rootpoint-app@tests/actions.rs` opens a pack's
-  bytes through `MemoryFiles` on the wasm target.
+  bytes through the app's `MemoryFiles` on the wasm target.
+
+## Fixtures
+
+The workspace of three assets in two levels of folders, written by the test from the sample's
+`splits.png` and the built-in font's bytes; no new committed file.
 
 ## Audit subjects
 
@@ -58,7 +67,7 @@ The milestone's section on `thread@asset-storage@pack-container` holds the shape
 
 ## Acceptance criteria
 
-This slice judges the second half of `acceptance@asset-storage@ac-confined-paths`, at `unpack`.
+This slice judges the second half of `acceptance@asset-storage@ac-confined-paths`, at `open-pack`.
 
 ## Harvest
 

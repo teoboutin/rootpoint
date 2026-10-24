@@ -888,8 +888,8 @@ impl App {
     /// session compares its directory and a save's target by their
     /// text, so a relative directory and an absolute target would never match, and a save would
     /// copy an asset already inside the target's directory, a defect whose cause
-    /// `spec@asset-storage@rooted-assets` removes. A path that has none from the working directory
-    /// stays absolute.
+    /// `spec@asset-storage@rooted-assets` is to remove, with this function. A path that has none
+    /// from the working directory stays absolute.
     pub(crate) fn relative_if_absolute(&mut self, path: String) -> String {
         let given = Path::new(&path);
         if !given.is_absolute() {

@@ -16,8 +16,9 @@ The sixth slice of `milestone@plans@asset-storage`. It lands the window's half o
   shown at the tab's foot.
 - Each action is a function of `path@rootpoint-app@src/actions.rs` running the commands of
   #asset-commands through `App::run`, per `design@rootpoint-app@actions-are-commands`.
-- The node menu's image entries and the outline's image rows show the asset path, per
-  `design@rootpoint-app@node-menu` and `design@rootpoint-app@tree-outline`.
+- The node menu's image entries, labelled by `App::asset_name`, and the outline's image rows, per
+  `design@rootpoint-app@tree-outline`, show the asset path. Each action of the tab runs the command
+  the milestone's "Decided design" of #asset-manager-scope names for it.
 
 ## Claims
 
