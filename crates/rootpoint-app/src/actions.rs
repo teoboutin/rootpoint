@@ -710,15 +710,11 @@ impl App {
             return;
         }
         self.end_gestures();
-        match self.run(Command::Reload) {
-            Reply::Ok(_) => {
-                self.reload_error = None;
-                if let Some(autosave) = &self.autosave {
-                    autosave.resume(self.session.document().clone());
-                }
-            }
-            Reply::Err(reason) => self.reload_error = Some(reason),
-        }
+        // The autosave resumes from the file read, as after every `reload` of the window.
+        self.reload_error = match self.run(Command::Reload) {
+            Reply::Ok(_) => None,
+            Reply::Err(reason) => Some(reason),
+        };
     }
 
     /// The banner's "Keep mine": the window's document is written over the file changed outside

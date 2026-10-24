@@ -1,4 +1,4 @@
-//! The watcher of a workspace's assets: the directories that hold an asset of the table, each
+//! The watcher of a workspace's assets, per `design@rootpoint-app@asset-watch`: the directories that hold an asset of the table, each
 //! watched alone, not recursively, so that a change of `.git/` or of a build tree is never seen and
 //! the watches stay within inotify's limit of watches per user. A change of an asset's file wakes
 //! the window, which decodes its assets again. Native only: in memory, and in the browser, no file
@@ -45,24 +45,17 @@ impl Watch {
         })
     }
 
-    /// Watch exactly these directories: the ones no longer named stop, the new ones start. A
+    /// Watch exactly these directories: the ones no longer named stop, and each one named is
+    /// watched again, since a directory removed and made again lost its watch with the old one. A
     /// directory that cannot be watched, as one that does not exist, is left out.
     pub fn set(&mut self, dirs: BTreeSet<PathBuf>) {
         for gone in self.watched.difference(&dirs) {
             let _ = self.watcher.unwatch(gone);
         }
-        let mut watched = BTreeSet::new();
-        for dir in dirs {
-            if self.watched.contains(&dir)
-                || self
-                    .watcher
-                    .watch(&dir, RecursiveMode::NonRecursive)
-                    .is_ok()
-            {
-                watched.insert(dir);
-            }
-        }
-        self.watched = watched;
+        self.watched = dirs
+            .into_iter()
+            .filter(|dir| self.watcher.watch(dir, RecursiveMode::NonRecursive).is_ok())
+            .collect();
     }
 
     /// The paths the events named since the last call.

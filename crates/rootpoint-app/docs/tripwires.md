@@ -58,5 +58,5 @@ other than rootpoint wrote the file, as a tool that rewrites its bytes with no c
 git's `autocrlf` or a sync tool's normalising, would make it.
 **Response:** reopen `design@rootpoint-app@ron-overwrite-guard`, toward a comparison of the parsed
 documents instead of the bytes.
-**Re-entry:** at its firing, as the owner named it; and the standing-state review before every
-merge, the home's standing re-entry.
+**Re-entry:** at its firing, as the session proposed and the owner approved; and the
+standing-state review before every merge, the home's standing re-entry.

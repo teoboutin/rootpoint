@@ -433,7 +433,7 @@ struct Step {
 fn step() -> impl Strategy<Value = Step> {
     // Positions near 0 and 1 as well as ordinary ones, where rounding meets the dividers.
     let at = prop_oneof![0.05f64..0.95, 1e-12f64..1e-3, (1.0 - 1e-3)..(1.0 - 1e-12)];
-    (0u8..18, any::<usize>(), any::<usize>(), at, any::<bool>()).prop_map(
+    (0u8..19, any::<usize>(), any::<usize>(), at, any::<bool>()).prop_map(
         |(kind, pick, other, at, flag)| Step {
             kind,
             pick,
@@ -606,8 +606,47 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
                 )),
             },
         },
+        // A reload of a file changed outside the editor: a document of a few slides of its own,
+        // whose counter is below the editor's.
+        18 => {
+            let mut file = Document::default();
+            for at in 0..s.other % 3 {
+                apply(&mut file, Op::AddSlide { at }).unwrap();
+            }
+            Op::ReplaceDocument {
+                document: Box::new(file),
+            }
+        }
         _ => return None,
     })
+}
+
+/// A document's next id, as the next slide added takes it.
+fn next_id(doc: &Document) -> u64 {
+    let mut d = doc.clone();
+    apply(&mut d, Op::AddSlide { at: 0 }).unwrap();
+    d.slides[0].id.0
+}
+
+/// A reload never gives again an id the editor handed out: the counter keeps the larger of the
+/// two documents', at the replace and at its undo.
+#[test]
+fn a_replace_keeps_the_larger_counter() {
+    let (mut doc, _) = fixture();
+    let before = next_id(&doc);
+    let inverse = apply(
+        &mut doc,
+        Op::ReplaceDocument {
+            document: Box::new(Document::default()),
+        },
+    )
+    .unwrap();
+    assert_eq!(next_id(&doc), before);
+    // The ids the reloaded document handed out stay taken after the undo.
+    apply(&mut doc, Op::AddSlide { at: 0 }).unwrap();
+    let after_add = next_id(&doc);
+    apply(&mut doc, inverse).unwrap();
+    assert_eq!(next_id(&doc), after_add);
 }
 
 proptest! {

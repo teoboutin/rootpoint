@@ -86,12 +86,13 @@ pub struct App {
     /// socket with the store, `App::native`.
     #[cfg(not(target_arch = "wasm32"))]
     native: bool,
+    /// The autosave of the workspace the native window holds. It is declared before the lock, so
+    /// that a window dropped writes its last edit while it still holds the workspace.
+    #[cfg(not(target_arch = "wasm32"))]
+    autosave: Option<autosave::Autosave>,
     /// The lock of the workspace the native window holds, `rootpoint_protocol::workspace::run`.
     #[cfg(not(target_arch = "wasm32"))]
     lock: Option<rootpoint_protocol::workspace::WorkspaceLock>,
-    /// The autosave of the workspace the native window holds.
-    #[cfg(not(target_arch = "wasm32"))]
-    autosave: Option<autosave::Autosave>,
     /// The watcher of the directories of that workspace's assets.
     #[cfg(not(target_arch = "wasm32"))]
     watch: Option<watch::Watch>,
@@ -412,15 +413,44 @@ impl App {
         let root = self.session.root().map(str::to_owned);
         let unsaved = self.session.unsaved();
         #[cfg(not(target_arch = "wasm32"))]
-        let reply = if self.native {
-            rootpoint_protocol::workspace::run(
+        let (reloads, reopens) = (
+            matches!(command, Command::Reload),
+            matches!(command, Command::Open { .. }),
+        );
+        // A command that can change the store first lets the autosave write what waits, while the
+        // window still holds the workspace's lock.
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(autosave) = &self.autosave
+            && (rereads || matches!(command, Command::Unpack { .. }))
+        {
+            autosave.wait_idle();
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        let reply = match (&command, &self.autosave) {
+            // An autosaving workspace's `save` is a write of the autosave, so that its guard knows
+            // every write of the window, `design@rootpoint-app@ron-overwrite-guard`.
+            (Command::Save, Some(autosave)) => {
+                autosave.save(self.session.document().clone());
+                autosave.wait_idle();
+                if autosave.stopped() {
+                    Reply::Err(
+                        "presentation.ron was changed outside rootpoint: \"Load the file\" or \
+                         \"Keep mine\" first"
+                            .to_owned(),
+                    )
+                } else if let Some(failure) = autosave.failure() {
+                    Reply::Err(failure)
+                } else {
+                    Reply::Ok(String::new())
+                }
+            }
+            _ if self.native => rootpoint_protocol::workspace::run(
                 &mut self.session,
                 command,
                 &mut *self.files,
                 &mut self.lock,
-            )
-        } else {
-            self.session.run(command, &mut *self.files)
+            ),
+            _ => self.session.run(command, &mut *self.files),
         };
         #[cfg(target_arch = "wasm32")]
         let reply = self.session.run(command, &mut *self.files);
@@ -430,7 +460,8 @@ impl App {
         }
         #[cfg(not(target_arch = "wasm32"))]
         if self.native {
-            self.follow_workspace(root.as_deref(), unsaved);
+            let ok = matches!(reply, Reply::Ok(_));
+            self.follow_workspace(root.as_deref(), unsaved, reloads && ok, reopens && ok);
         }
         #[cfg(target_arch = "wasm32")]
         let _ = unsaved;
@@ -563,19 +594,32 @@ impl App {
         self.autosave.as_ref()
     }
 
+    /// Why the banner's "Load the file" failed, which the banner names, for the tests.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn reload_error(&self) -> Option<&str> {
+        self.reload_error.as_deref()
+    }
+
     /// How many times the assets were decoded, for the tests.
     pub fn asset_decodings(&self) -> u64 {
         self.assets.decodings()
     }
 
-    /// After a command of the native window: a store that became a workspace starts its autosave
-    /// and its watcher, one that left it stops them; a command that changed the undo steps sends
-    /// the autosave a clone of the document; and the watcher follows the directories of the
+    /// After a command of the native window: a store that became a workspace, or a workspace
+    /// opened again, starts its autosave and its watcher, one that left it stops them; a `reload`
+    /// resumes the autosave from the file it read; any other command that changed the undo steps
+    /// sends the autosave a clone of the document; and the watcher follows the directories of the
     /// assets.
     #[cfg(not(target_arch = "wasm32"))]
-    fn follow_workspace(&mut self, old_root: Option<&str>, old_unsaved: u64) {
+    fn follow_workspace(
+        &mut self,
+        old_root: Option<&str>,
+        old_unsaved: u64,
+        reloaded: bool,
+        reopened: bool,
+    ) {
         let root = self.session.root().map(std::path::PathBuf::from);
-        if self.session.root() != old_root {
+        if self.session.root() != old_root || reopened {
             self.autosave = root
                 .clone()
                 .map(|root| autosave::Autosave::start(root, self.waker()));
@@ -583,11 +627,20 @@ impl App {
                 .as_ref()
                 .and_then(|_| watch::Watch::new(self.waker()).ok());
             self.reload_error = None;
-        } else if self.session.unsaved() != old_unsaved
-            && let Some(autosave) = &self.autosave
-        {
-            autosave.save(self.session.document().clone());
+        } else if let Some(autosave) = &self.autosave {
+            if reloaded {
+                autosave.resume(self.session.document().clone());
+            } else if self.session.unsaved() != old_unsaved {
+                autosave.save(self.session.document().clone());
+            }
         }
+        self.watch_assets();
+    }
+
+    /// Watch the directories of the workspace's assets.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn watch_assets(&mut self) {
+        let root = self.session.root().map(std::path::PathBuf::from);
         if let (Some(watch), Some(root)) = (&mut self.watch, &root) {
             let dirs = self
                 .session
@@ -617,27 +670,35 @@ impl App {
             .values()
             .map(|a| root.join(&a.path))
             .collect();
-        if watch.take().iter().any(|path| assets.contains(path)) {
+        let changed = watch.take();
+        if changed.iter().any(|path| assets.contains(path)) {
             self.assets.invalidate();
             // The slide is rendered again with the new bytes, as after a command.
             self.view.drawn = None;
         }
+        // A directory removed and made again, as a checkout does, lost its watch with the old one:
+        // the watches are set again after any event.
+        if !changed.is_empty() {
+            self.watch_assets();
+        }
     }
 
-    /// The text of the state label: where the presentation is, and whether its edits are saved,
-    /// the store's state as `store` replies it. A workspace is saved by Ctrl+S, so it names the
-    /// changes since its save.
+    /// The text of the state label: where the presentation is, and whether its edits are saved.
+    /// A workspace that autosaves is saved, unless the guard stopped the writes or the last write
+    /// failed; otherwise the label states the store's state as `store` replies it, the changes
+    /// since the last save included.
     pub fn state_label(&self) -> String {
         let changes = |n: u64| match n {
             1 => "1 change".to_owned(),
             n => format!("{n} changes"),
         };
         let unsaved = self.session.unsaved();
-        // A workspace that autosaves is saved, unless the guard stopped the writes.
         #[cfg(not(target_arch = "wasm32"))]
         if let (Some(root), Some(autosave)) = (self.session.root(), &self.autosave) {
             return if autosave.stopped() {
                 format!("Workspace {root}, not saved: the file changed outside rootpoint")
+            } else if let Some(failure) = autosave.failure() {
+                format!("Workspace {root}, not saved: {failure}")
             } else {
                 format!("Workspace {root}, saved")
             };
@@ -656,15 +717,26 @@ impl App {
         self.close_question
     }
 
-    /// The close of the window was asked: in memory with unsaved edits, which no undo reaches once
-    /// the window is gone, the close is cancelled and the question asks first, unless the author
-    /// answered it by closing; a workspace never asks.
+    /// Whether a close would lose edits no file holds: in memory, the edits since the last save; in
+    /// a workspace, those its autosave did not write, since its guard stopped the writes or its
+    /// last write failed.
+    fn edits_not_written(&self) -> bool {
+        #[cfg(not(target_arch = "wasm32"))]
+        if let (Some(_), Some(autosave)) = (self.session.root(), &self.autosave) {
+            return autosave.stopped() || autosave.failure().is_some();
+        }
+        self.session.root().is_none() && self.session.unsaved() > 0
+    }
+
+    /// The close of the window was asked: with edits no file holds, which no undo reaches once the
+    /// window is gone, the close is cancelled and the question asks first, unless the author
+    /// answered it by closing.
     fn on_close(&mut self, ctx: &Context) {
         let asked = ctx.input(|i| i.viewport().close_requested());
         if !asked || self.closing {
             return;
         }
-        if self.session.root().is_none() && self.session.unsaved() > 0 {
+        if self.edits_not_written() {
             ctx.send_viewport_cmd(egui::ViewportCommand::CancelClose);
             self.close_question = true;
         }
@@ -682,7 +754,9 @@ impl App {
             .resizable(false)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .show(ctx, |ui| {
-                ui.label(if n == 1 {
+                ui.label(if self.session.root().is_some() {
+                    "The last edits are not written to presentation.ron.".to_owned()
+                } else if n == 1 {
                     "1 change held in memory is not saved.".to_owned()
                 } else {
                     format!("{n} changes held in memory are not saved.")

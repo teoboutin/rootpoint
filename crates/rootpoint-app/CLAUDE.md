@@ -52,8 +52,10 @@ The code built for the wasm target alone is under `cfg(target_arch = "wasm32")`:
 `path@rootpoint-app@src/main.rs`, the pickers and full screen in `path@rootpoint-app@src/web.rs`
 with their calls in `App::frame`, and the actions of `path@rootpoint-app@src/actions.rs` that
 differ there, open, save and adding an image; the Save button of `path@rootpoint-app@src/panels.rs`
-is under `cfg(not(target_arch = "wasm32"))`; the control socket is under `cfg(unix)`, which the
-wasm target is not, per `design@rootpoint-app@control-socket`. What a picker gives goes through an
+is under `cfg(not(target_arch = "wasm32"))`, and so are the autosave and the watcher,
+`path@rootpoint-app@src/autosave.rs` and `path@rootpoint-app@src/watch.rs`, with the banner and
+the fields of `App` that hold them; the control socket is under `cfg(unix)`, which the wasm target
+is not, per `design@rootpoint-app@control-socket`. What a picker gives goes through an
 action of `actions.rs`, `App::open_directory`, `App::add_picked_image` or `App::open_picked_pack`,
 built on every target,
 so the native tests check it. `path@rootpoint-app@tests/actions.rs` and

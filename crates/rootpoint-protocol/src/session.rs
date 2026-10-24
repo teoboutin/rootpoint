@@ -205,7 +205,8 @@ impl Session {
                     return Err("a presentation held in memory has no file to reload".to_owned());
                 };
                 let doc = read_presentation(&join(root, PRESENTATION), files)?;
-                // The reply names no id: every id of the file is new to the editor.
+                // The reply names no id: the file's ids are its own, and the operation creates
+                // none.
                 self.edit(Op::ReplaceDocument {
                     document: Box::new(doc),
                 })?;

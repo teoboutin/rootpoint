@@ -124,6 +124,11 @@ included. `/.rootpoint/control.sock` takes 24 of them, so a workspace whose path
 `live`. Socket permissions have no meaning for an abstract socket, `unix(7)` says, so any user of the
 machine could connect and drive the editor.
 
+### A control channel of named pipes `##named-pipes`
+
+`live`. A named pipe carries no connections: each client needs a pair of pipes of its own, set up
+by hand, where one Unix socket accepts every client.
+
 ### A control socket over TCP on localhost `##tcp-socket`
 
 `live`. Any local process, of any user, can connect to a port of localhost, so the protocol would need

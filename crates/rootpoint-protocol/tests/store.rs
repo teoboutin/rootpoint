@@ -115,7 +115,7 @@ fn run_ok(s: &mut Session, files: &mut RecordingFiles, line: &str) -> String {
     }
 }
 
-/// AC2 of the milestone, for the RON, `render` and `open-copy`: a file naming paths outside the
+/// AC2 of `milestone@plans@asset-storage`, for the RON, `render` and `open-copy`: a file naming paths outside the
 /// root loads, names each as a breach and draws each as missing, and no path outside the root
 /// reaches the host's files; a symlink out of the root is refused at its read.
 #[test]
@@ -160,7 +160,7 @@ fn no_read_of_a_workspace_reaches_outside_its_root() {
     assert_eq!(files.outside(&root), Vec::<String>::new());
 }
 
-/// AC2 of the milestone, for `import`: a write through a symlink out of the root, its target there
+/// AC2 of `milestone@plans@asset-storage`, for `import`: a write through a symlink out of the root, its target there
 /// or missing, and an import to a path that fails confinement, reply `err` and write nothing.
 #[test]
 fn no_import_writes_outside_its_root() {
@@ -364,7 +364,8 @@ fn reload_makes_the_file_the_document_one_undo_step() {
     assert_eq!(ok(&mut s, &mut files, "reload"), "");
     assert_eq!(s.document(), outside.document());
     ok(&mut s, &mut files, "undo");
-    assert_eq!(s.document(), &mine);
+    // The undo keeps the larger id counter, so the content alone is compared.
+    assert!(s.document().same_content(&mine));
     files
         .files
         .insert("w/presentation.ron".into(), b"not ron".to_vec());
@@ -372,7 +373,7 @@ fn reload_makes_the_file_the_document_one_undo_step() {
         s.execute("reload", &mut files),
         Some(Reply::Err(_))
     ));
-    assert_eq!(s.document(), &mine);
+    assert!(s.document().same_content(&mine));
     ok(&mut s, &mut files, "new");
     assert!(matches!(
         s.execute("reload", &mut files),

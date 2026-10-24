@@ -84,11 +84,15 @@ editor text that is no slide content, so they are not the slide text that
 ### The window always shows where its presentation is and whether it is saved, and names where each writing action writes `##visible-mode`
 
 The state label, `App::state_label`, at the right end of the toolbar, reads "In memory, not saved";
-"In memory, saved to `<file>`", with ", n changes since" once there are; or "Workspace `<path>`,
-saved", with "n changes since the save" in place of "saved" once there are. Each action that writes
-is named by what it writes: "Save as pack…", "Save as workspace…", "Unpack to…", "Pack to…"; Save
-writes to the store the label names. The
-label shows the store `store` replies, `design@rootpoint-protocol@store-query`. On the owner's
+"In memory, saved to `<file>`", with ", n changes since" once there are; or, in a workspace, which
+saves itself, `design@rootpoint-app@workspace-autosave`, "Workspace `<path>`, saved", "Workspace
+`<path>`, not saved: the file changed outside rootpoint" while the guard of
+`design@rootpoint-app@ron-overwrite-guard` stops the writes, and "Workspace `<path>`, not saved:
+`<reason>`" after a write that failed. A window with no autosave, as `App::new` in the tests, reads
+"n changes since the save" in place of "saved" once there are. Each action that writes is named by
+what it writes: "Save as pack…", "Save as workspace…", "Unpack to…", "Pack to…"; Save writes to
+the store the label names. The label shows the store `store` replies,
+`design@rootpoint-protocol@store-query`. On the owner's
 word: the owner set that the window conveys which state it is in, and what each of its actions
 does.
 
@@ -283,11 +287,12 @@ does not reach content whose history is gone, after a closed window or a reloade
 `issue@rootpoint-app@browser-autosave`, nor a step a later edit cleared from the redo stack,
 nor a step the author cannot find, `issue@rootpoint-protocol@history-browsing`.
 
-The close of a window held in memory while `Session::unsaved` is not 0 is the one action that asks,
-since no undo reaches a closed window: the window cancels the close by `ViewportCommand::CancelClose`
-and asks "Close without saving?", with "Close" and "Keep open". A workspace never asks, since its
-autosave writes every undo step, `design@rootpoint-app@workspace-autosave`, and nothing unsaved
-asks nothing.
+The close of a window whose edits no file holds is the one action that asks, since no undo reaches
+a closed window: in memory, while `Session::unsaved` is not 0; in a workspace, while the guard of
+`design@rootpoint-app@ron-overwrite-guard` stops the writes or the last write failed. The window
+cancels the close by `ViewportCommand::CancelClose` and asks "Close without saving?", with "Close"
+and "Keep open". A workspace whose autosave writes every undo step never asks,
+`design@rootpoint-app@workspace-autosave`, and nothing unsaved asks nothing.
 
 ## Moving content
 
@@ -443,11 +448,13 @@ An agent reaches the window from the moment it opens, a new presentation in memo
 tells two workspaces of one name apart, where the name alone would make the second window's socket
 refused, since the first answers there. The pointer file holds no flag of state: a flag goes stale
 when the window crashes, and a client learns whether the window is live by connecting. The socket
-needs no lock of its own, since only the holder of a workspace's lock binds its socket,
-`design@rootpoint-app@only-a-stale-socket-is-replaced`. The socket lies outside the workspace,
+needs no lock of its own: `App::run` moves the socket to a workspace's name only after
+`workspace::run` took that workspace's lock, `design@rootpoint-protocol@workspace-lock`, so only the
+holder of the lock binds its socket. The socket lies outside the workspace,
 `rejected@rootpoint-app@socket-in-the-workspace`, and is a file of a directory no other user
 reaches, against `rejected@rootpoint-app@abstract-namespace-socket` and
-`rejected@rootpoint-app@tcp-socket`. On the owner's word: the owner proposed the socket in the
+`rejected@rootpoint-app@tcp-socket`, and is one socket for every client, against
+`rejected@rootpoint-app@named-pipes`. On the owner's word: the owner proposed the socket in the
 runtime directory named by the workspace.
 
 ### The window replaces only a socket nothing answers, and refuses any other file at its path `##only-a-stale-socket-is-replaced`
@@ -460,7 +467,7 @@ is still the one it bound, by its inode. The rival, removing whatever refuses a 
 the presentation an author gave as the socket's path, since a regular file refuses a connection
 too. Two windows starting at one moment on one workspace cannot both replace a stale socket and
 bind, since only the holder of the workspace's lock binds its socket,
-`design@rootpoint-protocol@workspace-lock`; the test `two_opens_of_one_workspace_bind_one_socket`
+`design@rootpoint-app@socket-place`; the test `two_opens_of_one_workspace_bind_one_socket`
 of `path@rootpoint-app@tests/workspace.rs` opens one workspace from two threads, 200 times, and
 one open succeeds each time.
 
@@ -571,13 +578,20 @@ The native window holding a workspace starts `rootpoint_app::autosave::Autosave`
 sends it a clone of the document after each command that changed `Session::unsaved`, the undo
 steps; the thread keeps only the newest clone while a write runs, serializes it, and writes
 `presentation.ron` through `.rootpoint/presentation.ron.new`, flushed, then renamed, so a reader
-never sees half a file. Dropping the window writes the clone still waiting. The GUI thread pays for
-the clone alone: 0.244 ms at 1000 slides on telmon, the median of 21 runs of the test
-`autosave_gui_cost` of `path@rootpoint-app@tests/autosave.rs`, run by
-`cargo test -p rootpoint-app --release --test autosave -- --ignored --nocapture`, where one frame
-at 60 Hz is 16.7 ms. The thread reads no session and applies no change, so it is no action of
-`design@rootpoint-app@actions-are-commands`; `rootpoint-headless` has none, and a script writes by
-`save`.
+never sees half a file. Dropping the window writes the clone still waiting, before the window
+releases the workspace's lock. The thread reads no session and applies no change, so it is no
+action of `design@rootpoint-app@actions-are-commands`; `rootpoint-headless` has none, and a script
+writes by `save`.
+
+The thread is what keeps an undo step within its bound. The test `autosave_gui_cost` of
+`path@rootpoint-app@tests/autosave.rs`, run by
+`cargo test -p rootpoint-app --release --test autosave -- --ignored --nocapture`, times the
+medians of 21 runs at 50, 200 and 1000 slides of the sample, whose document holds no image's
+bytes: on telmon, an AMD Ryzen 9 9950X, the GUI thread's share, the clone and its hand-over, is
+0.011, 0.048 and 0.244 ms, and `save_ron`, which the rival would run on the GUI thread before its
+write, is 0.160, 0.628 and 3.167 ms, linear in the slides. The bound on the share is 1 ms, which
+the owner accepted; one frame at 60 Hz is 16.7 ms. The thread also takes the time of a slow `fsync`, as on a USB stick,
+which no frame waits for.
 
 With every step written, the files on disk agree with the window but for one step at most, so a
 watcher, git or an agent reading the directory sees the tree the window shows, which an explicit
@@ -587,37 +601,52 @@ explicit save, with the time of an autosave measured, its scaling included.
 
 ### An autosave writes nothing over a `presentation.ron` changed outside rootpoint, and asks `##ron-overwrite-guard`
 
-The autosave's thread reads `presentation.ron` at the open as its baseline, and, before each
-write, compares the file with the bytes it last wrote or read. When they differ, it writes
-nothing, and the writes stop: a banner over the toolbar says "presentation.ron was changed outside
-rootpoint", with "Load the file", which runs `reload`, the file made the document by
-`Op::ReplaceDocument`, one undo step that brings the window's own back, and "Keep mine", which
-writes the window's document; after either, the writes resume, from the bytes read or written. A
-file that does not load is named in the banner, which stays. The state label then reads
-"not saved: the file changed outside rootpoint", `design@rootpoint-app@visible-mode`.
+The window reads `presentation.ron` at the open, as the autosave's baseline, and, before each
+write, the thread compares the file with the bytes it last wrote or read. When they differ, it
+writes nothing, and the writes stop: a banner over the toolbar says "presentation.ron was changed
+outside rootpoint", with "Load the file", which runs `reload`,
+`design@rootpoint-protocol@reload-is-an-undo-step`, and "Keep mine", which writes the window's
+document; after either, the writes resume, from the bytes read or written. A file that does not
+load is named in the banner, which stays. The state label then says the file changed,
+`design@rootpoint-app@visible-mode`, and a close asks,
+`design@rootpoint-app@no-discard-confirmation`. The guard knows every write and every read of the
+window: a `save` of the window or of its socket is a write of the thread, replying `err` while the
+writes are stopped, a `reload` from the banner or a script resumes from the file it read, and an
+`open` of the workspace held starts the autosave again.
 
 An autosave makes the window a writer that could overwrite a change nobody saw, after a
 `git checkout`, a `git stash` or an agent's edit of the file; the workspace lock does not help,
-since those tools do not take it. A write between the comparison and the rename, a window of about
-one write's time, is not seen: closing it would need a lock git and editors do not take.
+since those tools do not take it. The banner is not the dialog
+`rejected@rootpoint-app@removal-guard` rejects: that one asked before an action undo reverses, and
+the banner guards content the window never held. A write between the comparison and the rename, a
+window of about one write's time, is not seen: closing it would need a lock git and editors do not
+take.
 `tripwire@rootpoint-app@guard-shows-with-no-outside-writer` watches a tool that rewrites the bytes
 with no change.
 
-### The window reads an asset again when its file changes, and watches only the directories of the assets `##asset-watch`
+### The window reads an asset again when its file changes, watching only the directories of the assets `##asset-watch`
 
 The native window holding a workspace watches, by `notify` 8.2.0, each directory that holds an
-asset of the table, not recursively; an event that changes the file of an asset, by its bytes or
-its name, drops the decoded assets and renders the slide again, and any other event, a read of a
+asset of the table, not recursively, so the slide view shows the bytes the files hold,
+`goal@rootpoint-app@faithful-slide-view`; an event that changes the file of an asset, by its bytes
+or its name, drops the decoded assets and renders the slide again, and any other event, a read of a
 file, a change of its metadata, or a file that is no asset, `presentation.ron` and `.git/`
-included, decodes nothing. A recursive watch of the root would see every file of `.git/` and of a
-build tree, and each watch counts toward `fs.inotify.max_user_watches`, 65,536 on telmon, as the
-crate's documentation says; the test `the_watcher_decodes_a_changed_asset_and_nothing_of_git` of
+included, decodes nothing. After any event the directories are watched again, since a directory
+removed and made again, as a checkout does, lost its watch with the old one. A recursive watch of
+the root would see every file of `.git/` and of a build tree; the crate's documentation says every
+watch counts toward `fs.inotify.max_user_watches`, and a recursive one counts every file and
+folder below it; the limit is 65,536 on telmon, read by `cat /proc/sys/fs/inotify/max_user_watches`.
+The test `the_watcher_decodes_a_changed_asset_and_nothing_of_git` of
 `path@rootpoint-app@tests/autosave.rs` commits to a git repository at the root and decodes nothing.
-`presentation.ron` is not watched: the window and the protocol edit it, and the guard of
-`design@rootpoint-app@ron-overwrite-guard` meets a change of it at the next write. In memory nothing
-on disk is the presentation's, so nothing is watched. On the owner's word: the owner asked for the
-assets to be watched, and saw no reason to watch `presentation.ron`, whose correct editing, in the
-owner's opinion, is by the window or the text protocol.
+In memory nothing on disk is the presentation's, so nothing is watched. On the owner's word: the
+owner asked for the assets to be watched.
+
+### The window loads a `presentation.ron` changed outside rootpoint only when the author asks `##ron-loaded-on-request`
+
+No event of `presentation.ron` loads it: the guard of `design@rootpoint-app@ron-overwrite-guard`
+meets a change of it at the next write, and the banner's "Load the file" is the one load the window
+makes on its own. On the owner's word: the owner saw no reason to watch `presentation.ron`, whose
+correct editing, in the owner's opinion, is by the window or the text protocol.
 
 ## The browser build
 

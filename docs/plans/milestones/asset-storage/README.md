@@ -465,7 +465,9 @@ Proposed by the session in round 1, as shape A against shape B, an explicit save
 with autosave time measured (including scalability)". The measurement is #arg-16; AC1 holds the
 owner's condition. Arguments: #arg-16, #arg-10. Shape: "Decided design", #autosave-and-watch and
 #asset-commands. Harvest: heads of the app (autosave) at #autosave-and-watch and of the protocol
-(the trash) at #asset-commands, with a `rejected` entry for shape B.
+(the trash) at #asset-commands. The `rejected` entry for shape B is not written: the harvest of
+#autosave-and-watch found it refuted by reasoning a reader derives again, and changing no
+interface, so it meets no recording test.
 
 ### The window reads an asset again when its file changes, and does not watch `presentation.ron` `##asset-watch`
 
@@ -949,8 +951,8 @@ paths.
 ### #asset-watch
 
 The window watches, natively and in a workspace only, the directories that hold an asset of the
-table, not recursively, AC3; a change of an asset's file decodes it again in the next frame,
-`Assets::refresh` keying on its modification time. In memory, the map is the presentation, so
+table, not recursively, AC3; an event of the watcher that names an asset's file drops the decoded
+assets, which the next frame decodes again, since `Files` has no modification time. In memory, the map is the presentation, so
 nothing on disk is its file and nothing is watched, the browser's picked directory included. The
 leads of the closed issue `changed-asset-not-read-again` other than a notification, a check of the
 modification time at each draw and an action "reload assets", are not built: the owner asked in
@@ -1039,8 +1041,9 @@ widened by D5:
 | in memory, a pack its target | n > 0 | "In memory, saved to `<file>.rpk`, n changes since" |
 | a workspace, autosave running | any | "Workspace `<path>`, saved" |
 | a workspace, autosave stopped by the guard | any | "Workspace `<path>`, not saved: the file changed outside rootpoint" |
-| a workspace, before #autosave-and-watch | 0 | "Workspace `<path>`, saved" |
-| a workspace, before #autosave-and-watch | n > 0 | "Workspace `<path>`, n changes since the save" |
+| a workspace, its last write failed | any | "Workspace `<path>`, not saved: `<reason>`" |
+| a workspace with no autosave, as `App::new` in the tests | 0 | "Workspace `<path>`, saved" |
+| a workspace with no autosave, as `App::new` in the tests | n > 0 | "Workspace `<path>`, n changes since the save" |
 
 **The store's change to the socket's name**, total over the changes the window makes:
 

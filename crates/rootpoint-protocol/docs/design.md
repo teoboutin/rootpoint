@@ -154,8 +154,8 @@ it: every operation applied inside is one undo step, undone and redone together,
 group leaves no step; `err` with no group open. `cancel` reverts every operation applied inside
 the group and restores the undo and redo stacks as they were at its `begin`; `err` with no group
 open. `undo` and `redo` inside a group close it first, as `end` does, then act; `new`, `sample`,
-`open` and `open-copy` close it as part of replacing the document and the stacks; view commands
-join nothing.
+`open` and `open-copy` close it as part of replacing the document and the stacks; `reload` joins
+it as any edit does; view commands join nothing.
 The stacks hold steps, each the inverses of one group or of one command, applied atomically: a
 step that fails leaves the document and the view as they were.
 
@@ -168,6 +168,16 @@ step. The rivals lost: a preview on a copy, `rejected@rootpoint-protocol@preview
 keeps the protocol unchanged but leaves the session behind the screen, and the session merging
 consecutive commands, `rejected@rootpoint-protocol@merged-commands`. On the owner's word: the
 owner chose explicit groups over both.
+
+### `reload` makes the file the document as one undo step, which brings the editor's own back `##reload-is-an-undo-step`
+
+In a workspace, `reload` reads `presentation.ron` and applies it as `Op::ReplaceDocument`, whose
+inverse holds the document replaced, so `undo` gives back what the editor held; the id counter
+keeps the larger of the two documents', so no id the editor handed out is given again,
+`design@rootpoint-model@stable-ids`. In memory it replies `err`, since no file is the document's.
+The rival, a reload that empties the undo stacks as `open` does, loses the editor's own edits at
+the one moment the author chose between two versions. The window's banner runs it,
+`design@rootpoint-app@ron-overwrite-guard`, and so can a script.
 
 ## The store
 
@@ -256,8 +266,8 @@ since `design@rootpoint@gui-only-in-app` keeps the headless binary out of the ap
 
 The kernel releases the lock when the process ends, so a crash leaves no stale lock, where a file
 holding a pid, the rival, stays held after a crash until someone removes it by hand. Only the
-holder binds the workspace's socket, `design@rootpoint-app@only-a-stale-socket-is-replaced`, so two
-windows cannot both bind it. The lock is between processes: inside one window, the authority to
+holder binds the workspace's socket, `design@rootpoint-app@socket-place`, so two windows cannot
+both bind it. The lock is between processes: inside one window, the authority to
 edit stays `design@rootpoint-app@one-controller-at-a-time`, and an agent drives the window through
 its socket and never opens the workspace itself, so the lock keeps no agent out. `tripwire@rootpoint-protocol@workspace-on-two-machines`
 watches a workspace a sync tool shares. On the owner's word: a client locks the workspace, through

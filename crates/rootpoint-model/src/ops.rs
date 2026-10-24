@@ -370,8 +370,12 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
         // A replacement naming a style the table lacks is accepted, as every reference to a missing
         // style is but the one a rename refuses above: the commands refuse it,
         // `design@rootpoint-protocol@no-new-breach`.
+        // The counter keeps the larger of the two, so that no id the editor handed out, as to a
+        // script, is given again: the ids only grow, `design@rootpoint-model@stable-ids`.
         Op::ReplaceDocument { document } => {
+            let next_id = doc.next_id.max(document.next_id);
             let old = std::mem::replace(doc, *document);
+            doc.next_id = next_id;
             Ok(Op::ReplaceDocument {
                 document: Box::new(old),
             })

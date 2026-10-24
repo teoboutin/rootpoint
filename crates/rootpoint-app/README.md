@@ -14,11 +14,12 @@ A socket left by a run that was killed is replaced, a path that holds another ki
 refused and kept, and the window removes its socket when it closes; a window whose socket cannot
 be bound runs without one, the status line saying why. The toolbar ends with the state label:
 "In memory, not saved", "In memory, saved to `<file>`", with the changes not saved yet, or
-"Workspace `<path>`, saved"; closing a window held in memory with changes not saved asks first. A
-workspace saves itself after every change, on a thread of its own: when `presentation.ron` was
-changed by another program, the window writes nothing over it, and a banner offers "Load the
-file", which makes it the presentation, one step undo takes back, or "Keep mine", which writes the
-window's. The window reads an image or a font again when its file changes on disk. The window holds the
+"Workspace `<path>`, saved", and "not saved", with the reason, when a write of the workspace did
+not happen. A workspace saves itself after every change, on a thread of its own: when
+`presentation.ron` was changed by another program, the window writes nothing over it, Ctrl+S
+included, and a banner offers "Load the file", which makes it the presentation, one step undo
+takes back, or "Keep mine", which writes the window's. Closing a window whose changes no file
+holds, in memory or in a workspace whose writes stopped or failed, asks first. The window reads an image or a font again when its file changes on disk. The window holds the
 authority to edit at start; `control` gives it to the socket, `release` gives it back, and the
 queries `tree`, `view`, `store`, `styles` and `render` need none. While the socket holds control, a banner
 over the toolbar says so beside a button "Take control", which takes it back; the window shows each

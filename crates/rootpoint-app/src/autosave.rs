@@ -1,8 +1,11 @@
 //! The autosave of the native window's workspace: a thread that writes `presentation.ron` after
 //! every undo step, and its guard, which writes nothing over a file changed outside rootpoint. The
 //! GUI thread pays only for a clone of the document; the thread serializes it, compares the file
-//! with what it last wrote or read, and writes it through a temporary file and a rename. It reads no
-//! session and applies no change, so it is no action of `design@rootpoint-app@actions-are-commands`.
+//! with what it last wrote or read, and writes it through a temporary file and a rename, per
+//! `design@rootpoint-app@workspace-autosave` and `design@rootpoint-app@ron-overwrite-guard`. It
+//! reads no session and applies no change, so it is no action of
+//! `design@rootpoint-app@actions-are-commands`; neither is the banner's "Keep mine", which hands it
+//! the window's document and changes no session.
 //! Native only: the browser build has no thread and no workspace.
 
 use std::fs::File;
@@ -20,8 +23,10 @@ enum Job {
     Write(Box<Document>),
     /// Write the document whatever the file holds, and resume: "Keep mine".
     Force(Box<Document>),
-    /// Take the file as it is now as the baseline, resume, and write the document: after "Load the
-    /// file", whose document is the file's.
+    /// Take the file as it is now as the baseline, resume, and write the document: after a
+    /// `reload`, whose document is the file's. The file is read again when the job runs, so a
+    /// write between the `reload`'s read and this one is not seen, a window as short as the one
+    /// before a rename.
     Resume(Box<Document>),
 }
 
@@ -50,8 +55,9 @@ pub struct Autosave {
 
 impl Autosave {
     /// Start the autosave of the workspace at `root`, its baseline the bytes `presentation.ron`
-    /// holds now, or none when it has none. `wake` asks the window for a frame when the guard
-    /// stops the writes, so the banner shows.
+    /// holds now, read on the caller's thread, or none when it has none. `wake` asks the window
+    /// for a frame when the guard stops the writes or a write fails, so the banner or the label
+    /// shows it.
     pub fn start(root: PathBuf, wake: Arc<dyn Fn() + Send + Sync>) -> Autosave {
         let file = root.join("presentation.ron");
         let mut baseline = std::fs::read(&file).ok();
@@ -80,6 +86,12 @@ impl Autosave {
                     Done::Wrote => state.writes += 1,
                     Done::Stopped => {
                         state.stopped = true;
+                        drop(state);
+                        wake();
+                        cond.notify_all();
+                        continue;
+                    }
+                    Done::Failed => {
                         drop(state);
                         wake();
                         cond.notify_all();
@@ -171,6 +183,7 @@ impl Drop for Autosave {
 enum Done {
     Wrote,
     Stopped,
+    Failed,
     Nothing,
 }
 
@@ -201,7 +214,7 @@ fn run(
     }
     let text = save_ron(&doc);
     // A write between the comparison and the rename is not seen, a window of one write's time,
-    // which the guard's head accepts.
+    // which `design@rootpoint-app@ron-overwrite-guard` accepts.
     match write_through_rename(root, file, text.as_bytes()) {
         Ok(()) => {
             *baseline = Some(text.into_bytes());
@@ -213,8 +226,8 @@ fn run(
             Done::Wrote
         }
         Err(e) => {
-            lock.lock().unwrap().failure = Some(format!("{}: {e}", file.display()));
-            Done::Nothing
+            lock.lock().unwrap().failure = Some(e);
+            Done::Failed
         }
     }
 }
@@ -225,12 +238,16 @@ fn write_through_rename(
     root: &std::path::Path,
     file: &std::path::Path,
     bytes: &[u8],
-) -> std::io::Result<()> {
+) -> Result<(), String> {
     let dir = root.join(".rootpoint");
-    std::fs::create_dir_all(&dir)?;
     let temporary = dir.join("presentation.ron.new");
-    let mut out = File::create(&temporary)?;
-    out.write_all(bytes)?;
-    out.sync_all()?;
-    std::fs::rename(&temporary, file)
+    let at = |path: &std::path::Path| {
+        let path = path.display().to_string();
+        move |e: std::io::Error| format!("{path}: {e}")
+    };
+    std::fs::create_dir_all(&dir).map_err(at(&dir))?;
+    let mut out = File::create(&temporary).map_err(at(&temporary))?;
+    out.write_all(bytes).map_err(at(&temporary))?;
+    out.sync_all().map_err(at(&temporary))?;
+    std::fs::rename(&temporary, file).map_err(at(file))
 }
