@@ -245,7 +245,6 @@ The slices are built in the order of "Implementation sequence", each on its own 
 `design@rootpoint@no-compat-in-initial-dev`, `design@rootpoint@wasm-from-the-start`,
 `design@rootpoint@gui-only-in-app`, `design@rootpoint-model@edit-operation-core`,
 `design@rootpoint-model@stable-ids`, `design@rootpoint-model@inline-content-assets`,
-`design@rootpoint-model@cosmetic-fallbacks`,
 `design@rootpoint-model@save-format`, `design@rootpoint-protocol@protocol-transport`,
 `design@rootpoint-protocol@protocol-addressing`, `design@rootpoint-protocol@no-new-breach`,
 `design@rootpoint-protocol@control-commands`,
@@ -272,7 +271,7 @@ referencing each, and the slice that updates it:
 | `design@rootpoint-app@only-a-stale-socket-is-replaced` | rewritten by #workspace-lock: a workspace's socket is bound only under its lock, so a second window is refused before its bind; the refusal of a file that is no socket stands | its own last sentence, which cites `spec@asset-storage@workspace-host` (#workspace-host); `two-windows-bind-one-path`, closed on this branch |
 | `design@rootpoint-app@no-discard-confirmation` | its title contradicted by #unsaved-close-warning; its ground is the owner's, so D3 puts the rewrite to the owner | its own line 272, which cites `issue@rootpoint-app@browser-autosave`, and `register@rootpoint-app@rejected` line 93 (#workspace-host, on D3) |
 | `design@rootpoint-protocol@gesture-undo` | rewritten by #asset-disk-changes: a step holds its file moves, and `load` leaves its list of the commands that close a group | none (#asset-commands, and #rooted-assets for `load`) |
-| `design@rootpoint-model@validated-documents` | widened by #asset-paths-only: an asset path that fails confinement is structural, on D4 | none (#rooted-assets) |
+| `design@rootpoint-model@cosmetic-fallbacks` | a member added by #asset-paths-only, on D4: an asset path that fails confinement is a cosmetic breach, drawn as a missing file and never read | none (#rooted-assets) |
 | `rejected@rootpoint-app@socket-holds-control-at-start` | names `--control`, which leaves; its argument stands | its own text (#workspace-host) |
 | `design@rootpoint-render@caller-supplies-assets` | reworded: an asset's path is relative to a root only the caller knows | `register@rootpoint-protocol@design` line 140, `path@rootpoint-render@CLAUDE.md` line 9 (#rooted-assets) |
 
@@ -738,6 +737,7 @@ Each is introduced by the slice named beside it. A name that exists is marked so
 ```text
 crates/rootpoint-model/src/document.rs     Asset { path: String }                     (#rooted-assets; AssetSource leaves)
 crates/rootpoint-model/src/document.rs     fn asset_path_is_confined(&str) -> bool     (#rooted-assets)
+crates/rootpoint-model/src/validate.rs     Breach::UnconfinedAsset { asset } (Breach exists, with MissingAsset)   (#rooted-assets)
 crates/rootpoint-model/src/ops.rs          Op::SetAssetPath { id, path }               (#rooted-assets; Op::SetAssetSource leaves)
 crates/rootpoint-model/src/ops.rs          Op::ReplaceDocument { document }            (#autosave-and-watch)
 crates/rootpoint-protocol/src/files.rs     Files::canonical, Files::list               (#rooted-assets)
@@ -867,10 +867,15 @@ the runtime directory that accepts a connection, with its file name.
 
 `Asset { path }`. `asset_path_is_confined` holds for an asset path with no empty, `.` or `..`
 component, no leading `/`, no `\`, a first component other than `.rootpoint`, and other than
-`presentation.ron`. `load_ron` refuses a file whose asset fails it, as a structural breach,
-`design@rootpoint-model@validated-documents`; D4 puts that refusal, against a stand-in, to the
-owner. A workspace store also refuses each read whose `Files::canonical` path is not under the
-canonical root, which a symlink that leads out of the root makes so. `Files::canonical` gives the
+`presentation.ron`. `load_ron` loads a file whose asset fails it: the path is a cosmetic breach,
+`Breach::UnconfinedAsset`, named by `Document::breaches`, its image drawn grey and its font the
+built-in sans, as a missing file's are, by D4. The store is the one check of every access: it
+refuses each read, write, rename and removal of a path that fails `asset_path_is_confined`, and, in
+a workspace, each whose `Files::canonical` path is not under the canonical root, which a symlink
+that leads out of the root makes so. So no command reads or writes outside the root, whatever the
+RON names, and every command that would create such a path, `import`, `asset-move` and
+`asset-relink`, replies `err`, per `design@rootpoint-protocol@no-new-breach`. `pack` writes no
+bytes for such an asset, as for a missing one, and its reply names each. `Files::canonical` gives the
 path with every symlink resolved, `std::fs::canonicalize` natively, and the path itself in a map.
 
 `import <host-path> [<asset-path>]` reads a file of the host's files, anywhere. In a workspace, a
@@ -985,7 +990,7 @@ this question contradicts.
 | old | new |
 | --- | --- |
 | `Path(p)`, `p` confined | `path: p` |
-| `Path(p)`, `p` not confined | refused at load, as the new format's structural breach (D4) |
+| `Path(p)`, `p` not confined | `path: p`, a cosmetic breach no command reads or writes (D4) |
 | `Embedded(bytes)` | no form in the RON: the bytes are an entry of the map or a file at an asset path |
 
 **The store's state to the state label**, total over the states, the form of #c-visible-mode
@@ -1115,9 +1120,11 @@ argued again only if no snapshot meets the bound.
 AC2. Guards #asset-paths-only and #pack-container. Judged at #rooted-assets (the RON, `import` and a
 read through a symlink) and at #pack-commands (`open-pack`, which runs `read_pack`). Observable:
 tests load a RON whose asset path is absolute, holds `..`, starts with `.rootpoint` or is
-`presentation.ron`; import to such an asset path; read an asset through a symlink that leads out
-of a workspace's root; and open a crafted pack with such entries and a symlink entry. Each is
-refused, and no file outside the root is read or written. Response: the refusal is fixed in the
+`presentation.ron`, and find it loaded with each named as a breach and drawn as missing; render,
+pack, move, replace and remove each such asset; import to such an asset path; read an asset
+through a symlink that leads out of a workspace's root; and open a crafted pack with such entries
+and a symlink entry. No file outside the root is read or written, and each command that would
+create such a path is refused. Response: the refusal is fixed in the
 slice; a case the design cannot refuse reopens #asset-paths-only.
 
 ### The watcher watches only the directories that hold an asset of the table `##ac-watch-asset-dirs`
@@ -1194,16 +1201,23 @@ at the new name and removes the old one, a shape the decision admits.
   in its body as the case #unsaved-close-warning asks for; rewritten at #workspace-host, which
   builds the native question. Found by the review of this document.
 - **D4**, accepted by the owner in the message "all five defaults accepted, proced", on the narrower
-  statement of the principle; put to the owner again with the principle whole, as below. Its text: on #asset-paths-only: the owner's word of round 4, "the project should not accept relative
+  statement of the principle; put to the owner again with the principle whole, and its default
+  changed, as below. Its text: on #asset-paths-only: the owner's word of round 4, "the project should not accept relative
   path, and especially not one sitting outside the workspace directory", against the owner's
   principle in `design@rootpoint-model@cosmetic-fallbacks`, that "a cosmetic one falls back
   wherever a fallback can be used, in the owner's opinion, and that a file whose structural change
   makes it impossible to render properly, or not obvious for a user to recover from, may be
   refused", as the head records it; the reply that put D4 stated the principle without its hedge
-  and its last clause. An asset path outside the root could be drawn grey, as a missing
-  file is. Default: `load_ron` refuses it, as a structural breach, on the round 4 word, the later
-  and the more specific; the rival is a cosmetic breach, its image drawn grey and named. Found by
-  the review of this document; it bears on #rooted-assets, built on the default.
+  and its last clause. Put again whole, the owner answered: "i think it is enough to refuse at
+  runtime to look up the path pointing outside the workspace. but i see no strong argument between
+  both shapes: refuse at load, or load but never read or write the file." The session's default
+  now: load, and never read or write outside the root, "Decided design" of #asset-paths-only. The
+  runtime refusal exists anyway, since a symlink out of the root is the disk's state and is found
+  only at a read; a refusal at load would add a second mechanism for the paths the RON names, and
+  refuse a file whose layout and node ids are defined, against the structural class of
+  `design@rootpoint-model@validated-documents` and `goal@rootpoint-model@faithful-readable-file`;
+  a repair at load, copying the outside file in, would read outside the root. Awaiting the
+  owner's word; it bears on #rooted-assets, built on the default.
 - **D5**, ruled: the owner accepted it in the message "all five defaults accepted, proced". Its text: on #c-visible-mode: the owner ruled the form "the window always shows one of three
   states". The guard of #ron-overwrite-guard, which the owner accepted in the same round, leaves a
   workspace that is not saved, and the slices before #autosave-and-watch leave a workspace saved

@@ -12,8 +12,8 @@ actions, rewired onto the new commands.
   `path@rootpoint-model@src/ops.rs`. `FORMAT_VERSION` goes from 3 to 4, and the four committed
   `.ron` files are rewritten, as the milestone's "How the work is done" says.
 - `asset_path_is_confined`, by the milestone's "Decided design" of #asset-paths-only, and
-  `Document::validate` refusing an asset whose path fails it, as a structural breach, on D4's
-  default.
+  `Breach::UnconfinedAsset` of `Document::breaches` for an asset whose path fails it, on D4's
+  default: the file loads, and the renderer draws the asset as a missing one.
 - `Files::canonical(path) -> Result<String, String>` and `Files::list(dir) -> Result<Vec<String>,
   String>`, the second listing every file under `dir`, recursively, as paths relative to it. Both
   are default methods of the trait that reply `Err("unsupported")`, so the 12 test doubles that
@@ -57,10 +57,12 @@ actions, rewired onto the new commands.
   `open <absolute D>`, `import <absolute D>/img/cat.png`, `save`. `presentation.ron` names
   `path: "img/cat.png"` once, for one asset, and no `D/cat.png` exists. The test runs again with the
   absolute form first. Shown to fail with `open` storing the root as given rather than canonical.
-- **Confinement**, AC2's first half, `acceptance@asset-storage@ac-confined-paths`: `load_ron`
-  refuses a file whose asset path is absolute, holds `..`, starts with `.rootpoint` or is
-  `presentation.ron`; `import` to such an asset path replies `err`; a read through a symlink out of
-  the root replies `err`. One test per case; shown to fail with the check removed.
+- **Confinement**, AC2's first half, `acceptance@asset-storage@ac-confined-paths`: a file whose
+  asset path is absolute, holds `..`, starts with `.rootpoint` or is `presentation.ron` loads, with
+  each such asset named by `Document::breaches` and drawn as missing, and no read or write reaches
+  outside the root, through a native `Files` that records every path it is given; `import` to such
+  an asset path replies `err`; a read through a symlink out of the root replies `err`. One test per
+  case; shown to fail with the store's check removed.
 - **`open-copy` reads every asset of the presentation into the map**, and then no command reads the
   host's files for an asset: a test opens a copy, removes the files from the host, and renders.
 - **`import` copies from outside the root**, at the root under its name, with `-2` before the
@@ -133,8 +135,9 @@ and a read through a symlink.
   the decision of `thread@asset-storage@editing-modes` in it or in a head of its own, by the tests
   of `primer@design-heads`.
 - Reverse `design@rootpoint-model@asset-source` to `Asset { path }` and confinement, with a
-  `rejected` entry for the bytes embedded in the RON, its reason #arg-1's measurement; widen
-  `design@rootpoint-model@validated-documents` by the unconfined path, as D4 rules.
+  `rejected` entry for the bytes embedded in the RON, its reason #arg-1's measurement; add the
+  unconfined path to the members of `design@rootpoint-model@cosmetic-fallbacks`, as D4 rules,
+  with the refusal at load as its rival.
 - Reverse `design@rootpoint-protocol@asset-save-rule` into the import's rule, and remove
   `design@rootpoint-protocol@save-updates-sources`, with a `rejected` entry for a free save path if
   it meets a test of `skill@knowledge-architect-decision-recording`.
