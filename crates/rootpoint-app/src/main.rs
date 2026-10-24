@@ -132,7 +132,7 @@ fn main() -> eframe::Result {
             #[cfg(unix)]
             {
                 let ctx = cc.egui_ctx.clone();
-                app.listen_at_store(move || ctx.request_repaint())?;
+                app.listen_at_store(move || ctx.request_repaint());
             }
             Ok(Box::new(app))
         }),

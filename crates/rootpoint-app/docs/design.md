@@ -86,7 +86,8 @@ editor text that is no slide content, so they are not the slide text that
 The state label, `App::state_label`, at the right end of the toolbar, reads "In memory, not saved";
 "In memory, saved to `<file>`", with ", n changes since" once there are; or "Workspace `<path>`,
 saved", with "n changes since the save" in place of "saved" once there are. Each action that writes
-is named by what it writes: "Save as pack…", "Save as workspace…", "Unpack to…", "Pack to…". The
+is named by what it writes: "Save as pack…", "Save as workspace…", "Unpack to…", "Pack to…"; Save
+writes to the store the label names. The
 label shows the store `store` replies, `design@rootpoint-protocol@store-query`. On the owner's
 word: the owner set that the window conveys which state it is in, and what each of its actions
 does.
@@ -284,8 +285,10 @@ nor a step the author cannot find, `issue@rootpoint-protocol@history-browsing`.
 
 The close of a window held in memory while `Session::unsaved` is not 0 is the one action that asks,
 since no undo reaches a closed window: the window cancels the close by `ViewportCommand::CancelClose`
-and asks "Close without saving?", with "Close" and "Keep open". A workspace never asks, and nothing
-unsaved asks nothing.
+and asks "Close without saving?", with "Close" and "Keep open". A workspace never asks, since its
+autosave writes every undo step, and nothing unsaved asks nothing.
+
+## Moving content
 
 ### An area is swapped with another, or moved to its edge, by dragging its grip, with a hint of the drop's effect `##swap-gesture`
 
@@ -396,19 +399,10 @@ ends it, removing the composing text.
 
 ### The window runs the lines of its control socket on its own thread, at the start of each frame `##control-socket`
 
-The native window listens on a Unix domain socket from its start, `rootpoint_app::control::Listener`,
-in the runtime directory, `$XDG_RUNTIME_DIR/rootpoint/`, or `$TMPDIR/rootpoint/`, then
-`/tmp/rootpoint-<uid>/` where the variable is unset, created with mode 0700. Its name follows the
-store, `rootpoint_protocol::workspace::socket_name`: `<name>-<hash>.sock` in a workspace, the
-root's name cut to 40 bytes, or less where the path would pass the 103 bytes a socket's address
-holds, and the first 8 hexadecimal digits of the FNV-1a hash of the canonical root; and
-`memory-<pid>.sock` in memory. A workspace's `.rootpoint/socket` holds the socket's path, so a
-client finds the window from the workspace. When a command changes the store, the window renames
-its socket's file to the new name, `Listener::rename_to`, writes the new workspace's pointer file
-and removes the old one's; a socket keeps its connections when its file is renamed, which the test
-`a_renamed_socket_answers_at_its_new_path` checks. Each connection has a thread of its own, which reads one line,
-queues it on a channel to the GUI's thread, calls the window's wake-up, and waits for the reply
-before it reads the next; `App::frame` takes the lines queued when it starts, at most one per
+The native window listens on a Unix domain socket, `rootpoint_app::control::Listener`, whose place
+is `design@rootpoint-app@socket-place`. Each connection has a thread of its own, which reads one
+line, queues it on a channel to the GUI's thread, calls the window's wake-up, and waits for the
+reply before it reads the next; `App::frame` takes the lines queued when it starts, at most one per
 connection, so a batch runs one line a frame, and only the GUI's thread touches the session. Every
 command runs through `App::run` as the window's own do, `design@rootpoint-app@actions-are-commands`,
 but the queries, which change nothing. The wake-up is `Context::request_repaint`, which eframe lets
@@ -419,15 +413,41 @@ reply. A connection carries any number of lines, a batch, `design@rootpoint-app@
 listener is built on Unix only: the browser build has no socket, and its window holds the
 authority to edit always.
 
-So an agent drives the running window as `goal@rootpoint-app@live-agent-edits` asks, from the
-moment the window opens, a new presentation in memory included, and the session stays the one
-state, as `goal@rootpoint@headless-core` asks of every operation. The lines
+So an agent drives the running window as `goal@rootpoint-app@live-agent-edits` asks, and the
+session stays the one state, as `goal@rootpoint@headless-core` asks of every operation. The lines
 go to the session and not the session to the lines, since eframe gives the app, which owns the
-session, to the GUI's thread alone, as `&mut self` of `eframe::App::ui`. The hash tells two workspaces of one name apart, where the name alone would
-make the second wait for the first's socket. The socket lies outside the workspace, since a
-socket's path holds at most 103 bytes, `rejected@rootpoint-protocol@socket-in-the-workspace`, and is
-a file in a directory of mode 0700, which no other user reaches,
-`rejected@rootpoint-protocol@socket-without-file-permissions`.
+session, to the GUI's thread alone, as `&mut self` of `eframe::App::ui`.
+
+### The control socket starts with the window, in the runtime directory, named by its store, and follows the store `##socket-place`
+
+The socket is bound when the window starts, in the runtime directory,
+`rootpoint_protocol::workspace::runtime_dir`: `$XDG_RUNTIME_DIR/rootpoint/`, or
+`$TMPDIR/rootpoint/`, then `/tmp/rootpoint-<uid>/` where the variable is unset or relative, a
+directory of the user's alone with mode 0700, `make_runtime_dir`, which refuses one another user
+made first. Its name follows the store, `socket_name`: `<name>-<hash>.sock` in a workspace, the
+root's name cut to 40 bytes, or less where the path would pass 103 bytes, the 104 of macOS's
+`sun_path` less its NUL and below Linux's 108, and the first 8 hexadecimal digits of the 64-bit
+FNV-1a hash of the canonical root; `memory-<pid>.sock` in memory. A workspace's
+`.rootpoint/socket` holds the socket's path and nothing else, so a client finds the window from the
+workspace, `design@rootpoint-protocol@ctl-sends-a-line-or-a-batch`. When a command changes the
+store, the window's own or a line of the socket, the window renames its socket's file to the new
+name, `Listener::rename_to`, removes the old workspace's pointer file and writes the new one's; a
+socket keeps its connections when its file is renamed, which the test
+`a_renamed_socket_answers_at_its_new_path` checks. A socket that cannot be bound leaves the window
+without one, and the status line says why.
+
+An agent reaches the window from the moment it opens, a new presentation in memory included, as
+`goal@rootpoint-app@live-agent-edits` asks; the rival, a socket only where a flag names its path,
+`rejected@rootpoint-app@socket-at-a-given-path`, leaves a window opened plainly unreachable. The hash
+tells two workspaces of one name apart, where the name alone would make the second window's socket
+refused, since the first answers there. The pointer file holds no flag of state: a flag goes stale
+when the window crashes, and a client learns whether the window is live by connecting. The socket
+needs no lock of its own, since only the holder of a workspace's lock binds its socket,
+`design@rootpoint-app@only-a-stale-socket-is-replaced`. The socket lies outside the workspace,
+`rejected@rootpoint-app@socket-in-the-workspace`, and is a file of a directory no other user
+reaches, against `rejected@rootpoint-app@abstract-namespace-socket` and
+`rejected@rootpoint-app@tcp-socket`. On the owner's word: the owner proposed the socket in the
+runtime directory named by the workspace.
 
 ### The window replaces only a socket nothing answers, and refuses any other file at its path `##only-a-stale-socket-is-replaced`
 

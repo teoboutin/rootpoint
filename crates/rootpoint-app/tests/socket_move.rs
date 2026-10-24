@@ -49,7 +49,7 @@ fn the_socket_follows_the_store() {
     std::fs::create_dir_all(&a).unwrap();
     std::fs::create_dir_all(&b).unwrap();
     let mut app = App::native(Box::new(NativeFiles));
-    app.listen_at_store(|| {}).unwrap();
+    app.listen_at_store(|| {});
     let memory = socket_path(None);
     assert!(memory.exists());
     let run = |app: &mut App, line: &str| {
@@ -75,6 +75,43 @@ fn the_socket_follows_the_store() {
     assert!(rootpoint_protocol::workspace::WorkspaceLock::take(&b).is_err());
     run(&mut app, "sample");
     assert!(memory.exists() && !at_b.exists());
+    assert!(
+        rootpoint_protocol::workspace::WorkspaceLock::take(&b).is_ok(),
+        "the lock goes with the workspace"
+    );
+    // A line of the socket that opens a workspace moves the socket as the window's own command.
+    let ctx = eframe::egui::Context::default();
+    let send = |app: &mut App, path: std::path::PathBuf, line: String| {
+        let reply =
+            std::thread::spawn(move || rootpoint_protocol::control::send(&path, &line).unwrap());
+        while !reply.is_finished() {
+            let mut out = ctx.run_ui(Default::default(), |ui| app.frame(ui));
+            out.textures_delta.clear();
+            std::thread::sleep(std::time::Duration::from_millis(2));
+        }
+        reply.join().unwrap().unwrap()
+    };
+    assert_eq!(send(&mut app, memory.clone(), "control".to_owned()), "ok");
+    assert_eq!(
+        send(&mut app, memory.clone(), format!("open {}", a.display())),
+        "ok"
+    );
+    assert!(at_a.exists() && !memory.exists(), "the socket moved");
+    assert!(pointer_file(&a).exists());
+    // A rename that fails leaves the socket where it was, and no pointer names the window from the
+    // workspace it left.
+    std::fs::write(&at_b, b"no socket").unwrap();
+    assert_eq!(
+        send(&mut app, at_a.clone(), format!("open {}", b.display())),
+        "ok"
+    );
+    assert!(at_a.exists());
+    assert!(
+        !pointer_file(&a).exists(),
+        "the old pointer goes with the old lock"
+    );
+    std::fs::remove_file(&at_b).unwrap();
+    assert_eq!(send(&mut app, at_a.clone(), "sample".to_owned()), "ok");
     drop(app);
     assert!(
         !memory.exists(),

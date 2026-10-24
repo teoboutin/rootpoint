@@ -1,5 +1,6 @@
 //! `rootpoint-ctl` sends one line from its arguments, or a batch from its stdin, to a control
-//! socket, prints each reply, and exits by them, per
+//! socket, found by its path or by a workspace's pointer file, prints each reply, and exits by them,
+//! and lists the sockets that answer, per
 //! `design@rootpoint-protocol@ctl-sends-a-line-or-a-batch`. The listeners here are the tests' own,
 //! which answer each line with a reply fixed by the line, so the binary is judged alone, with no
 //! window.

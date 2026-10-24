@@ -10,7 +10,9 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use eframe::egui::{Context, RawInput, ViewportCommand, ViewportEvent, ViewportId};
+use eframe::egui::{
+    Context, Event, Modifiers, PointerButton, RawInput, ViewportCommand, ViewportEvent, ViewportId,
+};
 use rootpoint_app::App;
 use rootpoint_app::control::Listener;
 use rootpoint_protocol::{Files, Reply, Session, parse_command};
@@ -72,7 +74,15 @@ fn ok(app: &mut App, line: &str) {
 /// One frame, with the close of the window asked when `close` is set; whether the frame cancelled
 /// the close.
 fn frame(ctx: &Context, app: &mut App, close: bool) -> bool {
-    let mut input = RawInput::default();
+    frame_with(ctx, app, close, Vec::new())
+}
+
+/// One frame with these events.
+fn frame_with(ctx: &Context, app: &mut App, close: bool, events: Vec<Event>) -> bool {
+    let mut input = RawInput {
+        events,
+        ..Default::default()
+    };
     if close {
         input
             .viewports
@@ -89,8 +99,9 @@ fn frame(ctx: &Context, app: &mut App, close: bool) -> bool {
         .is_some_and(|v| v.commands.contains(&ViewportCommand::CancelClose))
 }
 
-/// #c-visible-mode of the milestone: the label names each state of the table "The store's state
-/// to the state label" that a window before autosave can be in, read after a frame drew it.
+/// The label of `design@rootpoint-app@visible-mode` names each state of a window with no autosave:
+/// in memory with no pack, with a pack saved or changed since, and a workspace saved or changed
+/// since its save; read after a frame drew it.
 #[test]
 fn the_state_label_names_each_state_of_the_store() {
     let ctx = Context::default();
@@ -122,6 +133,23 @@ fn the_state_label_names_each_state_of_the_store() {
         "Workspace w, 1 change since the save"
     );
     assert_eq!(label(&mut app, Some("save")), "Workspace w, saved");
+    assert!(
+        app.button_rect("state").is_some(),
+        "the frame draws the label"
+    );
+}
+
+/// A click of the button at `label`, by a press and a release over it.
+fn click(ctx: &Context, app: &mut App, label: &str) {
+    let at = app.button_rect(label).unwrap().center();
+    let button = |pressed| Event::PointerButton {
+        pos: at,
+        button: PointerButton::Primary,
+        pressed,
+        modifiers: Modifiers::NONE,
+    };
+    frame_with(ctx, app, false, vec![Event::PointerMoved(at), button(true)]);
+    frame_with(ctx, app, false, vec![button(false)]);
 }
 
 /// #unsaved-close-warning, natively: a close in memory with an unsaved edit is cancelled and asks;
@@ -137,6 +165,15 @@ fn a_close_in_memory_with_an_unsaved_edit_asks() {
     assert!(app.close_question());
     frame(&ctx, &mut app, false);
     assert!(app.close_question(), "the question stays until answered");
+    click(&ctx, &mut app, "Keep open");
+    assert!(!app.close_question(), "Keep open keeps the window");
+    assert!(frame(&ctx, &mut app, true), "a new close asks again");
+    frame(&ctx, &mut app, false);
+    click(&ctx, &mut app, "Close");
+    assert!(
+        !frame(&ctx, &mut app, true),
+        "after Close, the close goes on"
+    );
     ok(&mut app, "open w");
     ok(&mut app, "add-slide");
     let mut fresh = App::new(Box::new(MemoryFiles::default()));
@@ -186,7 +223,8 @@ fn a_renamed_socket_answers_at_its_new_path() {
 /// The race of the closed `two-windows-bind-one-path`: two threads behind a barrier each open one
 /// workspace through the host's function, then bind its socket where a stale one lies. With the
 /// lock, exactly one open of each round succeeds, the other refused before its bind, so no round
-/// has two binds; without it, both opens succeed, and the binds race.
+/// has two binds; without it, both opens succeed, which the test sees, whether the binds then race
+/// or not.
 #[test]
 fn two_opens_of_one_workspace_bind_one_socket() {
     let dir = scratch("bind-race");

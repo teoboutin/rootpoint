@@ -62,6 +62,9 @@ The fourth slice of `milestone@plans@asset-storage`. It lands the autosave of
 - **AC3**, `acceptance@asset-storage@ac-watch-asset-dirs`: a commit in a git repository at the root
   decodes nothing; a changed asset file is decoded and drawn again, which serves
   `goal@rootpoint-app@faithful-slide-view`, the goal of the closed `changed-asset-not-read-again`.
+- **The state label leaves its states before autosave**: a test of `App::state_label` in a
+  native workspace reads "Workspace `<path>`, saved" after an edit, and "Workspace `<path>`, not
+  saved: the file changed outside rootpoint" once the guard stops the writes.
 - **No thread and no watcher in the browser build**: the gate `wasm` builds, and the browser tests
   pass.
 

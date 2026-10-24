@@ -774,7 +774,7 @@ crates/rootpoint-app/src/asset_tab.rs      the asset tab                        
 crates/rootpoint-app/src/lib.rs            SideTab::Assets (SideTab exists, with Selection and Styles)   (#asset-manager)
 crates/rootpoint-app/src/lib.rs            App::state_label(&self) -> String, the state label's text, read by tests   (#workspace-host)
 crates/rootpoint-app/src/lib.rs            App::native(files), the window that takes the locks and moves the socket   (#workspace-host)
-crates/rootpoint-protocol/src/workspace.rs fn socket_name(root: Option<&str>) -> String, fn run(…, lock: &mut Option<WorkspaceLock>) -> Reply   (#workspace-host)
+crates/rootpoint-protocol/src/workspace.rs fn socket_name(dir: &Path, root: Option<&str>) -> String, the directory for the cut, fn run(…, lock: &mut Option<WorkspaceLock>) -> Reply   (#workspace-host)
 crates/rootpoint-app/src/control.rs        Listener::rename_to(path)                   (#workspace-host)
 crates/rootpoint-app/tests/autosave.rs     autosave_gui_cost, an #[ignore] test, the AC1 benchmark:
                                            cargo test -p rootpoint-app --release --test autosave -- --ignored   (#autosave-and-watch)
@@ -856,7 +856,8 @@ whose first component is `.rootpoint`, or which is `presentation.ron`, in both s
 ### #workspace-lock
 
 `WorkspaceLock` is in the protocol crate, native only, beside the client of the control socket: the
-headless binary, `rootpoint-ctl` and the window all use it, and the session does not.
+headless binary and the window both use it, `rootpoint-ctl` its socket's place, and the session
+does not.
 `design@rootpoint@gui-only-in-app` rules out the protocol depending on the app, so the lock cannot
 be the app's. A host runs every command through one function of its own that, before `open <dir>`
 or `unpack <dir>`, takes `File::try_lock` on `<dir>/.rootpoint/lock`, creating `.rootpoint/` with

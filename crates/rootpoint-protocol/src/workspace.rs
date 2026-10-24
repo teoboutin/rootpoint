@@ -1,7 +1,7 @@
 //! What a native host adds to a workspace: the lock that keeps it to one process, the place of the
 //! window's control socket, and the one function a host runs every command through. Native only:
-//! the browser build opens no workspace. With the headless binary and the client of the control
-//! socket, it is the part of the crate that touches the file system; the session never calls it.
+//! the browser build opens no workspace. With the binaries and the client of the control socket,
+//! it is the part of the crate that touches the file system; the session never calls it.
 
 use std::fs::{File, OpenOptions, TryLockError};
 use std::io::{Read, Seek, Write};
@@ -9,7 +9,8 @@ use std::path::{Path, PathBuf};
 
 use crate::{Command, Files, Reply, Session};
 
-/// The lock of a workspace: `File::try_lock` held on `.rootpoint/lock`, whose file holds the pid of
+/// The lock of a workspace, `design@rootpoint-protocol@workspace-lock`: `File::try_lock` held on
+/// `.rootpoint/lock`, whose file holds the pid of
 /// its holder, for the refusal's message. The kernel releases it when the process ends, so a crash
 /// leaves no stale lock; it is released when the value is dropped.
 pub struct WorkspaceLock {
@@ -69,7 +70,10 @@ pub fn run(
 ) -> Reply {
     let target = match &command {
         Command::Open { dir } if Path::new(dir).is_dir() => Some(dir.clone()),
-        Command::Unpack { dir } if session.root().is_none() => Some(dir.clone()),
+        // A path that is a file gets the session's refusal, with no lock to take.
+        Command::Unpack { dir } if session.root().is_none() && !Path::new(dir).is_file() => {
+            Some(dir.clone())
+        }
         _ => None,
     };
     let held = |dir: &str| {
@@ -77,17 +81,34 @@ pub fn run(
             .ok()
             .is_some_and(|d| session.root().is_some_and(|root| Path::new(root) == d))
     };
+    // The `.rootpoint/` a lock creates for a command that then fails leaves with it, so a refused
+    // open or unpack leaves no trace in a directory that is no workspace.
+    let mut made = None;
     let new = match target {
-        Some(dir) if !held(&dir) => match WorkspaceLock::take(Path::new(&dir)) {
-            Ok(new) => Some(new),
-            Err(reason) => return Reply::Err(reason),
-        },
+        Some(dir) if !held(&dir) => {
+            let machine = Path::new(&dir).join(".rootpoint");
+            if !machine.exists() {
+                made = Some(machine);
+            }
+            match WorkspaceLock::take(Path::new(&dir)) {
+                Ok(new) => Some(new),
+                Err(reason) => {
+                    if let Some(made) = made {
+                        let _ = std::fs::remove_dir_all(made);
+                    }
+                    return Reply::Err(reason);
+                }
+            }
+        }
         _ => None,
     };
     let before = session.root().map(str::to_owned);
     let reply = session.run(command, files);
     if matches!(reply, Reply::Ok(_)) && session.root() != before.as_deref() {
         *lock = new;
+    } else if let Some(made) = made {
+        drop(new);
+        let _ = std::fs::remove_dir_all(made);
     }
     reply
 }
@@ -96,7 +117,8 @@ pub fn run(
 /// then `/tmp/rootpoint-<uid>/`, where the variable is unset or empty. A host creates it with mode
 /// 0700, so no other user reaches a window through it.
 pub fn runtime_dir() -> PathBuf {
-    let var = |name| std::env::var_os(name).filter(|v| !v.is_empty());
+    // A relative value would make the pointer file name a socket only one working directory finds.
+    let var = |name| std::env::var_os(name).filter(|v| Path::new(v).is_absolute());
     if let Some(dir) = var("XDG_RUNTIME_DIR").or_else(|| var("TMPDIR")) {
         return PathBuf::from(dir).join("rootpoint");
     }
@@ -106,6 +128,36 @@ pub fn runtime_dir() -> PathBuf {
     #[cfg(not(unix))]
     let user = "user";
     PathBuf::from(format!("/tmp/rootpoint-{user}"))
+}
+
+/// Create the runtime directory with mode 0700, or check the one there: it must be the user's
+/// and reachable by no other user, since its sockets drive the windows. A directory another user
+/// made first, as `/tmp/rootpoint-<uid>/` can be, is refused.
+pub fn make_runtime_dir() -> std::io::Result<PathBuf> {
+    let dir = runtime_dir();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::{DirBuilderExt, MetadataExt};
+        std::fs::DirBuilder::new()
+            .recursive(true)
+            .mode(0o700)
+            .create(&dir)?;
+        let meta = std::fs::symlink_metadata(&dir)?;
+        // SAFETY: getuid has no precondition and cannot fail.
+        let uid = unsafe { libc::getuid() };
+        if !meta.is_dir() || meta.uid() != uid || meta.mode() & 0o077 != 0 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                format!(
+                    "{} is not a directory of this user's alone, mode 0700",
+                    dir.display()
+                ),
+            ));
+        }
+    }
+    #[cfg(not(unix))]
+    std::fs::create_dir_all(&dir)?;
+    Ok(dir)
 }
 
 /// The bytes a socket's path may hold: `sun_path` holds 108 on Linux and 104 on macOS, the closing

@@ -111,3 +111,29 @@ more natural.
 as Alt+Page Up and Alt+Page Down. It moves on the slide, not in the tree the side panel's outline
 shows, so the outline would not read as the keys move; and it needs keys for the parent and the child
 beside the arrows.
+
+### The control socket at `.rootpoint/control.sock`, inside the workspace `##socket-in-the-workspace`
+
+`live`. The path of a Unix socket is limited to 108 bytes on Linux, `char sun_path[108]` of
+`unix(7)`, and 104 on macOS, `char sun_path[104]` of xnu's `bsd/sys/un.h`, the closing NUL
+included. `/.rootpoint/control.sock` takes 24 of them, so a workspace whose path is longer than about
+83 bytes could hold no socket, and refusing it would refuse an ordinary directory of a deep tree.
+
+### A control socket in Linux's abstract namespace `##abstract-namespace-socket`
+
+`live`. Socket permissions have no meaning for an abstract socket, `unix(7)` says, so any user of the
+machine could connect and drive the editor.
+
+### A control socket over TCP on localhost `##tcp-socket`
+
+`live`. Any local process, of any user, can connect to a port of localhost, so the protocol would need
+a token to tell its client apart, and macOS's firewall asks the user before an app listens. It stays
+the candidate for Windows, where the Unix socket is not built; a client that finds the window by
+its workspace would not see the change.
+
+### The control socket only where `--control <path>` names it `##socket-at-a-given-path`
+
+`live`. A window started without the flag had no socket, so an agent could not reach a presentation
+the author opened plainly, nor one held in memory from its start, against
+`goal@rootpoint-app@live-agent-edits`; and two windows given one path raced at the bind, which the
+lock of a workspace now prevents. The command line was its interface.

@@ -247,7 +247,7 @@ impl App {
 
     /// The native window on `files`, the native file system: its commands take the lock of a
     /// workspace they open and drop the old one, and the control socket it listens on moves with
-    /// the store, by the table of `design@rootpoint-app@control-socket`.
+    /// the store, `design@rootpoint-app@socket-place`.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn native(files: Box<dyn Files>) -> Self {
         let mut app = App::new(files);
@@ -533,11 +533,11 @@ impl App {
             .resizable(false)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .show(ctx, |ui| {
-                ui.label(format!(
-                    "{} held in memory {} not saved.",
-                    if n == 1 { "1 change" } else { "Changes" },
-                    if n == 1 { "is" } else { "are" }
-                ));
+                ui.label(if n == 1 {
+                    "1 change held in memory is not saved.".to_owned()
+                } else {
+                    format!("{n} changes held in memory are not saved.")
+                });
                 ui.horizontal(|ui| {
                     let close = ui.button("Close");
                     self.view.buttons.push(("Close".to_owned(), close.rect));
@@ -558,6 +558,8 @@ impl App {
     /// Show the editor for one frame. It takes a `Ui`, so a test drives it with
     /// `Context::run_ui`, with no window.
     pub fn frame(&mut self, ui: &mut Ui) {
+        // The places of the buttons are this frame's, in presenter mode as in the editor.
+        self.view.buttons.clear();
         self.on_close(ui.ctx());
         #[cfg(unix)]
         self.serve_socket();

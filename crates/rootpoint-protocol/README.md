@@ -61,8 +61,9 @@ relative to the working directory.
 `.rpk`: first an entry `mimetype` holding `application/x-rootpoint`, stored, then
 `presentation.ron`, deflated, then each asset's file at its path, stored. Its reply names, after
 `missing=`, the assets it had no bytes for, `-` for none. `open-pack <file>` opens a pack in memory,
-and refuses one whose first entry is not that `mimetype`, or that holds a symlink or an entry
-whose name is not an asset path. In memory, after `open-pack` or `pack`, `save` writes that pack
+and refuses one whose first entry is not that `mimetype`, one with no `presentation.ron`, and one
+that holds a symlink, an entry whose name is not an asset path, or a file that is another's
+folder. In memory, after `open-pack` or `pack`, `save` writes that pack
 again, and `store` names it, `pack=<file>`. `unpack <dir>` writes a presentation held in memory into
 an empty or absent directory, as `presentation.ron` and its assets' files, and the store is then a
 workspace there. Any unzip tool also extracts a pack into a workspace, its `mimetype` file aside.

@@ -64,7 +64,8 @@ impl App {
         }
     }
 
-    /// The toolbar: the file actions, the sample, the final view, presenting, undo and redo.
+    /// The toolbar: the file actions, the sample, the final view, presenting, undo and redo, and the
+    /// state label at its right end.
     pub(crate) fn toolbar(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             if ui.button("Open…").clicked() {

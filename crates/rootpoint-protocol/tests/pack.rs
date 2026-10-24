@@ -146,8 +146,8 @@ fn a_pack_then_an_unpack_elsewhere_keeps_the_tree_of_assets() {
     assert_eq!(tree(&out), tree(&root));
 }
 
-/// #c-unpack-anywhere: a pack extracted by `unzip` is a workspace that opens to the same
-/// presentation. Skipped, saying so, where `unzip` is not installed.
+/// A pack extracted by `unzip` is a workspace that opens to the same presentation,
+/// `design@rootpoint-protocol@pack-container`. Skipped, saying so, where `unzip` is not installed.
 #[test]
 fn a_pack_unzips_with_a_common_tool_into_a_workspace() {
     let Ok(status) = std::process::Command::new("unzip").arg("-v").output() else {
@@ -317,11 +317,27 @@ fn a_pack_with_a_directory_entry_above_its_root_is_refused_whole() {
 #[test]
 fn a_pack_whose_file_is_also_a_folder_is_refused_whole() {
     refused(&[("a", b"a"), ("a/b", b"b")]);
+    // The pack's own presentation is a file too.
+    refused(&[("presentation.ron/x", b"x")]);
 }
 
-/// A zip whose first entry is not `mimetype` is no pack, though `mimetype` comes second.
+/// A zip whose first entry is not `mimetype` holding the media type is no pack: one whose first
+/// entry holds another type, and one whose `mimetype` comes second.
 #[test]
 fn a_zip_whose_first_entry_is_not_mimetype_is_refused() {
+    let mut files = MemoryFiles::default();
+    files.files.insert(
+        "epub.rpk".into(),
+        crafted(&[
+            ("mimetype", b"application/epub+zip"),
+            ("presentation.ron", b"x"),
+        ]),
+    );
+    let mut s = Session::new();
+    assert!(matches!(
+        s.execute("open-pack epub.rpk", &mut files),
+        Some(Reply::Err(e)) if e.contains("not a pack")
+    ));
     let ron = {
         let mut files = MemoryFiles::default();
         let mut s = Session::new();

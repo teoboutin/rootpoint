@@ -105,3 +105,22 @@ fn an_unpack_takes_the_lock_of_its_directory() {
     assert!(root.join(".rootpoint/lock").exists());
     assert!(root.join("presentation.ron").exists());
 }
+
+/// A refused `unpack` or `open` leaves no `.rootpoint/` in a directory that is no workspace, and an
+/// `unpack` onto a file gets the session's refusal.
+#[test]
+fn a_refused_open_or_unpack_leaves_no_trace() {
+    let dir = std::fs::canonicalize(scratch("lock-refused-trace")).unwrap();
+    std::fs::create_dir_all(dir.join("full")).unwrap();
+    std::fs::write(dir.join("full/notes.txt"), b"mine").unwrap();
+    std::fs::create_dir_all(dir.join("bad")).unwrap();
+    std::fs::write(dir.join("bad/presentation.ron"), b"not ron").unwrap();
+    std::fs::write(dir.join("afile"), b"x").unwrap();
+    let out = headless("sample\nunpack full\nopen bad\nunpack afile\n", &dir);
+    let replies: Vec<&str> = out.lines().collect();
+    assert_eq!(replies.len(), 4, "{out}");
+    assert!(replies[1..].iter().all(|r| r.starts_with("err ")), "{out}");
+    assert!(!replies[3].contains(".rootpoint"), "{out}");
+    assert!(!dir.join("full/.rootpoint").exists());
+    assert!(!dir.join("bad/.rootpoint").exists());
+}

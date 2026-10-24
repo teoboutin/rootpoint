@@ -93,7 +93,10 @@ pub(crate) fn read_pack(bytes: &[u8]) -> Result<(String, BTreeMap<String, Vec<u8
         }
     }
     let ron = ron.ok_or(format!("the pack holds no {PRESENTATION}"))?;
-    if let Some(name) = files.keys().find(|name| {
+    // A file of the pack, its two own included, cannot be the folder of another.
+    let mut names: Vec<&str> = files.keys().map(String::as_str).collect();
+    names.extend([MIMETYPE, PRESENTATION]);
+    if let Some(name) = names.iter().find(|name| {
         files
             .keys()
             .any(|other| other.starts_with(&format!("{name}/")))

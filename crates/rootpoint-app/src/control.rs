@@ -169,15 +169,17 @@ impl crate::App {
     /// The native window's socket: bind it in the runtime directory, created with mode 0700, at
     /// the name of the store, and, in a workspace, write the pointer file that names it,
     /// `design@rootpoint-app@control-socket`.
-    pub fn listen_at_store(&mut self, wake: impl Fn() + Send + Sync + 'static) -> io::Result<()> {
-        use std::os::unix::fs::DirBuilderExt;
-        let path = rootpoint_protocol::workspace::socket_path(self.session.root());
-        if let Some(dir) = path.parent() {
-            std::fs::DirBuilder::new()
-                .recursive(true)
-                .mode(0o700)
-                .create(dir)?;
+    /// A socket that cannot be bound leaves the window without one, and the status line says why,
+    /// rather than keeping the window from starting.
+    pub fn listen_at_store(&mut self, wake: impl Fn() + Send + Sync + 'static) {
+        if let Err(e) = self.try_listen_at_store(wake) {
+            self.error = Some(format!("the window has no control socket: {e}"));
         }
+    }
+
+    fn try_listen_at_store(&mut self, wake: impl Fn() + Send + Sync + 'static) -> io::Result<()> {
+        rootpoint_protocol::workspace::make_runtime_dir()?;
+        let path = rootpoint_protocol::workspace::socket_path(self.session.root());
         self.listener = Some(Listener::bind(&path, wake)?);
         if let Some(root) = self.session.root() {
             std::fs::write(
@@ -196,6 +198,12 @@ impl crate::App {
             return;
         };
         let path = rootpoint_protocol::workspace::socket_path(self.session.root());
+        // The old workspace's pointer goes whatever the rename does: its lock is dropped, and its
+        // pointer would lead a client to the window that now holds another store.
+        if let Some(old) = old_root {
+            let _ =
+                std::fs::remove_file(rootpoint_protocol::workspace::pointer_file(Path::new(old)));
+        }
         if path != listener.path()
             && let Err(e) = listener.rename_to(&path)
         {
@@ -204,10 +212,6 @@ impl crate::App {
                 listener.path().display()
             ));
             return;
-        }
-        if let Some(old) = old_root {
-            let _ =
-                std::fs::remove_file(rootpoint_protocol::workspace::pointer_file(Path::new(old)));
         }
         if let Some(root) = self.session.root()
             && let Err(e) = std::fs::write(
@@ -221,9 +225,11 @@ impl crate::App {
 
     /// Run every line the control socket received since the last frame, and send each reply.
     pub(crate) fn serve_socket(&mut self) {
-        let Some(listener) = self.listener.take() else {
+        let Some(listener) = &self.listener else {
             return;
         };
+        // The listener stays in place while its lines run, so a line that changes the store moves
+        // the socket as a command of the window does.
         for request in listener.pending() {
             let answer = match rootpoint_protocol::read_line(&request.line) {
                 None => Answer {
@@ -257,7 +263,6 @@ impl crate::App {
             };
             let _ = request.reply.send(answer);
         }
-        self.listener = Some(listener);
     }
 
     /// Run one command of the socket, by the rules of control: the queries run whoever holds

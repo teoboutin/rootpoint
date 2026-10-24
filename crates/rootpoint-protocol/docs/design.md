@@ -218,7 +218,8 @@ it refuses. So no command reads or writes outside the root, whatever the file na
 such an asset as missing, and `import` to such a path replies `err`. A check of the paths at load
 alone would miss a symlink, which is the disk's state, `design@rootpoint-model@cosmetic-fallbacks`.
 On the owner's word: the assets stay confined inside the workspace; packs are meant to come from
-trusted sources, and further protection waits for a later design.
+trusted sources, as with the files of any presentation software, and security features can be
+designed and added later.
 
 ### An import adds a file below a workspace's root at its path, and copies any other file into the store under a name no other bytes hold `##import-copies-into-the-store`
 
@@ -247,17 +248,21 @@ command through `workspace::run`: before `open <dir>` of a directory that exists
 `err <dir> is open in another process, pid <pid>` and runs nothing; after an `ok` that changed the
 session's root, it holds the new lock and drops the old one. The lock of the workspace held is kept
 when it is opened again, since `File::try_lock` is `flock` on Linux, which refuses a second
-descriptor of one file in one process as in another. The headless binary and the window both run
+descriptor of one file in one process as in another, as the test `the_socket_follows_the_store` of
+`path@rootpoint-app@tests/socket_move.rs` shows, opening the workspace held again. `File::try_lock`
+is stable from Rust 1.89.0. The headless binary and the window both run
 it, and the session never does, `design@rootpoint-protocol@session-files`; it is the protocol's,
 since `design@rootpoint@gui-only-in-app` keeps the headless binary out of the app.
 
 The kernel releases the lock when the process ends, so a crash leaves no stale lock, where a file
 holding a pid, the rival, stays held after a crash until someone removes it by hand. Only the
-holder binds the workspace's socket, `design@rootpoint-app@control-socket`, so two windows cannot
-both bind it. The lock is between processes: inside one window, the authority to edit stays
-`design@rootpoint-app@one-controller-at-a-time`. `tripwire@rootpoint-protocol@workspace-on-two-machines`
+holder binds the workspace's socket, `design@rootpoint-app@only-a-stale-socket-is-replaced`, so two
+windows cannot both bind it. The lock is between processes: inside one window, the authority to
+edit stays `design@rootpoint-app@one-controller-at-a-time`, and an agent drives the window through
+its socket and never opens the workspace itself, so the lock keeps no agent out. `tripwire@rootpoint-protocol@workspace-on-two-machines`
 watches a workspace a sync tool shares. On the owner's word: a client locks the workspace, through
-a lock in `.rootpoint/`, so that another client cannot take it, as long as no finer lock exists.
+a lock in `.rootpoint/`, so that another client cannot take it, at least as long as no finer lock,
+per slide or per node, exists.
 
 ## Packs
 
@@ -278,7 +283,8 @@ to the same presentation as its unpacked form, as `goal@rootpoint@readable-save-
 `goal@rootpoint@runs-in-browser` asks, the zip crate built for the wasm target at the gate `wasm`
 and a pack opened there by the browser test `a_picked_pack_opens_as_open_pack_does`. Any unzip
 tool extracts it into the layout of a workspace, a `mimetype` file aside, and the zip's central
-index lets the browser read one asset without the rest. On the owner's word: the session's
+index names the place of each entry, so a reader can take one asset without the rest, though
+`open-pack` reads them all today. On the owner's word: the session's
 criterion that a pack unpacks without rootpoint is one the owner believed important. The first entry is EPUB's convention, read in EPUB 3.3, section 4.3.3: the
 `mimetype` file is the container's first, neither compressed nor encrypted, with no extra field in
 its header and no padding around the media type, so a reader tells a pack by its first bytes.
@@ -291,7 +297,7 @@ holding the bytes, the rival `rejected@rootpoint-model@bytes-in-the-file`, adds 
 per byte of asset, by that entry's measurement. The other rivals:
 `rejected@rootpoint-protocol@own-pack-format` and `rejected@rootpoint-protocol@tar-pack`.
 
-### `open-pack` refuses a pack whole when one entry cannot be placed inside the root `##pack-refused-whole`
+### `open-pack` refuses whole a file that is no pack, or a pack with one entry that cannot be placed inside the root `##pack-refused-whole`
 
 `open-pack <file>` refuses a file whose first entry is not that `mimetype`, a pack with no
 `presentation.ron`, and one with a symlink entry, an entry whose name, a directory's included,
@@ -299,9 +305,10 @@ fails `asset_path_is_confined`, or a file whose name is the folder of another, a
 as it was. A refusal tells the author the pack is broken or crafted: the rival, leaving such an
 entry out of the map as `open-copy` leaves out a file it refuses, would open a presentation that
 silently lacks an asset its pack carried, while a file that names a path out of the root, which
-loads, `design@rootpoint-model@cosmetic-fallbacks`, shows the breach in its own text. On the
-owner's word: packs are meant to come from trusted sources, the assets stay confined inside the
-workspace, and further protection, of a pack from a source not trusted, waits for a later design.
+loads, `design@rootpoint-model@cosmetic-fallbacks`, shows the breach in its own text. A file whose
+first entry is not the `mimetype` is no pack, `design@rootpoint-protocol@pack-container`. The
+refusal costs nothing to a pack from a trusted source, which the confinement of
+`design@rootpoint-protocol@store-confines-access` takes packs to be.
 
 ## The built-in sample
 

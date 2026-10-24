@@ -13,7 +13,8 @@ The seventh and last slice of `milestone@plans@asset-storage`. It lands
   target. The Save buttons of `path@rootpoint-app@src/panels.rs` show in the browser build, and the
   app's `MemoryFiles` accepts the writes of a pack.
 - A `beforeunload` listener that asks while `Session::unsaved` is not 0.
-- The state label in the browser build, by the milestone's table of its states.
+- The state label in the browser build, by the milestone's table of its states: the toolbar,
+  shared by both builds, draws it already; this slice tests it there.
 - One text slide in `path@rootpoint-protocol@sample/sample.ron`, by the milestone's "Decided design"
   of #sample-explains-modes.
 
