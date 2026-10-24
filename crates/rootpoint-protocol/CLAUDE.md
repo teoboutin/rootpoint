@@ -2,7 +2,8 @@
 
 ## The session opens no file
 
-The session reads and writes only through the `Files` its host gives it, per
+The session reads and writes only through the `Files` its host gives it, or in its own map when
+its store is in memory, per
 `design@rootpoint-protocol@session-files`. Two parts of the crate touch the file system, and no
 other: the binary `path@rootpoint-protocol@src/bin/rootpoint-headless.rs`, and the client of a
 window's control socket, `path@rootpoint-protocol@src/control.rs`, which connects to a socket at a

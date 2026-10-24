@@ -765,7 +765,7 @@ impl Session {
 
     /// An asset's bytes: its entry of the map in memory, or its file below a workspace's root.
     /// A path that leads out of the root is refused, whatever the file names, so no read reaches
-    /// outside it (`design@rootpoint-model@asset-source`). It is public so that a host decoding
+    /// outside it (`design@rootpoint-protocol@store-confines-access`). It is public so that a host decoding
     /// assets, as the app does, reads them by this one rule and never joins a path itself.
     pub fn asset_bytes(&self, id: AssetId, files: &mut dyn Files) -> Result<Vec<u8>, String> {
         let asset = self.doc.assets.get(&id).ok_or(format!("no asset {id}"))?;

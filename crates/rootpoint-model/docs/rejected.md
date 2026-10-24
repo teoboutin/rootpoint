@@ -85,3 +85,18 @@ development, and keeps no compatibility until the owner rules that real use has 
 and is the only place the drawing tells the two apart. The kind costs a variant of the save format,
 a reply of `tree` and a button of the side panel, and an area holding it is made a text before the
 author can type into it.
+
+### Asset bytes held in the presentation's file `##bytes-in-the-file`
+
+`live`. RON writes a `Vec<u8>` as one decimal number per line: one asset of 580 bytes, the sample's
+`splits.png`, added 11,768 bytes to the file, 20.3 bytes of text per byte, measured by setting the
+fixture's first asset to those bytes and comparing the lengths of `save_ron`. A photo of 5 MB would
+be about 100 MB of text, and the file would no longer be a text a person reads or a diff shows.
+
+### A file whose asset path leads out of the root, refused at load `##unconfined-path-refused-at-load`
+
+`live`. The store must refuse such a path at each access anyway, since a symlink out of the root is
+the disk's state and is met only at a read, so a refusal at load is a second mechanism for the paths
+the file names. It would refuse a file whose layout and node ids are defined, which the structural
+class of `design@rootpoint-model@validated-documents` does not cover; and a repair at load, copying
+the outside file in, would read outside the root.

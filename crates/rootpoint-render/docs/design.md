@@ -26,7 +26,7 @@ project. The function is the crate's public interface.
 `render_slide` takes an `ImageSet` and a `FontSet` the caller fills from the assets' bytes; it
 opens no file. The renderer is part of the browser build,
 `goal@rootpoint-render@browser-buildable`, where `std::fs` compiles and fails only at run time, as
-`path@rootpoint-model@CLAUDE.md` records, and an asset's path is relative to a presentation file
+`path@rootpoint-model@CLAUDE.md` records, and an asset's path is relative to the root of a store
 only the caller knows. The two sets are part of the crate's public interface.
 
 ### A text area's layout comes from one function, which drawing and `area_text` both call `##area-text-layout`

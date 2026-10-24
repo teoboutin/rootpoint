@@ -61,3 +61,13 @@ changed nothing, a script's replies differed between the two hosts.
 each time the author leaves it to change something seen. The owner proposed the click that leaves
 it and selects while not fully certain, so doubt remains that the rule kept serves the author
 better, `design@rootpoint-protocol@final-preview`; its tripwire brings this design back.
+
+### A save to any path, copying the assets beside the saved file and rewriting their paths `##free-save-path`
+
+`live`. Every asset path was relative to a directory that each save and load changed, so a save
+compared paths of two bases: a relative and an absolute form of one directory never matched, and
+a save copied an asset already inside its target beside itself, the defect
+`save-mixes-relative-and-absolute` reproduced, its text read by
+`git show 5742b00:crates/rootpoint-protocol/docs/open-issues/save-mixes-relative-and-absolute.md`.
+The paths the undo and redo stacks held were rewritten at each save, with the asset's bytes where no
+path from the new directory reached its file. The command `save <path>` was its interface.

@@ -1,6 +1,6 @@
 **Generated — do not edit.** `cargo klarch index`
 
-7 entries
+6 entries
 
 | title |
 | --- |
@@ -9,5 +9,4 @@
 | [Slice: autosave, its guard, and the asset watcher](autosave-and-watch.md) |
 | [Slice: packs in the browser, and the sample's slide on the modes](browser-packs.md) |
 | [Slice: packs](pack-commands.md) |
-| [Slice: assets at paths inside a root, and the session's store](rooted-assets.md) |
 | [Slice: the hosts of a workspace](workspace-host.md) |

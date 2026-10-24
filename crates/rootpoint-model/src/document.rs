@@ -400,7 +400,7 @@ pub enum ImageFit {
 
 /// An entry of the asset table: heavy data that areas refer to by id. Its bytes are a file at its
 /// path, relative to the root of the presentation's store, which only the caller knows
-/// (`design@rootpoint-model@asset-source`); the document holds no bytes.
+/// (`design@rootpoint-model@asset-paths-only`); the document holds no bytes.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Asset {
     pub path: String,

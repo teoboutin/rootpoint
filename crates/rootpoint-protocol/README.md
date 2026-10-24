@@ -33,17 +33,33 @@ prints each reply as it comes:
   `err`, also when the editor then ends the connection, as after a take-over; 2 when the socket
   cannot be reached, or stdin or the connection fails before any `err`, as when the editor is
   closed. A line holding a newline is refused before it is sent.
-- The paths of `save`, `load` and `render` are relative to the editor's working directory, not to
-  the client's; an asset's path is relative to the directory of the presentation last saved or
-  loaded, as below.
+- The host paths of `open`, `open-copy`, `import` and `render` are relative to the editor's working
+  directory, not to the client's; an asset's path is relative to the store's root, as below.
 
 `control` asks for the authority to edit a running editor, and `release` gives it back, refused
 while the client holding it has a group open; headless, `control` replies `ok`, since a headless session has one
 controller.
 
-The paths of `save`, `load` and `render` are relative to the working directory. An asset's path is
-relative to the directory of the presentation last saved or loaded, or to the working directory
-before either.
+A session reads its presentation from a store. `open <dir>` opens a workspace: `presentation.ron`
+at the directory's root, or an empty presentation when it has none, and each asset a file at its
+path below the root; `save` writes `presentation.ron` there. `new`, `sample` and `open-copy <dir>`,
+which copies a directory's presentation and its assets' files, open in memory: the assets' bytes are
+the session's own, and `save` replies `err`, since no file holds the presentation. `store` replies
+`ok memory unsaved=<n>` or `ok workspace <root> unsaved=<n>`, the root absolute, with `n` the undo
+steps made, undone or redone since the store was opened or saved. The host paths of `open`,
+`open-copy`, `import` and `render` are relative to the working directory.
+
+`import <host-path> [<asset-path>]` adds a file as an asset, and replies its id. In a workspace, a
+file below the root is added at its path there, with no copy. Any other file is copied into the
+store, at `<asset-path>` or at the root under its file name; a name whose file holds other bytes
+takes a suffix, `-2`, `-3` and on, before the extension, and one whose file holds the same bytes is
+used as it is. A file an asset already names adds no asset: the reply is that asset's id.
+
+An asset path is always inside the root: it has no empty, `.` or `..` component, does not start
+with `/`, holds no `\`, does not start with `.rootpoint` and is not `presentation.ron`. No command
+reads or writes another path, nor a file a symlink places outside the root: a file edited by hand
+that names one still loads, and `render` draws the asset as a missing one; `import` to such a path
+replies `err`.
 
 `image` and the `font` option of `text` refuse an asset the document does not hold, with
 `err no asset a<n>`, so no command names a missing asset. `duplicate-slide` and `swap` copy or move
@@ -63,13 +79,6 @@ those texts take instead. A command naming a
 style the table lacks is refused; a file naming one loads, its text drawn in the default values,
 and `render` names the area and the style after `styles=`.
 
-`sample` opens the built-in sample, a presentation of three slides that says how the editor's
-gestures work; the crate holds its RON text and its image, in `sample/`, so it opens in every host
-with no file.
-
-A `save` leaves every asset readable beside the saved file. An asset whose file lies inside the
-saved file's directory, at any depth, keeps its file, and its path is rewritten relative to that
-directory. Any other asset, and an embedded one such as an image of the built-in sample, is copied
-into that directory under its file name, or `asset-<id>` and an extension for embedded bytes; a
-name whose file holds other bytes takes a suffix, `-2`, `-3` and on, so no file is overwritten. A
-save that cannot read an asset it must copy replies `err`, naming it, and writes nothing.
+`sample` opens the built-in sample in memory, a presentation of three slides that says how the
+editor's gestures work; the crate holds its RON text and its image, in `sample/`, so it opens in
+every host with no file.

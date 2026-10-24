@@ -517,7 +517,7 @@ at a time seems a less efficient method.
 ### The browser build opens a directory the author picks and the built-in sample, and saves nothing `##browser-load-only`
 
 Built for the wasm target, the editor opens the built-in sample at start, and Open asks for a
-directory with the browser's directory picker and loads the one `.ron` file directly in it. Its
+directory with the browser's directory picker and opens a copy of its `presentation.ron` in memory. Its
 edits stay in memory: it shows no Save button, Ctrl+S says that it saves nothing, and its files,
 `MemoryFiles`, refuse every write. Saving in the browser comes with packing, which writes a
 presentation into one file, `design@rootpoint-model@image-storage`; until then
@@ -528,18 +528,20 @@ that opens a presentation through the file picker and saves it by a download, ju
 reduces the work without losing much of the features; and proposed opening a whole directory
 rather than file by file.
 
-### A picked directory's files are held in memory by their paths, and the document keeps its `Path` assets `##picked-files-by-path`
+### A picked directory opens as a copy in memory: its files held by their paths, its presentation's assets copied into the session's map `##picked-files-by-path`
 
 `App::open_directory` holds the picked files in `MemoryFiles`, the session's `Files`, under their
-paths below the picked directory, and loads the presentation at the root of those paths;
-`App::add_picked_image` holds an image under its name in the presentation's directory. The session
-reads each `Path` asset from memory as it reads one from disk, per
-`design@rootpoint-protocol@session-files`, so the document is the one its file holds and a script of
-the same commands reproduces it, as `goal@rootpoint@headless-core` asks of every operation. Every
-picked presentation has the same directory, so a new directory's assets are decoded again rather
-than taken from the cache, which is keyed on the directory and the assets' paths. The rival, each
-picked image converted to `AssetSource::Embedded`, would apply an operation per asset at every open,
-an undo step the author never made, and the document would no longer be its file.
+paths, the picked directory's name first, and runs `open-copy` on that name, which copies the
+directory's `presentation.ron` and the files of its assets into the session's map,
+`design@rootpoint-protocol@editing-modes`; `App::add_picked_image` holds an image under its name and
+runs `import`, which copies it into the map. The session reads through `Files` as it reads a disk,
+per `design@rootpoint-protocol@session-files`, so the document is the one its file holds and a
+script of the same commands reproduces it, as `goal@rootpoint@headless-core` asks of every
+operation. The rival, `open` of the picked directory as a workspace, would be a store whose `save`
+writes to files that refuse every write, `design@rootpoint-app@browser-load-only`. The decoded
+assets are keyed on the root and the assets' paths, and a map has no root, so `App::run` drops them
+after a command that replaces the store, and after an `import`, which can write the file of an asset
+drawn missing until then.
 
 ### In the browser, presenter mode asks the page for full screen, and ends when the page leaves it `##page-full-screen`
 

@@ -24,7 +24,8 @@ fn under(canonical: &str, root: &str) -> bool {
     canonical == root || canonical.starts_with(&join(root, ""))
 }
 
-/// The refusal of an asset path that leads out of the root, `design@rootpoint-model@asset-source`.
+/// The refusal of an asset path that leads out of the root, 
+/// `design@rootpoint-protocol@store-confines-access`.
 pub(crate) fn unconfined(path: &str) -> String {
     format!(
         "{} is not a path inside the root",

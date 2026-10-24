@@ -110,14 +110,22 @@ presented from any computer with a web browser and an internet connection, throu
 served from a static site. It serves `goal@rootpoint@readable-save-file` and
 `goal@rootpoint@runs-in-browser`.
 
-### An asset's source is a path or embedded bytes, both in the format's first version `##asset-source`
+### An asset is a path inside the root of its store, and the file holds no asset's bytes `##asset-paths-only`
 
-`AssetSource` is `Path`, a path relative to the presentation file, or `Embedded`, the asset's
-bytes, which packing writes. Both are in the format from its first version, so the round-trip
-tests cover embedded assets before any code writes one, and packing adds no change of format.
-Adding the variant later would not have broken old files: the committed fixture,
-`path@rootpoint-model@tests/data/fixture.ron`, names no embedded asset and loads with the enum
-that has both. It would have left the format untested for embedded assets until packing.
+`Asset { path }`: the path of the asset's file, `/`-separated, relative to the root of the store the
+presentation is read from, `design@rootpoint-protocol@editing-modes`. `asset_path_is_confined`
+holds for a path with no empty, `.` or `..` component, no leading `/` and no `\`, whose first
+component is not `.rootpoint` and which is not `presentation.ron`, the two files of a workspace
+that are no asset. The model checks nothing more: whether a file is at the path, and where a
+symlink leads, are the store's to check at each access,
+`design@rootpoint-protocol@store-confines-access`. A file that names another path loads, a cosmetic
+breach, `design@rootpoint-model@cosmetic-fallbacks`.
+
+The file is text only, as `goal@rootpoint@readable-save-file` and
+`goal@rootpoint-model@faithful-readable-file` ask: bytes held in it, the rival
+`rejected@rootpoint-model@bytes-in-the-file`, grow it about 20 times their size. On the owner's
+word: the owner set that the assets stay confined inside the workspace, that no path leading out of
+it is accepted, and that a file from outside is imported by a copy into it.
 
 ### A text area has one style for all its text `##text-style-per-area`
 
@@ -228,7 +236,8 @@ A breach is cosmetic when it is a reference to a missing target that has a defin
 effect stays inside one area's drawing: an image or a text font naming an asset the table lacks,
 drawn grey or in the built-in sans, a `FontRef::Builtin` naming a family outside `BUILTIN_FAMILIES`,
 drawn in the built-in sans, and a text naming a style the table lacks, drawn with
-`TextStyle::default()`. `Document::breaches` names each, as `Breach`, and the renderer's report, the
+`TextStyle::default()`; or an asset of the table whose path fails `asset_path_is_confined`, which
+no store reads, so that every area showing it draws the stand-in of a missing asset. `Document::breaches` names each, as `Breach`, and the renderer's report, the
 window's status line and the reply of `render` name what was drawn with a stand-in. `load_ron` loads
 such a file, and `apply` accepts an operation whose result holds a breach, so the inverse of an edit
 of such an area, which brings back what a file was loaded with, is never refused. Two operations
@@ -238,6 +247,13 @@ has just given, which no area can name. `Op::RenameStyle` refuses a rename while
 new name, a style the table lacks, since its inverse would rename that text back with the others;
 after a rename from a name, no text names it. No command creates a breach in a document that has
 none, `design@rootpoint-protocol@no-new-breach`. Which files load is part of the save format.
+
+A file whose asset path leads out of the root loads too. The store refuses each access to such a
+path, `design@rootpoint-protocol@store-confines-access`, and that check is needed whatever the file
+names, since a symlink out of the root is the disk's state, met only at a read; the file's layout
+and the identity of its nodes are defined. The rival, a refusal at load,
+`rejected@rootpoint-model@unconfined-path-refused-at-load`, adds a second mechanism and refuses a
+file the structural class does not cover.
 
 The renderer draws each stand-in already, an image it was not given grey, which
 `Report::missing_images` names, and a font it does not have in the built-in sans,

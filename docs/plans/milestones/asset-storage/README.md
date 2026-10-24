@@ -205,9 +205,9 @@ milestone. This replaces, for the branches, the one branch per slice of D1 and o
 - The session has a directory, `Session::directory`: the parent of the path last given to `load`,
   as given, or to `save`, with `.` and `..` removed; the empty path after `new` and `sample`. `load <path>` and `save <path>` read and write one `.ron` file through the
   host's files; `Session::save` copies every asset outside the target's directory, and every
-  embedded one, beside the saved file, per `design@rootpoint-protocol@asset-save-rule`, and
+  embedded one, beside the saved file, per `asset-save-rule`, now `design@rootpoint-protocol@import-copies-into-the-store`, and
   rewrites the paths in the undo and redo stacks, per
-  `design@rootpoint-protocol@save-updates-sources`, the one place outside the sample that writes
+  `save-updates-sources`, now `rejected@rootpoint-protocol@free-save-path`, the one place outside the sample that writes
   `Embedded`.
 - `sample` opens the protocol crate's sample, `path@rootpoint-protocol@sample/`, its images as
   `Embedded` assets, per `design@rootpoint-protocol@builtin-sample`.
@@ -264,10 +264,10 @@ referencing each, and the slice that updates it:
 
 | decision | outcome | referencing texts, and the slice that updates each |
 | --- | --- | --- |
-| `design@rootpoint-model@asset-source` | reversed by #asset-paths-only: an asset is a path, `Embedded` leaves | `register@rootpoint-protocol@design` line 178 (#rooted-assets); `pack-and-unpack`, closed on this branch |
+| `asset-source`, now `design@rootpoint-model@asset-paths-only` | reversed by #asset-paths-only: an asset is a path, `Embedded` leaves | `register@rootpoint-protocol@design` line 178 (#rooted-assets); `pack-and-unpack`, closed on this branch |
 | `design@rootpoint-model@image-storage` | rewritten by #editing-modes and #workspace-layout; its owner's ground, assets as files beside a readable text, and packing as the final goal, stands | `register@rootpoint-app@design` line 523 and `register@rootpoint-protocol@design` line 180 (#workspace-host, and #browser-packs where they name the browser) |
-| `design@rootpoint-protocol@asset-save-rule` | reversed: no save copies assets; an import copies a file from outside into the store | `register@rootpoint-protocol@design` line 210 (#rooted-assets); `pack-and-unpack`, closed on this branch |
-| `design@rootpoint-protocol@save-updates-sources` | reversed: the root never changes during a session, so no save rewrites a path | none |
+| `asset-save-rule`, now `design@rootpoint-protocol@import-copies-into-the-store` | reversed: no save copies assets; an import copies a file from outside into the store | `register@rootpoint-protocol@design` line 210 (#rooted-assets); `pack-and-unpack`, closed on this branch |
+| `save-updates-sources`, now `rejected@rootpoint-protocol@free-save-path` | reversed: the root never changes during a session, so no save rewrites a path | none |
 | `design@rootpoint-protocol@builtin-sample` | rewritten: `sample` opens in memory, its images in the map; its owner's ground stands | none |
 | `design@rootpoint-protocol@session-files` | rewritten: the session reads through the host's files under a workspace's root, or from its map | `register@rootpoint-app@design` line 537, `path@rootpoint-protocol@CLAUDE.md` line 6, `path@rootpoint-protocol@src/files.rs` line 3, `register@rootpoint@design` line 43 (#rooted-assets); `save-mixes-relative-and-absolute`, closed on this branch |
 | `design@rootpoint-protocol@ctl-sends-a-line-or-a-batch` | rewritten by #socket-place: `rootpoint-ctl` takes a workspace or a socket, and `list` | `register@rootpoint-app@design` line 508, `path@rootpoint-protocol@tests/ctl.rs` line 3 (#workspace-host) |
@@ -441,7 +441,7 @@ the workspace directory. the assets have to stay confined inside the workspace. 
 outside copies the file in the workspace." Read, in the session's reply of round 4, as: an asset
 path is never absolute, has no `..`, and leads out of the root by no symlink; a file from outside
 is imported by a copy into the store. Arguments: #arg-1, #arg-8, #arg-23. Shape: "Decided design"
-and #rooted-assets. Harvest: reversal of `design@rootpoint-model@asset-source`, with a `rejected`
+and #rooted-assets. Harvest: reversal of `asset-source`, now `design@rootpoint-model@asset-paths-only`, with a `rejected`
 entry for the bytes embedded in the RON, and the widened test of
 `design@rootpoint-model@cosmetic-fallbacks`, at #rooted-assets.
 
@@ -823,7 +823,7 @@ later comparison sees two forms of one directory, the cause of the save-mixes de
 
 Asset paths never change when the store changes, since they are relative to the root in both, so no
 command rewrites a path in the document or in the stacks. `Session::directory` and the stack rewrite
-of `design@rootpoint-protocol@save-updates-sources` leave.
+of `save-updates-sources`, now `rejected@rootpoint-protocol@free-save-path`, leave.
 
 ### #workspace-layout
 
@@ -905,7 +905,7 @@ host path whose canonical form lies under the root is added at its path relative
 with no copy, and an `<asset-path>` given then must be that path. Any other file is written into
 the store at `<asset-path>`, or at the root under its file name, with `-2`, `-3` before the
 extension when the name is taken by other bytes and the same name when the bytes are equal, as
-`design@rootpoint-protocol@asset-save-rule` named; then the asset is added.
+`asset-save-rule`, now `design@rootpoint-protocol@import-copies-into-the-store`, named; then the asset is added.
 
 ### #asset-tree-shape
 
@@ -1041,7 +1041,7 @@ widened by D5:
 
 ## Losing alternatives
 
-- **Packing as `Embedded` bytes in the RON**, the shape of `design@rootpoint-model@asset-source` and
+- **Packing as `Embedded` bytes in the RON**, the shape of `asset-source`, now `design@rootpoint-model@asset-paths-only`, and
   of the closed `pack-and-unpack`: lost to #pack-container and #asset-paths-only on
   #arg-1, 20.3 bytes of text per byte of asset, against #c-pack-overhead.
 - **A free save path and directory, as today**: lost to #editing-modes on #arg-4.
@@ -1173,7 +1173,7 @@ at the new name and removes the old one, a shape the decision admits.
 
 ## Implementation sequence
 
-1. [#rooted-assets](rooted-assets.md): `Asset { path }`, confinement, the store, `open`,
+1. #rooted-assets, landed, its spec deleted with its harvest: `Asset { path }`, confinement, the store, `open`,
    `open-copy`, `import`, `save` at the root, the sample in memory; the browser's picked directory
    in memory; the query `store`. Fails alone on: a round trip of the fixture, the reproduction of
    the save-mixes defect, and a confinement test.

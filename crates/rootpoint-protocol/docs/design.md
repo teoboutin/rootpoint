@@ -38,8 +38,9 @@ removal, so a script's later command would name another area,
 
 A command that names a target the document lacks is refused before any operation: `image` and the
 `font` option of `text`, `style add` and `style set` reply `err no asset a<n>` for an asset the
-table does not hold, and `text … style="<name>"` and `style remove … into="<name>"` refuse a style
-the table lacks, or one whose font is a missing target. The refusal is the command's, since the
+table does not hold, `text … style="<name>"` and `style remove … into="<name>"` refuse a style
+the table lacks, or one whose font is a missing target, and `import` refuses an asset path that
+leads out of the root, `design@rootpoint-protocol@store-confines-access`. The refusal is the command's, since the
 operations accept a reference to a missing target but for the exceptions
 `design@rootpoint-model@cosmetic-fallbacks` names. So a breach reaches a document only through a
 file: a command that copies or moves an area, as `duplicate-slide` and `swap` do, carries the breach
@@ -130,8 +131,9 @@ fully certain. `tripwire@rootpoint-protocol@click-ends-the-preview` watches the 
 ### The session opens no file: its host gives it a `Files` `##session-files`
 
 `Session` reads and writes the presentation, its assets and rendered images only through the
-`Files` trait its caller passes to each command, and touches no file system itself; the headless
-binary gives it the native file system. The session is part of the browser build, per
+`Files` trait its caller passes to each command, or in its own map when its store is in memory,
+`design@rootpoint-protocol@editing-modes`, and touches no file system itself; the headless binary
+gives it the native file system. The session is part of the browser build, per
 `goal@rootpoint-protocol@browser-buildable`, and there `std::fs` compiles and fails only when
 called, so the wasm gate cannot catch a direct file access, as `path@rootpoint-model@CLAUDE.md`
 records: read in Rust 1.98's `std`, `wasm32-unknown-unknown` takes the module
@@ -147,8 +149,9 @@ file access of the session respects, and every host that implements `Files`. It 
 it: every operation applied inside is one undo step, undone and redone together, and an empty
 group leaves no step; `err` with no group open. `cancel` reverts every operation applied inside
 the group and restores the undo and redo stacks as they were at its `begin`; `err` with no group
-open. `undo` and `redo` inside a group close it first, as `end` does, then act; `new`, `load` and
-`sample` close it as part of replacing the document and the stacks; view commands join nothing.
+open. `undo` and `redo` inside a group close it first, as `end` does, then act; `new`, `sample`,
+`open` and `open-copy` close it as part of replacing the document and the stacks; view commands
+join nothing.
 The stacks hold steps, each the inverses of one group or of one command, applied atomically: a
 step that fails leaves the document and the view as they were.
 
@@ -162,52 +165,68 @@ keeps the protocol unchanged but leaves the session behind the screen, and the s
 consecutive commands, `rejected@rootpoint-protocol@merged-commands`. On the owner's word: the
 owner chose explicit groups over both.
 
-## Saving
+## The store
 
-### A save keeps the assets inside its directory and copies every other asset, and every embedded one, beside the saved file `##asset-save-rule`
+### The session reads its presentation from a store: its own map in memory, or the host's files below a workspace's root `##editing-modes`
 
-Every `Path` asset of a session is relative to `Session::directory`. At a `save` to a file whose
-directory is D, paths compared after joining them to their directory and removing `.` and `..`:
-a `Path` asset whose file lies inside D, at any depth, keeps its file, its path written relative
-to D; any other asset, one outside D or an embedded one, is written into D under its file name, or
-`asset-<id>` with the extension its bytes name, and its path becomes that name. A name taken by a
-file of other bytes takes a suffix, `-2`, `-3` and on, before the extension, and one with the same
-bytes is used as it is, so a save overwrites no file of other bytes. Every asset to write is read
-before anything is written, and one that cannot be read makes the save reply `err`, naming it, and
-write nothing; an asset that keeps its file is not read. A saved file therefore holds no embedded bytes, which stay what packing writes, per
-`design@rootpoint-model@asset-source`.
+`Store::Memory` holds the presentation's files in the session, keyed by asset path, and no file of
+it is on disk; `Store::Workspace` names a directory of the host's files, its root, stored as
+`Files::canonical` gives it, with `presentation.ron` at the root and each asset at its path below
+it. `new`, `sample` and `open-copy <dir>`, which copies a directory's presentation and the files of
+its assets into the map, open in memory; `open <dir>` opens a workspace, an empty presentation when
+the directory holds none. `save` writes `presentation.ron` at a workspace's root, and replies `err`
+in memory. `store` replies the store and `Session::unsaved`, the undo steps pushed, undone or
+redone since the store was opened or saved, so an agent reads the state the window shows. A host
+path, the argument of `open`, `open-copy`, `import` and `render`, is read by the host's files as
+the host reads it.
 
-It applies `design@rootpoint-model@image-storage`: assets are files beside the presentation, and
-the browser build opens one presentation directory, `design@rootpoint-app@browser-load-only`, so it
-cannot read a file outside it, which rules out rewriting paths in place with `..`. Refusing a save
-into another directory would refuse the first save of every presentation built in the GUI with an
-image, against `goal@rootpoint@no-language-no-build`. On the owner's word: the owner chose copies
-beside the presentation file over a subfolder for them, for now, and wants the author free, later
-than the first prototype, to arrange assets in subdirectories of any depth, a tree that packing,
-then unpacking elsewhere, keeps; the rule keeps such a tree already.
+The root never changes while a store is open, and an asset path is relative to it in both stores,
+so no command rewrites a path, in the document or in the stacks: the paths of a save to any
+directory, rewritten against a base each save and load changed, were the cause of every defect of
+that rule, `rejected@rootpoint-protocol@free-save-path`, and a canonical root leaves no two forms
+of one directory to compare. The map is the session's, not a host's, so a presentation in memory
+behaves the same headless and in the window, as `goal@rootpoint@headless-core` asks: a map of the
+host would need every host to build the same map, and a way for a command to switch the host's
+store, which the session cannot ask of `Files`. On the owner's word: the native build keeps the
+store in memory beside the workspace.
 
-### A save changes the open document's asset paths to the saved file's, through `apply` and with no undo step `##save-updates-sources`
+### The store refuses every access to an asset path that leads out of its root `##store-confines-access`
 
-After a save writes its files, the paths that changed enter the document through `apply`, one
-`Op::SetAssetSource` per asset, as `design@rootpoint-model@edit-operation-core` asks of every
-change, so the open document is the file just saved. They are no undo step: the session rewrites
-the same asset's source in the operations its undo and redo stacks hold, so an undo after the save
-restores an asset with the path the saved file uses, and an asset that only the stacks hold gets
-its path from the new directory, with `..` where needed, or its bytes where no such path exists.
+Every read of an asset, and every write of an import, goes through one check of the store, in
+`path@rootpoint-protocol@src/store.rs`: a path that fails `asset_path_is_confined` is refused, and in
+a workspace so is one whose file, every symlink resolved by `Files::canonical`, lies outside the
+canonical root, the nearest existing directory's path taken for a file not written yet.
+`open-copy <dir>` reads through the same check against `<dir>`, and leaves out of the map an asset
+it refuses. So no command reads or writes outside the root, whatever the file names: `render` draws
+such an asset as missing, and `import` to such a path replies `err`. A check of the paths at load
+alone would miss a symlink, which is the disk's state, `design@rootpoint-model@cosmetic-fallbacks`.
+On the owner's word: the assets stay confined inside the workspace; packs are meant to come from
+trusted sources, and further protection waits for a later design.
 
-The rivals: the new paths as an undo step, whose undo would name another file once the directory
-changed; and a session that keeps its old paths, whose document would then differ from the file it
-just saved, against `goal@rootpoint@readable-save-file`.
+### An import adds a file below a workspace's root at its path, and copies any other file into the store under a name no other bytes hold `##import-copies-into-the-store`
+
+`import <host-path> [<asset-path>]` reads a file of the host's files, anywhere. In a workspace, a
+file whose canonical path lies below the root is added at its path relative to the root, with no
+copy, and an `<asset-path>` given must be that path. Any other file is written into the store, the
+map or the root, at `<asset-path>`, or at the root under its file name; a name that a file of other
+bytes holds takes a suffix, `-2`, `-3` and on, before the extension of its last component, and a
+name whose file holds the same bytes is used as it is, so an import overwrites no file. An import
+whose path an asset already has adds no asset and replies that asset's id: one asset per file, and
+the import of a missing asset's file gives that asset its bytes.
+
+On the owner's word: a file from outside the workspace is imported by a copy into it; the owner
+chose copies at the root, beside the presentation, over a subfolder for them, for now, and wants
+the author free to arrange assets in subdirectories of any depth, a tree that packing, then
+unpacking elsewhere, keeps, which the `<asset-path>` of an import gives.
 
 ## The built-in sample
 
 ### Every build carries a sample presentation that `sample` opens `##builtin-sample`
 
 The protocol crate holds a sample presentation, a RON text and its image files, included at build
-time from `path@rootpoint-protocol@sample/`. `sample` replaces the session's document by it, its
-images as embedded assets, with empty stacks and the working directory as its directory, as
-`load` does; a save writes its images beside the saved file, by
-`design@rootpoint-protocol@asset-save-rule`. So the sample opens in the GUI and headless by one
+time from `path@rootpoint-protocol@sample/`. `sample` replaces the session's document by it, in
+memory, its images in the session's map at the paths its text names, with empty stacks, as
+`open-copy` does, `design@rootpoint-protocol@editing-modes`. So the sample opens in the GUI and headless by one
 command, and the command is the interface every client of the protocol uses. Its slides say how
 to split, select, drag and swap, and its images stay under 50 KB in all.
 
