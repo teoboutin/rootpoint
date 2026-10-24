@@ -1201,8 +1201,8 @@ at the new name and removes the old one, a shape the decision admits.
   in its body as the case #unsaved-close-warning asks for; rewritten at #workspace-host, which
   builds the native question. Found by the review of this document.
 - **D4**, accepted by the owner in the message "all five defaults accepted, proced", on the narrower
-  statement of the principle; put to the owner again with the principle whole, and its default
-  changed, as below. Its text: on #asset-paths-only: the owner's word of round 4, "the project should not accept relative
+  statement of the principle; put to the owner again with the principle whole, its default
+  changed, and ruled, as below. Its text: on #asset-paths-only: the owner's word of round 4, "the project should not accept relative
   path, and especially not one sitting outside the workspace directory", against the owner's
   principle in `design@rootpoint-model@cosmetic-fallbacks`, that "a cosmetic one falls back
   wherever a fallback can be used, in the owner's opinion, and that a file whose structural change
@@ -1216,8 +1216,8 @@ at the new name and removes the old one, a shape the decision admits.
   only at a read; a refusal at load would add a second mechanism for the paths the RON names, and
   refuse a file whose layout and node ids are defined, against the structural class of
   `design@rootpoint-model@validated-documents` and `goal@rootpoint-model@faithful-readable-file`;
-  a repair at load, copying the outside file in, would read outside the root. Awaiting the
-  owner's word; it bears on #rooted-assets, built on the default.
+  a repair at load, copying the outside file in, would read outside the root. Ruled: the owner
+  answered "agreed on this new shape, best for both users and protection I believe."
 - **D5**, ruled: the owner accepted it in the message "all five defaults accepted, proced". Its text: on #c-visible-mode: the owner ruled the form "the window always shows one of three
   states". The guard of #ron-overwrite-guard, which the owner accepted in the same round, leaves a
   workspace that is not saved, and the slices before #autosave-and-watch leave a workspace saved
