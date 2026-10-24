@@ -7,6 +7,8 @@
 mod common;
 
 use std::path::{Path, PathBuf};
+use std::sync::mpsc;
+use std::time::Duration;
 
 use common::*;
 use rootpoint_model::*;
@@ -523,4 +525,94 @@ fn an_asset_whose_file_leads_out_of_the_root_leaves_the_table() {
     run_ok(&mut s, &mut files, &format!("asset-remove {id}"));
     assert!(s.document().assets.is_empty());
     assert_eq!(std::fs::read(outside.join("away.png")).unwrap(), b"away");
+}
+
+/// In memory, an import whose `to` lies below a file of the map is refused, and returns: no suffix
+/// of the name frees the folder the file holds.
+#[test]
+fn in_memory_an_import_below_a_file_returns() {
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let mut mem = MemoryFiles::holding(&["pic.png", "other.png"]);
+        let mut s = Session::new();
+        run_ok(&mut s, &mut mem, "add-slide");
+        run_ok(&mut s, &mut mem, "import pic.png logo");
+        let r = reply(&mut s, &mut mem, "import other.png logo/x.png");
+        let _ = tx.send(format!("{r}"));
+    });
+    let got = rx.recv_timeout(Duration::from_secs(10));
+    assert!(
+        got.is_ok(),
+        "`import other.png logo/x.png` gave no reply in 10 s: the suffix loop never ends"
+    );
+}
+
+/// A group that ends takes with it the trash's entries only its copy of the redo stack reached: a
+/// replace undone, then a group of an edit, leaves an empty trash.
+#[test]
+fn a_group_that_ends_leaves_no_unreachable_trash_entry() {
+    let root = std::fs::canonicalize(scratch("r6-group-trash")).unwrap();
+    std::fs::write(root.join("b.png"), b"b's bytes").unwrap();
+    let outside = root
+        .join("..")
+        .canonicalize()
+        .unwrap()
+        .join("r6-group-trash-new.png");
+    std::fs::write(&outside, b"new bytes").unwrap();
+    let mut files = RecordingFiles::default();
+    let mut s = Session::new();
+    let r = root.to_str().unwrap();
+    run_ok(&mut s, &mut files, &format!("open {r}"));
+    run_ok(&mut s, &mut files, "add-slide");
+    let id = run_ok(&mut s, &mut files, &format!("import {r}/b.png"));
+    run_ok(
+        &mut s,
+        &mut files,
+        &format!("asset-replace {id} {}", outside.display()),
+    );
+    run_ok(&mut s, &mut files, "undo");
+    run_ok(&mut s, &mut files, "begin");
+    run_ok(&mut s, &mut files, "add-slide");
+    run_ok(&mut s, &mut files, "end");
+    run_ok(&mut s, &mut files, "add-slide");
+    let entries: Vec<String> = match std::fs::read_dir(root.join(".rootpoint/trash")) {
+        Ok(rd) => rd
+            .map(|e| e.unwrap().file_name().into_string().unwrap())
+            .collect(),
+        Err(_) => Vec::new(),
+    };
+    // The undo stack holds the import, the add-slides and the group; the redo stack is empty.
+    assert_eq!(entries, Vec::<String>::new(), "unreachable trash entries");
+}
+
+/// In a workspace, an import at a name a folder holds takes the name with a suffix, as the store in
+/// memory does.
+#[test]
+fn in_a_workspace_an_import_at_a_folder_s_name_takes_a_suffix() {
+    let root = std::fs::canonicalize(scratch("r6-import-folder")).unwrap();
+    std::fs::create_dir_all(root.join("img")).unwrap();
+    std::fs::write(root.join("img/a.png"), b"a").unwrap();
+    let outside = root
+        .join("..")
+        .canonicalize()
+        .unwrap()
+        .join("r6-import-folder-x");
+    std::fs::write(&outside, b"x").unwrap();
+    let mut files = RecordingFiles::default();
+    let mut s = Session::new();
+    run_ok(&mut s, &mut files, &format!("open {}", root.display()));
+    let got = reply(
+        &mut s,
+        &mut files,
+        &format!("import {} img", outside.display()),
+    );
+    // The same import in memory, for comparison.
+    let mut mem = MemoryFiles::holding(&["x", "img/a.png"]);
+    let mut m = Session::new();
+    run_ok(&mut m, &mut mem, "import img/a.png img/a.png");
+    let in_memory = reply(&mut m, &mut mem, "import x img");
+    assert!(
+        matches!(got, Reply::Ok(_)),
+        "on disk: {got}; in memory: {in_memory}"
+    );
 }

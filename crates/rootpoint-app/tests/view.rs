@@ -334,3 +334,39 @@ fn a_file_dropped_on_the_window_is_imported() {
         app.status()
     );
 }
+
+/// The Assets tab's thumbnail is decoded again when an open gives the selected asset's path other
+/// bytes, as the slide is.
+#[test]
+fn the_thumbnail_follows_an_open_that_changes_the_bytes() {
+    let png = |w: u32, h: u32| {
+        let mut bytes = Vec::new();
+        image::DynamicImage::ImageRgba8(image::RgbaImage::new(w, h))
+            .write_to(
+                &mut std::io::Cursor::new(&mut bytes),
+                image::ImageFormat::Png,
+            )
+            .unwrap();
+        bytes
+    };
+    let files = MemoryFiles::default();
+    let mut app = App::new(Box::new(files.clone()));
+    ok(&mut app, "sample");
+    for (dir, size) in [("a", (40, 20)), ("b", (64, 36))] {
+        write_presentation(&app, &files, dir);
+        files
+            .0
+            .borrow_mut()
+            .insert(format!("{dir}/splits.png"), png(size.0, size.1));
+    }
+    app.show_tab(rootpoint_app::SideTab::Assets);
+    app.select_asset(rootpoint_model::AssetId(19));
+    let ctx = Context::default();
+    let thumbnail = |uploads: &[(TextureId, [usize; 2], Vec<Color32>)], size: [usize; 2]| {
+        uploads.iter().any(|u| u.1 == size)
+    };
+    ok(&mut app, "open a");
+    assert!(thumbnail(&frame(&ctx, &mut app), [40, 20]));
+    ok(&mut app, "open b");
+    assert!(thumbnail(&frame(&ctx, &mut app), [64, 36]));
+}

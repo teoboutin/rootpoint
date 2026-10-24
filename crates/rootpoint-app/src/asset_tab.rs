@@ -2,8 +2,8 @@
 //! paths' prefixes, with a search and the filters of `assets`; the selected asset's size, its
 //! thumbnail and its uses; and the actions on it, each a command of `path@rootpoint-app@src/actions.rs`.
 //! The tab reads the document and the store and runs no query through `App::run`, which would render
-//! the slide again; what it reads from the files is kept until the next command or watcher event, so
-//! a frame reads no file.
+//! the slide again; what it reads from the files is kept until the next command, watcher event or
+//! change of the store, so a frame reads no file.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -16,6 +16,33 @@ use crate::App;
 /// The widest a thumbnail is drawn, in points.
 const THUMBNAIL_WIDTH: f32 = 128.0;
 
+/// The longest side of a thumbnail's texture, in pixels: twice its width, for a screen of two
+/// pixels per point, and far below the largest texture a painter takes, 8192 for egui-wgpu.
+const THUMBNAIL_PIXELS: u32 = 256;
+
+/// The image shrunk, by its nearest pixels, to fit `THUMBNAIL_PIXELS` on its longest side.
+fn shrink(width: u16, height: u16, rgba: Vec<u8>) -> ([usize; 2], Vec<u8>) {
+    let (w, h) = (u32::from(width), u32::from(height));
+    let longest = w.max(h);
+    if longest <= THUMBNAIL_PIXELS {
+        return ([w as usize, h as usize], rgba);
+    }
+    let (tw, th) = (
+        (w * THUMBNAIL_PIXELS / longest).max(1),
+        (h * THUMBNAIL_PIXELS / longest).max(1),
+    );
+    let mut out = Vec::with_capacity((tw * th * 4) as usize);
+    for y in 0..th {
+        let sy = y * h / th;
+        for x in 0..tw {
+            let sx = x * w / tw;
+            let at = ((sy * w + sx) * 4) as usize;
+            out.extend_from_slice(&rgba[at..at + 4]);
+        }
+    }
+    ([tw as usize, th as usize], out)
+}
+
 /// The Assets tab's own state, the window's and not the session's.
 #[derive(Default)]
 pub(crate) struct AssetTab {
@@ -24,6 +51,8 @@ pub(crate) struct AssetTab {
     pub(crate) filter: Option<AssetFilter>,
     /// The move field's text while it is edited.
     pub(crate) path_edit: Option<String>,
+    /// The relink field's text while it is edited.
+    pub(crate) relink_edit: Option<String>,
     /// The asset a removal with a replacement names.
     pub(crate) replacement: Option<AssetId>,
     /// What the tab read from the files, dropped at each command and watcher event.
@@ -33,11 +62,19 @@ pub(crate) struct AssetTab {
     thumbnail: Option<(AssetId, String, u64, Option<TextureHandle>)>,
 }
 
+impl AssetTab {
+    /// Drop the thumbnail, which the next frame decodes again: the store, or a file of it, may hold
+    /// other bytes at its path.
+    pub(crate) fn drop_thumbnail(&mut self) {
+        self.thumbnail = None;
+    }
+}
+
 /// What the tab read from the store's files.
 pub(crate) struct Listing {
     /// Each asset's size in bytes, none for a missing one.
     sizes: BTreeMap<AssetId, Option<usize>>,
-    /// The store's files that no asset names, its own files left out.
+    /// The store's files that no asset names, as `rootpoint_protocol::listed_untracked` keeps them.
     pub(crate) untracked: Vec<String>,
 }
 
@@ -95,10 +132,22 @@ impl App {
         self.asset_tab.selected
     }
 
-    /// Select an asset in the Assets tab, the window's own state.
+    /// Select an asset in the Assets tab, the window's own state. A path typed for the asset
+    /// selected before is sent first, as the field's loss of the keyboard would send it.
     pub fn select_asset(&mut self, asset: AssetId) {
+        if let (Some(before), Some(text)) =
+            (self.asset_tab.selected, self.asset_tab.path_edit.take())
+            && self
+                .session
+                .document()
+                .assets
+                .get(&before)
+                .is_some_and(|a| a.path != text)
+        {
+            self.move_asset(before, text);
+        }
         self.asset_tab.selected = Some(asset);
-        self.asset_tab.path_edit = None;
+        self.asset_tab.relink_edit = None;
     }
 
     /// What the tab reads from the files, read once until the next command.
@@ -358,9 +407,9 @@ impl App {
                     self.asset_tab.path_edit = Some(text.clone());
                 }
                 // The move is sent once, when the field loses the keyboard or Enter is pressed, so
-                // that typing a path is one command and one undo step.
+                // that typing a path is one command and one undo step; Esc leaves it unsent.
                 if response.lost_focus() {
-                    if text != path {
+                    if text != path && !ui.input(|i| i.key_pressed(egui::Key::Escape)) {
                         self.move_asset(asset, text);
                     }
                     self.asset_tab.path_edit = None;
@@ -408,14 +457,31 @@ impl App {
                 });
             }
             if size.is_none() {
-                let candidates = self.relink_candidates(asset);
-                if !candidates.is_empty() {
-                    ui.label("relink to");
-                }
-                for candidate in candidates {
+                ui.label("relink to");
+                for candidate in self.relink_candidates(asset) {
                     if self.tab_button(ui, &format!("relink {candidate}"), editable) {
                         self.relink_asset(asset, candidate);
                     }
+                }
+                // A path typed, for a file the list does not offer: sent once, when the field loses
+                // the keyboard or Enter is pressed.
+                let mut text = self.asset_tab.relink_edit.clone().unwrap_or_default();
+                let response = ui.add(
+                    egui::TextEdit::singleline(&mut text)
+                        .hint_text("a path in the store")
+                        .desired_width(160.0),
+                );
+                self.view
+                    .buttons
+                    .push(("relink path".to_owned(), response.rect));
+                if response.changed() {
+                    self.asset_tab.relink_edit = Some(text.clone());
+                }
+                if response.lost_focus() {
+                    if !text.is_empty() && !ui.input(|i| i.key_pressed(egui::Key::Escape)) {
+                        self.relink_asset(asset, text);
+                    }
+                    self.asset_tab.relink_edit = None;
                 }
             }
         });
@@ -441,7 +507,8 @@ impl App {
                 .ok()
                 .and_then(|bytes| rootpoint_render::decode_rgba(&bytes).ok())
                 .map(|(w, h, rgba)| {
-                    let image = ColorImage::from_rgba_unmultiplied([w as usize, h as usize], &rgba);
+                    let (size, rgba) = shrink(w, h, rgba);
+                    let image = ColorImage::from_rgba_unmultiplied(size, &rgba);
                     ui.ctx().load_texture(
                         format!("thumbnail {asset}"),
                         image,

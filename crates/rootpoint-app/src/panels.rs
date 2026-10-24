@@ -210,8 +210,9 @@ impl App {
     }
 
     /// The side panel: its tabs, the selection's, the styles' and the assets'. While the socket holds the
-    /// authority to edit, every control that sends an edit is disabled, and the outline and the
-    /// list of styles, which change only what the window shows, still work, per
+    /// authority to edit, every control that sends an edit is disabled, and those that change only
+    /// what the window shows, as the outline, the list of styles and the asset tab's tree, search and
+    /// uses, still work, per
     /// `design@rootpoint-app@one-controller-at-a-time`.
     pub(crate) fn side_panel(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {

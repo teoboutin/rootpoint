@@ -159,7 +159,7 @@ open. `undo` and `redo` inside a group close it first, as `end` does, then act; 
 it as any edit does; view commands join nothing.
 The stacks hold steps, each the revert of one group or of one command, applied atomically: a step
 that fails leaves the document and the view as they were. The file moves a step holds beside its
-operations are `design@rootpoint-protocol@asset-trash`'s.
+operations are `design@rootpoint-protocol@step-holds-its-moves`'s.
 
 A drag that sent one command a frame with no grouping would leave about sixty undo steps a second.
 The groups keep the session the only state and keep the grouping visible in a script, and the
@@ -226,9 +226,8 @@ ran.
 Every read of an asset, every write of an import and every move of an asset command goes through one
 check of the store, in `path@rootpoint-protocol@src/store.rs`: a path that fails `asset_path_is_confined` is refused, and in
 a workspace so is one whose file, every symlink resolved by `Files::canonical`, lies outside the
-canonical root, the nearest existing directory's path taken for a file not written yet. The trash
-is refused where `.rootpoint/` or its `trash/` resolves to another path,
-`design@rootpoint-protocol@asset-trash`. `open-copy <dir>` reads through the same check against `<dir>`, and leaves out of the map an asset
+canonical root, the nearest existing directory's path taken for a file not written yet; the trash
+has its own check, `design@rootpoint-protocol@asset-trash`. `open-copy <dir>` reads through the same check against `<dir>`, and leaves out of the map an asset
 it refuses. So no command reads or writes outside the root, whatever the file names: `render` draws
 such an asset as missing, and `import` to such a path replies `err`. A check of the paths at load
 alone would miss a symlink, which is the disk's state, `design@rootpoint-model@cosmetic-fallbacks`.
@@ -242,8 +241,9 @@ designed and added later.
 file whose canonical path lies below the root is added at its path relative to the root, with no
 copy, and an `<asset-path>` given must be that path. Any other file is written into the store, the
 map or the root, at `<asset-path>`, or at the root under its file name; a name that a file of other
-bytes holds takes a suffix, `-2`, `-3` and on, before the extension of its last component, and a
-name whose file holds the same bytes is used as it is, so an import overwrites no file. An import
+bytes, or a folder, holds takes a suffix, `-2`, `-3` and on, before the extension of its last
+component, a name below a file is refused, and a name whose file holds the same bytes is used as it
+is, so an import overwrites no file. An import
 whose path an asset already has adds no asset and replies that asset's id: one asset per file, and
 the import of a missing asset's file gives that asset its bytes.
 
@@ -311,25 +311,20 @@ the tests of `path@rootpoint-protocol@tests/asset_commands.rs` give `RecordingFi
 A change of an asset is a command, so a script or an agent makes every change the author can, one
 line each with a one-line reply, as `goal@rootpoint-protocol@commands-drive-everything` asks.
 
-### A removed or replaced asset's file goes to the trash, which an undo takes it back from and an open of the workspace empties `##asset-trash`
+### Every change of the store's files is a move into or out of the trash, which holds a file only while a step reaches it `##asset-trash`
 
 `asset-remove` moves the asset's file to the trash; `asset-replace` writes the new bytes into the
 trash, then moves the old file there and the new one to the asset's path; and `import` writes the
 file it adds into the trash, then moves it to its path. Every change a command makes to the store's
-files is then a move, which its undo step holds beside its operations, the moves first, and runs
-back in reverse order, `design@rootpoint-protocol@gesture-undo`; a group gathers both. A step
-applies whole or not at all: one whose move or operation fails moves back the files it moved and
-leaves the document and the view as they were, so an undo whose move finds a file in the way
-replies `err` and keeps its step; only a move back that fails in its turn leaves a file where it
-went, which the reply names. A step that moved a file with no operation, or an operation with no
-file, would leave the document naming a file the store holds elsewhere.
+files is then a move, which its undo step holds and runs back,
+`design@rootpoint-protocol@step-holds-its-moves`.
 
 The trash is `.rootpoint/trash/<id>-<n>` in a workspace, `import-<n>` for an import's file,
 `design@rootpoint-model@workspace-layout`, and `Session::trash`, by the same names, in memory; `<n>`
 counts the session's entries, so an asset replaced twice keeps both versions, and an entry an open
 failed to remove is never named again. A trash that a symlink places outside the root, by
-`.rootpoint/` or by `trash/`, is refused, and an open empties none,
-`design@rootpoint-protocol@store-confines-access`. `unpack` writes the trash in memory into the
+`.rootpoint/` or by `trash/`, is refused, and an open empties none, so that no access reaches
+outside the root. `unpack` writes the trash in memory into the
 workspace's, so the undo steps it keeps find their files. The trash holds a file only while a step
 reaches it: an edit that clears the redo stack, and a `cancel`, remove the entries no step reaches
 any more; an `open` of a workspace empties its trash, since no undo step of the new session reaches
@@ -343,13 +338,24 @@ file, against `design@rootpoint-app@no-discard-confirmation`, whose undo restore
 discarded. A trash kept across sessions would keep every removed file, a video included, with no
 undo left to reach it.
 
+### An undo step holds its file moves beside its operations, and applies whole or not at all `##step-holds-its-moves`
+
+A step holds the moves of the store's files its command made, `design@rootpoint-protocol@asset-trash`,
+beside its operations, the moves first, and its revert runs them back in reverse order; a group of
+`design@rootpoint-protocol@gesture-undo` gathers both. A step applies whole or not at all: one whose
+move or operation fails moves back the files it moved and leaves the document and the view as they
+were, so an undo whose move finds a file in the way replies `err` and keeps its step; only a move
+back that fails in its turn leaves a file where it went, which the reply names. The rival, moves
+made apart from the operations, would let a step that moved a file with no operation, or an
+operation with no file, leave the document naming a file the store holds elsewhere.
+
 ### The asset table holds the assets added, and a file no asset names stays untracked `##table-of-added-assets`
 
 An asset enters the table by a command, and by no change on disk: `import` adds one; `open`,
 `open-copy`, `open-pack`, `sample` and `reload` bring the table of a file; and an undo brings back
 one removed. A file under the root that no asset names is untracked, which `pack` leaves out,
-`design@rootpoint-protocol@pack-container`, and which `assets untracked` lists, but for the store's
-own files. The rival, a table that mirrors the files on disk,
+`design@rootpoint-protocol@pack-container`, and which `assets untracked` lists, but for
+`.rootpoint/` and `presentation.ron`. The rival, a table that mirrors the files on disk,
 `rejected@rootpoint-protocol@table-mirrors-the-disk`, gives an id to `.git/`, to a `README.md` and
 to an editor's backup files, and makes each change on disk an edit nobody made.
 `tripwire@rootpoint-protocol@untracked-file-lost-in-a-pack` watches an author who expected an

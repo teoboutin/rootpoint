@@ -379,7 +379,7 @@ impl Session {
                     .find(|(_, a)| a.path == path)
                     .map(|(id, _)| *id);
                 // A file the import writes enters the trash first and is moved to its path in the
-                // step, so that the step's undo takes it back, as every change of the store's files.
+                // step, so that the step's undo takes it back, `design@rootpoint-protocol@asset-trash`.
                 let mut moves = Vec::new();
                 let mut staged = None;
                 if let Some(bytes) = bytes {
@@ -476,7 +476,7 @@ impl Session {
             }
             Command::Undo | Command::Redo => {
                 // An `undo` or a `redo` inside a group closes it first, as `end` does.
-                self.end_group();
+                self.end_group(files);
                 let undo = matches!(command, Command::Undo);
                 let from = if undo { &mut self.undo } else { &mut self.redo };
                 let step = from.pop().ok_or(format!("nothing to {command}"))?;
@@ -509,7 +509,7 @@ impl Session {
             }
             Command::End => {
                 self.group.as_ref().ok_or("no group is open")?;
-                self.end_group();
+                self.end_group(files);
                 Ok(String::new())
             }
             // A session run headless has one controller, which holds the authority to edit; an
@@ -914,8 +914,8 @@ impl Session {
     }
 
     /// The reply of `assets`: each entry `a<id> <path> <bytes|missing> uses=<uses|->`, in the
-    /// order of the ids, or, for `untracked`, the paths of the store's files no asset names, its
-    /// own files left out; entries separated by `; `, as every list of a reply.
+    /// order of the ids, or, for `untracked`, the paths of the store's files no asset names that
+    /// `listed_untracked` keeps; entries separated by `; `, as every list of a reply.
     fn list_assets(&self, filter: AssetFilter, files: &mut dyn Files) -> Result<String, String> {
         if filter == AssetFilter::Untracked {
             let named: BTreeSet<&str> = self.doc.assets.values().map(|a| a.path.as_str()).collect();
@@ -990,7 +990,7 @@ impl Session {
     }
 
     /// Remove the trash's entries no step of the stacks reaches, so the trash holds a file only
-    /// while an undo or a redo can bring it back.
+    /// while an undo or a redo can bring it back, `design@rootpoint-protocol@asset-trash`.
     fn sweep_trash(&mut self, files: &mut dyn Files) {
         let group = self
             .group
@@ -1118,6 +1118,12 @@ impl Session {
         if !asset_path_is_confined(&name) {
             return Err(unconfined(&name));
         }
+        // A file where a folder of the name would be is met by every suffix of the name.
+        if let Store::Memory(map) = &self.store
+            && let Some(file) = map.keys().find(|k| name.starts_with(&format!("{k}/")))
+        {
+            return Err(format!("{} is a file, not a folder", quote(file)));
+        }
         for n in 1.. {
             let candidate = if n == 1 {
                 name.clone()
@@ -1132,10 +1138,15 @@ impl Session {
                 Store::Memory(map) => map.get(&candidate).cloned(),
                 Store::Workspace(root) => {
                     let full = writable(root, &candidate, files)?;
-                    if files.exists(&full)? {
-                        Some(files.read(&full)?)
-                    } else {
+                    if !files.exists(&full)? {
                         None
+                    } else {
+                        match files.read(&full) {
+                            Ok(bytes) => Some(bytes),
+                            // A folder at the name is other bytes, as in memory.
+                            Err(_) if files.list(&full).is_ok() => continue,
+                            Err(e) => return Err(e),
+                        }
                     }
                 }
             };
@@ -1482,12 +1493,18 @@ impl Session {
     }
 
     /// Close the open group, if any: its edits become one undo step, and an empty group none.
-    fn end_group(&mut self) {
-        if let Some(group) = self.group.take()
-            && !group.reverts.is_empty()
-        {
-            self.undo.push(Step::undoing(group.reverts));
-            self.unsaved += 1;
+    /// The group's copy of the redo stack, which `cancel` would have restored, leaves with it, and
+    /// the trash's entries only that copy reached with it.
+    fn end_group(&mut self, files: &mut dyn Files) {
+        if let Some(group) = self.group.take() {
+            let moved = group.redo.iter().any(|s| !s.moves.is_empty());
+            if !group.reverts.is_empty() {
+                self.undo.push(Step::undoing(group.reverts));
+                self.unsaved += 1;
+            }
+            if moved {
+                self.sweep_trash(files);
+            }
         }
     }
 

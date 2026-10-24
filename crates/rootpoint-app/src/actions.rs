@@ -721,7 +721,9 @@ impl App {
     }
 
     /// The files dropped on the window this frame, each imported: natively by its path; in the
-    /// browser its bytes are read first, then imported as a picked image.
+    /// browser its bytes are read first, then imported as a picked image, since a browser gives a
+    /// dropped file's name for its path and its bytes only asynchronously, read in eframe 0.37.0's
+    /// `path@elsewhere@eframe-0.37.0/src/web/dropped_file.rs`.
     pub(crate) fn take_dropped_files(&mut self, ctx: &eframe::egui::Context) {
         let dropped = ctx.input_mut(|i| std::mem::take(&mut i.raw.dropped_files));
         if dropped.is_empty() || self.socket_holds() {
@@ -940,7 +942,7 @@ impl App {
         self.error = Some("the browser build saves no file".to_owned());
     }
 
-    /// Ask for an image file, which the next frames read, then add it with
+    /// Ask for an image or a font file, which the next frames read, then add it with
     /// `App::add_picked_image`.
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn add_asset_dialog(&mut self) {

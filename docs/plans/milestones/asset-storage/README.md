@@ -329,9 +329,8 @@ the app. `design@rootpoint-model@save-format`,
 `design@rootpoint-model@edit-operation-core`, `design@rootpoint-protocol@protocol-addressing`,
 `design@rootpoint-protocol@no-new-breach` and `design@rootpoint-app@no-discard-confirmation` bear
 as constraints the work keeps. `design@rootpoint-app@tree-outline` bears on #asset-manager: its row
-of an image shows its file's name, which becomes its asset path; `design@rootpoint-app@node-menu`
-lists each image asset, which the code labels by its file's name, `App::asset_name` of
-`path@rootpoint-app@src/panels.rs`. The entries this table lists as reversed or rewritten bear as it says.
+of an image shows its asset path, as `design@rootpoint-app@node-menu` labels each image asset,
+`App::asset_name` of `path@rootpoint-app@src/panels.rs`. The entries this table lists as reversed or rewritten bear as it says.
 
 ## Criteria
 
@@ -1310,13 +1309,15 @@ at the new name and removes the old one, a shape the decision admits.
 - **D10**, awaiting the owner, built at the repair of #asset-commands: on #asset-tree-shape, whose
   `assets untracked` lists every file no asset names, `.git/` included, which the rival of a table
   that mirrors the disk names as noise. Default: the list leaves out a file whose path has a
-  component that starts with `.`, as `rootpoint_protocol::listed_untracked` builds it; such a path
+  component that starts with `.`, as `rootpoint_protocol::listed_untracked` builds it, where
+  `design@rootpoint-protocol@table-of-added-assets` states the rival until the ruling; such a path
   is still a confined asset path, so an asset may name one, and a relink then offers none. The
   rivals: leave out `.git/` alone, or follow the `.gitignore` files.
 - **D11**, awaiting the owner, built at #asset-manager: on #asset-manager-scope, whose relink offers
   first "an untracked file of the same bytes", the session's proposal, whose premise fails: a
   missing asset has no bytes to compare. Default: the untracked files of the missing file's name
-  first, then the others, as `App::relink_candidates` builds it. The rivals: those of its file's
+  first, then the others, as `App::relink_candidates` builds it, then a field for a path typed,
+  which reaches a file the list leaves out, as one D10 hides. The rivals: those of its file's
   extension first, or no file first.
 
 ## Harvest

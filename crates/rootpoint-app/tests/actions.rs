@@ -489,8 +489,6 @@ fn the_style_actions_issue_their_commands() {
     );
 }
 
-/// A control of the selection never changes a named style: a size on a text naming Body makes the
-/// text custom at that size, and Body keeps its own.
 /// The Assets tab's actions, on the sample's image `a19`, shown by `n14` and `n17`, and `cat.png`
 /// imported as `a20`, which nothing names.
 #[test]
@@ -553,6 +551,8 @@ fn the_asset_actions_issue_their_commands() {
     );
 }
 
+/// A control of the selection never changes a named style: a size on a text naming Body makes the
+/// text custom at that size, and Body keeps its own.
 #[test]
 fn a_control_of_the_selection_never_changes_a_named_style() {
     let mut app = App::new(Box::new(MemoryFiles::default()));

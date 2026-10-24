@@ -421,6 +421,7 @@ impl App {
         let root = self.session.root().map(str::to_owned);
         let unsaved = self.session.unsaved();
         let moved = self.session.files_moved();
+        let assets = self.session.document().assets.clone();
         #[cfg(not(target_arch = "wasm32"))]
         let (reloads, reopens) = (
             matches!(command, Command::Reload),
@@ -479,14 +480,22 @@ impl App {
         // A move of the store's files, by an asset command or its undo, gives a path other bytes.
         if rereads && matches!(reply, Reply::Ok(_)) || self.session.files_moved() != moved {
             self.assets.invalidate();
+            self.asset_tab.drop_thumbnail();
         }
         self.error = match &reply {
             Reply::Ok(_) => None,
             Reply::Err(reason) => Some(reason.clone()),
         };
         self.view.drawn = None;
-        // What the Assets tab read from the files may have changed with any command.
-        self.asset_tab.listing = None;
+        // What the Assets tab read from the files changes with the store, its files or its table;
+        // an edit of a slide, as each frame of a drag sends, reads no file again.
+        if rereads
+            || self.session.files_moved() != moved
+            || self.session.root() != root.as_deref()
+            || self.session.document().assets != assets
+        {
+            self.asset_tab.listing = None;
+        }
         if let (Some(node), Some(slide)) = (self.session.view().selected, self.shown_slide())
             && let Some(slide) = self.session.document().slide(slide)
         {
@@ -685,6 +694,7 @@ impl App {
         let changed = watch.take();
         if changed.iter().any(|path| assets.contains(path)) {
             self.assets.invalidate();
+            self.asset_tab.drop_thumbnail();
             // The slide is rendered again with the new bytes, as after a command.
             self.view.drawn = None;
         }

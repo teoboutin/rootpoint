@@ -51,9 +51,9 @@ impl Web {
         self.pick("", true, None);
     }
 
-    /// Ask for one image file.
+    /// Ask for one image or font file.
     pub(crate) fn pick_image(&mut self) {
-        self.pick("image/png,image/jpeg", false, None);
+        self.pick("image/png,image/jpeg,.ttf,.otf", false, None);
     }
 
     /// Ask for the file whose bytes replace an asset's.

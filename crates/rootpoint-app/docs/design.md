@@ -206,7 +206,7 @@ the view that lists those uses, which answers the cost
 `rejected@rootpoint-model@content-by-reference` names, that editing a shared content changes every
 slide that shows it. The rival, controls of the selection that change the named style the text
 names, would change slides out of view with a click meant for one text. It is a reason respected by
-every control of both tabs, and the Styles tab, a tab of the side panel, keeps the panel's width,
+every control of the Selection and Styles tabs, and the Styles tab, a tab of the side panel, keeps the panel's width,
 `design@rootpoint-app@sidebar-width`.
 
 ### Only the Assets tab changes an asset, beside the uses it lists `##assets-tab`
@@ -216,17 +216,17 @@ the window that moves, relinks, replaces and removes an asset, by the commands o
 `design@rootpoint-protocol@asset-commands`, each an action of
 `design@rootpoint-app@actions-are-commands`; the Selection tab and the node menu choose which asset
 an image shows, and change none. It shows the tree of the asset paths, its folders the prefixes the
-paths share, `design@rootpoint-model@folders-from-paths`, with a search and the filters of
+paths have, `design@rootpoint-model@folders-from-paths`, with a search and the filters of
 `assets`, and, for the selected asset, its size, its thumbnail and its uses, each a button to its
 node or its style. An asset an image shows on several slides is then changed only from the view that
 lists those slides, for the reason `design@rootpoint-app@styles-tab-edits-styles` gives for a
-style: a change meant for one image would otherwise change slides out of view. It reads the
-document and the store, and keeps what it read from the files until the next command or watcher
-event, so a frame of the tab reads no file and renders no slide again, as a query run through
-`App::run` would. It keeps the panel's width, `design@rootpoint-app@sidebar-width`, its rows cut
-to it. On the owner's word: the owner proposed an asset manager screen that edits the file tree,
-searches, renames and filters the unused assets; its other features are the session's, which the
-owner approved.
+style: a change meant for one image would otherwise change slides out of view. It keeps the panel's
+width, `design@rootpoint-app@sidebar-width`, its rows cut
+to it. It adds no kind of slide content, so `goal@rootpoint@minimal-content-set`, which counts the
+features of slide content, does not count it. On the owner's word: the owner proposed an asset
+manager screen that edits the file tree, searches, renames and filters the unused assets, and asked
+for any other meaningful feature, which the session listed; the rule that only the tab changes an
+asset is the argument above.
 
 ### A subtree is selected for a spanning split by moving up to its node, and no rectangle selects `##span-selection`
 
@@ -659,7 +659,7 @@ The test `the_watcher_decodes_a_changed_asset_and_nothing_of_git` of
 In memory nothing on disk is the presentation's, so nothing is watched. On the owner's word: the
 owner asked for the assets to be watched.
 
-### The window loads a `presentation.ron` changed outside rootpoint only when the author asks `##ron-loaded-on-request`
+### The window loads a `presentation.ron` changed outside rootpoint only by a command an author or a script sends `##ron-loaded-on-request`
 
 No event of `presentation.ron` loads it: the guard of `design@rootpoint-app@ron-overwrite-guard`
 meets a change of it at the next write, and the file is loaded only by a command an author or a

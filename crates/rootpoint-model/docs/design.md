@@ -130,8 +130,8 @@ file is text only, as `goal@rootpoint@readable-save-file` and
 
 ### A folder of assets is the prefix their paths share, and the file stores no folder `##folders-from-paths`
 
-The asset table holds each asset's path, and nothing else names a folder: a folder is a prefix the
-paths share, and a folder with no asset is no folder. The rival, folder nodes
+The asset table holds each asset's path, and nothing else names a folder: a folder is a prefix of
+the paths, and a folder with no asset is no folder. The rival, folder nodes
 stored in the presentation's file, `rejected@rootpoint-model@folders-in-the-file`, stores structure
 that holds no content, which a move of a file must then keep in step with the paths.
 
