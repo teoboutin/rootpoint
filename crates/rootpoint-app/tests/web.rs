@@ -355,7 +355,7 @@ fn f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation() {
     use wasm_bindgen::JsCast;
     use wasm_bindgen::prelude::Closure;
 
-    rootpoint_app::keep_f5();
+    rootpoint_app::keep_editor_keys(std::rc::Weak::new());
     let document = web_sys::window().unwrap().document().unwrap();
     let canvas = document.create_element("canvas").unwrap();
     document.body().unwrap().append_child(&canvas).unwrap();
@@ -375,6 +375,65 @@ fn f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation() {
     };
     assert!(key("F5"), "F5's default");
     assert!(!key("F6"), "another key's default");
+    stop.forget();
+}
+
+/// While a text is edited, Ctrl+B, Ctrl+I and Ctrl+Space never reach the browser's own action, and
+/// outside editing the browser keeps them: the window's listener reads a flag, which an editor
+/// sets at each frame.
+#[cfg(target_arch = "wasm32")]
+#[test]
+fn the_keys_of_editing_are_kept_from_the_browser_only_while_editing() {
+    use wasm_bindgen::JsCast;
+    use wasm_bindgen::prelude::Closure;
+
+    let editing = std::rc::Rc::new(std::cell::Cell::new(false));
+    rootpoint_app::keep_editor_keys(std::rc::Rc::downgrade(&editing));
+    let document = web_sys::window().unwrap().document().unwrap();
+    let canvas = document.create_element("canvas").unwrap();
+    document.body().unwrap().append_child(&canvas).unwrap();
+    let stop = Closure::<dyn FnMut(web_sys::Event)>::new(|e: web_sys::Event| e.stop_propagation());
+    canvas
+        .add_event_listener_with_callback("keydown", stop.as_ref().unchecked_ref())
+        .unwrap();
+    let key = |name: &str, ctrl: bool| {
+        let init = web_sys::KeyboardEventInit::new();
+        init.set_key(name);
+        init.set_ctrl_key(ctrl);
+        init.set_bubbles(true);
+        init.set_cancelable(true);
+        let event =
+            web_sys::KeyboardEvent::new_with_keyboard_event_init_dict("keydown", &init).unwrap();
+        canvas.dispatch_event(&event).unwrap();
+        event.default_prevented()
+    };
+    for name in ["b", "i", " "] {
+        assert!(!key(name, true), "Ctrl+{name:?} kept outside editing");
+    }
+    editing.set(true);
+    for name in ["b", "i", " "] {
+        assert!(
+            key(name, true),
+            "Ctrl+{name:?} reached the browser while editing"
+        );
+        assert!(
+            !key(name, false),
+            "{name:?} with no Ctrl kept while editing"
+        );
+    }
+    // An editor's own listener reads whether it edits a text, as its last frame left it.
+    editing.set(false);
+    let mut app = App::in_memory();
+    app.open_sample();
+    type_in_place(&mut app);
+    presented_image(&mut app);
+    assert!(
+        key("b", true),
+        "Ctrl+B reached the browser while the editor edits"
+    );
+    app.stop_editing();
+    presented_image(&mut app);
+    assert!(!key("b", true), "Ctrl+B kept once the editor left editing");
     stop.forget();
 }
 

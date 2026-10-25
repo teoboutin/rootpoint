@@ -21,7 +21,6 @@ fn main() {
 
     let mut app = App::in_memory();
     app.open_sample();
-    rootpoint_app::keep_f5();
     wasm_bindgen_futures::spawn_local(async move {
         let canvas = web_sys::window()
             .and_then(|w| w.document())

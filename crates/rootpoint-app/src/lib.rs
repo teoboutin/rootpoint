@@ -42,7 +42,7 @@ use selection::{Memory, Move};
 pub use memory::MemoryFiles;
 pub use menu::{MenuEntry, MenuItem, MenuSection};
 #[cfg(target_arch = "wasm32")]
-pub use web::keep_f5;
+pub use web::keep_editor_keys;
 
 /// The largest side of the slide's texture, in pixels: egui-wgpu 0.37.0 asks the GPU for textures
 /// of at most 8192 pixels per side, below the render crate's `MAX_SIDE`.
@@ -120,6 +120,10 @@ pub struct App {
     /// Whether the page's `beforeunload` asks: edits no file holds, `App::edits_not_written`.
     #[cfg(target_arch = "wasm32")]
     unload_warning: std::rc::Rc<std::cell::Cell<bool>>,
+    /// Whether a text is edited, at the end of the last frame, so that the page keeps the keys of
+    /// editing from the browser, `web::keep_editor_keys`.
+    #[cfg(target_arch = "wasm32")]
+    editing_keys: std::rc::Rc<std::cell::Cell<bool>>,
     /// The tab the side panel shows.
     tab: SideTab,
     /// The Styles tab's own state, the window's and not the session's.
@@ -285,6 +289,8 @@ impl App {
             web: web::Web::default(),
             #[cfg(target_arch = "wasm32")]
             unload_warning: std::rc::Rc::default(),
+            #[cfg(target_arch = "wasm32")]
+            editing_keys: std::rc::Rc::default(),
             tab: SideTab::default(),
             styles_tab: StylesTab::default(),
             asset_tab: asset_tab::AssetTab::default(),
@@ -315,6 +321,10 @@ impl App {
         // `design@rootpoint-app@no-discard-confirmation`.
         #[cfg(target_arch = "wasm32")]
         web::warn_before_unload(std::rc::Rc::downgrade(&app.unload_warning));
+        // No key of the editor reaches the browser's own action,
+        // `design@rootpoint-app@editor-keys-kept-from-browser`.
+        #[cfg(target_arch = "wasm32")]
+        web::keep_editor_keys(std::rc::Rc::downgrade(&app.editing_keys));
         app
     }
 
@@ -898,6 +908,8 @@ impl App {
         } else {
             self.editor(ui);
         }
+        #[cfg(target_arch = "wasm32")]
+        self.editing_keys.set(self.edit.is_some());
         // Presenter mode is full screen, and the editor is not.
         let presenting = self.session.view().presenting.is_some();
         if presenting != self.fullscreen {

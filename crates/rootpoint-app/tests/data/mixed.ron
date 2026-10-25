@@ -6,7 +6,7 @@
         width: 16,
         height: 9,
     ),
-    next_id: 12,
+    next_id: 13,
     assets: {
         11: (
             path: "two-colours.png",
@@ -119,7 +119,23 @@
                                         id: 5,
                                         content: Text(
                                             root: [
-                                                Chars("A paragraph long enough to wrap over several lines of its area, so that the line breaks of the layout are visible in the image."),
+                                                Chars("A paragraph long enough to wrap over "),
+                                                Span(
+                                                    id: 12,
+                                                    style: Custom(
+                                                        italic: true,
+                                                        colour: (
+                                                            r: 200,
+                                                            g: 30,
+                                                            b: 30,
+                                                            a: 255,
+                                                        ),
+                                                    ),
+                                                    text: [
+                                                        Chars("several lines"),
+                                                    ],
+                                                ),
+                                                Chars(" of its area, so that the line breaks of the layout are visible in the image."),
                                             ],
                                             style: Custom(
                                                 font: Builtin("sans"),
