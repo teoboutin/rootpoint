@@ -17,18 +17,23 @@ command. No text item holds math yet, and no reference exists.
   `Fit`, in the colour of the Body style of the table, or black.
 - **File**: `FORMAT_VERSION` 6, with no migration, per `design@rootpoint@no-compat-in-initial-dev`;
   `save_ron` sets ron's `escape_strings(false)`, so a formula reads
-  `Equation(formula: r#"…"#, numbered: true, size: Fit, colour: …)`; the four `.ron` files of the
-  tree written again, `find crates -name '*.ron'` listing them at the slice's start.
-- **Renderer**: an equation area draws its formula centred in the area less the padding of
-  `design@rootpoint-render@text-padding`, at the scale of its size mode, the number `(n)` at the
+  `Equation(formula: r#"…"#, numbered: true, size: Fit, colour: …)`, and so does any string of the
+  file holding a `"` or a `\`, a text's characters included, as ron 0.12.2 writes a raw string for
+  those alone; the four `.ron` files of the tree written again, `find crates -name '*.ron'` listing
+  them at the slice's start, and the tests that hold the file as text read against the new form.
+- **Renderer**: an equation area draws its formula, in display style, centred in the area less the
+  padding of `design@rootpoint-render@text-padding`, at the scale of its size mode, the number `(n)` at the
   area's right edge on the formula's axis, in the built-in sans at the Body style's size; `Fit`
-  takes the largest scale at which the formula and the number fit.
+  takes the largest scale at which the formula and the number fit. `area_formula`, beside
+  `area_text`, gives an equation area's `FormulaLayout`, the point where its origin is drawn and its
+  scale, as `render_slide` draws it, for the window's caret at #math-editing.
 - **Protocol**: `equation <area> $<formula>$ [numbered=yes|no] [size=fit|<n>] [colour=<c>]`,
   setting an area's content to an equation or changing one; the lexer of
   `path@rootpoint-protocol@src/command.rs` reads `$…$` as a word of its own, its content raw up to
-  the first `$` that `\` does not escape; `tree` prints an equation area with its formula, its
+  the first `$` preceded by an even number of `\`, by #math-in-protocol-grammar's decided design; `tree` prints an equation area with its formula, its
   options and its number. A printed `Command` parses back to itself.
-- **Window**: "Equation" under "Content" in the node menu, `design@rootpoint-app@node-menu`, and a
+- **Window**: "equation" under "Content" in the node menu, lower-case as its "text" and "image" are,
+  `design@rootpoint-app@node-menu`, and a
   button of the side panel's Selection tab, sending `equation` with an empty formula; the Selection
   tab of an equation area shows its options, numbered, the size mode and the colour; the outline's
   row of an equation area shows its number and the start of its LaTeX, `design@rootpoint-app@tree-outline`.
@@ -66,6 +71,11 @@ command. No text item holds math yet, and no reference exists.
   `design@rootpoint-app@node-menu`, `design@rootpoint-app@tree-outline`,
   `design@rootpoint-app@no-discard-confirmation`.
 - `tripwire@rootpoint-render@render-within-bounds`, read against an equation area.
+- `tripwire@rootpoint-model@span-ids-in-the-way`, whose re-entry, the next design work on the save
+  format, this slice meets; `issue@rootpoint@compatibility-after-real-use`, whose trigger a change of
+  the format reads; `issue@rootpoint-protocol@style-command-prints-a-line-that-does-not-parse`,
+  against the printing of `equation`'s options; `tripwire@rootpoint-protocol@one-line-tree-written-badly`
+  and the other texts that cite `design@rootpoint-protocol@protocol-transport`, against the literal.
 - The `.ron` files of the tree, and the tests that hold the file as text, as
   `path@rootpoint-protocol@tests/breaches.rs` and `path@rootpoint-model@tests/invalid.rs` did at
   the previous change of the format.
@@ -87,6 +97,8 @@ command. No text item holds math yet, and no reference exists.
   for the third kind; `design@rootpoint-model@save-format` for version 6 and `escape_strings`.
 - Into `register@rootpoint-protocol@design`: `design@rootpoint-protocol@protocol-transport` for the
   `$…$` literal.
+- Into `register@rootpoint-render@design`: `design@rootpoint-render@text-padding`, whose padding an
+  equation takes too, its reason for the member stated.
 - Into `register@rootpoint-app@design`: `design@rootpoint-app@node-menu`, its new member recorded
   as the owner approved it; `design@rootpoint-app@edit-entry`, whose sentence "every area that holds
   no image holds a text" stops being true.

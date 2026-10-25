@@ -12,8 +12,10 @@ later, the LyX math keys included.
 
 ### What
 
-The window's shortcuts are match arms in `App`, in `path@rootpoint-app@src/lib.rs`, such as Ctrl+B
-calling `App::bold`. `milestone@plans@math-support` adds the LyX math keys, Ctrl+M and the Alt+M
+The window's shortcuts are tested in `App` of `path@rootpoint-app@src/lib.rs`: outside editing by
+calls of egui's `consume_shortcut` and `consume_key` in `App::shortcuts`, and while a text is edited
+by match arms in `App::editing_keys`, such as Ctrl+B calling `App::bold`; the browser's listener,
+`keep_editor_keys` of `path@rootpoint-app@src/web.rs`, keeps a list of its own. `milestone@plans@math-support` adds the LyX math keys, Ctrl+M and the Alt+M
 sequences, as a built-in table from key sequences to actions, with no file that changes it.
 
 Leads, none decided:
@@ -27,8 +29,9 @@ Leads, none decided:
 
 ### Why it matters
 
-An author whose keyboard layout, platform or habits conflict with a fixed binding cannot change it:
-on a Mac, Option with M types µ, which LyX itself moves to Control with M.
+An author whose keyboard layout, platform or habits conflict with a fixed binding cannot change it.
+An assumption, not measured: on a Mac, Option with M types µ, and LyX's `mac.bind` moves Alt to
+Control by its comment, which the survey read and did not test.
 
 ### What would close it
 

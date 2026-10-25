@@ -31,8 +31,9 @@ family, and a text falls back to Libertinus Math for a character its font lacks.
 
 ## Claims
 
-- **No system font is discovered**: the existing unit test that pins a new `FontSet` to the built-in
-  families, extended to the math family.
+- **No system font is discovered**: the unit test `a_new_set_holds_the_built_in_family_alone` of
+  `path@rootpoint-render@src/text.rs`, as #math-layout left it, pinning a new `FontSet` to the built-in
+  families, Open Sans and Libertinus Math.
 - **AC7**, `acceptance@math-support@ac-arrows-fall-back`; shown to fail by a stack without the math
   font.
 - **Every saved file loads unchanged**: the fixture's round trip, unchanged since the family's name is
@@ -45,6 +46,8 @@ family, and a text falls back to Libertinus Math for a character its font lacks.
   `path@rootpoint@docs/grounding/math-typesetting.md` answers.
 - `path@rootpoint-render@src/text.rs`, `layout_text`, `BUILTIN_SANS`, `BUILTIN_FONTS`.
 - Every file that `grep -rn "Noto"` finds in `crates/`.
+- `tripwire@rootpoint-render@render-within-bounds`, whose re-entry this slice meets, as it changes
+  the renderer, and whose test then draws in Open Sans.
 
 ## Fails alone on
 

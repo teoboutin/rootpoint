@@ -150,12 +150,36 @@ answered by the owner's words of round 7, the missing set "not much of a problem
 | #equation-options | approved | size `Fit` (the default) or `AtMost(size)`, plus a colour, unnamed |
 | #equation-fit | approved | one layout scaled by k; both modes |
 
+The table's `TextItem::Ref(n<id>)` writes a reference as commands print it; the file writes it
+`Ref(7)`, since an id is a plain number there, `design@rootpoint-model@save-format`.
+
 The table was put "for you to contest": "A positive word on this table closes it,
-#builtin-text-family included." The owner's word of round 8 closes, with the table, the choices no
-other word of the owner addresses: #math-layout-engine, closed `argued`; the source of the table of
-commands and the choice of ttf-parser, closed on their argument in round 4; LyX's math
-autocorrection left out; ron's `escape_strings(false)`, put in round 2 as a default "unless you say
-otherwise"; and #equation-options as finally shaped.
+#builtin-text-family included." The owner's word of round 8 closes with the table what the table
+shows and no other word of the owner addresses: ron's `escape_strings(false)`, put in round 2 as a
+default "unless you say otherwise", and #equation-options as finally shaped. The session closed on
+their argument, and reported under "Decided" in round 4, #math-layout-engine, `argued`, the source
+of the table of commands, the choice of ttf-parser, and LyX's math autocorrection left out; the
+table showed the first three, and the owner did not contest them.
+
+**The questions put to the owner under a label**, and their answers:
+
+- Q1, round 1, how heavy the math of the owner's talks is; answered in round 2.
+- Q2, round 1, serif or sans math; answered in round 2, then superseded by the owner's request of
+  round 3 to look at the thesis's font.
+- Q3, round 1, whether a configurable keymap is intended; answered in round 2.
+- Q4, round 1, whether the first talks do without bullet lists and code snippets; answered in round 2.
+- Q5, round 1, whether to run the survey; answered in round 2.
+- Q6, round 2: "#equation-fit: fit both ways (the default) or shrink only?"; answered in round 3.
+- Q7, round 2: whether the side panel's "Retarget all to…" and the refusal's message are "easy
+  enough"; answered in round 3, "reference-retarget agreed".
+- Q8, round 3, the Computer Modern math or the Libertine look; superseded in round 4, the thesis's
+  math being Computer Modern, #arg-53.
+- Q9, round 4, the licence; answered mid-turn in round 4.
+- Q10, round 4 ("round 5" of the session's headings), which math font; answered in round 5.
+- Q11, round 6, #math-glyph-fallback; answered in round 7.
+- Q12, round 6: "Which text font or fonts, and shape A or B?"; answered in round 7, under the
+  owner's label "Q2".
+- Q13, round 7, the tripwires and the acceptance criteria; answered in round 8.
 
 ## How the work is done
 
@@ -163,8 +187,17 @@ Before each slice, read `skill@knowledge-architect-planning@working-a-slice` who
 The slices are built in the order of "Implementation sequence".
 
 - **Branches.** This document, its slice specs, the survey, the issues it opens and the licence of
-  the project, MIT OR Apache-2.0, chosen by the owner in round 4, are on the branch math-milestone.
-  How the slices' work shares that branch is D1.
+  the project, `design@rootpoint@permissive-licence`, are on the branch math-milestone. How the
+  slices' work shares that branch is D1. Until the owner rules on D1, #math-layout may start on a
+  branch made from math-milestone's tip; nothing merges into the main branch before the ruling.
+- **Grounding of the first slice.** #math-layout touches the root, the render crate and the
+  maintenance tool, and creates the math crate: point 1 of the slice's procedure reads the
+  `CLAUDE.md`, the design home and the rejected home of each of the root, `path@rootpoint@crates/rootpoint-render/`
+  and `path@rootpoint@tools/xtask/`. By `path@xtask@CLAUDE.md`, the new crate's library root reads
+  `ROOTPOINT_CHECKOUT`, as every library root of the workspace does.
+- **A new Component's goals are the owner's.** The harvest of #math-layout drafts the math crate's
+  goals under `skill@knowledge-architect-goal-setting`, and the owner rules on them goal by goal
+  before that harvest merges.
 - **Gates.** `cargo x gates` runs every check a branch owes before it merges,
   `instructions@merge-gates`. Every slice keeps them passing, the gate `wasm` and the browser tests
   included: a test added to `path@rootpoint-app@tests/actions.rs` or
@@ -181,7 +214,8 @@ The slices are built in the order of "Implementation sequence".
   `path@rootpoint-app@tests/data/mixed.ron`, `path@rootpoint-model@tests/data/fixture.ron` and
   `path@rootpoint-model@tests/data/fixture-edited-by-agent.ron`.
 - **Licences of what is built in.** Every font and every data file built into a binary keeps its own
-  licence text beside it, as `path@rootpoint-render@fonts/OFL.txt` sits beside Noto Sans today.
+  licence text beside it, as `path@rootpoint-render@fonts/OFL.txt` sits beside Noto Sans today, by
+  `design@rootpoint@permissive-licence`.
 
 ## Names
 
@@ -201,7 +235,8 @@ The slices are built in the order of "Implementation sequence".
 - **The lexer of commands**: `split_words` and `Word` of `path@rootpoint-protocol@src/command.rs`.
 - **The survey**: `path@rootpoint@docs/grounding/math-typesetting.md`.
 - **The missing set**: the 44 math commands of KaTeX, each mapping to one character, whose character
-  Libertinus Math 7.051 has no glyph for, listed in the survey, section 6.
+  Libertinus Math 7.051 has no glyph for, listed in the survey, section 4.
+- **The reference formulas**: the formulas of #math-layout's "Fixtures", which AC1 and AC2 lay out.
 - **The slices**: #math-layout, #builtin-open-sans, #equation-kind, #inline-math and #math-editing,
   each named by its spec's file name.
 
@@ -279,65 +314,117 @@ What exists today, at each site the work touches:
 - `design@rootpoint-app@editor-overlay`, `rejected@rootpoint-app@reserved-frame-space`: the marks
   of a formula are drawn over the texture; the placeholder of an empty cell is reserved in every
   display, which is not that rejected design, #arg-26.
-- `design@rootpoint@wasm-from-the-start`, `design@xtask@browser-tests-gated`,
-  `design@xtask@one-tool-binds-and-tests`: the math crate builds for the browser and its browser
-  tests run in the gates.
+- `design@xtask@browser-tests-gated`, `design@xtask@one-tool-binds-and-tests`: the math crate's
+  browser tests run in the gates.
+- `design@rootpoint@permissive-licence`: every dependency and every built-in file the work adds fits
+  MIT OR Apache-2.0, and a built-in file keeps its licence text beside it.
 
 **Each recorded decision the work rewrites, every text that `cargo klarch show` lists as referencing
-it, and the slice that judges or updates each:**
+it, and the slice that judges or updates each.** Each slice's audit runs `cargo klarch show` again on
+the heads it changes, and reads each text against the change:
 
-- `design@rootpoint@crate-existence-rule` and `design@rootpoint@gui-only-in-app`: their lists of
-  crates gain `rootpoint-math`, a member the rule admits, #math-layout. Referenced at
-  `register@rootpoint@design` (by `design@rootpoint@gui-only-in-app`) and
-  `register@rootpoint-protocol@design`: neither text changes.
+- `design@rootpoint@crate-existence-rule`: its list of crates gains `rootpoint-math`, a member the
+  rule admits, and its sentence that the model's serialization stays inside it is rewritten, since
+  the grammar of a formula is the math crate's, #math-layout. Referenced by
+  `design@rootpoint@gui-only-in-app`, whose text does not change on that account.
+- `design@rootpoint@gui-only-in-app`: its graph of dependencies gains the math crate, which the
+  model and the renderer depend on, #math-layout. Referenced at
+  `register@rootpoint-protocol@design`, which does not change.
+- `design@rootpoint@wasm-from-the-start`: the crates the gate builds gain the math crate,
+  #math-layout. Referenced at `path@rootpoint-model@CLAUDE.md` and `path@rootpoint-render@CLAUDE.md`,
+  read at that slice.
 - `design@rootpoint-render@builtin-noto-sans`: rewritten for Open Sans, #builtin-open-sans.
   Referenced by nothing.
 - `design@rootpoint-render@font-sources`: the built-in fonts gain the math font, #math-layout, and
-  the text's fallback to it, #builtin-open-sans. Referenced at
-  `register@rootpoint-model@design` (`design@rootpoint-model@cosmetic-fallbacks`) and by
+  the text's fallback to it, #builtin-open-sans. Referenced at `register@rootpoint-model@design`
+  (`design@rootpoint-model@cosmetic-fallbacks`) and by
   `tripwire@rootpoint-render@glyph-missing-everywhere`: read at both slices; neither changes.
+- `design@rootpoint-render@text-padding`: an equation is inset by the same padding as a text, a
+  member its argument, the wrap width of a text, does not cover; its ground is the session's choice,
+  so the head is rewritten at #equation-kind with the reason for the member: an equation's edge then
+  stands where a text's would. Referenced by nothing.
 - `design@rootpoint-model@inline-content-assets` and `design@rootpoint-model@style-kinds`: a third
   kind of content, whose options are unnamed, #equation-kind. `design@rootpoint-model@style-kinds` is
   referenced by `issue@rootpoint@more-content-kinds`, which stays true.
+- `design@rootpoint-model@no-empty-kind`: its sentence that the editor has one kind to enter for
+  typing, the text, stops being true when the window edits an equation's formula, #math-editing.
+  Referenced at `register@rootpoint-app@design` (twice) and `register@rootpoint-model@design`, read at
+  that slice.
 - `design@rootpoint-model@save-format`: versions 6 and 7 and `escape_strings(false)`,
   #equation-kind and #inline-math. Referenced at `register@rootpoint-model@design`,
   `path@rootpoint-model@src/file.rs`, `path@rootpoint-model@tests/file.rs`,
   `register@rootpoint-protocol@design`, `register@rootpoint@design` and
   `issue@rootpoint@compatibility-after-real-use`: each read at those slices; the comment of
   `path@rootpoint-model@src/file.rs` changes with the configuration it explains.
+- `design@rootpoint-model@edit-operation-core`: an edit of a text tree returns the area's former
+  content, which `Op::SetMath` follows; `Op::RetargetReferences` changes several texts at once, and
+  its inverse, which restores each, is a member the head gains at #inline-math. Referenced at
+  `register@rootpoint-app@design`, `path@rootpoint-model@src/document.rs` and
+  `register@rootpoint-protocol@design`, read at that slice.
 - `design@rootpoint-model@text-node-kinds`: the two kinds built, #inline-math. Referenced at
   `path@rootpoint-model@src/document.rs`, the doc comment of `TextItem`, which changes with it.
-- `design@rootpoint-model@cosmetic-fallbacks`: a dangling reference is a new member, #inline-math.
-  Referenced at 13 sites the slice's audit lists with `cargo klarch show`; the doc comment of
-  `Breach` in `path@rootpoint-model@src/validate.rs` changes with it.
+- `design@rootpoint-model@validated-documents`: a reference to an id at or above the document's
+  counter is structural, by the head's own argument for an asset id, since a later node would take
+  that id, #inline-math. Referenced at `register@rootpoint-model@rejected`,
+  `path@rootpoint-model@src/ops.rs` and `path@rootpoint-model@src/validate.rs` (twice), read at that
+  slice.
+- `design@rootpoint-model@cosmetic-fallbacks`: a reference to an area that holds no equation is a
+  new member, #inline-math. Referenced at `issue@rootpoint-app@styled-copy-paste`,
+  `register@rootpoint-model@design` (four times), `path@rootpoint-model@src/document.rs`,
+  `path@rootpoint-model@src/ops.rs` (three times), `path@rootpoint-model@src/validate.rs` and
+  `register@rootpoint-protocol@design` (three times); the doc comment of `Breach` changes with it.
 - `design@rootpoint-model@stable-ids`: a duplicated slide redirects its own references,
-  #inline-math. Referenced at 11 sites, among them `tripwire@rootpoint-model@span-ids-in-the-way` and
-  `issue@rootpoint-model@linked-dividers`; read at the slice's audit.
+  #inline-math. Referenced at `issue@rootpoint-model@linked-dividers`,
+  `register@rootpoint-model@tripwire` (twice, by `tripwire@rootpoint-model@span-ids-in-the-way`),
+  `path@rootpoint-model@src/document.rs`, `path@rootpoint-model@src/ops.rs`,
+  `register@rootpoint-protocol@design` (five times) and `register@rootpoint-protocol@rejected`.
 - `design@rootpoint-render@area-text-layout`: inline boxes, #inline-math. Referenced at
   `register@rootpoint-app@design`, `register@rootpoint-app@rejected`,
-  `register@rootpoint-model@design` and `path@rootpoint-render@src/map.rs`, whose doc comment
-  changes with the map.
+  `register@rootpoint-model@design` and `path@rootpoint-render@src/map.rs`, whose doc comment changes
+  with the map.
 - `design@rootpoint-protocol@protocol-transport`: the `$…$` literal, #equation-kind, and the tree's
-  new items, #inline-math. Referenced at 8 sites, among them
-  `tripwire@rootpoint-protocol@one-line-tree-written-badly` and
-  `issue@rootpoint-protocol@style-command-prints-a-line-that-does-not-parse`; read at both slices.
-- `design@rootpoint-protocol@text-edit-commands` and `design@rootpoint-protocol@no-new-breach`: the
-  insertion of items, `math` and `retarget`, and the refusal of a referenced equation's removal,
-  #inline-math. Referenced at 9 and 16 sites; the comments at `path@rootpoint-app@src/actions.rs`,
-  `path@rootpoint-protocol@src/session.rs` and `path@rootpoint-protocol@tests/properties.rs` are read
-  at the slice's audit.
+  new items, #inline-math. Referenced at `register@rootpoint-app@design`,
+  `issue@rootpoint-app@styled-copy-paste`, `register@rootpoint-protocol@design`,
+  `issue@rootpoint-protocol@style-command-prints-a-line-that-does-not-parse`,
+  `register@rootpoint-protocol@rejected` (twice) and `register@rootpoint-protocol@tripwire` (twice, by
+  `tripwire@rootpoint-protocol@one-line-tree-written-badly`).
+- `design@rootpoint-protocol@text-edit-commands`: the insertion of items, `math` and `retarget`,
+  #inline-math. Referenced at `register@rootpoint-app@design` (three times),
+  `register@rootpoint-app@rejected`, `path@rootpoint-app@src/actions.rs`,
+  `path@rootpoint-app@src/editing.rs`, `path@rootpoint-app@tests/editing.rs`,
+  `register@rootpoint-protocol@rejected` and `register@rootpoint-protocol@tripwire`.
+- `design@rootpoint-protocol@no-new-breach`: `equation`, `math`, `retarget` and the removals refuse a
+  dangling reference, #inline-math. Referenced at `path@rootpoint-app@src/actions.rs` (twice),
+  `path@rootpoint-app@src/panels.rs`, `register@rootpoint-model@design` (five times),
+  `path@rootpoint-model@src/ops.rs` (three times), `path@rootpoint-protocol@src/session.rs` (three
+  times), `path@rootpoint-protocol@tests/properties.rs` and `path@rootpoint-protocol@tests/spans.rs`.
 - `design@rootpoint-app@node-menu` and `design@rootpoint-app@tree-outline`: "Equation" in the menu,
-  approved by the owner in round 2, and the outline's row of an equation, #equation-kind. Referenced
-  at 9 and 3 sites in the app's documents and code; the doc comment of `path@rootpoint-app@src/menu.rs`
-  changes with the menu.
+  approved by the owner in round 2, and the outline's row of an equation, #equation-kind.
+  `design@rootpoint-app@node-menu` is referenced at `register@rootpoint-app@design` (three times),
+  `path@rootpoint-app@src/actions.rs`, `path@rootpoint-app@src/menu.rs`,
+  `path@rootpoint-app@src/panels.rs`, `path@rootpoint-app@src/view.rs` and
+  `path@rootpoint-app@tests/gestures.rs` (twice); `design@rootpoint-app@tree-outline` at
+  `register@rootpoint-app@design` (twice) and `path@rootpoint-app@src/panels.rs`.
 - `design@rootpoint-app@edit-entry`: its sentence that every area holding no image holds a text,
-  #equation-kind; entering a formula's editing, #math-editing. Referenced at 9 sites, among them
-  `tripwire@rootpoint-app@empty-text-takes-the-keys` and `register@rootpoint-model@design`.
+  #equation-kind; entering a formula's editing, #math-editing. Referenced at
+  `register@rootpoint-app@design`, `register@rootpoint-app@tripwire` (twice, by
+  `tripwire@rootpoint-app@empty-text-takes-the-keys`), `path@rootpoint-app@src/actions.rs`,
+  `path@rootpoint-app@src/view.rs`, `path@rootpoint-app@tests/editing.rs`,
+  `path@rootpoint-app@tests/gestures.rs` (twice) and `register@rootpoint-model@design`.
 - `design@rootpoint-app@edit-in-place`, `design@rootpoint-app@boundary-caret-positions`,
   `design@rootpoint-app@editor-overlay` and `design@rootpoint-app@editor-keys-kept-from-browser`:
-  the caret in a formula, its marks and the new keys, #math-editing. Referenced at 9, 12, 10 and 4
-  sites in the app's documents, code and tests, `path@rootpoint-app@CLAUDE.md` among them; read at
-  the slice's audit.
+  the caret in a formula, its marks and the new keys, #math-editing. Referenced, the first at
+  `register@rootpoint-app@design` (twice), `path@rootpoint-app@src/actions.rs`,
+  `path@rootpoint-app@src/editing.rs`, `path@rootpoint-app@src/view.rs`,
+  `path@rootpoint-app@tests/editing.rs` (twice), `path@rootpoint-app@tests/edit_ops.rs` and
+  `register@rootpoint-render@design`; the second at `register@rootpoint-app@design` (three times),
+  `register@rootpoint-app@rejected`, `path@rootpoint-app@src/actions.rs` (twice),
+  `path@rootpoint-app@src/editing.rs` (twice) and `path@rootpoint-app@tests/editing.rs` (four times);
+  the third at `path@rootpoint-app@CLAUDE.md`, `register@rootpoint-app@design` (three times),
+  `register@rootpoint-app@rejected`, `register@rootpoint-app@tripwire` (twice),
+  `path@rootpoint-app@src/view.rs`, `path@rootpoint-app@tests/gestures.rs` and
+  `path@rootpoint-app@tests/presenter.rs`; the fourth at `register@rootpoint-app@design`,
+  `register@rootpoint-app@rejected`, `path@rootpoint-app@src/lib.rs` and `path@rootpoint-app@src/web.rs`.
 
 **The standing entries the discussion's search returned, each with its outcome:**
 
@@ -522,11 +609,12 @@ round 5: "Among the sample, my preference goes to Libertinus Math." The owner's 
 
 ### A command whose glyph the math font lacks is drawn missing and reported, with no fallback math font `##math-glyph-fallback`
 
-Proposed by the session in round 6, #arg-68; STIX Two Math as a fallback lost on the owner's weighing,
-#arg-69. Approved in round 7: "math-glyph-fallback: agreed on default. the missing set here is not
+Proposed by the session in round 6, #arg-68; STIX Two Math as a fallback lost on #arg-69, weighed by the
+owner in #arg-73. Approved in round 7: "math-glyph-fallback: agreed on default. the missing set here is not
 much of a problem. Keep the exact missing set recorded in the porject btw." and in round 8: "The
-missing set can be recorded as you proposed", #arg-79. Harvested into the head of #math-font, with
-the test that pins the missing set, at #math-layout.
+missing set can be recorded as you proposed", #arg-79. Harvested into a head of its own, a head of
+absence beside the head of #math-font, which carries the missing set and the test that pins it, at
+#math-layout.
 
 ### Open Sans replaces Noto Sans as the built-in text family, and a text falls back to the math font `##builtin-text-family`
 
@@ -1055,7 +1143,7 @@ crates/rootpoint-math/                 the math crate, new
   Formula, Row, Atom                   the tree of a formula
   Formula::parse, Formula::to_latex    the LaTeX subset, read and written
   COMMANDS                             the table of commands, generated
-  MathFont, MathFont::new              a font's bytes and its MATH table, read by ttf-parser
+  MathFont, MathFont::new              a font file's bytes: cmap, metrics, MATH and GSUB, read by ttf-parser
   lay_out, FormulaLayout, AtomBox      the layout: a box per atom and per cell, and its glyphs
   CellPath                             a path of cells and an offset in a row, for the caret
 crates/rootpoint-model/src/document.rs
@@ -1065,12 +1153,15 @@ crates/rootpoint-model/src/document.rs
   TextItem::Math(Formula), TextItem::Ref(NodeId)
   Document::equation_numbers           computed numbers
 crates/rootpoint-model/src/ops.rs
-  Op::SetMath, Op::RetargetReferences, OpError::Referenced
+  Op::SetMath, Op::RetargetReferences
 crates/rootpoint-model/src/validate.rs
   Breach::DanglingReference
 crates/rootpoint-render/src/
-  draw_formula                         draws a FormulaLayout
+  draw_formula                         draws a FormulaLayout, crate-private
+  area_formula                         an equation area's layout, origin and scale, as drawn
+  Report::unknown_commands             the formulas holding an unknown command
   BUILTIN_MATH                         Libertinus Math's bytes
+crates/rootpoint-render/tests/math.rs  the image test of AC1, ignored
 crates/rootpoint-protocol/src/command.rs
   Word::Math(String)                   the `$…$` literal
   Command::Equation, Command::Math, Command::Retarget
@@ -1078,7 +1169,7 @@ crates/rootpoint-protocol/src/command.rs
 crates/rootpoint-app/src/
   Keymap, KeySequence                  the built-in table of key sequences
 tools/xtask/src/main.rs
-  the generator of COMMANDS from unicode.xml
+  cargo x math-commands                the generator of COMMANDS from unicode.xml and a font
 ```
 
 Existing: `Content`, `TextItem`, `Op`, `Breach`, `Command`, `TreeItem`, `Word`, `split_words`,
@@ -1092,10 +1183,13 @@ Existing: `Content`, `TextItem`, `Op`, `Breach`, `Command`, `TreeItem`, `Word`, 
 The model holds `Formula`, a tree: a formula is rows, separated by `\\`; a row is atoms, aligned at
 `&`; an atom is one of the kinds of #math-layout's "Builds". The file and every command hold the
 formula as LaTeX, written by `to_latex` and read by `parse`, over the closed subset of the mapping
-table "A LaTeX construct, to the atom it reads as". Text that does not parse, as an unbalanced
-brace, makes the file refused, as a broken RON file is; an unknown command is an atom of its own,
-drawn red, a cosmetic breach. The file sets ron's `escape_strings(false)`, so formulas read as raw
-strings. Nearest rival, the LaTeX string as the model edited as source: fails C1, #arg-9. A RON tree
+table "A LaTeX construct, to the atom it reads as". Text that does not parse makes the file refused,
+as a broken RON file is, and a command refused: an unbalanced brace, a second superscript or a second
+subscript on one nucleus, as in `x^a^b`, as TeX refuses it, or an `\end` that closes no
+`\begin`. An unknown command is an atom of its own that takes no argument, so the braced groups after
+it stay groups and write back as they were read; it is drawn red, and the renderer's report names it,
+as it names a missing glyph, so it is no breach of the document and a command may write one. The file
+sets ron's `escape_strings(false)`, so formulas read as raw strings. Nearest rival, the LaTeX string as the model edited as source: fails C1, #arg-9. A RON tree
 of atoms: fails C2, #arg-6.
 
 ### #math-text-item
@@ -1128,32 +1222,53 @@ the slide: a divider drag would renumber, #arg-16.
 
 ### #equation-reference-target
 
-`TextItem::Ref(NodeId)` names an equation area; it draws `(n)`, the equation's current number, in its
+`TextItem::Ref(NodeId)` names an equation area, written `Ref(7)` in the file, since an id is a plain
+number there, and `{ref n7}` in commands; it draws `(n)`, the equation's current number, in its
 node's style. The window inserts one from a picker listing the equations by number. A duplicated
-slide redirects its own references to the copies. Nearest rival, labels: a namespace, a uniqueness
+slide redirects its own references to the copies. `Op::Swap`, which the `swap` command and the
+window's drag of an area run, carries the references with the contents it exchanges, so a moved
+equation keeps its references, D4. Nearest rival, labels: a namespace, a uniqueness
 rule and a rename, #arg-18; deferred to `issue@rootpoint-model@equation-names`.
 
 ### #removed-equation-references
 
-`apply` refuses to remove an equation area, to turn it into another kind, or to remove its slide,
-while a text references it, naming the texts. A file holding a reference to an area that holds no
-equation loads; the reference draws `(??)`, `Breach::DanglingReference`. Nearest rival, allowing
+The commands that remove an equation area, or a split or a slide that holds one, or turn it into
+another kind, refuse while a text that the command leaves in place references it, naming the texts, by
+`design@rootpoint-protocol@no-new-breach`; a reference inside the slide removed goes with it.
+`apply` accepts each, as `design@rootpoint-model@cosmetic-fallbacks` has it, so an undo, as of a
+duplicated slide, which removes the copy, is never refused. A file holding a reference to an area
+that holds no equation, at an id below the document's counter, loads; the reference draws `(??)`,
+`Breach::DanglingReference`. A reference to an id at or above the counter is structural, and refused
+at load and by `apply`, by `design@rootpoint-model@validated-documents`. Nearest rival, allowing
 the removal: reverses `design@rootpoint-protocol@no-new-breach`, #arg-21.
 
 ### #reference-retarget
 
-`Op::RetargetReferences { from, to }` moves every reference to `from` onto `to`, refused unless `to`
-holds an equation; its inverse moves back only those it moved. The command `retarget` replies the
+`Op::RetargetReferences { from, to }` moves every reference to `from` onto `to`; the command
+`retarget` refuses it unless `to` holds an equation; its inverse restores each text it changed to its
+former content, as `design@rootpoint-model@edit-operation-core` has an edit of a text tree do, so it
+moves back only those it moved. The command `retarget` replies the
 count. The Selection tab of an equation shows "Referenced n times" and "Retarget all to…"; a refused
 removal's message in the status line names the count and the control. Nearest rival, a dialog that
 retargets and removes: a question in the middle of a Delete, #arg-40.
 
 ### #math-layout-engine
 
-The math crate lays a formula out from the font's MATH table, read by ttf-parser 0.25 from the bytes
-read-fonts gives, into a box per atom and per cell, each tied to its place in the formula, with the
-glyphs to draw; the renderer draws them. Device tables are ignored. Scripts take the font's `ssty`
-forms. Nearest rival, a fork of KenyC/ReX: no node identity, its own parser and node types, #arg-57.
+The math crate lays a formula out from the font file's bytes, all of which it reads with ttf-parser
+0.25: the cmap, the glyphs' advances and bounds, the MATH table and the `ssty` lookups of GSUB. It
+gives a box per atom and per cell, each tied to its place in the formula, with the glyphs to draw and
+their positions; the renderer draws them. An equation is laid out in display style, a math item of a
+text in text style, and scripts in script and scriptscript styles, as TeX's rules have them, each
+style taking the MATH constants that name it. A script's glyphs are the font's `ssty` forms, chosen
+by the layout before it measures them, so the boxes are those of the glyphs drawn. The space between
+two atoms comes from their classes, by the mapping table "A pair of classes, to the space between
+them"; a character's class is the type `unicode.xml` gives it, by the mapping table "A `unicode.xml`
+type, to the class of an atom". A letter takes the code point of its font change, by the mapping table
+"A character under a font change, to the code point drawn". Rows are set baseline to baseline at
+1.2 em at least, and further apart where their ink would come closer than the font's
+`mathLeading`, a default of the session that #math-layout's audit may revise; the `&`s of a row
+alternate right and left alignment, as amsmath's `align` does. A `\text{…}` run is set in the math
+font's upright Latin glyphs. Device tables are ignored. Nearest rival, a fork of KenyC/ReX: no node identity, its own parser and node types, #arg-57.
 
 ### #math-font
 
@@ -1177,8 +1292,12 @@ rival, two built-in families: about 2 MB more in every build when the owner name
 ### #math-editing-model
 
 The caret moves in a formula by the mapping table "A key in a formula, to what it does". `^` and `_`
-make scripts, `\` opens a command name, Space leaves a cell; Backspace selects an atom with cells
-before deleting it; an empty formula is removed when the caret leaves it. Nearest rival, a source
+make scripts, `&` sets an alignment point, Ctrl+Return starts a new row, `\` opens a command name,
+Space leaves a cell; Backspace selects an atom with cells before deleting it; at a math item's edge
+in its text, Backspace or Delete selects the whole item by a first press and deletes it by a second,
+as for a span with items; a math item left empty when the caret leaves it is removed, and an
+equation area keeps its formula, empty or not. The window edits an equation's formula on the layout
+the renderer draws, which `area_formula` gives it as `area_text` gives a text's. Nearest rival, a source
 field with a preview: fails C1, #arg-24.
 
 ### #latex-command-set
@@ -1201,7 +1320,8 @@ its outline while editing. Nearest rival, a zero-width cell: the caret has nowhe
 
 ### #math-in-protocol-grammar
 
-`$…$` is a word of the lexer, its content raw up to the first `$` not after `\`; a math item of a tree
+`$…$` is a word of the lexer, its content raw up to the first `$` preceded by an even number of
+`\`, none included, so `\$` is a dollar of the formula and `\\$` a row break that ends it; a math item of a tree
 is that word, and a reference `{ref n<id>}`. Nearest rival, a quoted string: every backslash doubled,
 #arg-27.
 
@@ -1213,8 +1333,9 @@ rival, commands by cell path: a bigger grammar for no gain, #arg-28.
 ### #math-keys
 
 LyX's math keys, copied with their oddities, by the mapping table "A LyX math key, to the action it
-runs", acting while a text or a formula is edited; the browser build disables a binding the browser
-keeps. Nearest rival, a corrected table: costs the owner's muscle memory, C8, #arg-30.
+runs", acting while a text or a formula is edited, but for Ctrl+Shift+M and Ctrl+Alt+N, which act
+while an area is selected and not edited; the browser build disables a binding the browser keeps, and
+every action a key runs has a control of the side panel or the node menu too, D3. Nearest rival, a corrected table: costs the owner's muscle memory, C8, #arg-30.
 
 ### #keymap-table
 
@@ -1225,7 +1346,8 @@ same work earlier, with the key tests at risk, #arg-45.
 ### #equation-options
 
 An equation holds `numbered`, `size`, `Fit` or `AtMost(size)`, and `colour`, unnamed; a new one is
-numbered, `Fit`, in the Body style's colour or black. Nearest rival, a text style named by the
+numbered, `Fit`, in the Body style's colour or black, but by Ctrl+Shift+M, which makes it
+unnumbered, as LyX's `math-display` does. Nearest rival, a text style named by the
 equation: options with no meaning for it, C7.
 
 ### #equation-fit
@@ -1244,7 +1366,7 @@ the owner chose both, #arg-47.
 | a letter, a digit, a character of `COMMANDS`, `\name` of `COMMANDS` | symbol, with its class |
 | `\frac{a}{b}` | fraction |
 | `\sqrt{a}`, `\sqrt[n]{a}` | radical, with an index for the second |
-| `x_a`, `x^b`, `x_a^b`, `x^b_a` | script of the atom before |
+| `x_a`, `x^b`, `x_a^b`, `x^b_a` | script of the atom before; a second superscript or subscript on one nucleus does not parse |
 | `\left( … \right)`, with any delimiter of `COMMANDS` or `.` | delimited group |
 | `\hat`, `\bar`, `\vec`, `\dot`, `\ddot`, `\tilde`, `\check`, `\breve`, `\acute`, `\grave`, `\overline`, `\underline` | accent |
 | `\sum`, `\prod`, `\int`, `\oint` and the other operators of class op, with `_` and `^` | big operator with limits |
@@ -1254,7 +1376,56 @@ the owner chose both, #arg-47.
 | `\,`, `\:`, `\;`, `\quad`, `\qquad`, `\!` | space |
 | `{…}` | group |
 | `\\` and `&` at the top level | the formula's rows and their alignment |
-| any other `\name` | unknown atom, keeping its name and its braced arguments |
+| any other `\name` | unknown atom, keeping its name, taking no argument |
+
+### A `unicode.xml` type, to the class of an atom
+
+The `type` attribute of a `<character>` of `unicode.xml`, which the generator of `COMMANDS` reads:
+
+| type | class |
+| --- | --- |
+| `relation` | rel |
+| `binaryop` | bin |
+| `large` | op |
+| `opening` | open |
+| `closing` | close |
+| `punctuation` | punct |
+| `alphabetic`, `normal`, `diacritic`, `other`, and a character with no type | ord |
+
+### A pair of classes, to the space between them
+
+TeX's table of the spacing between atoms, The TeXbook, chapter 18: "thin" is 3/18 em, "medium" 4/18
+em, "thick" 5/18 em; a space in parentheses is set in display and text styles only, not in script
+styles. The row is the left atom's class, the column the right one's; inner, the class of a
+fraction or a delimited group, is TeX's.
+
+| left \ right | ord | op | bin | rel | open | close | punct | inner |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ord | 0 | thin | (medium) | (thick) | 0 | 0 | 0 | (thin) |
+| op | thin | thin | — | (thick) | 0 | 0 | 0 | (thin) |
+| bin | (medium) | (medium) | — | — | (medium) | — | — | (medium) |
+| rel | (thick) | (thick) | — | 0 | (thick) | 0 | 0 | (thick) |
+| open | 0 | 0 | — | 0 | 0 | 0 | 0 | 0 |
+| close | 0 | thin | (medium) | (thick) | 0 | 0 | 0 | (thin) |
+| punct | (thin) | (thin) | — | (thin) | (thin) | (thin) | (thin) | (thin) |
+| inner | (thin) | thin | (medium) | (thick) | (thin) | 0 | (thin) | (thin) |
+
+A "—" cannot occur: a bin with no ord-like atom before it, or before a rel, open or punct, becomes an
+ord, as TeX's rules 5 and 6 of appendix G have it. An assumption: the session wrote this table and the
+next from memory; #math-layout's audit checks each against its source, The TeXbook and the Unicode
+block Mathematical Alphanumeric Symbols.
+
+### A character under a font change, to the code point drawn
+
+| character | no font change | `\mathit` | `\mathrm` | `\mathbf` | `\mathcal` | `\mathbb` |
+| --- | --- | --- | --- | --- | --- | --- |
+| Latin letter | math italic, U+1D434 onwards, `h` U+210E | math italic | the letter itself | math bold, U+1D400 onwards | math script, U+1D49C onwards, the holes of Letterlike Symbols filled from U+212C and the others | double-struck, U+1D538 onwards, the holes filled from U+2102 and the others |
+| lowercase Greek letter | math italic, U+1D6FC onwards | math italic | the letter itself | math bold, U+1D6C2 onwards | unchanged | unchanged |
+| uppercase Greek letter | the letter itself, upright, as TeX sets it | math italic, U+1D6E2 onwards | the letter itself | math bold, U+1D6A8 onwards | unchanged | unchanged |
+| digit | the digit itself | the digit itself | the digit itself | math bold, U+1D7CE onwards | unchanged | double-struck, U+1D7D8 onwards |
+| any other character | itself | itself | itself | itself | itself | itself |
+
+A code point the math font lacks is drawn as its missing glyph and reported, #math-glyph-fallback.
 
 ### A command, to the operation it runs
 
@@ -1277,29 +1448,42 @@ the owner chose both, #arg-47.
 | a letter, a digit, an operator character | inserts its symbol |
 | `^`, `_` | makes the atom before the nucleus of a script, the caret in the new script |
 | `{` | opens a group |
-| `\` | opens a command name; letters extend it, with completion; any other character closes it and then acts |
+| `&` | sets an alignment point in the row, or, in a matrix, moves to the next cell |
+| Ctrl+Return | starts a new row of the formula, or of the matrix that holds the caret |
+| `\` | opens a command name; letters extend it, with completion; a space closes it and is swallowed; any other character closes it and then acts |
 | Space | leaves the current cell, then the formula |
-| Backspace, Delete | deletes a symbol; selects an atom with cells, then deletes it; at a formula's start or end, acts as at a span's edge |
+| Backspace, Delete | deletes a symbol; selects an atom with cells, then deletes it; at the first or last position of the formula, does nothing |
+
+At a math item's edge in its text, the keys are the text's: Backspace or Delete selects the item by
+a first press and deletes it by a second, #math-editing-model.
 
 ### A LyX math key, to the action it runs
 
-All of them while a text or a formula is edited, from `path@elsewhere@lib/bind/math.bind` and
-`path@elsewhere@lib/bind/cua.bind`, as the survey reads them:
+From `path@elsewhere@lib/bind/math.bind` and `path@elsewhere@lib/bind/cua.bind`, as section 1 of the
+survey reads them; each acts while a text or a formula is edited, but the two that say otherwise:
 
 | keys | action |
 | --- | --- |
 | Ctrl+M | insert an inline formula at the caret, the selection becoming its content |
 | Ctrl+Shift+M | while an area is selected and not edited: make it an unnumbered equation |
 | Ctrl+Alt+N | while an area is selected and not edited: make it a numbered equation |
-| Alt+M F, S, R | `\frac`, `\sqrt`, `\root` |
+| Alt+M F, S | `\frac`, `\sqrt` |
+| Alt+M R | a radical with an index, `\sqrt[]{}`, which LyX's `\root` is |
 | Alt+M X, E | subscript, superscript |
 | Alt+M U, I, Y, P, 8, +, = | `\sum`, `\int`, `\oint`, `\partial`, `\infty`, `\pm`, `\neq` |
 | Alt+M N | toggle the equation's number |
-| Alt+M `"` H `\` `/` `&` `-` `.` Shift+V Shift+U V `_` B `'` | the accents of the survey's section 1, in that order |
-| Alt+M `(` `[` `{` `<` `>` `\|` | the delimiters of the survey's section 1 |
-| Alt+M G, then a letter, or Shift and a letter | the Greek letters of the survey's section 1, with LyX's oddities |
+| Alt+M `"` H `\` `/` `&` `-` `.` Shift+V Shift+U V B | `\ddot`, `\hat`, `\grave`, `\acute`, `\tilde`, `\bar`, `\dot`, `\check`, `\breve`, `\vec`, `\overline` |
+| Alt+M `_` | `\underline`, which LyX's `\underbar` is |
+| Alt+M `'` | the prime ′, a symbol |
+| Alt+M `(` `[` `{` `<` `>` `\|` | the delimiters of section 1 of the survey, as `\left…\right` |
+| Alt+M G, then a letter, or Shift and a letter | the Greek letter of section 1 of the survey, with LyX's oddities |
+| Alt+M C, then I, D, C or S | append, delete, copy or swap a column of the matrix that holds the caret, D2 |
+| Alt+M W, then I, D, C or S | append, delete, copy or swap a row of the matrix that holds the caret, D2 |
+| Alt+M Space | a thin space, `\,`, D2 |
 
-LyX's sub-tables T, C and W, and Alt+M M, D, L, Shift+N, O and Space, are not bound, #arg-30.
+Not bound, D2: LyX's sub-table T, which changes the hull type, where an equation has one kind;
+Alt+M C and W with the keys of rules and of alignment, which the subset has no construct for;
+Shift+N, a number per row, which #equation-rows leaves out; and Alt+M M, D, L and O, #arg-30.
 
 ## Losing alternatives
 
@@ -1318,7 +1502,7 @@ LyX's sub-tables T, C and W, and Alt+M M, D, L, Shift+N, O and Space, are not bo
 - **read-fonts 0.45 for the MATH table**: lost to ttf-parser, #arg-59; `issue@rootpoint-render@read-fonts-math-table`.
 - **Noto Sans Math, Latin Modern Math, New Computer Modern Math, STIX Two Math, Fira Math**: the
   owner chose Libertinus Math from the samples, #math-font.
-- **STIX Two Math as a fallback font**: lost on the owner's weighing, #arg-69.
+- **STIX Two Math as a fallback font**: lost on #arg-69, weighed by the owner in #arg-73.
 - **Libertinus Serif or two built-in families as text**: the owner chose Open Sans; two families lost
   on #arg-77.
 - **A LaTeX source field with a preview**: lost to #math-editing-model on C1, #arg-24.
@@ -1337,9 +1521,18 @@ LyX's sub-tables T, C and W, and Alt+M M, D, L, Shift+N, O and Space, are not bo
 - **LyX's bind files and math model**: LyX `master` at `e7ffd8d`, read in the survey, section 1; the
   keys of the mapping table "A LyX math key, to the action it runs" and the numbering's scope come
   from it.
-- **The OpenType MATH specification**: read in the survey, sections 3 and 4; #math-layout reads the
+- **The OpenType MATH specification**: read in the survey, section 2; #math-layout reads the
   constants, the glyph info and the variants against it.
-- **ron 0.12.2**: `escape_strings(false)` writes raw strings that read back equal, measured, #arg-39.
+- **The TeXbook**, chapter 18 and appendix G: the styles, the spacing between classes and the
+  conversion of a bin to an ord, by the mapping table "A pair of classes, to the space between
+  them"; #math-layout's audit reads them.
+- **The Unicode block Mathematical Alphanumeric Symbols** and its holes in Letterlike Symbols: the
+  mapping table "A character under a font change, to the code point drawn"; #math-layout's audit
+  reads it.
+- **ron 0.12.2**: `escape_strings(false)` writes raw strings that read back equal, measured, #arg-39;
+  read in its source by the reviews, `serialize_unescaped_or_raw_str` writes a raw string only for a
+  value holding a `"` or a `\`, so a text with a line break and neither stays a quoted string, its
+  break written as is, where #arg-39 said every newline made a raw string.
 
 ## Premortem
 
@@ -1379,10 +1572,12 @@ owner's word of round 8, "you can keep all tripwires and AC.", rules on every la
 
 ### The project's layout of the reference formulas is acceptable to the owner beside the browser's `##ac-layout-looks-right`
 
-AC1. Guards #math-layout-engine. Judged at #math-layout. Observable: formulas (61) and (62), the
-aligned derivation, the rotation matrix and `cases`, drawn by the renderer in Libertinus Math beside
-the browser's MathML rendering of the same formulas in the same font, as the font sample page of the
-discussion drew them, judged acceptable by the owner before the slice merges. Response: the layout is
+AC1. Guards #math-layout-engine. Judged at #math-layout. Observable: the reference formulas, written
+in #math-layout's "Fixtures", drawn by the renderer in Libertinus Math into PNG files, and set by
+the owner beside the browser's rendering of the same formulas in the same font on the font sample
+page the session published for the discussion,
+https://claude.ai/artifact/AWzepf7P1m4S7T27EiRrMd, are judged acceptable by the owner before the
+slice merges. Response: the layout is
 fixed in the slice; a construct the owner judges wrong that the MATH data cannot place reopens
 #math-layout-engine.
 
@@ -1390,7 +1585,8 @@ fixed in the slice; a construct the owner judges wrong that the MATH data cannot
 
 AC2. Guards #equation-fit. Judged at #math-layout. Observable: a test lays the reference formulas
 out at size s and at size k·s, for several k, and finds every box of the second within 0.001 slide
-units of the first's scaled by k. Response: the layout is fixed; a construct that cannot scale
+units of the first's scaled by k. The tolerance is the session's, kept by the owner in round 8, and
+the owner's to reset. Response: the layout is fixed; a construct that cannot scale
 exactly reopens #equation-fit.
 
 ### Every caret position in and around a formula is drawn on its cell `##ac-caret-on-formula`
@@ -1398,7 +1594,7 @@ exactly reopens #equation-fit.
 AC3. Guards #math-text-item and #math-editing-model. Judged at #math-editing. Observable: the caret's
 property test of `path@rootpoint-app@tests/editing.rs`, extended to trees with formulas, puts every
 caret position inside and around a formula on its drawn box, at the three window sizes the test uses,
-within half a pixel. Response: the map is fixed in the slice; a position that cannot be placed
+within half a pixel, the tolerance of `design@rootpoint-app@edit-in-place`, the owner's to reset. Response: the map is fixed in the slice; a position that cannot be placed
 reopens #math-text-item.
 
 ### A script is drawn with the font's `ssty` glyph `##ac-script-glyphs`
@@ -1410,11 +1606,13 @@ Response: `ssty` applied by the math crate itself if no shaper applies it; none 
 
 ### A slide of equations and inline formulas renders within the bound `##ac-math-render-bound`
 
-AC5. Guards C9 and `design@rootpoint-render@slide-renderer`, through
+AC5. Guards #math-layout-engine and #math-text-item, against C9 and
 `tripwire@rootpoint-render@render-within-bounds`. Judged at #inline-math. Observable: a 3840×2160
 slide holding 4 equations and a text with 6 inline formulas renders within 200 ms, in a release build
-on the owner's machine, by the ignored test that measures the render bound, extended with that slide.
-The bound is the tripwire's, set by the owner. Response: the layout is cached or made faster; a
+on the owner's machine, by the ignored test `time_the_mixed_slide_at_4k` of
+`path@rootpoint-render@tests/text.rs`, extended with that slide. The bound is the tripwire's, a
+default the session proposed and the owner kept; the counts of the slide are the session's, kept by
+the owner in round 8; both are the owner's to reset. Response: the layout is cached or made faster; a
 render beyond the bound fires the tripwire.
 
 ### The math keys reach the editor in the browser `##ac-chords-in-browser`
@@ -1436,7 +1634,8 @@ the fallback member is dropped and the owner told.
 
 1. [The formula, its LaTeX form, and its layout from a MATH table](math-layout.md), #math-layout:
    the math crate, Libertinus Math, the table of commands, the layout and its drawing. Fails alone
-   on: the subset's round trip, AC2 and AC4.
+   on: the subset's round trip, the MATH values read against the survey's, AC2 and AC4; AC1 is the
+   owner's judgement.
 2. [Open Sans as the built-in text family](builtin-open-sans.md), #builtin-open-sans. Fails alone on:
    the goldens in Open Sans, and AC7.
 3. [The equation, a kind of content](equation-kind.md), #equation-kind: the model, the file at
@@ -1470,6 +1669,53 @@ every slice built on math-milestone and one merge at the end, puts five slices b
 where `skill@knowledge-architect-planning@cutting-steps-and-slices` asks one branch and one merge per
 slice.
 
+### D2, awaiting: the keys of LyX's that the milestone binds beyond those shown in round 1
+
+Bears on #math-keys. The owner, round 2: "math-keys: agreed on copying the keys from lyx exactly."
+Round 1 left LyX's sub-tables T, C and W out "unless #equation-rows admits matrices", which it does;
+the reviews found the plan had kept them out, and had added Shift+N and Alt+M Space to what is left
+out with no ground shown to the owner. The default, in the mapping table "A LyX math key, to the
+action it runs": Alt+M C and W bound for the columns and rows of a matrix, appended, deleted, copied
+or swapped; Alt+M Space bound to a thin space; and left out, each for the ground the table gives, T,
+the keys of C and W for rules and alignment, Shift+N, and M, D, L and O. The keys of a formula
+`&` and Ctrl+Return, which LyX handles in `InsetMathNest::interpretChar` and its newline action, are
+in the mapping table "A key in a formula, to what it does" as LyX has them, and need no ruling.
+
+### D3, awaiting: every action a key runs has a control too
+
+Bears on #math-keys and #math-symbol-palette, against `goal@rootpoint-app@browser-window`, which asks
+the browser build the same actions as the native window, while the owner allowed it, in round 2, to
+disable a key the browser keeps. The default: every action of the mapping table "A LyX math key, to
+the action it runs" has a control in the window, so a disabled key loses no action: "Insert formula"
+in the Selection tab while a text is edited, for Ctrl+M; the node menu's "Equation", for
+Ctrl+Shift+M and Ctrl+Alt+N; the equation's "numbered" option, for Alt+M N; the palette, for every
+symbol and structure, the Greek letters, the accents, the delimiters, and the rows and columns of a
+matrix. The palette and the menu entry were approved; "Insert formula" and the palette's matrix
+controls are what the default adds.
+
+### D4, awaiting: a moved equation keeps its references
+
+Bears on #equation-reference-target, closed by the owner in round 2 on ids, and on C6, "a reference
+survives every edit but its equation's removal", which that closure claimed to meet. A finding of
+the reviews, after the closure: `Op::Swap` exchanges the contents of two areas, keeping their ids,
+`path@rootpoint-model@src/ops.rs`, and the window moves an area by a split, a swap and a removal,
+`path@rootpoint-app@src/actions.rs`; so a referenced equation that is swapped or moved stands under
+another id, and its references would name the area it left. The default: `Op::Swap` carries the
+references of both areas with their contents, a member of #equation-reference-target's shape that
+keeps the area id as what a reference names. The rival: an id of the equation's own, stored in its
+content, which a swap carries by itself, at the cost of a fifth kind of id beside those of
+`design@rootpoint-model@stable-ids`. #inline-math, which builds the references, is held until the
+owner's word; the slices before it do not rest on it.
+
+### D5, awaiting: whether "as widely available as possible" is a goal of the project
+
+Bears on `design@rootpoint@permissive-licence`, written by the reviews of this document since the
+licence had landed with no head. The owner's words of round 4, "I plan to make the project open
+source ultimately. probably soon", and "Iwant it as widely available as possible for everyone and
+everywhere", state what the project is for, which a goal records,
+`skill@knowledge-architect-goal-setting`. The default: no goal is written; the head attributes the
+purpose to the owner. A goal would be drafted under that skill and ruled by the owner.
+
 ## Harvest
 
 Each slice's row is in its spec. This document's own row, at the commit that deletes it, after the
@@ -1479,6 +1725,8 @@ last slice:
 - Check that T1 to T4 are written, each in the tripwires home of the head it guards.
 - Check that each later consequence below is in the issue entry, the plan document or the tripwire
   that it names, or in a `todo` issue opened for it then.
+- Check that `issue@rootpoint-render@read-fonts-math-table` stands in the math crate's issue home,
+  moved there by #math-layout's harvest.
 
 ## Later consequences
 
@@ -1487,7 +1735,9 @@ last slice:
 - **One font parser**: `issue@rootpoint-render@read-fonts-math-table`.
 - **A number per row, and a reference to a row**: no entry; opened as a `todo` issue at the harvest
   if the owner's talks need it by then.
-- **A math font from a font asset**: no entry; a `todo` issue at the harvest, #arg-23.
+- **A math font from a font asset**: no entry; #arg-23 named it for later "under a tripwire", which
+  the premortem did not propose and the owner did not rule on, so a `todo` issue is opened at the
+  harvest instead, which records the work without watching for its need.
 - **The built-in sample teaching math**: the sample's slides teach the editor's features,
   `design@rootpoint-protocol@builtin-sample`; a slide of math is added by whichever slice the audit
   finds best placed, or a `todo` issue at the harvest.

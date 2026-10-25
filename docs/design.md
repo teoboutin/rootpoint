@@ -73,3 +73,26 @@ so every display of one slide is the same slide, at any size, which
 `design@rootpoint-model@slide-units` to every display: a scale per axis, or a slide that fills the
 window, would show another slide in each window, as `rejected@rootpoint-model@reflowing-slides`
 says of a slide reflowed to its window.
+
+## Licence
+
+### The project is licensed MIT OR Apache-2.0, and builds in nothing that binds it to a copyleft licence `##permissive-licence`
+
+Every crate of the workspace declares `license = "MIT OR Apache-2.0"`, and
+`path@rootpoint@LICENSE-MIT` and `path@rootpoint@LICENSE-APACHE` sit at the root. A dependency a
+crate adds, and a font or a data file built into a binary, carries a licence that lets the whole
+be distributed under either; one under a licence with conditions of its own, as a font under the
+SIL Open Font License, keeps its licence text beside the file, as the built-in fonts' `OFL.txt`
+does. So a table under the GPL, as LyX's `path@elsewhere@lib/symbols`, is not built in. It is a
+reason respected at every dependency added and every file embedded.
+
+The dependencies already meet it: `cargo metadata` over the 513 packages the workspace takes from a
+registry finds no licence that forces a copyleft one, three offering a GPL or LGPL branch only as an
+alternative to MIT or Apache-2.0, as measured in `path@rootpoint@docs/grounding/math-typesetting.md`,
+section 4. MIT lets nearly any other licence combine with the code, GPLv2 included; Apache-2.0 adds
+an explicit grant of patents. The rival, a copyleft licence such as GPL-3.0 or MPL-2.0, keeps derived
+versions open, and keeps companies and permissively licensed projects from building on rootpoint.
+
+On the owner's word: the owner plans to make the project open source, ultimately and probably
+soon, wants it as widely available as possible, for everyone and everywhere, and chose the dual
+licence MIT OR Apache-2.0, which the session recommended for that purpose.
