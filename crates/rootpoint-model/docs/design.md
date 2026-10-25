@@ -149,16 +149,18 @@ that fails it, `design@rootpoint-protocol@no-new-breach`. The model checks nothi
 file is at the path, and where a symlink leads, are the store's to check. A file that names another
 path loads, a cosmetic breach, `design@rootpoint-model@cosmetic-fallbacks`.
 
-### An area's text is a tree of characters and spans, each span with its own values over its parent's `##text-node-tree`
+### An area's text is a tree of characters and spans `##text-node-tree`
 
 A text is a root `TextNode`, a sequence of runs of characters and spans; a span has an id, a span's
 style and a `TextNode` of its own. The root draws in the area's style,
 `design@rootpoint-model@named-styles`, and each span in the values it sets over its parent's,
 `design@rootpoint-model@span-style-overrides`. An offset in a text node counts characters, Unicode
 scalar values, and a span counts as one item, so that a span's edges are offsets of their own: the
-position before a span and the position at its start are two, and typing at each goes outside or
-inside the span. The tree is part of the file, `design@rootpoint-model@save-format`, and of the
-document's public type.
+position before a span and the position at its start are two caret positions, `CaretPos`. The
+tree is part of the file, `design@rootpoint-model@save-format`, and of the document's public
+type. `apply` and `load_ron` keep each text node's runs of characters merged, none empty and no two
+adjacent, so that a document and its round trip through an operation and its inverse compare
+equal.
 
 The nearest rival, flat runs of styles over one string, `rejected@rootpoint-model@flat-style-runs`,
 gives a style's edge one position, so the style typed there is guessed, and it cannot hold a
@@ -167,18 +169,17 @@ fraction's two cells, which maths will need. Both at once, as LyX keeps them,
 for a whole area, `rejected@rootpoint-model@one-style-per-area`, styles no word apart from its
 text. Parley lays the tree out in one layout,
 `design@rootpoint-render@area-text-layout`, which `goal@rootpoint-render@same-slide-everywhere`
-asks of every display. On the owner's word: the owner proposed the text as a tree, a span's edge
-being a position of its own, as LyX's editor moves through its insets.
+asks of every display. On the owner's word: the owner proposed the text as a tree whose nodes
+carry styles, as the owner imagined, as a user, that LyX works.
 
-### No span is dissolved, a custom span that sets nothing is refused, and runs of characters are kept merged `##text-tree-normal-form`
+### No span is dissolved, and a custom span that sets nothing is refused `##text-tree-normal-form`
 
-`apply` and `load_ron` keep each text node's runs of characters merged, none empty and no two
-adjacent, so that a document and its round trip through an operation and its inverse compare equal.
 No operation dissolves a span: a named span is kept whatever its values, and a span that sets a
 value equal to its parent's is kept, so a bold word inside a bold span stays bold when the outer
 span changes. An operation that would make a custom span that sets no field, by a wrap, a change of
-style, a whole tree or a removal of a span style into a copy, is refused, and its caller unwraps
-the span instead. A file that holds such a span loads, drawn with its parent's values. An empty span
+style, a whole tree, a cut of such a span or a removal of a span style into a copy, is refused, and its caller unwraps
+the span instead. A file that holds such a span loads, drawn with its parent's values; a content
+set whole, as an undo sets it, and a duplicated slide carry such a span as it is. An empty span
 is accepted, so that a style chosen with nothing selected opens one at the caret. Adjacent spans of
 one style stay apart: they are what the author made, and either can be restyled alone, the
 grouping `tripwire@rootpoint-model@grouping-lost-to-merge` watches in a slide's tree. The rival,
@@ -186,7 +187,7 @@ dissolving every span whose values change nothing of its parent's, dissolves a n
 style is missing or equal to its parent's, which loses the name a later change of the style would
 reach, and a bold word inside a bold span, which loses its bold when the outer span changes.
 
-### A span sets each text option it changes, each optional, and the area keeps one full style `##span-style-overrides`
+### A span sets each text option it changes, each optional, over its parent's values `##span-style-overrides`
 
 A span's `SpanStyle` holds `font`, `size`, `bold`, `italic` and `colour`, each an `Option`; a span
 draws with its own value where it sets one and its parent's elsewhere, the root's being the area's
@@ -210,8 +211,8 @@ a span naming a full text style, `rejected@rootpoint-model@span-names-text-style
 of it, alignment included; one table of styles whose fields are all optional, for areas and spans,
 `rejected@rootpoint-model@one-table-of-optional-styles`, makes every area style a cascade with a
 fallback, which `design@rootpoint-model@named-styles` keeps out of the area. The table is part of
-the file and of the document's public type. On the owner's word: the owner asked that a span can
-name a style.
+the file and of the document's public type. On the owner's word: the owner wants a span to be able
+to name a style.
 
 ### A text's items are kinds of an enumeration, which leaves room for maths beside the span `##text-node-kinds`
 
@@ -219,7 +220,8 @@ name a style.
 its kind, so a kind added later, maths, or a reference to an equation, joins the enumeration with
 no change of what a text is. No kind but these two exists, and an equation's design is
 `issue@rootpoint@more-content-kinds`'s. It serves `goal@rootpoint@real-presentations`, whose talks
-need maths, written inside a sentence.
+need mathematics; on the owner's word, the owner wants maths inside a sentence, beside an equation
+kind of its own.
 
 ### A text names a style of the document's table, or holds its own values `##named-styles`
 
@@ -290,7 +292,9 @@ owner chose that a split does not copy the missing name, over copying it as `dup
 ### Every change of a document is an operation, applied by one function that returns its inverse `##edit-operation-core`
 
 `apply` takes an `Op`, changes the document, and returns the operation that undoes it; a
-structural edit of a slide's tree returns a snapshot of the slide's former tree. Code outside the
+structural edit of a slide's tree returns a snapshot of the slide's former tree, and an edit of an
+area's text tree, `Op::SetContent` with the area's former content, which brings back every span
+with its id. Code outside the
 crate changes a document only through `apply`, which gives undo to every caller and keeps the
 invariants. The document's fields are public for reading, so this rule is delivered by the doc
 comment of `Document`, not enforced by the types.
@@ -326,13 +330,14 @@ effect stays inside the drawing of each area that names it: an image or a text f
 the table lacks, drawn grey or in the built-in sans, a `FontRef::Builtin` naming a family outside
 `BUILTIN_FAMILIES`, drawn in the built-in sans, a text naming a style the table lacks, drawn
 with `TextStyle::default()`, and a span naming a span style the table lacks, drawn with its
-parent's values; a span's font counts as a text's; or an asset of the table whose path fails `asset_path_is_confined`,
-which no store reads, so that every area showing it draws the stand-in of a missing asset.
-`Document::breaches` names each, as `Breach`, and the renderer's report, the window's status line
-and the reply of `render` name what was drawn with a stand-in. `load_ron` loads such a file, and
+parent's values; a span's font counts as a text's; or an asset of the table whose path fails
+`asset_path_is_confined`, which no store reads, so that every area showing it draws the stand-in
+of a missing asset. `Document::breaches` names each, as `Breach`, and the renderer's report, the
+window's status line and the reply of `render` name what was drawn with a stand-in, but a span's
+missing span style, which only `Document::breaches` and the renderer's report name. `load_ron` loads such a file, and
 `apply` accepts an operation whose result holds a breach, so the inverse of an edit of such an area,
-which brings back what a file was loaded with, is never refused. Two operations refuse what no undo
-meets. `Op::RemoveAsset` refuses an asset an area, a span or a style of a table uses: it refuses a
+which brings back what a file was loaded with, is never refused. Three operations refuse what no
+undo meets. `Op::RemoveAsset` refuses an asset an area, a span or a style of a table uses: it refuses a
 removal, not a reference, and the inverse of `Op::AddAsset` removes an id the counter has just
 given, which no area can name. `Op::RenameStyle` refuses a rename while a text names the new name, a
 style the table lacks, since its inverse would rename that text back with the others; after a rename
@@ -363,7 +368,7 @@ The test above, which tells the two apart, stands on its argument.
 
 Every slide, node, asset and span has an id from one counter the document stores and only grows;
 ids are written in the file and print as `s<n>`, `n<n>`, `a<n>` and `t<n>`. A duplicated slide's
-nodes and spans get new ids, and so does every span of a tree an operation sets whole. A command or a script can then name a node across edits, saves and loads, as
+nodes and spans get new ids, and so does every span of a tree `Op::SetText` sets. A command or a script can then name a node across edits, saves and loads, as
 `goal@rootpoint@text-command-protocol` needs, and so could a link between dividers,
 `issue@rootpoint-model@linked-dividers`. The rival, naming a node by its position in the tree,
 `rejected@rootpoint-model@addressing-by-position`, shifts at every split or removal. An asset keeps
@@ -381,8 +386,10 @@ another version. Ids are plain numbers, and the file enables ron's `unwrap_varia
 node reads `Split(id: 4, ...)`, and `implicit_some`, so a value a span sets reads `bold: true`. A
 text's item is tagged, `Chars("...")` or `Span(id: ..., style: ..., text: [...])`: an untagged
 item, a bare string beside a span, writes a span with no name, and a hand-written `Span(...)` then
-fails to load, as measured with ron 0.12.2, which a file edited by hand,
-`goal@rootpoint-model@faithful-readable-file`, rules out.
+fails to load, as measured with ron 0.12.2, `rejected@rootpoint-model@untagged-text-items`, which a
+file edited by hand, `goal@rootpoint-model@faithful-readable-file`, rules out; the test
+`a_hand_written_span_loads` of `path@rootpoint-model@tests/file.rs` loads the tagged form written by
+hand.
 
 RON writes enum variants as they read and allows comments and trailing commas, which helps editing
 by hand; the rival, JSON, `rejected@rootpoint-model@json-save-format`, is universal and slightly

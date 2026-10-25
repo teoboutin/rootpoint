@@ -219,7 +219,7 @@ the window that moves, relinks, replaces and removes an asset, by the commands o
 an image shows, and change none. It shows the tree of the asset paths, its folders the prefixes the
 paths have, `design@rootpoint-model@folders-from-paths`, with a search and the filters of
 `assets`, and, for the selected asset, its size, its thumbnail and its uses, each a button to its
-node or its style. An asset an image shows on several slides is then changed only from the view that
+node or its style, but a span style's, a label while the Styles tab lists no span style. An asset an image shows on several slides is then changed only from the view that
 lists those slides, for the reason `design@rootpoint-app@styles-tab-edits-styles` gives for a
 style: a change meant for one image would otherwise change slides out of view. It keeps the panel's
 width, `design@rootpoint-app@sidebar-width`, its rows cut

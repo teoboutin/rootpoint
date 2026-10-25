@@ -132,7 +132,8 @@ pub(crate) struct TextLayout {
 
 /// Lay a text out in slide units in the style `style`, each span's values in `spans` set over its
 /// byte range, wrapped to `width` slide units. `spans` lists the spans outer before inner, as a
-/// later range's value wins where two overlap. The layout depends on no pixel size: every display
+/// later range's value wins where two overlap, as Parley 0.12.0's `RangedStyleBuilder::finish`
+/// applies the ranges in the order pushed. The layout depends on no pixel size: every display
 /// draws this one layout through its own scale.
 pub(crate) fn layout_text(
     fonts: &mut FontSet,

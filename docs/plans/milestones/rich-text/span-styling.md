@@ -20,6 +20,9 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
   listener of `design@rootpoint-app@editor-keys-kept-from-browser`.
 - One slide of `path@rootpoint-protocol@sample/sample.ron` with a styled text, which teaches the
   keys.
+- A styled span in `path@rootpoint-app@tests/data/mixed.ron`, so that the divider drag
+  `tripwire@rootpoint-render@render-within-bounds` times draws a span, as #text-tree gave the
+  renderer's mixed slide one.
 
 ## Steps
 
@@ -43,9 +46,18 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
 
 ## Audit subjects
 
+- `path@rootpoint-app@src/asset_tab.rs`, whose comment shows a span style's use as a label until
+  this slice lists span styles in the Styles tab.
 - `path@rootpoint-app@src/view.rs`, `path@rootpoint-app@src/panels.rs`,
   `path@rootpoint-app@src/actions.rs`, `path@rootpoint-app@src/web.rs`,
   `path@rootpoint-protocol@sample/sample.ron`.
+- Two heads the milestone's table lists as to be changed, each a load-bearing gap taken to the
+  design skill at this audit: `design@rootpoint-app@gesture-groups`, which ends a stay at any
+  action, against the panel's controls and the ancestor row's button acting during one; and
+  `design@rootpoint-app@editor-keys-kept-from-browser`, whose argument covers keys whose default
+  leaves the page, which Ctrl+B, Ctrl+I and Ctrl+Space do not. Also whether the Selection tab's
+  controls, which change a text's own values, `design@rootpoint-app@styles-tab-edits-styles`, act
+  on a span while editing.
 - `design@rootpoint-app@editor-overlay`, `design@rootpoint-app@styles-tab-edits-styles`,
   `design@rootpoint-app@editor-keys-kept-from-browser`, `design@rootpoint-app@selection-actions`,
   `design@rootpoint-app@sidebar-width`, `design@rootpoint-protocol@builtin-sample`,
@@ -80,9 +92,11 @@ AC2 is judged here, and the landing commits report on it.
 - Rewrite `design@rootpoint-app@styles-tab-edits-styles` for the span styles; update the texts the
   milestone's table lists for these heads, the restatement in `path@rootpoint-app@CLAUDE.md`
   included.
-- Update `path@rootpoint-app@README.md` for the keys.
+- Update `path@rootpoint-app@README.md` for the keys, and `design@rootpoint-protocol@builtin-sample`,
+  whose list of what the sample teaches gains the styled text.
 - The losing alternatives of these threads, reserved space for the frames among them, which T1's
   response names, judged under `skill@knowledge-architect-decision-recording@losing-alternatives`.
 - Write T1, guarding `design@rootpoint-app@editor-overlay`, with the frames recorded in it, and T4,
-  guarding the model's head of #named-span-styles.
+  guarding the model's head of #named-span-styles; cite T4 from
+  `rejected@rootpoint-model@one-table-of-optional-styles`, which its response names.
 - The milestone document's own row: its "Harvest" section.

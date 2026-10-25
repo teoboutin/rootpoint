@@ -20,8 +20,9 @@ hard a minimal one would be, and left the question for later.
 The owner is considering maths in two forms: inline maths inside a text, and an equation kind of
 its own that holds one full equation and is numbered and referenceable, which inline maths is not;
 the owner gives this split of uses as an intuition only, expected to be simpler for authors and for
-the implementation. The text tree of `milestone@plans@rich-text` admits a maths node kind and builds
-none; a reference to an equation, written inside a text, is another node kind it admits.
+the implementation. A text's items are kinds of an enumeration that admits a maths kind and builds
+none, `design@rootpoint-model@text-node-kinds`; a reference to an equation, written inside a text,
+is another kind it admits.
 
 ### Why it matters
 

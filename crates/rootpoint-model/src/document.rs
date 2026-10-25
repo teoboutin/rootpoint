@@ -27,8 +27,8 @@ pub struct AssetId(pub u64);
 #[serde(transparent)]
 pub struct SpanId(pub u64);
 
-// The printed form of an id, `s<n>`, `n<n>`, `a<n>` or `t<n>`, as the protocol shows it; the file writes
-// the plain number.
+// The printed form of an id, `s<n>`, `n<n>`, `a<n>` or `t<n>`, as the protocol shows it or, for a
+// span, will once its commands print one; the file writes the plain number.
 impl fmt::Display for SlideId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "s{}", self.0)
@@ -410,7 +410,8 @@ impl TextContent {
 
 /// A sequence of characters and spans: the root of a text, or a span's content. Kept in one
 /// canonical form, no run of characters empty and no two adjacent, which [`TextNode::normalise`]
-/// restores, so that two texts that read the same compare equal.
+/// restores, so that a document and its round trip through an operation and its inverse compare
+/// equal.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct TextNode {
@@ -475,7 +476,8 @@ impl TextNode {
     }
 }
 
-/// An item of a text node. Room is left for other kinds, as maths, beside the span.
+/// An item of a text node. Room is left for other kinds, as maths, beside the span,
+/// `design@rootpoint-model@text-node-kinds`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum TextItem {
     Chars(String),

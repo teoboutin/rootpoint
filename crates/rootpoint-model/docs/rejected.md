@@ -65,7 +65,8 @@ change the save format and every command that names a style.
 ### Naming a node by its position in the tree `##addressing-by-position`
 
 `live`. A position, such as the second child of the first child of a slide's root, shifts at every
-split or removal, so a command written after one edit names another node after the next.
+split or removal, so a command written after one edit names another node after the next; a span's
+offset in its text shifts likewise at every edit before it.
 
 ### Naming a split's axis by its dividers' direction, `Vertical` and `Horizontal` `##divider-direction-names`
 
@@ -114,9 +115,9 @@ the outside file in, would read outside the root.
 
 ### One style for the whole of an area's text `##one-style-per-area`
 
-`live`. No word of a text can be bold or coloured apart from the rest, which a talk's text often
-needs, as `goal@rootpoint@minimal-content-set` names bold and colour among the options of text. It
-was the first prototype's design, which avoided an editor of rich text.
+`live`. No word of a text can be bold or coloured apart from the rest, which the owner asked for
+when asking for rich text. It was the first prototype's design, which avoided an editor of rich
+text, the hardest part of a text editor to build.
 
 ### Flat runs of styles over one string `##flat-style-runs`
 
@@ -128,8 +129,7 @@ cells, which maths needs.
 ### Flat runs of styles beside nested spans, as LyX keeps both `##runs-beside-spans`
 
 `live`. Two styling models meet at a seam: LyX's tickets 1973 and 6919 are a change of font that
-did not reach the text inside an inset, and its own source wishes the two implementations
-unified, read in `path@rootpoint@docs/grounding/lyx-nested-text.md`.
+did not reach the text inside an inset, read in `path@rootpoint@docs/grounding/lyx-nested-text.md`.
 
 ### A full text style in every span `##full-style-per-span`
 
@@ -145,4 +145,11 @@ named inside a title leaves the title's size, and alignment means nothing inside
 
 `live`. Every area style becomes a set of optional fields with a fallback for each, the cascade
 `design@rootpoint-model@named-styles` keeps out of the area. Kept open by the doubt that two tables
-confuse authors, the response of the tripwire guarding `design@rootpoint-model@named-span-styles`.
+confuse authors.
+
+### A text's items untagged, a bare string beside a span, in the file `##untagged-text-items`
+
+`live`. ron 0.12.2 writes an untagged span with no name, and a hand-written `Span(...)` then fails
+to load, "data did not match any variant of untagged enum", as measured in the design audit of the
+slice that built the text tree, recorded in its commit "Record the design audit of the slice of
+the text tree".

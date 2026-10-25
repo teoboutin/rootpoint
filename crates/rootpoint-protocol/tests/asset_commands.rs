@@ -639,9 +639,9 @@ fn in_a_workspace_an_import_below_a_file_is_refused_and_leaves_no_trash() {
     assert_eq!(trash(&root), Vec::<String>::new(), "{got}");
 }
 
-/// A font a span sets is a use of its asset, as the model counts it: `assets` names its area, a
-/// removal is refused with its use, `asset-remove-unused` leaves it, and a removal into another
-/// asset makes the span name the other. A file holds such a span before any command makes one.
+/// A font a span or a span style sets is a use of its asset, as the model counts it: `assets` names
+/// its area or the style, a removal is refused with its use, `asset-remove-unused` leaves it, and a
+/// removal into another asset makes the span or the style name the other. A file holds such a span before any command makes one.
 #[test]
 fn a_font_a_span_sets_is_a_use_of_its_asset() {
     let mut files = MemoryFiles::holding(&["font.ttf", "other.ttf", "spare.ttf"]);
@@ -672,6 +672,18 @@ fn a_font_a_span_sets_is_a_use_of_its_asset() {
         },
     )
     .unwrap();
+    // And a span style whose font is a5.
+    apply(
+        &mut doc,
+        Op::AddSpanStyle {
+            name: "Code".to_owned(),
+            style: SpanStyle {
+                font: Some(FontRef::Asset(AssetId(5))),
+                ..SpanStyle::default()
+            },
+        },
+    )
+    .unwrap();
     files
         .files
         .insert("deck/presentation.ron".into(), save_ron(&doc).into_bytes());
@@ -679,12 +691,18 @@ fn a_font_a_span_sets_is_a_use_of_its_asset() {
     run_ok(&mut s, &mut files, "open deck");
     let assets = run_ok(&mut s, &mut files, "assets");
     assert!(assets.contains("a3 font.ttf 5 uses=n2"), "{assets}");
+    assert!(assets.contains("a5 spare.ttf 5 uses=\"Code\""), "{assets}");
     assert_eq!(
         refused(&mut s, &mut files, "asset-remove a3"),
         "a3 is used by n2"
     );
-    assert_eq!(run_ok(&mut s, &mut files, "asset-remove-unused"), "a4 a5");
+    assert_eq!(run_ok(&mut s, &mut files, "asset-remove-unused"), "a4");
     run_ok(&mut s, &mut files, "undo");
+    run_ok(&mut s, &mut files, "asset-remove a5 into=a4");
+    assert_eq!(
+        s.document().span_styles["Code"].font,
+        Some(FontRef::Asset(AssetId(4)))
+    );
     run_ok(&mut s, &mut files, "asset-remove a3 into=a4");
     let Some(Node::Area(Area {
         content: Content::Text(text),

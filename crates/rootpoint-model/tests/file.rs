@@ -326,3 +326,27 @@ fn a_file_edited_by_an_agent_loads_with_its_edits() {
     // Plain equality, the id counter included: the agent changed nothing else.
     assert_eq!(edited, expected);
 }
+
+/// A span written by hand in the tagged form loads, `design@rootpoint-model@save-format`.
+#[test]
+fn a_hand_written_span_loads() {
+    let text = save_ron(&fixture());
+    let written = "Chars(\"A title\"),";
+    assert!(text.contains(written), "the fixture changed shape");
+    let by_hand = text.replacen(
+        written,
+        "Chars(\"A \"), Span(id: 99, style: Custom(italic: true), text: [Chars(\"title\")]),",
+        1,
+    );
+    let by_hand = by_hand.replacen("next_id: 10,", "next_id: 100,", 1);
+    let doc = load_ron(&by_hand).expect("a span written by hand loads");
+    let Some(Node::Area(Area {
+        content: Content::Text(t),
+        ..
+    })) = doc.node(NodeId(3))
+    else {
+        panic!("n3 holds no text")
+    };
+    assert_eq!(t.plain_text(), "A title");
+    assert_eq!(t.root.spans()[0].id, SpanId(99));
+}

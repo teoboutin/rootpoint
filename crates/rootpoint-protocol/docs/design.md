@@ -289,14 +289,15 @@ path; it replies `err` for an asset whose file is missing,
 naming `asset-relink`. `asset-relink <a> <asset-path>` gives the asset the path of a file the store
 holds and no other asset names, and moves no file: the repair of a missing asset.
 `asset-replace <a> <host-path>` gives the asset's file the bytes of a host file. `asset-remove <a>`
-removes an asset nothing names, and `asset-remove <a> into=a<n>` first makes every image, text and
-named style that names `a` name `a<n>`, as `style remove … into=` does for a style,
+removes an asset nothing names, and `asset-remove <a> into=a<n>` first makes every image, text,
+span, named style and named span style that names `a` name `a<n>`, as `style remove … into=` does for a style,
 `design@rootpoint-model@style-removal`. `asset-remove-unused` removes every asset nothing names,
 one undo step, and none when no asset is unused, since an empty step would count as a change to
 save. Each other command is one undo step, its file moves in it,
 `design@rootpoint-protocol@asset-trash`. The query `assets [all|unused|missing|untracked]` replies
 one line, as every reply does, its entries separated by `; `, each `a<id> <path> <bytes|missing>
-uses=<uses|->`, its uses the areas and the named styles that name it, `missing` an asset whose file
+uses=<uses|->`, its uses the areas, by an image or a font of their text or of its spans, the named
+styles and the named span styles that name it, `missing` an asset whose file
 the store cannot read, one whose path fails confinement included; `assets untracked` replies the
 paths of the store's files no asset names, `design@rootpoint-protocol@table-of-added-assets`.
 

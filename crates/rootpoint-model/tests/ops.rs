@@ -437,8 +437,9 @@ struct Step {
     flag: bool,
 }
 
-// Every variant of `Op` and of `Content` is reached by a kind of step in `op_for`, or as an
-// inverse; a variant left out is silently untested.
+// Every variant of `Op` and of `Content` but those of text trees and span styles is reached by a
+// kind of step in `op_for`, or as an inverse; a variant left out is silently untested. The text
+// operations have their own property test below, and the span style operations their unit tests.
 fn step() -> impl Strategy<Value = Step> {
     // Positions near 0 and 1 as well as ordinary ones, where rounding meets the dividers.
     let at = prop_oneof![0.05f64..0.95, 1e-12f64..1e-3, (1.0 - 1e-3)..(1.0 - 1e-12)];
@@ -1398,5 +1399,121 @@ fn a_span_font_the_document_lacks_is_a_breach() {
                 name: "serif".to_owned()
             },
         ]
+    );
+}
+
+/// A duplicated slide's spans take new ids, as its nodes do.
+#[test]
+fn a_duplicated_slide_s_spans_take_new_ids() {
+    let (mut doc, area) = one_text("abc");
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 0..1,
+            style: bold(),
+        },
+    )
+    .unwrap();
+    let slide = doc.slides[0].id;
+    apply(&mut doc, Op::DuplicateSlide { slide }).unwrap();
+    check_invariants(&doc);
+    let span = |i: usize| {
+        let Node::Area(Area {
+            content: Content::Text(t),
+            ..
+        }) = &doc.slides[i].root
+        else {
+            panic!("slide {i} is not one text area")
+        };
+        t.root.spans()[0].id
+    };
+    assert_ne!(span(0), span(1));
+}
+
+/// A span style's font is a use of its asset, and one at or above the counter is refused.
+#[test]
+fn a_span_style_s_font_is_a_use_and_is_below_the_counter() {
+    let (mut doc, _) = one_text("abc");
+    let RemoveAssetId(asset) = add_asset(
+        &mut doc,
+        Asset {
+            path: "font.ttf".to_owned(),
+        },
+    );
+    let style = |id| SpanStyle {
+        font: Some(FontRef::Asset(id)),
+        ..SpanStyle::default()
+    };
+    apply(
+        &mut doc,
+        Op::AddSpanStyle {
+            name: "Code".to_owned(),
+            style: style(asset),
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        apply(&mut doc, Op::RemoveAsset { id: asset }),
+        Err(OpError::AssetInUse(asset))
+    );
+    let far = AssetId(next_id(&doc) + 10);
+    assert!(matches!(
+        apply(
+            &mut doc,
+            Op::SetSpanStyleValues {
+                name: "Code".to_owned(),
+                style: style(far),
+            },
+        ),
+        Err(OpError::Invalid(_))
+    ));
+}
+
+/// A span whose custom style sets nothing, as a file can hold, cannot be cut: the second half
+/// would be another span that sets nothing.
+#[test]
+fn a_span_that_sets_nothing_cannot_be_cut() {
+    let (mut doc, area) = one_text("abcd");
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 0..4,
+            style: bold(),
+        },
+    )
+    .unwrap();
+    // The span's style emptied as a file can hold it, by a content set whole.
+    let Some(Node::Area(a)) = doc.node(area).cloned() else {
+        panic!("no area")
+    };
+    let Content::Text(mut text) = a.content else {
+        panic!("no text")
+    };
+    if let TextItem::Span(span) = &mut text.root.items[0] {
+        span.style = SpanChoice::Custom(SpanStyle::default());
+    }
+    apply(
+        &mut doc,
+        Op::SetContent {
+            area,
+            content: Content::Text(text),
+        },
+    )
+    .unwrap();
+    let span = first_span(&doc, area);
+    assert_eq!(
+        apply(
+            &mut doc,
+            Op::SplitSpan {
+                area,
+                span,
+                offset: 2
+            }
+        ),
+        Err(OpError::EmptySpanStyle)
     );
 }

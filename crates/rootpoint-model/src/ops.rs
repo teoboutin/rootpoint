@@ -72,7 +72,7 @@ pub enum Op {
     AddAsset {
         asset: Asset,
     },
-    /// Remove an asset that no area and no style of the table uses.
+    /// Remove an asset that no area, no span and no style of either table uses.
     RemoveAsset {
         id: AssetId,
     },
@@ -198,9 +198,9 @@ pub enum Op {
 /// What the texts naming a removed style, or the spans naming a removed span style, name instead.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Replacement {
-    /// Another style of the table.
+    /// Another style of the table the removed style was in.
     Named(String),
-    /// A copy of the removed style's values, in each text.
+    /// A copy of the removed style's values, in each text or span.
     Custom,
 }
 
@@ -544,6 +544,9 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             let Elem::Span(first) = &mut seq.0[at] else {
                 unreachable!("span_parent gives the index of the span")
             };
+            // The second half takes the span's style, so a custom style that sets nothing, as a
+            // file can hold, would make a span that sets nothing.
+            check_span_style(&first.style)?;
             let mut inner = Seq::of(&first.text);
             inner.check(offset)?;
             if offset == 0 || offset == inner.0.len() {
@@ -611,8 +614,8 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
                 Some(Replacement::Named(other)) => Some(SpanChoice::Named(other.clone())),
                 Some(Replacement::Custom) => Some(SpanChoice::Custom(style.clone())),
             };
-            // A copy of a span style that sets nothing would leave its users custom spans that
-            // set nothing, which no operation leaves.
+            // A copy of a span style that sets nothing would make its users custom spans that set
+            // nothing, which no operation makes.
             if let Some(choice) = &replacement
                 && !users.is_empty()
             {

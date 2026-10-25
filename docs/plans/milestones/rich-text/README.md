@@ -118,8 +118,8 @@ before the next begins, D2.
   `App::run`, checked against the same commands on a second session in
   `path@rootpoint-app@tests/actions.rs`, per `design@rootpoint-app@actions-are-commands`. Every new
   command parses back from its printed form, per `design@rootpoint-protocol@protocol-transport`.
-- **No compatibility.** The first slice changes the save format: it bumps `FORMAT_VERSION` in
-  `path@rootpoint-model@src/file.rs`, 4 at the time of writing, and writes no migration, per
+- **No compatibility.** The first slice changed the save format to `FORMAT_VERSION` 5, in
+  `path@rootpoint-model@src/file.rs`, with no migration, per
   `design@rootpoint@no-compat-in-initial-dev`. It rewrites in the new format the four `.ron` files
   that `find crates -name '*.ron'` lists at the time of writing:
   `path@rootpoint-protocol@sample/sample.ron`, `path@rootpoint-app@tests/data/mixed.ron`,
@@ -141,18 +141,19 @@ before the next begins, D2.
   and runs every command.
 - **An operation**: a variant of `Op` in `path@rootpoint-model@src/ops.rs`, applied by `apply`,
   which returns its inverse, per `design@rootpoint-model@edit-operation-core`.
-- **A text**: `TextContent { text: String, style: StyleChoice }` of
-  `path@rootpoint-model@src/document.rs`, today one string with one style.
+- **A text**: `TextContent { root: TextNode, style: StyleChoice }` of
+  `path@rootpoint-model@src/document.rs`, a tree of characters and spans since #text-tree.
 - **A text style**: `TextStyle` of the same file, with `font`, `size`, `bold`, `italic`, `colour`,
   `h_align` and `v_align`, every field set.
-- **The style table**: `Document::styles`, the named text styles, by name.
+- **The style table**: `Document::styles`, the named text styles, by name; the span style table is
+  `Document::span_styles`.
 - **The text command**: `Command::Text { area, text, style }` of
   `path@rootpoint-protocol@src/command.rs`, which sets an area's whole text.
 - **The layout of a text**: `layout_text` of `path@rootpoint-render@src/text.rs`, which builds a
-  Parley `Layout<()>` with `ranged_builder` and one set of default properties; the colour is not in
-  the layout, and is applied when the text is drawn, in `path@rootpoint-render@src/lib.rs`.
+  Parley `Layout<TextBrush>` with `ranged_builder`, each span's values over its byte range and each
+  run's colour its brush, since #text-tree.
 - **`area_text`**: the public function of `path@rootpoint-render@src/lib.rs` that gives an area's
-  `AreaText { layout, origin }`, the layout `render_slide` draws, per
+  `AreaText { layout, origin, map }`, the layout `render_slide` draws and its `TextMap`, per
   `design@rootpoint-render@area-text-layout`.
 - **The editor**: `Editing { area, selection, preedit }` of `path@rootpoint-app@src/editing.rs`,
   the text being edited in place, its caret a Parley `Selection` on the layout `area_text` gives.
@@ -169,7 +170,7 @@ before the next begins, D2.
   span style of its own.
 - **An offset**: a position in a text node's sequence, counted in characters, Unicode scalar
   values, with each span counting as one item. Parley's index is a byte index; the map of
-  `AreaText` converts between the two.
+  `AreaText` gives a caret position's byte index, and #tree-caret builds the other direction.
 - **An edge**: the place in a text node's sequence where a span begins or ends. Each edge is a
   caret position of its own, #boundary-caret-positions.
 - **A caret position**: a text node and an offset in it.
@@ -190,7 +191,9 @@ What exists today, at each site the work touches:
 - **The protocol**, before #span-commands. `text <area> "<string>" [options]` sets an area's whole
   text, as one run, and `tree` prints
   `n<n> text "<string>" style="<name>"` or `custom`, `path@rootpoint-protocol@src/tree.rs`.
-- **The editor.** Every change of a text is one `text` command with the area's whole text,
+- **The editor**, before #tree-caret. Every change of a text is one `text` command with the area's
+  whole text, which drops the spans of a text loaded with them, until #tree-caret sends the small
+  commands; no release is made between the slices. Every change of a text is so sent,
   `design@rootpoint-app@edit-in-place`; the caret is a Parley `Selection`, placed again by byte
   index after each command; the caret, the selection and the composing range are editor state,
   `design@rootpoint-app@caret-editor-state`.
@@ -257,6 +260,8 @@ lists as referencing each, and the slice whose harvest judges or updates it:
 | `design@rootpoint-protocol@asset-commands` | members added: a span's font is a use of an asset, for `assets uses=` and `asset-remove … into=` | `register@rootpoint-app@design` line 217, `register@rootpoint-protocol@design` line 202 | #span-commands |
 | `design@rootpoint-app@edit-in-place` | rewritten: a change of the text is one small command, #text-edit-commands, and the caret is a caret position mapped to Parley's byte index | `register@rootpoint-app@design` line 340, `:412`, `path@rootpoint-app@src/editing.rs` line 1, `path@rootpoint-app@src/view.rs` line 351, `path@rootpoint-app@tests/edit_ops.rs` line 4, `path@rootpoint-app@tests/editing.rs` line 4, `register@rootpoint-render@design` line 39, the issue `rich-text-spans`, closed | #tree-caret |
 | `design@rootpoint-app@editor-overlay` | members added: the frames of the caret's nodes | `path@rootpoint-app@CLAUDE.md` line 17, `register@rootpoint-app@design` line 108, `:364`, `:549`, `path@rootpoint-app@tests/presenter.rs` line 3 | #span-styling |
+| `design@rootpoint-app@gesture-groups` | to be changed, open at the audit of #span-styling: a control of the side panel and the button of the ancestor row act on the caret's span during a stay, where the head ends a stay at any other action; the audit takes it to the design skill, a load-bearing gap, found by the review before the merge of #text-tree | judged at #span-styling's audit | #span-styling |
+| `design@rootpoint-app@editor-keys-kept-from-browser` | to be changed, open at the audit of #span-styling: its argument covers keys whose default leaves the page, and Ctrl+B, Ctrl+I and Ctrl+Space do not leave it; the audit takes the new keys to the design skill | judged at #span-styling's audit | #span-styling |
 | `design@rootpoint-app@styles-tab-edits-styles` | rewritten: the Styles tab also lists and edits the span styles | `register@rootpoint-app@design` line 223, `path@rootpoint-app@src/panels.rs` line 438, `:484` | #span-styling |
 
 **The standing entries the discussion's search returned, with their outcome:**
@@ -295,7 +300,8 @@ lists as referencing each, and the slice whose harvest judges or updates it:
 
 **The design and `rejected` entries graded `bears` by the design-entry search**, beyond those
 above, with their outcome: `design@rootpoint@gui-only-in-app` (the tree and its operations are in
-the model), `design@rootpoint@wasm-from-the-start` (no new dependency is planned; Parley is
+the model), `design@rootpoint@wasm-from-the-start` (no new dependency of a built crate is planned, `proptest` at most among rootpoint-app's
+dev-dependencies at #tree-caret; Parley is
 already built for the browser), `design@rootpoint@uniform-scaling` (the frames are placed through
 `slide_to_pixels`), `design@rootpoint-model@save-format`, `design@rootpoint-model@slide-units`
 (a span's size is in slide units), `design@rootpoint-render@caller-supplies-assets` and
@@ -624,12 +630,12 @@ crates/rootpoint-model/src/document.rs
   TextContent { root: TextNode, style: StyleChoice }   existing type, its `text` field replaced
   TextNode { items: Vec<TextItem> }                    the root and every span's sequence
   TextItem::Chars(String) | TextItem::Span(Span)       a node kind; Math and a reference are later variants
-  Span { id: SpanId, style: SpanChoice, node: TextNode }
+  Span { id: SpanId, style: SpanChoice, text: TextNode }
   SpanId                                               an id of the one counter, printed t<n>
   SpanChoice::Named(String) | SpanChoice::Custom(SpanStyle)
   SpanStyle { font, size, bold, italic, colour }       each an Option
   Document::span_styles: BTreeMap<String, SpanStyle>   the span style table, saved in the file
-  TextNodeRef: None for the root | Some(SpanId)        names a text node of an area's text
+  TextNodeRef::Root | TextNodeRef::Span(SpanId)        names a text node of an area's text
   CaretPos { node: TextNodeRef, offset: usize }        a caret position
 crates/rootpoint-model/src/ops.rs
   Op::InsertText { area, node: TextNodeRef, offset, text: String }
@@ -642,7 +648,7 @@ crates/rootpoint-model/src/ops.rs
   Op::AddSpanStyle / SetSpanStyleValues / RenameSpanStyle / RemoveSpanStyle / RestoreSpanStyle
   ops::span_style_users                                the texts that name a span style, as ops::users does for text styles
 crates/rootpoint-model/src/validate.rs
-  Breach::MissingSpanStyle { area, name }              a span naming a span style the table lacks
+  Breach::MissingSpanStyle { area, span, name }        a span naming a span style the table lacks
 crates/rootpoint-render/src/lib.rs
   AreaText { layout, origin, map }                     existing type; layout carries a colour per run
   TextMap                                              caret position -> byte index, and each span's byte range
@@ -687,9 +693,9 @@ as it laid out one string before, the area's values as defaults and each span's 
 pushed for its byte range, outer spans before inner, since a later push wins over an earlier one
 where they overlap. `ranged_builder` does not collapse whitespace, per its doc comment in Parley
 0.12.0's `builder.rs`, so the drawn text's byte indices are the stored text's; `TreeBuilder`
-collapses it by default, `WhiteSpaceCollapse::Collapse`, and would need
-`WhiteSpaceCollapse::Preserve` set to keep them, so it is no rival a fact defeats, and the builder
-the code had is kept. The layout carries each run's colour, a brush type in place of `()`. Nearest
+keeps whitespace too unless a style asks it to collapse, `WhiteSpaceCollapse` defaulting to
+`Preserve` in Parley 0.12.0's `style/mod.rs`, so it is no rival a fact defeats, and the builder the
+code had is kept. The layout carries each run's colour, a brush type in place of `()`. Nearest
 rival: flat runs over one string. Defeated by #arg-2 and #arg-3.
 
 ### #text-tree-normal-form
@@ -700,7 +706,8 @@ dissolved, whatever its values, and a span that sets a value equal to its parent
 a bold word inside a bold span stays bold when the outer span changes. A file that holds a custom
 span setting no field loads, the span drawn with its parent's values, and an operation that leaves
 it as it is is not refused; `Op::SetText`, which makes every span of its tree anew with a new id,
-refuses it as any operation refuses a span it makes. The model accepts an empty span, in an
+refuses it, as do a wrap, a change of style and a cut; a content set whole, as an undo sets it, and
+a duplicated slide carry such a span as it is. The model accepts an empty span, in an
 operation and in a file; the editor sends `unwrap` for the empty span the caret was in when the
 caret leaves it, and for each empty span of the text when the stay ends. Adjacent spans with equal
 styles stay apart. Nearest rival: merging equal siblings; defeated by #arg-5.
@@ -920,8 +927,8 @@ the owner's word of round 4, "keep all tripwires and ac", rules on every label.
    `tripwire@rootpoint-render@render-within-bounds`, whose re-entry is the design audit of work
    that changes the renderer, #text-tree's among them; its instruments render the mixed slide of
    `path@rootpoint-render@tests/common/mod.rs` and `path@rootpoint-app@tests/data/mixed.ron`, which
-   hold no span, so #text-tree gives the mixed slide a styled text, and times it before and after;
-   no new tripwire.
+   held no span; #text-tree gave the renderer's a styled text and timed it before and after, and
+   #span-styling gives `mixed.ron` one; no new tripwire.
 
 T1 to T4 are written at the harvest of the slice that records the decision each guards, as
 `skill@knowledge-architect-decision-recording@ruled-tripwires` says, each naming that head: T3 at
@@ -1010,6 +1017,14 @@ reopens #text-edit-commands.
   narrows it: the model dissolves no span, an operation that would leave a custom span setting no
   field is refused, and a named span is never dissolved, as "Decided design" says. It narrows a
   ruling of the owner, so it blocks the merge of this milestone's branch.
+- **D7**, on #text-node-tree and #span-style-overrides: the review before the merge of #text-tree
+  found that the two heads' titles, taken from the thread titles the owner approved, each state a
+  decision another head holds: "each span with its own values over its parent's" in the tree's
+  title is #span-style-overrides, and "the area keeps one full style" in the overrides' title is the
+  rival argument of `design@rootpoint-model@named-styles`. The default, built: the titles drop
+  those clauses, "An area's text is a tree of characters and spans" and "A span sets each text
+  option it changes, each optional, over its parent's values", the decisions unchanged. It narrows
+  titles the owner approved, so it blocks the merge of #text-tree.
 
 ## Harvest
 

@@ -12,5 +12,6 @@ caller decodes from the image assets' bytes. `slide_to_pixels` gives the scale a
 carry slide units to the pixels of an image of a given size, where `render_slide` draws, so a
 caller places its own marks over the image, or tests a pointer against the slide, at the drawn
 place. `area_text` gives the text of one area as `render_slide` lays it out, a Parley `Layout`
-in slide units and the point it is drawn at, so an editor places a caret or a selection on the
-drawn glyphs with Parley's `Selection` and `Cursor`.
+in slide units whose runs carry their colour as `TextBrush`, the point it is drawn at, and the
+`TextMap` from each caret position of the text's tree to its byte index in the layout, so an editor
+places a caret or a selection on the drawn glyphs with Parley's `Selection` and `Cursor`.

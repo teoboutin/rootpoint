@@ -37,7 +37,8 @@ colour as the brush `TextBrush`, and the point of the slide where its origin is 
 tree, `design@rootpoint-model@text-node-tree`, is laid out as one string with `ranged_builder`,
 each span's values set over its byte range, and `AreaText` carries the `TextMap` from each caret
 position of the tree to its byte index in that string, and each span's byte range; the ranged
-builder collapses no whitespace, so those byte indices are the stored text's. An editor that places a caret or a selection on that layout, with
+builder collapses no whitespace, as the doc comment of `RangedBuilder` in Parley 0.12.0's
+`builder.rs` says, so those byte indices are the stored text's. An editor that places a caret or a selection on that layout, with
 Parley's `Selection` and `Cursor`, places it on the drawn glyphs, which
 `goal@rootpoint-render@same-slide-everywhere` asks of every display. `area_text` and its `AreaText` are part
 of the crate's public interface; the app's editing in place, `design@rootpoint-app@edit-in-place`,
