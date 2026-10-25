@@ -351,10 +351,10 @@ the heads it changes, and reads each text against the change:
   the text's fallback to it, #builtin-open-sans. Referenced at `register@rootpoint-model@design`
   (`design@rootpoint-model@cosmetic-fallbacks`) and by
   `tripwire@rootpoint-render@glyph-missing-everywhere`: read at both slices; neither changes.
-- `design@rootpoint-render@text-padding`: an equation is inset by the same padding as a text, a
-  member its argument, the wrap width of a text, does not cover; its ground is the session's choice,
-  so the head is rewritten at #equation-kind with the reason for the member: an equation's edge then
-  stands where a text's would. Referenced by nothing.
+- `text-padding`, now `design@rootpoint-render@typeset-padding`: an equation is inset by the same
+  padding as a text, a member its argument, the wrap width of a text, does not cover; its ground is
+  the session's choice, so the head is rewritten at #equation-kind with the reason for the member:
+  an equation's edge then stands where a text's would. Referenced by nothing.
 - `design@rootpoint-model@inline-content-assets` and `design@rootpoint-model@style-kinds`: a third
   kind of content, whose options are unnamed, #equation-kind. `design@rootpoint-model@style-kinds` is
   referenced by `issue@rootpoint@more-content-kinds`, which stays true.
@@ -394,8 +394,9 @@ the heads it changes, and reads each text against the change:
   `register@rootpoint-app@design`, `register@rootpoint-app@rejected`,
   `register@rootpoint-model@design` and `path@rootpoint-render@src/map.rs`, whose doc comment changes
   with the map.
-- `design@rootpoint-protocol@protocol-transport`: the `$…$` literal, #equation-kind, and the tree's
-  new items, #inline-math. Referenced at `register@rootpoint-app@design`,
+- `design@rootpoint-protocol@protocol-transport`: the `$…$` literal, #equation-kind, a head of its
+  own, `design@rootpoint-protocol@math-in-protocol-grammar`; and the tree's new items,
+  #inline-math. Referenced at `register@rootpoint-app@design`,
   `issue@rootpoint-app@styled-copy-paste`, `register@rootpoint-protocol@design`,
   `issue@rootpoint-protocol@style-command-prints-a-line-that-does-not-parse`,
   `register@rootpoint-protocol@rejected` (twice) and `register@rootpoint-protocol@tripwire` (twice, by
@@ -665,7 +666,8 @@ believe this is needed and an unfinished formula is not supposed to exist in a r
 ### In commands, a formula is written between `$` signs with no escaping, and a reference as `{ref n<id>}` `##math-in-protocol-grammar`
 
 Proposed by the session in round 1, #arg-27. Approved in round 2: "math-in-protocol-grammar: agreed".
-Harvested into `design@rootpoint-protocol@protocol-transport`, at #equation-kind and #inline-math.
+Harvested into `design@rootpoint-protocol@math-in-protocol-grammar`, at #equation-kind, and into
+`design@rootpoint-protocol@protocol-transport` for the tree's items, at #inline-math.
 
 ### The window changes a formula by replacing that one formula whole `##math-edit-commands`
 

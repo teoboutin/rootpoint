@@ -226,8 +226,9 @@ to name a style.
 
 `TextItem` is `Chars` or `Span`, and the file, the operations and a caret position name an item by
 its kind, so a kind added later, maths, or a reference to an equation, joins the enumeration with
-no change of what a text is. No kind but these two exists; the math item, the reference and an
-equation kind of its own are designed in `milestone@plans@math-support`. It serves
+no change of what a text is. No kind but these two exists; the math item and the reference are
+designed in `milestone@plans@math-support`, and an equation of its own is a kind of an area's
+content, `design@rootpoint-model@equation-content-kind`. It serves
 `goal@rootpoint@real-presentations`, whose talks need mathematics; on the owner's word, the owner
 wants maths inside a sentence.
 
@@ -301,24 +302,24 @@ owner chose that a split does not copy the missing name, over copying it as `dup
 ### An equation is a kind of content of its own, one per area `##equation-content-kind`
 
 `Content::Equation(EquationContent)` holds a formula of the math crate,
-`design@rootpoint-math@formula-tree`, with the options of
-`design@rootpoint-model@equation-options`. The file writes the formula as its LaTeX,
-`design@rootpoint-math@math-storage-form`, and a formula that does not parse makes the file
-refused. A displayed equation stands in an area of its own, as every piece of content does,
-`goal@rootpoint@free-slide-division`, and `goal@rootpoint@minimal-content-set` names the equation
-among the kinds. The nearest rival, a display block inside a text, as LyX sets one between
-paragraphs, would place a piece of content by a second mechanism beside the tree of areas, and a
-block in the text's layout would be new work in Parley. On the owner's word: the owner asked for a
-kind of node holding a numbered equation.
+`design@rootpoint-math@formula-tree`, with the options of `design@rootpoint-model@equation-options`.
+The file writes the formula as its LaTeX, `design@rootpoint-math@math-storage-form`, and a formula
+that does not parse makes the file refused. A displayed equation stands in an area of its own, as
+every piece of content does, `goal@rootpoint@free-slide-division`, and
+`goal@rootpoint@minimal-content-set` names the equation among the kinds. The nearest rival, a
+display block inside a text, as LyX sets one between paragraphs,
+`rejected@rootpoint-model@display-block-in-text`, would place a piece of content by a second
+mechanism beside the tree of areas; a block in the text's layout would also be new work in Parley,
+by a reading of its API that no measurement checked. On the owner's word: the owner asked
+for a kind of node holding a numbered equation.
 
-### An equation's rows stand under one number, centred on them `##equation-one-number`
+### An equation is numbered as a whole, whatever the rows of its formula `##equation-one-number`
 
-An equation is numbered as a whole, whatever the rows of its formula,
-`design@rootpoint-math@equation-rows`: `Document::equation_numbers` gives the area one number, and
-the renderer draws it once, at the area's right edge, on the formula's axis when the formula has
-one row and centred on the rows when it has several. The nearest rival, a number per row, as
-LaTeX's `align` gives, makes a numbered thing smaller than an area, so a number, and anything that
-names one, would need a row's identity inside the formula.
+`Document::equation_numbers` gives an equation area one number, whatever the rows of its formula,
+`design@rootpoint-math@equation-rows`, and the renderer draws it once beside the formula,
+`design@rootpoint-render@equation-one-layout`. The nearest rival, a number per row, as LaTeX's
+`align` gives, makes a numbered thing smaller than an area, so a number, and anything that names
+one, would need a row's identity inside the formula.
 
 ### An equation is numbered by its place in the order of the slides, then of each slide's tree `##equation-numbering`
 
@@ -327,32 +328,32 @@ over the slides in their order, then over the areas of a slide in the depth-firs
 A number is computed, never stored, so a move of a slide or a swap of two areas renumbers, and no
 edit leaves a stale number. The order of the tree does not change when a divider moves, so a drag
 renumbers nothing. The nearest rival, the order of the areas' places on the slide, renumbers when a
-drag moves one area above another.
+drag moves one area above another. The count runs over the whole presentation, as LyX's counter of
+equations runs over a whole document, defined with no `Within` in
+`path@elsewhere@lib/layouts/stdcounters.inc`, read in
+`path@rootpoint@docs/grounding/math-typesetting.md`.
 
-### An equation has its own options, unnamed: whether it is numbered, its size mode and its colour `##equation-options`
+### An equation's options are its own, and unnamed `##equation-options`
 
-`EquationContent` holds `numbered`, `size` and `colour`, set per area; a new equation is numbered,
-since the kind was asked for as a numbered equation, sized `Fit`,
-`design@rootpoint-model@equation-fit`, and in the Body style's colour, or black when the table has
-no Body. An equation names no style, `design@rootpoint-model@style-kinds`: a text style named by the
-equation carries a font, a weight, a slant and an alignment that have no meaning for it, which
-`goal@rootpoint@minimal-content-set` rules out, and two options shared by name would save one click
-per area.
+`EquationContent` holds `numbered`, `size` and `colour`, set per area; a new equation is in the Body
+style's colour, or black when the table has no Body, and sized by
+`design@rootpoint-model@equation-fit`. An equation names no style,
+`design@rootpoint-model@style-kinds`: a text style named by the equation,
+`rejected@rootpoint-model@equation-named-style`, carries a font, a weight, a slant and an alignment
+that have no meaning for it, which `goal@rootpoint@minimal-content-set` rules out, and three options
+shared by name would save one click per area. On the owner's word: a new equation is numbered, since
+the owner asked for the kind as a numbered equation, where LyX's new display formula is unnumbered.
 
-### An equation is fitted to its area by one layout scaled, or held at most at a size `##equation-fit`
+### An equation is fitted to its area, or held at most at a size `##equation-fit`
 
-`EquationSize::Fit` lays the formula out once, at the Body style's size, and scales it by the
-largest factor at which it fits the area less the padding of a text,
-`design@rootpoint-render@text-padding`, with room kept for its number on both sides;
-`EquationSize::AtMost(size)` lays it out at `size`, scaled down by that factor when it is below 1.
-The number is drawn at the Body style's size and does not scale. One layout and one multiplication
-give the fitted formula, since a layout scales exactly,
-`design@rootpoint-math@layout-scales-exactly`. `Fit` is the default of a new equation, which
-`tripwire@rootpoint-model@at-most-for-most-equations` watches. On the owner's word: the owner asked
-whether an equation could fit its area automatically, which would be convenient, and chose that both
-modes be offered, if both could be, over a shrink only, which keeps one size across slides and
-leaves white space in a large area. A third mode, a fixed size that overflows its area, would differ
-from `AtMost` only by overflowing.
+`EquationSize::Fit` sets the formula at the largest size at which it fits its area, and
+`EquationSize::AtMost(size)` at `size`, or at that largest size when `size` does not fit; the
+renderer draws both from one layout, `design@rootpoint-render@equation-one-layout`. `Fit` is the
+default of a new equation, which `tripwire@rootpoint-model@at-most-for-most-equations` watches. On
+the owner's word: the owner asked whether an equation could fit its area automatically, which would
+be convenient, and, offered fitting both ways or shrinking only, chose that both modes be offered,
+if both could be, over one mode alone. A third mode, a fixed size that overflows its area, would
+differ from `AtMost` only by overflowing.
 
 ### An unknown command of a formula is no breach of the document `##unknown-command-no-breach`
 
@@ -477,8 +478,14 @@ earlier version is `rejected@rootpoint-model@format-migration`. It serves
 `goal@rootpoint@readable-save-file`, and the file is an interface every saved presentation
 consumes.
 
-`save_ron` sets ron's `escape_strings(false)`, so a string holding a `"` or a `\` is written as a
-raw string: a formula, which nearly always holds a `\`, reads `r#"\frac{a}{b}"#`, and reads back
-equal, as measured with ron 0.12.2. The setting applies to every string of the file, a text's
-characters included. The rival, the escapes kept, writes every backslash of a formula twice, which
-a person editing the file by hand would have to write too.
+### A string holding a quote or a backslash is written raw in the file `##raw-strings-in-file`
+
+`save_ron` sets ron's `escape_strings(false)`, so ron 0.12.2 writes a string holding a `"` or a `\`
+as a raw string, by its `serialize_unescaped_or_raw_str`: a formula, which nearly always holds a
+`\`, reads `r#"\frac{a}{b}"#`. The setting applies to every string of the file, a text's characters
+included. It reads back equal: the round trip of the fixture of
+`path@rootpoint-model@tests/file.rs`, whose formula holds a `\` and a `"`, checks it, by
+`cargo test -p rootpoint-model --test file`. The rival, the escapes kept,
+`rejected@rootpoint-model@escaped-strings-in-file`, writes every backslash of a formula twice, which
+a person editing the file by hand would have to write too,
+`goal@rootpoint-model@faithful-readable-file`.

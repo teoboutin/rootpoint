@@ -938,7 +938,7 @@ pub(crate) enum Word {
     /// A formula's LaTeX, read raw between `$` signs: no escape is read, so `\frac` is written
     /// once; the formula ends at the first `$` preceded by an even number of `\`, so `\$` is a
     /// dollar of the formula and `\\$` a row break that ends it,
-    /// `design@rootpoint-protocol@protocol-transport`.
+    /// `design@rootpoint-protocol@math-in-protocol-grammar`.
     Math(String),
 }
 

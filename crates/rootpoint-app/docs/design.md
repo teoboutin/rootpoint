@@ -785,10 +785,10 @@ The thread is what keeps an undo step within its bound. The test `autosave_gui_c
 `cargo test -p rootpoint-app --release --test autosave -- --ignored --nocapture`, times the
 medians of 21 runs at 50, 200 and 1000 slides of the sample, whose document holds no image's
 bytes: on telmon, an AMD Ryzen 9 9950X, the GUI thread's share, the clone and its hand-over, is
-0.010, 0.046 and 0.231 ms, and `save_ron`, which the rival would run on the GUI thread before its
-write, is 0.179, 0.725 and 3.586 ms, linear in the slides. The test asserts a share below 1 ms at
-1000 slides, a sixteenth of one frame at 60 Hz, 16.7 ms, where `save_ron` alone takes more than a
-fifth of the frame. The thread also takes the time of a slow `fsync`, as on a USB stick, which no
+0.023, 0.084 and 0.524 ms, and `save_ron`, which the rival would run on the GUI thread before its
+write, is 0.130, 0.569 and 3.304 ms, linear in the slides. The test asserts a share below 1 ms at
+1000 slides, a sixteenth of one frame at 60 Hz, 16.7 ms, where `save_ron` alone takes 3.3 ms, near
+a fifth of the frame. The thread also takes the time of a slow `fsync`, as on a USB stick, which no
 frame waits for.
 
 With every step written, the files on disk agree with the window but for one step at most, so a

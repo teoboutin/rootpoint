@@ -118,12 +118,14 @@ its references, which the owner ruled on its default in round 9.
   reference at or above the counter;
   `design@rootpoint-model@cosmetic-fallbacks` and `design@rootpoint-model@stable-ids` for their new
   members; `design@rootpoint-model@save-format` for version 7.
-- Into `register@rootpoint-protocol@design`: `design@rootpoint-protocol@protocol-transport` and
+- Into `register@rootpoint-protocol@design`: `design@rootpoint-protocol@protocol-transport`,
+  `design@rootpoint-protocol@math-in-protocol-grammar` and
   `design@rootpoint-protocol@text-edit-commands` for the items, `math` and `retarget`; a head for
   #math-edit-commands if it passes an entry test.
 - Into `register@rootpoint-render@design`: `design@rootpoint-render@area-text-layout` for the
   inline boxes.
-- T2, into the protocol's tripwires home, guarding `design@rootpoint-protocol@protocol-transport`,
-  or folded into `tripwire@rootpoint-protocol@one-line-tree-written-badly`, which guards the same
-  head, as an absorbed tripwire is.
+- T2 is written at #equation-kind, which built the literal it watches:
+  `tripwire@rootpoint-protocol@formula-literal-written-badly`, guarding
+  `design@rootpoint-protocol@math-in-protocol-grammar`, which the tree's math items extend; read
+  it against them.
 - Report on AC5.

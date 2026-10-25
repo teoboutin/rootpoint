@@ -54,5 +54,5 @@ T1 of the premortem of the milestone on math, recorded on the owner's word.
 equations.
 **Response:** reopen `design@rootpoint-model@equation-fit`, toward `AtMost` as the default of a new
 equation.
-**Re-entry:** the first real talk given with math; and the standing-state review before every
+**Re-entry:** the first real talk prepared with math; and the standing-state review before every
 merge.

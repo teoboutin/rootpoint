@@ -18,16 +18,13 @@ quoted text or a span, and a span `{` its id, its options, then its items `}`. `
 so and `tree` prints one so, so that an agent writes and reads a styled text as one line; the
 nearest rival, a tree as a JSON payload, `rejected@rootpoint-protocol@json-rpc-commands`, is easier
 to parse and harder to type. `tripwire@rootpoint-protocol@one-line-tree-written-badly` watches
-agents writing the tree. A formula is a word between `$` signs, read with no escape up to the first
-`$` preceded by an even number of `\`, so `\$` is a dollar of the formula and `\\` just before the
-closing `$` is a row break that ends it; `equation` takes one so and `tree` prints one so. The
-nearest rival, a formula in a quoted string, doubles every backslash of its LaTeX, which agents
-write wrong, where `$…$` is the form they know from LaTeX and Markdown. A blank line and a line
-starting with `#` are no command, so a script carries comments. Each command gets one reply line,
-`ok` or `err` followed by its result or its reason; a command that creates ids names them, and
-`render` names what it could not draw. A printed `Command` is a line that parses back to it, so a
-session can be written out as a script and run again. The binary `rootpoint-headless` runs a
-`Session` on its stdin, one reply per command on its stdout.
+agents writing the tree. A formula is a word of its own,
+`design@rootpoint-protocol@math-in-protocol-grammar`. A blank line and a line starting with `#` are
+no command, so a script carries comments. Each command gets one reply line, `ok` or `err` followed
+by its result or its reason; a command that creates ids names them, and `render` names what it could
+not draw. A printed `Command` is a line that parses back to it, so a session can be written out as a
+script and run again. The binary `rootpoint-headless` runs a `Session` on its stdin, one reply per
+command on its stdout.
 
 The commands serve what a readable save file cannot: an edit applied to a running editor, a query
 of its state, and a script run headless, as `goal@rootpoint-protocol@commands-drive-everything`
@@ -35,6 +32,20 @@ and `goal@rootpoint@headless-core` ask. An agent or a person types them at a ter
 and reads one line per reply. The rival, JSON-RPC, `rejected@rootpoint-protocol@json-rpc-commands`,
 is easier to parse and harder to type. The grammar and the replies are this crate's interface to
 every program that drives rootpoint.
+
+### A formula in a command is written between `$` signs, with no escape `##math-in-protocol-grammar`
+
+The lexer of `path@rootpoint-protocol@src/command.rs` reads a word that starts with `$` as a
+formula, raw up to the first `$` preceded by an even number of `\`, so `\$` is a dollar of the
+formula and `\\` just before the closing `$` is a row break that ends it; `equation` takes a formula
+so and `tree` prints one so, and the printer quotes a path that starts with `$`,
+`design@rootpoint-protocol@protocol-transport`. The formula is the LaTeX that
+`design@rootpoint-math@math-storage-form` reads, written as an agent or a person writes LaTeX
+between `$` signs in a document or in Markdown. The nearest rival, a formula in a quoted string,
+`rejected@rootpoint-protocol@formula-in-quoted-string`, writes every backslash of the LaTeX twice,
+`"\\frac{a}{b}"`, where a single one is refused as an unknown escape of the quoted string. Whether
+agents write the literal well is watched by
+`tripwire@rootpoint-protocol@formula-literal-written-badly`.
 
 ### A command names what the model stores by its stored id, never by a position `##protocol-addressing`
 

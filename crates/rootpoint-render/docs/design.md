@@ -46,13 +46,30 @@ consumes it. A layout the editor made itself, from the same styles set again, wo
 layout that must agree with the drawn one, as `rejected@rootpoint-app@plain-editor` records of
 Parley's own editor.
 
-### A text or an equation is inset from its area by 24 slide units `##text-padding`
+### What an area sets in type is inset from it by 24 slide units, and an image is not `##typeset-padding`
 
 Every text is laid out within its area less 24 slide units on each side, and an equation is fitted
-within the same rectangle, so a formula's edge and its number line up with the texts beside it. The
+within the same rectangle, so a formula's edge and its number line up with the texts beside it; an
+image fits or fills its whole area. The
 padding sets the wrap width of every text, so changing it moves the line breaks of every saved
 slide. The value is the session's choice at the design audit of the renderer; the owner judged it
 right, and may adjust it later.
+
+### An equation area is drawn from one layout of its formula and a scale `##equation-one-layout`
+
+`lay_out_equation` of `path@rootpoint-render@src/formula.rs` lays the formula out once, in display
+style, at the Body style's size for `Fit` and at its size for `AtMost`, and draws it at the largest
+scale at which it fits the area less the padding of `design@rootpoint-render@typeset-padding`, with
+room kept for the number on both sides, a scale no greater than 1 for `AtMost`,
+`design@rootpoint-model@equation-fit`. `area_formula` gives that layout, the point where its origin
+is drawn and the scale, as `render_slide` draws them, for the window's caret. One layout and one
+multiplication suffice, since a layout at `k` times a size is the layout at that size scaled by `k`,
+`design@rootpoint-math@layout-scales-exactly`; the rival, a layout at each size tried, would lay the
+formula out again on every frame of a divider's drag. The number `(n)` of
+`design@rootpoint-model@equation-one-number` is drawn once, at the area's right edge, in the
+built-in sans at the Body style's size, upright and regular, in the equation's colour, and does not
+scale; it is centred on the formula's axis when the formula has one row, and on its rows when it has
+several.
 
 ### A render is limited to 16384 pixels a side `##size-limit`
 

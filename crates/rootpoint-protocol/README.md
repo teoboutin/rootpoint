@@ -126,9 +126,9 @@ span of its tree a new id, ignoring any given, so `tree`'s line given back to `t
 but for what only a file edited by hand holds: a custom span that sets no value, which `text`
 refuses, and a built-in family the binary does not carry, which `tree` leaves out.
 `text` replies the new spans' ids. With options and no tree, `text n3 bold` changes the area's style
-alone and keeps its spans and their ids; an image or an equation area refuses it. Outside a quoted text, `[`, `]`,
-`{`, `}` and `,` are words
-of their own, so a path holding one is quoted.
+alone and keeps its spans and their ids; an image or an equation area refuses it. Outside a quoted
+text, `[`, `]`, `{`, `}` and `,` are words of their own, so a path holding one is quoted, and so is
+a path that starts with `$`, which starts a formula.
 
 The commands that change a tree name a text node, the root of an area's text by the area's id or a
 span by its own, and an offset or a range in it, read at that moment, a span counting as one

@@ -45,3 +45,13 @@ grammar three times or more.
 `design@rootpoint-protocol@protocol-transport`, toward a flatter form.
 **Re-entry:** the design audit of the next work on the protocol; and the standing-state review
 before every merge.
+
+## Guarding `design@rootpoint-protocol@math-in-protocol-grammar`: agents write the formula literal badly `##formula-literal-written-badly`
+
+T2 of the premortem of the milestone on math, recorded on the owner's word.
+
+**Fires when:** in one session of the owner's, an agent has a command refused for its `$…$`
+formula three times or more.
+**Response:** reopen `design@rootpoint-protocol@math-in-protocol-grammar`.
+**Re-entry:** the design audit of the next work on the protocol; and the standing-state review
+before every merge.

@@ -107,3 +107,10 @@ value as every other option sets one, `design@rootpoint-protocol@span-value-inhe
 with no other command a client could change no character of a text and keep its spans' ids, and a
 script could not name a span after an edit; `design@rootpoint-protocol@text-edit-commands` changes
 a text by one operation per command.
+
+### A formula written as a quoted string in a command `##formula-in-quoted-string`
+
+`live`. A formula would be a text of the command grammar, `"\\frac{a}{b}"`, every backslash of its
+LaTeX written twice, since the quoted string reads `\` as the start of an escape; `"\frac{a}{b}"`
+is refused, `\f` being no escape of it. An agent copies LaTeX between `$` signs from a document or
+from Markdown as it is.

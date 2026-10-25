@@ -153,3 +153,22 @@ confuse authors, which `tripwire@rootpoint-model@span-styles-confuse` watches.
 to load, "data did not match any variant of untagged enum", as measured in the design audit of the
 slice that built the text tree, recorded in its commit "Record the design audit of the slice of
 the text tree".
+
+### A displayed equation as a block of a text, between its paragraphs `##display-block-in-text`
+
+`live`. A text would hold an equation as an item between paragraphs, as LyX sets a display formula,
+so a piece of content would be placed by the text's flow beside the tree of areas, which places
+every other piece, and the text's layout would need blocks between its lines, new work in Parley by
+a reading of its API that no measurement checked.
+
+### An equation naming a text style of the style table `##equation-named-style`
+
+`live`. The equation would take its colour from a style whose font, weight, slant, alignment and
+size mean nothing to a formula laid out in the math font and sized by its area, and the file would
+name a text style from an area that holds no text.
+
+### Every string of the file written with its escapes `##escaped-strings-in-file`
+
+`live`. ron's default writes each backslash as `\\`, so a formula reads `"\\frac{a}{b}"` in the
+file, and a person editing it by hand writes every backslash of the LaTeX twice.
+
