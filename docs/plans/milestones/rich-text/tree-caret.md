@@ -51,7 +51,7 @@ The third slice of `milestone@plans@rich-text`. It lands `thread@rich-text@bound
   `design@rootpoint-app@edit-entry`, `design@rootpoint-app@empty-preedit`,
   `design@rootpoint-app@gesture-groups`, `rejected@rootpoint-app@plain-editor`,
   `issue@rootpoint-app@abandoned-composition-undo-step`,
-  `issue@rootpoint-app@editing-actions-outside-actions-rs`,
+  `editing-actions-outside-actions-rs`, which the slice closes,
   `tripwire@rootpoint-app@keys-confuse-with-the-outline`,
   `tripwire@rootpoint-app@empty-text-takes-the-keys`.
 - The rule for a byte index at which several edges meet, which the milestone's caret table leaves

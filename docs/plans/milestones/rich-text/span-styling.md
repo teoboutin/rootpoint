@@ -62,7 +62,9 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
   `design@rootpoint-app@editor-keys-kept-from-browser`, `design@rootpoint-app@selection-actions`,
   `design@rootpoint-app@sidebar-width`, `design@rootpoint-protocol@builtin-sample`,
   `tripwire@rootpoint-app@keys-confuse-with-the-outline`,
-  `issue@rootpoint-app@editing-actions-outside-actions-rs`.
+  `design@rootpoint-app@actions-are-commands`: the actions of editing are in
+  `path@rootpoint-app@src/actions.rs`, the caret's state and geometry in
+  `path@rootpoint-app@src/editing.rs`.
 
 ## Fails alone on
 

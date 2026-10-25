@@ -19,7 +19,7 @@ use rootpoint_app::selection::Move;
 use rootpoint_app::{App, MenuEntry};
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, Side, SlideId};
 use rootpoint_protocol::{
-    Command, Files, Reply, Session, StyleCommand, StyleOption, TreeItem, parse_command,
+    Command, Files, Reply, Session, StyleCommand, StyleOption, parse_command,
 };
 
 /// Files held in memory, by path, shared so that the test reads what a save wrote.
@@ -319,14 +319,14 @@ fn the_content_actions_issue_their_commands() {
             a.delete_backward();
             a.stop_editing();
         },
-        |s| {
-            let t = text_of(s, NodeId(3));
-            let text = |prefix: &str| Command::Text {
-                area: NodeId(3),
-                root: Some(vec![TreeItem::Chars(format!("{prefix}{t}"))]),
-                style: Vec::new(),
-            };
-            vec![c("begin"), text("A"), text("Ab"), text("A"), c("end")]
+        |_| {
+            vec![
+                c("begin"),
+                c("insert n3 0 \"A\""),
+                c("insert n3 1 \"b\""),
+                c("delete n3 1..2"),
+                c("end"),
+            ]
         },
     );
     check(
@@ -347,21 +347,15 @@ fn the_content_actions_issue_their_commands() {
             a.delete_forward();
             a.stop_editing();
         },
-        |s| {
-            let t = text_of(s, NodeId(3));
-            let text = |s: String| Command::Text {
-                area: NodeId(3),
-                root: Some(vec![TreeItem::Chars(s)]),
-                style: Vec::new(),
-            };
-            let rest = &t[1..];
+        |_| {
             vec![
                 c("begin"),
-                text(rest.to_owned()),
-                text(format!("xy{rest}")),
-                text(format!("xy´{rest}")),
-                text(format!("xyé{rest}")),
-                text(format!("xyé{}", &rest[1..])),
+                c("delete n3 0..1"),
+                c("insert n3 0 \"xy\""),
+                c("insert n3 2 \"´\""),
+                c("delete n3 2..3"),
+                c("insert n3 2 \"é\""),
+                c("delete n3 3..4"),
                 c("end"),
             ]
         },

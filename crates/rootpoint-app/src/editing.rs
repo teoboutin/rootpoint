@@ -1,14 +1,17 @@
-//! Editing an area's text in place, per `design@rootpoint-app@edit-in-place`: a Parley `Selection`
-//! on the layout `rootpoint_render::area_text` gives, and one `text` command a change, inside the
-//! group a stay holds, per `design@rootpoint-app@gesture-groups`.
+//! The caret of a text edited in place, per `design@rootpoint-app@edit-in-place`: a caret position
+//! of the text's tree, a text node and an offset in it, mapped to the byte index of the layout
+//! `rootpoint_render::area_text` gives, where Parley's `Cursor` and `Selection` place and draw it.
+//! The actions that change the text, by the small commands of
+//! `design@rootpoint-protocol@text-edit-commands`, are in `path@rootpoint-app@src/actions.rs`.
 
 use std::ops::Range;
 
 use eframe::egui::{Pos2, Rect};
-use parley::{Affinity, Selection};
-use rootpoint_model::{Content, Node, NodeId};
-use rootpoint_protocol::{Command, TreeItem};
-use rootpoint_render::{AreaText, area_text};
+use parley::{Affinity, Cluster, Layout as TextLayout, Selection};
+use rootpoint_model::{
+    CaretPos, Content, Node, NodeId, Span, SpanId, TextContent, TextItem, TextNode, TextNodeRef,
+};
+use rootpoint_render::{AreaText, TextBrush, TextMap, area_text};
 
 use crate::App;
 use crate::hit::Layout;
@@ -16,12 +19,22 @@ use crate::hit::Layout;
 /// The width of the drawn caret, in points.
 pub const CARET_WIDTH: f32 = 2.0;
 
-/// The text being edited in place: its area, the caret and the selection on its layout, and the
-/// byte range of the IME's composing text, which stands in the area's text while composing.
+/// The text being edited in place: its area, the caret and the selection's anchor as caret
+/// positions of its tree, and the offsets of the IME's composing text in the caret's text node,
+/// which stands in the area's text while composing.
 #[derive(Clone, Debug)]
 pub(crate) struct Editing {
     pub area: NodeId,
-    pub selection: Selection,
+    pub caret: CaretPos,
+    /// Where the selection began, `None` when it is collapsed. The selection is the range between
+    /// it and the caret, both lifted to their nearest common text node, [`selection`].
+    pub anchor: Option<CaretPos>,
+    /// The side of the caret's byte index it is drawn on, which tells the end of a line from the
+    /// start of the next where a line wraps.
+    pub affinity: Affinity,
+    /// The Parley selection of the last move by lines, kept while the caret stays where it put
+    /// it, so that a run of moves by lines keeps the caret's column.
+    pub column: Option<Selection>,
     pub preedit: Option<Range<usize>>,
 }
 
@@ -40,6 +53,313 @@ pub enum CaretMove {
     TextEnd,
 }
 
+/// One item of a text node's sequence, as an offset counts it: a character, or a span whole.
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Item<'a> {
+    Char(char),
+    Span(&'a Span),
+}
+
+/// The text node `node` of a text.
+pub(crate) fn text_node(text: &TextContent, node: TextNodeRef) -> Option<&TextNode> {
+    match node {
+        TextNodeRef::Root => Some(&text.root),
+        TextNodeRef::Span(id) => text
+            .root
+            .spans()
+            .into_iter()
+            .find(|s| s.id == id)
+            .map(|s| &s.text),
+    }
+}
+
+/// The items of a text node, one per offset.
+pub(crate) fn items(node: &TextNode) -> Vec<Item<'_>> {
+    let mut out = Vec::new();
+    for item in &node.items {
+        match item {
+            TextItem::Chars(s) => out.extend(s.chars().map(Item::Char)),
+            TextItem::Span(span) => out.push(Item::Span(span)),
+        }
+    }
+    out
+}
+
+/// The text node that holds `span`, and the span's offset in it.
+pub(crate) fn parent(text: &TextContent, span: SpanId) -> Option<(TextNodeRef, usize)> {
+    fn find(node: &TextNode, here: TextNodeRef, span: SpanId) -> Option<(TextNodeRef, usize)> {
+        for (i, item) in items(node).into_iter().enumerate() {
+            if let Item::Span(s) = item {
+                if s.id == span {
+                    return Some((here, i));
+                }
+                if let Some(found) = find(&s.text, TextNodeRef::Span(s.id), span) {
+                    return Some(found);
+                }
+            }
+        }
+        None
+    }
+    find(&text.root, TextNodeRef::Root, span)
+}
+
+/// The text nodes from the root down to `pos`'s, each with the offset in it of the next one's span,
+/// and the last with `pos`'s offset.
+fn path(text: &TextContent, pos: CaretPos) -> Vec<(TextNodeRef, usize)> {
+    let mut out = vec![(pos.node, pos.offset)];
+    let mut node = pos.node;
+    while let TextNodeRef::Span(id) = node {
+        let Some((up, at)) = parent(text, id) else {
+            break;
+        };
+        out.push((up, at));
+        node = up;
+    }
+    out.reverse();
+    out
+}
+
+/// Whether a caret position stands at a byte index where a cluster of the layout starts, or at
+/// the text's end, so that the caret is drawn between two glyphs and not inside one.
+fn on_cluster_boundary(layout: &TextLayout<TextBrush>, index: usize) -> bool {
+    Cluster::from_byte_index(layout, index).is_none_or(|c| c.text_range().start == index)
+}
+
+/// The caret position Right gives, by the milestone's table of caret moves: past one cluster of
+/// characters, into a span at its start, or out of a span at its end; nothing at the text's end.
+/// With `over`, as Shift with Right, a span is passed whole rather than entered.
+pub(crate) fn right(
+    text: &TextContent,
+    map: &TextMap,
+    layout: &TextLayout<TextBrush>,
+    pos: CaretPos,
+    over: bool,
+) -> CaretPos {
+    let Some(node) = text_node(text, pos.node) else {
+        return pos;
+    };
+    let items = items(node);
+    match items.get(pos.offset) {
+        Some(Item::Span(s)) if !over => CaretPos {
+            node: TextNodeRef::Span(s.id),
+            offset: 0,
+        },
+        Some(Item::Span(_)) => CaretPos {
+            offset: pos.offset + 1,
+            ..pos
+        },
+        Some(Item::Char(_)) => {
+            let mut j = pos.offset + 1;
+            while j < items.len()
+                && matches!(items[j], Item::Char(_))
+                && !map
+                    .byte_index(CaretPos { offset: j, ..pos })
+                    .is_none_or(|b| on_cluster_boundary(layout, b))
+            {
+                j += 1;
+            }
+            CaretPos { offset: j, ..pos }
+        }
+        None => match pos.node {
+            TextNodeRef::Root => pos,
+            TextNodeRef::Span(id) => parent(text, id).map_or(pos, |(node, at)| CaretPos {
+                node,
+                offset: at + 1,
+            }),
+        },
+    }
+}
+
+/// The caret position Left gives, the mirror of [`right`].
+pub(crate) fn left(
+    text: &TextContent,
+    map: &TextMap,
+    layout: &TextLayout<TextBrush>,
+    pos: CaretPos,
+    over: bool,
+) -> CaretPos {
+    let Some(node) = text_node(text, pos.node) else {
+        return pos;
+    };
+    let items = items(node);
+    if pos.offset == 0 {
+        return match pos.node {
+            TextNodeRef::Root => pos,
+            TextNodeRef::Span(id) => {
+                parent(text, id).map_or(pos, |(node, at)| CaretPos { node, offset: at })
+            }
+        };
+    }
+    match items.get(pos.offset - 1) {
+        Some(Item::Span(s)) if !over => CaretPos {
+            node: TextNodeRef::Span(s.id),
+            offset: items_len(&s.text),
+        },
+        Some(Item::Span(_)) => CaretPos {
+            offset: pos.offset - 1,
+            ..pos
+        },
+        Some(Item::Char(_)) => {
+            let mut j = pos.offset - 1;
+            while j > 0
+                && matches!(items[j - 1], Item::Char(_))
+                && !map
+                    .byte_index(CaretPos { offset: j, ..pos })
+                    .is_none_or(|b| on_cluster_boundary(layout, b))
+            {
+                j -= 1;
+            }
+            CaretPos { offset: j, ..pos }
+        }
+        None => pos,
+    }
+}
+
+/// The number of items of a text node, its last offset.
+pub(crate) fn items_len(node: &TextNode) -> usize {
+    node.items
+        .iter()
+        .map(|item| match item {
+            TextItem::Chars(s) => s.chars().count(),
+            TextItem::Span(_) => 1,
+        })
+        .sum()
+}
+
+/// The caret position a byte index of the layout gives, as Parley's `Cursor` places it: in the
+/// deepest text node that owns the glyph on the cursor's side, `Downstream` the glyph after the
+/// index and `Upstream` the glyph before. Where several edges meet at the index, the caret goes
+/// into the node of that glyph, on the side of the glyph a click took. With no glyph on that side,
+/// at a text's start or end, the other side is taken; an empty text gives the root's offset 0.
+pub(crate) fn from_byte(text: &TextContent, index: usize, affinity: Affinity) -> CaretPos {
+    /// The node and offset of the character starting (`after`) or ending at `index`.
+    fn walk(
+        node: &TextNode,
+        here: TextNodeRef,
+        at: &mut usize,
+        index: usize,
+        after: bool,
+    ) -> Option<CaretPos> {
+        for (offset, item) in items(node).into_iter().enumerate() {
+            match item {
+                Item::Char(c) => {
+                    let (start, end) = (*at, *at + c.len_utf8());
+                    *at = end;
+                    if after && start == index {
+                        return Some(CaretPos { node: here, offset });
+                    }
+                    if !after && end == index {
+                        return Some(CaretPos {
+                            node: here,
+                            offset: offset + 1,
+                        });
+                    }
+                }
+                Item::Span(s) => {
+                    if let Some(pos) = walk(&s.text, TextNodeRef::Span(s.id), at, index, after) {
+                        return Some(pos);
+                    }
+                }
+            }
+        }
+        None
+    }
+    let find = |after: bool| walk(&text.root, TextNodeRef::Root, &mut 0, index, after);
+    let downstream = affinity == Affinity::Downstream;
+    find(downstream)
+        .or_else(|| find(!downstream))
+        .unwrap_or(CaretPos {
+            node: TextNodeRef::Root,
+            offset: 0,
+        })
+}
+
+/// The selection between `anchor` and `caret`, lifted to their nearest common text node, as
+/// #selection-one-level of `milestone@plans@rich-text` says: an end inside a span of that node
+/// takes the span whole. The text node, the selected range of its offsets, and the caret's end.
+pub(crate) fn selection(
+    text: &TextContent,
+    anchor: CaretPos,
+    caret: CaretPos,
+) -> (TextNodeRef, Range<usize>, usize) {
+    let (a, f) = (path(text, anchor), path(text, caret));
+    // The deepest node both paths pass through.
+    let depth = a
+        .iter()
+        .zip(&f)
+        .take_while(|(x, y)| x.0 == y.0)
+        .count()
+        .max(1)
+        - 1;
+    let node = a[depth].0;
+    let (a_off, a_deeper) = (a[depth].1, a.len() > depth + 1);
+    let (f_off, f_deeper) = (f[depth].1, f.len() > depth + 1);
+    // At one offset, the end that is no deeper stands before the span the other is inside.
+    let anchor_first = a_off < f_off || (a_off == f_off && !a_deeper);
+    let (anchor_at, caret_at) = if anchor_first {
+        (a_off, f_off + usize::from(f_deeper))
+    } else {
+        (a_off + usize::from(a_deeper), f_off)
+    };
+    (
+        node,
+        anchor_at.min(caret_at)..anchor_at.max(caret_at),
+        caret_at,
+    )
+}
+
+/// The ids of the spans of a text that hold no item, the inner ones before those that hold them.
+pub(crate) fn empty_spans(text: &TextContent) -> Vec<SpanId> {
+    let mut spans = text.root.spans();
+    spans.reverse();
+    spans
+        .into_iter()
+        .filter(|s| s.text.items.is_empty())
+        .map(|s| s.id)
+        .collect()
+}
+
+/// The characters of the items `range` of a text node, a span's included.
+pub(crate) fn range_text(node: &TextNode, range: Range<usize>) -> String {
+    fn push_all(node: &TextNode, out: &mut String) {
+        for item in &node.items {
+            match item {
+                TextItem::Chars(s) => out.push_str(s),
+                TextItem::Span(span) => push_all(&span.text, out),
+            }
+        }
+    }
+    let mut out = String::new();
+    for item in items(node).into_iter().skip(range.start).take(range.len()) {
+        match item {
+            Item::Char(c) => out.push(c),
+            Item::Span(s) => push_all(&s.text, &mut out),
+        }
+    }
+    out
+}
+
+impl Editing {
+    /// The selection, lifted to one text node, or `None` when it is collapsed or empty.
+    pub(crate) fn selected(&self, text: &TextContent) -> Option<(TextNodeRef, Range<usize>)> {
+        let anchor = self.anchor?;
+        let (node, range, _) = selection(text, anchor, self.caret);
+        (!range.is_empty()).then_some((node, range))
+    }
+
+    /// The caret's end of the selection, lifted to the selection's text node; the caret itself
+    /// when the selection is collapsed.
+    pub(crate) fn focus(&self, text: &TextContent) -> CaretPos {
+        match self.anchor {
+            Some(anchor) => {
+                let (node, _, offset) = selection(text, anchor, self.caret);
+                CaretPos { node, offset }
+            }
+            None => self.caret,
+        }
+    }
+}
+
 impl App {
     /// The area whose text is being edited, if any.
     pub fn editing(&self) -> Option<NodeId> {
@@ -54,171 +374,40 @@ impl App {
         )
     }
 
-    /// Enter editing the text of `area` with the caret at the point `p` of the slide view: a click on
-    /// the selected text area, so a first click selects and a second edits. The stay opens an undo
-    /// group, after closing any group still open.
-    pub fn edit_at(&mut self, area: NodeId, p: Pos2, layout: &Layout) {
-        if self.socket_holds() {
-            return;
-        }
-        if !self.is_text_area(area) {
-            return;
-        }
-        let Some(text) = self.area_text(area) else {
-            return;
-        };
-        let (x, y) = layout_point(&text, layout, p);
-        let selection = Selection::from_point(&text.layout, x, y);
-        if self.open_group() {
-            self.edit = Some(Editing {
-                area,
-                selection,
-                preedit: None,
-            });
-        }
+    /// The caret of the text being edited, at the selection's end when it is lifted.
+    pub fn caret(&self) -> Option<CaretPos> {
+        let edit = self.edit.as_ref()?;
+        Some(edit.focus(&self.edited_text()?))
     }
 
-    /// Leave editing, closing the stay's group, so its edits are one undo step; the area stays
-    /// selected. A composition still open is dropped from the text first.
-    pub fn stop_editing(&mut self) {
-        if self.edit.as_ref().is_some_and(|e| e.preedit.is_some()) {
-            self.set_preedit("");
-        }
-        if self.edit.take().is_some() {
-            self.run(Command::End);
-        }
-    }
-
-    /// Place the caret of the text being edited at the point `p` of the slide view.
-    pub fn place_caret(&mut self, p: Pos2, layout: &Layout) {
-        self.at_point(p, layout, |_, l, x, y| Selection::from_point(l, x, y));
-    }
-
-    /// Extend the selection to the point `p` of the slide view, as a drag inside the text does.
-    pub fn extend_to_point(&mut self, p: Pos2, layout: &Layout) {
-        self.at_point(p, layout, |s, l, x, y| s.extend_to_point(l, x, y));
-    }
-
-    /// Extend the selection to the point `p` of the slide view by a Shift+click.
-    pub fn shift_click(&mut self, p: Pos2, layout: &Layout) {
-        self.at_point(p, layout, |s, l, x, y| s.shift_click_extension(l, x, y));
-    }
-
-    /// Move the caret, collapsing the selection, or, with `extend`, move the selection's focus.
-    pub fn move_caret(&mut self, m: CaretMove, extend: bool) {
-        let len = self.edited_text().map_or(0, |t| t.len());
-        self.with_layout(|s, l| match m {
-            CaretMove::Left => s.previous_visual(l, extend),
-            CaretMove::Right => s.next_visual(l, extend),
-            CaretMove::WordLeft => s.previous_visual_word(l, extend),
-            CaretMove::WordRight => s.next_visual_word(l, extend),
-            CaretMove::Up => s.previous_line(l, extend),
-            CaretMove::Down => s.next_line(l, extend),
-            CaretMove::LineStart => s.line_start(l, extend),
-            CaretMove::LineEnd => s.line_end(l, extend),
-            CaretMove::TextStart => {
-                let start = Selection::from_byte_index(l, 0, Affinity::Downstream).focus();
-                if extend {
-                    s.extend(start)
-                } else {
-                    start.into()
-                }
-            }
-            CaretMove::TextEnd => {
-                let end = Selection::from_byte_index(l, len, Affinity::Upstream).focus();
-                if extend { s.extend(end) } else { end.into() }
-            }
-        });
-    }
-
-    /// Select the whole text.
-    pub fn select_all(&mut self) {
-        let len = self.edited_text().map_or(0, |t| t.len());
-        self.with_layout(|_, l| {
-            let start = Selection::from_byte_index(l, 0, Affinity::Downstream).focus();
-            let end = Selection::from_byte_index(l, len, Affinity::Upstream).focus();
-            Selection::new(start, end)
-        });
-    }
-
-    /// Put the caret at a byte offset of the text, as a test does to visit every offset.
-    pub fn set_caret(&mut self, index: usize) {
-        self.with_layout(|_, l| Selection::from_byte_index(l, index, Affinity::Downstream));
-    }
-
-    /// The byte offset of the caret in the text being edited.
-    pub fn caret_index(&self) -> Option<usize> {
-        self.edit.as_ref().map(|e| e.selection.focus().index())
+    /// The byte offset of the caret in the text being edited, in the string the layout holds.
+    pub fn caret_index(&mut self) -> Option<usize> {
+        let caret = self.caret()?;
+        self.area_text(self.editing()?)?.map.byte_index(caret)
     }
 
     /// The selected text, empty when the selection is collapsed.
     pub fn selected_text(&self) -> Option<String> {
         let edit = self.edit.as_ref()?;
         let text = self.edited_text()?;
-        Some(text[edit.selection.text_range()].to_owned())
-    }
-
-    /// Type a string: it replaces the selection, and the caret follows it. Enter types a new line.
-    pub fn type_str(&mut self, s: &str) {
-        let Some(edit) = &self.edit else {
-            return;
-        };
-        let range = edit.selection.text_range();
-        self.replace(range, s, None);
-    }
-
-    /// Backspace: delete the selection, or the character before the caret.
-    pub fn delete_backward(&mut self) {
-        self.delete(false);
-    }
-
-    /// Delete: delete the selection, or the character after the caret.
-    pub fn delete_forward(&mut self) {
-        self.delete(true);
-    }
-
-    /// Cut: the selected text, deleted, for the clipboard.
-    pub fn cut(&mut self) -> Option<String> {
-        let text = self.selected_text().filter(|t| !t.is_empty())?;
-        let range = self.edit.as_ref()?.selection.text_range();
-        self.replace(range, "", None);
-        Some(text)
-    }
-
-    /// The IME's composing text: it replaces the previous one at the caret, or the selection when
-    /// composing starts, so the render draws it where it will stand; an empty one removes it.
-    pub fn set_preedit(&mut self, s: &str) {
-        let Some(edit) = &self.edit else {
-            return;
-        };
-        // An empty preedit with no composition open changes nothing, per
-        // `design@rootpoint-app@empty-preedit`.
-        if s.is_empty() && edit.preedit.is_none() {
-            return;
-        }
-        let range = edit
-            .preedit
-            .clone()
-            .unwrap_or_else(|| edit.selection.text_range());
-        let preedit = (!s.is_empty()).then(|| range.start..range.start + s.len());
-        self.replace(range, s, Some(preedit));
-    }
-
-    /// The IME's final text: it replaces the composing text, which ends.
-    pub fn commit_ime(&mut self, s: &str) {
-        let Some(edit) = &self.edit else {
-            return;
-        };
-        let range = edit
-            .preedit
-            .clone()
-            .unwrap_or_else(|| edit.selection.text_range());
-        self.replace(range, s, Some(None));
+        Some(match edit.selected(&text) {
+            Some((node, range)) => range_text(text_node(&text, node)?, range),
+            None => String::new(),
+        })
     }
 
     /// The byte range of the composing text, if the IME is composing.
-    pub fn preedit_range(&self) -> Option<Range<usize>> {
-        self.edit.as_ref()?.preedit.clone()
+    pub fn preedit_range(&mut self) -> Option<Range<usize>> {
+        let edit = self.edit.clone()?;
+        let r = edit.preedit?;
+        let map = self.area_text(edit.area)?.map;
+        let at = |offset| {
+            map.byte_index(CaretPos {
+                node: edit.caret.node,
+                offset,
+            })
+        };
+        Some(at(r.start)?..at(r.end)?)
     }
 
     /// The caret's rectangle in the slide view, in points, `CARET_WIDTH` wide, placed through the
@@ -227,166 +416,61 @@ impl App {
         let area = self.editing()?;
         let text = self.area_text(area)?;
         let edit = self.edit.as_ref()?;
-        let focus = edit.selection.refresh(&text.layout).focus();
+        let content = self.edited_text()?;
+        let index = text.map.byte_index(edit.focus(&content))?;
+        let cursor = Selection::from_byte_index(&text.layout, index, edit.affinity).focus();
         let width = CARET_WIDTH / layout.points_per_unit();
-        Some(to_view(&text, layout, focus.geometry(&text.layout, width)))
+        Some(to_view(&text, layout, cursor.geometry(&text.layout, width)))
     }
 
     /// The selection's rectangles in the slide view, in points, one per line it covers.
     pub fn selection_rects(&mut self, layout: &Layout) -> Vec<Rect> {
-        self.range_rects(layout, |e| Some(e.selection.text_range()))
+        let Some(range) = (|| {
+            let edit = self.edit.as_ref()?;
+            let (node, r) = edit.selected(&self.edited_text()?)?;
+            let map = self.area_text(edit.area)?.map;
+            let at = |offset| map.byte_index(CaretPos { node, offset });
+            Some(at(r.start)?..at(r.end)?)
+        })() else {
+            return Vec::new();
+        };
+        self.range_rects(layout, range)
     }
 
     /// The composing text's rectangles in the slide view, which the overlay underlines.
     pub fn preedit_rects(&mut self, layout: &Layout) -> Vec<Rect> {
-        self.range_rects(layout, |e| e.preedit.clone())
-    }
-
-    /// Replace `range` of the edited text by `s`, by one `text` command, and put the caret after
-    /// `s`. `preedit` sets the composing range when given, and keeps it otherwise, shifted by the
-    /// change when it lies after the edit.
-    fn replace(&mut self, range: Range<usize>, s: &str, preedit: Option<Option<Range<usize>>>) {
-        let Some(edit) = &self.edit else {
-            return;
-        };
-        let area = edit.area;
-        let Some(mut text) = self.edited_text() else {
-            return;
-        };
-        let range = clamp(range, &text);
-        text.replace_range(range.clone(), s);
-        let caret = range.start + s.len();
-        let kept = edit.preedit.clone();
-        self.run(Command::Text {
-            area,
-            root: Some(vec![TreeItem::Chars(text)]),
-            style: Vec::new(),
-        });
-        let preedit = match preedit {
-            Some(p) => p,
-            None => kept.and_then(|p| {
-                if p.end <= range.start {
-                    Some(p)
-                } else if p.start >= range.end {
-                    // After the edit: moved by the change of length.
-                    let shift = |i: usize| i + s.len() - range.len();
-                    Some(shift(p.start)..shift(p.end))
-                } else {
-                    None
-                }
-            }),
-        };
-        if let Some(edit) = &mut self.edit {
-            edit.preedit = preedit;
-        }
-        self.set_caret(caret);
-    }
-
-    /// Delete the selection, or, with none, the character after the caret or before it. The
-    /// character is found by the caret's logical clusters, as Parley's `PlainEditor` does: a
-    /// visual move at a soft line break only changes the caret's affinity, and would delete
-    /// nothing. Backspace deletes one character of a cluster, or a whole line break or emoji.
-    fn delete(&mut self, forward: bool) {
-        let Some(edit) = self.edit.clone() else {
-            return;
-        };
-        let range = if edit.selection.is_collapsed() {
-            let (Some(text), Some(buffer)) = (self.area_text(edit.area), self.edited_text()) else {
-                return;
-            };
-            let focus = edit.selection.refresh(&text.layout).focus();
-            let [before, after] = focus.logical_clusters(&text.layout);
-            if forward {
-                let Some(c) = after else {
-                    return;
-                };
-                c.text_range()
-            } else {
-                let Some(c) = before else {
-                    return;
-                };
-                let r = c.text_range();
-                if c.is_hard_line_break() || c.is_emoji() {
-                    r
-                } else {
-                    let Some((start, _)) = buffer
-                        .get(..r.end)
-                        .and_then(|t| t.char_indices().next_back())
-                    else {
-                        return;
-                    };
-                    start..r.end
-                }
-            }
-        } else {
-            edit.selection.text_range()
-        };
-        if !range.is_empty() {
-            self.replace(range, "", None);
+        match self.preedit_range() {
+            Some(range) => self.range_rects(layout, range),
+            None => Vec::new(),
         }
     }
 
     /// The text of the area being edited, as the document holds it.
-    fn edited_text(&self) -> Option<String> {
-        match self.node(self.editing()?)? {
+    pub(crate) fn edited_text(&self) -> Option<TextContent> {
+        self.text_content(self.editing()?)
+    }
+
+    /// The text of `area`, if it holds one.
+    pub(crate) fn text_content(&self, area: NodeId) -> Option<TextContent> {
+        match self.node(area)? {
             Node::Area(a) => match &a.content {
-                Content::Text(t) => Some(t.plain_text()),
+                Content::Text(t) => Some(t.clone()),
                 _ => None,
             },
             Node::Split(_) => None,
         }
     }
 
-    /// Set the selection from the area's current layout.
-    fn with_layout(
-        &mut self,
-        f: impl FnOnce(Selection, &parley::Layout<rootpoint_render::TextBrush>) -> Selection,
-    ) {
+    fn range_rects(&mut self, layout: &Layout, r: Range<usize>) -> Vec<Rect> {
         let Some(area) = self.editing() else {
-            return;
+            return Vec::new();
         };
         let Some(text) = self.area_text(area) else {
-            return;
+            return Vec::new();
         };
-        if let Some(edit) = &mut self.edit {
-            let s = edit.selection.refresh(&text.layout);
-            edit.selection = f(s, &text.layout);
+        if r.is_empty() {
+            return Vec::new();
         }
-    }
-
-    fn at_point(
-        &mut self,
-        p: Pos2,
-        layout: &Layout,
-        f: impl FnOnce(Selection, &parley::Layout<rootpoint_render::TextBrush>, f32, f32) -> Selection,
-    ) {
-        let Some(area) = self.editing() else {
-            return;
-        };
-        let Some(text) = self.area_text(area) else {
-            return;
-        };
-        let (x, y) = layout_point(&text, layout, p);
-        if let Some(edit) = &mut self.edit {
-            let s = edit.selection.refresh(&text.layout);
-            edit.selection = f(s, &text.layout, x, y);
-        }
-    }
-
-    fn range_rects(
-        &mut self,
-        layout: &Layout,
-        range: impl FnOnce(&Editing) -> Option<Range<usize>>,
-    ) -> Vec<Rect> {
-        let Some(area) = self.editing() else {
-            return Vec::new();
-        };
-        let Some(text) = self.area_text(area) else {
-            return Vec::new();
-        };
-        let Some(r) = self.edit.as_ref().and_then(range).filter(|r| !r.is_empty()) else {
-            return Vec::new();
-        };
         let l = &text.layout;
         let s = Selection::new(
             Selection::from_byte_index(l, r.start, Affinity::Downstream).focus(),
@@ -399,7 +483,7 @@ impl App {
     }
 
     /// The text of `area` as the render crate lays it out, from the session's current fonts.
-    fn area_text(&mut self, area: NodeId) -> Option<AreaText> {
+    pub(crate) fn area_text(&mut self, area: NodeId) -> Option<AreaText> {
         let slide = self.shown_slide()?;
         self.assets.refresh(&self.session, &mut *self.files);
         let (fonts, _) = self.assets.sets();
@@ -409,7 +493,7 @@ impl App {
 
 /// A point of the slide view, in the coordinates of a text's layout: slide units from the
 /// layout's origin.
-fn layout_point(text: &AreaText, layout: &Layout, p: Pos2) -> (f32, f32) {
+pub(crate) fn layout_point(text: &AreaText, layout: &Layout, p: Pos2) -> (f32, f32) {
     let (u, v) = layout.to_units(p);
     ((u - text.origin.0) as f32, (v - text.origin.1) as f32)
 }
@@ -420,17 +504,4 @@ fn to_view(text: &AreaText, layout: &Layout, b: parley::BoundingBox) -> Rect {
         layout.to_points(text.origin.0 + b.x0, text.origin.1 + b.y0),
         layout.to_points(text.origin.0 + b.x1, text.origin.1 + b.y1),
     )
-}
-
-/// A byte range kept within a text and on its character boundaries.
-fn clamp(range: Range<usize>, text: &str) -> Range<usize> {
-    let fix = |mut i: usize| {
-        i = i.min(text.len());
-        while !text.is_char_boundary(i) {
-            i -= 1;
-        }
-        i
-    };
-    let (start, end) = (fix(range.start), fix(range.end));
-    start.min(end)..end.max(start)
 }

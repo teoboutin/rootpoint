@@ -273,9 +273,9 @@ lists as referencing each, and the slice whose harvest judges or updates it:
 - `issue@rootpoint@more-content-kinds`: bears; its equation kind stays as the owner described in
   round 3; #inline-math-node leaves room for maths in the tree. Its wording is read again at the
   milestone's harvest.
-- `issue@rootpoint-app@editing-actions-outside-actions-rs`: bears on #tree-caret and
-  #span-styling, which rework `path@rootpoint-app@src/editing.rs`; their audits judge whether they
-  close it or leave it as it is.
+- `editing-actions-outside-actions-rs`: bore on #tree-caret and #span-styling, which rework
+  `path@rootpoint-app@src/editing.rs`; closed by #tree-caret, which moved the actions of editing to
+  `path@rootpoint-app@src/actions.rs`, as `design@rootpoint-app@actions-are-commands` says.
 - `issue@rootpoint-app@abandoned-composition-undo-step`: bears on #tree-caret, AC3.
 - `issue@rootpoint@compatibility-after-real-use`: bears on nothing; its trigger is not met, and the
   format changes under `design@rootpoint@no-compat-in-initial-dev`.

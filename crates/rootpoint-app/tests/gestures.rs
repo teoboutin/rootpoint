@@ -567,6 +567,19 @@ fn the_edits_of_one_stay_in_editing_are_one_undo_step() {
     d.key(Key::Backspace, Modifiers::NONE);
     d.key(Key::Delete, Modifiers::NONE);
     assert_eq!(text(&d, n3), format!("{before}X"));
+    // A composition of the input method joins the same stay.
+    let preedit = |t: &str| {
+        Event::Ime(eframe::egui::ImeEvent::Preedit {
+            text: t.to_owned(),
+            active_range_chars: None,
+        })
+    };
+    d.frame(vec![preedit("´")], Modifiers::NONE);
+    d.frame(
+        vec![Event::Ime(eframe::egui::ImeEvent::Commit("é".to_owned()))],
+        Modifiers::NONE,
+    );
+    assert_eq!(text(&d, n3), format!("{before}Xé"));
     // A click on another area leaves editing, and the group closes: one undo reverts every edit.
     let elsewhere = d.app.layout().unwrap().rect(NodeId(5)).unwrap().center();
     d.click(elsewhere);

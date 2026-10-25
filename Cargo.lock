@@ -3280,6 +3280,7 @@ dependencies = [
  "js-sys",
  "notify",
  "parley",
+ "proptest",
  "rfd",
  "rootpoint-model",
  "rootpoint-protocol",
