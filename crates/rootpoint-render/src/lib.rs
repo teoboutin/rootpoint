@@ -67,7 +67,9 @@ pub struct Report {
     /// The text areas whose font, or a font one of its spans sets, no font of the `FontSet` has;
     /// the built-in sans stands in.
     pub font_fallbacks: Vec<NodeId>,
-    /// The text areas holding a character that no font of the `FontSet` has, drawn as a box.
+    /// The text areas holding a character that no font of its font stack has, drawn as a box: the
+    /// text's or its span's font, then the built-in fonts; a font asset outside the stack is not
+    /// searched.
     pub missing_glyphs: Vec<NodeId>,
     /// The text areas naming a style the document's table lacks, with the name; each is drawn with
     /// `TextStyle::default()`.
