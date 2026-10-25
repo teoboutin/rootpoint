@@ -318,7 +318,7 @@ fn the_caret_stands_on_the_drawn_glyph_boundary_at_three_window_sizes() {
         d.app.edit_at(n3, p, &layout);
         assert_eq!(d.app.editing(), Some(n3));
         let glyphs = drawn_glyphs(&d, n3);
-        assert!(glyphs.len() > 100, "the fixture's text");
+        assert!(glyphs.len() > 100, "the sample's text");
         for (index, x) in glyphs {
             d.app.set_caret(index);
             let caret = d.caret();
