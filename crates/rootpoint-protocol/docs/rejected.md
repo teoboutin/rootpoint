@@ -96,13 +96,14 @@ the style alone, keeping the text's spans and their ids, `design@rootpoint-proto
 
 ### An option naming the values a span's style clears, `clear=bold,size` `##clear-values-option`
 
-`live`. Its value is a list, the one option of the grammar holding a comma, which outside a quoted
-string is a word of a text tree, `design@rootpoint-protocol@protocol-transport`; `<key>=inherit`
-clears one value as every other option sets one, `design@rootpoint-protocol@span-value-inherit`.
+`live`. Its value is a list, the one option of the grammar whose value must be quoted for its
+comma, which outside a quoted string is a word of a text tree,
+`design@rootpoint-protocol@protocol-transport`, `clear="bold,size"`; `<key>=inherit` clears one
+value as every other option sets one, `design@rootpoint-protocol@span-value-inherit`.
 
-### Every change of a text sent as its whole tree, by `text` `##whole-text-replacement`
+### A protocol whose one command that changes a text sets it whole, `text` `##whole-text-replacement`
 
 `live`. `text` with a tree gives every span of it a new id, `design@rootpoint-model@stable-ids`, so
-a text changed whole at each key would lose its spans' ids at each key, and a script could not name
-a span after an edit; `design@rootpoint-protocol@text-edit-commands` changes a text by one
-operation per command.
+with no other command a client could change no character of a text and keep its spans' ids, and a
+script could not name a span after an edit; `design@rootpoint-protocol@text-edit-commands` changes
+a text by one operation per command.

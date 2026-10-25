@@ -24,11 +24,12 @@ failing run, the second reply was:
 err ws is open in another process, pid 2039498
 ```
 
-The pid is the one the lock file holds, which `WorkspaceLock::take` wrote. The panic's thread id was
-2039501, close to it, so the pid is most likely the test process's own, though this was not
-recorded. The failing run was the gate `test` of `cargo x gates`, which runs every test binary of
-the workspace, on the branch that added the span commands of rich text; that branch changed no file
-of the workspace lock or of this test. Eight runs of
+The pid is the one the lock file holds, which `WorkspaceLock::take` wrote in the test process: the
+test's first assertion, which passed, finds `std::process::id()` in the first refusal, and no
+process that is refused writes the file, so the second refusal names the test process too. The
+failing run was the gate `test` of `cargo x gates`, which runs every test binary of the workspace,
+on the branch that added the span commands of rich text; that branch changed no file of the
+workspace lock or of this test. Eight runs of
 `cargo test -q -p rootpoint-protocol --test workspace` right after it each passed 5 tests, and the
 next run of `cargo x gates` passed.
 

@@ -510,8 +510,8 @@ no divider highlight, no resize cursor, no grip, no line of a split at the point
 the slide list. While the window holds it, every command of the socket but the queries, `control`
 and `release` replies `err the window has control`, or the refusal of a take-over.
 
-Two exceptions keep looking free. The socket's queries, `tree`, `view`, `store`, `styles`, `assets`
-and `render`, need no authority, since they apply no operation and join no group. The window's
+Two exceptions keep looking free. The socket's queries, `tree`, `view`, `store`, `styles`,
+`span-styles`, `assets` and `render`, need no authority, since they apply no operation and join no group. The window's
 inputs that change only
 the view need none either: a click selects, and never enters editing; Alt with an arrow, a row of
 the outline and the outline of its node under the pointer, the node menu's "Select", whose other

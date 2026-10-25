@@ -31,7 +31,7 @@ and reads one line per reply. The rival, JSON-RPC, `rejected@rootpoint-protocol@
 is easier to parse and harder to type. The grammar and the replies are this crate's interface to
 every program that drives rootpoint.
 
-### Commands name slides, nodes, assets and spans by their stored ids `##protocol-addressing`
+### A command names what the model stores by its stored id, never by a position `##protocol-addressing`
 
 Every argument that names a slide, a node, an asset or a span is its id, `s<n>`, `n<n>`, `a<n>` or
 `t<n>`, as the model stores it and `tree` prints it, never a position. An id names the same slide,
@@ -49,7 +49,8 @@ style is named by its name instead, `design@rootpoint-model@style-key`.
 `insert <n|t> <offset> "<text>"`, `delete <n|t> <a>..<b>`, `wrap <n|t> <a>..<b> <options>`,
 `unwrap t<n>`, `span t<n> <options>` and `split-span t<n> <offset>` each apply one operation of
 the model's text tree, `design@rootpoint-model@edit-operation-core`, and change no span they do not
-name, so every span keeps its id, `design@rootpoint-model@stable-ids`, and a script styles a span
+name but to remove it whole, as `delete` removes a span in its range, so every span left keeps its
+id, `design@rootpoint-model@stable-ids`, and a script styles a span
 again by its id after any edit before it. `wrap` and `split-span` reply the id of the span they
 make. `split-span` is not `split`, which splits a node of a slide. `text <area> <tree> [options]`
 sets a whole tree, every span with a new id, and replies the new ids. A span's options are
@@ -65,19 +66,20 @@ are the crate's interface to every program that edits a styled text, as
 
 `text <area> <options>` changes the style of an area's text by `Op::SetContent` of its current
 tree, so its spans keep their ids, `design@rootpoint-model@stable-ids`, where `text` with a tree
-gives each span a new one; it is refused on an image area, which has no text style to change. The
-window's controls of a text's style send that form. The rival, a verb of its own for the area's
+gives each span a new one; it is refused on an image area, which has no text style to change. The rival, a verb of its own for the area's
 style, `rejected@rootpoint-protocol@area-style-verb`, takes the options `text` already takes under
 a second name.
 
 ### `<key>=inherit` clears a value a span's style sets, one option for each value `##span-value-inherit`
 
-In every list of a span's options, `font=inherit`, `size=inherit`, `bold=inherit`,
-`italic=inherit` and `colour=inherit` each leave a value unset, so the span draws with its
-parent's, `design@rootpoint-model@span-style-overrides`: one option for each value, as every other
-option sets one. The rival, an option naming the values to clear,
-`rejected@rootpoint-protocol@clear-values-option`, holds a list in its value, a comma separating
-its values, which outside a quoted string is a word of a text tree,
+In every list of a span's options, those of `span`, `span-style set`, `wrap`, `span-style add`
+and a span of `text`, `font=inherit`, `size=inherit`, `bold=inherit`, `italic=inherit` and
+`colour=inherit` each leave a value unset, so the span draws with its parent's,
+`design@rootpoint-model@span-style-overrides`; in the last three, which start from no value, it
+changes nothing. It is one option for each value, as every other option sets one, applied in order
+with them. The rival, an option naming the values to clear,
+`rejected@rootpoint-protocol@clear-values-option`, holds a list in its value, which must be quoted,
+since its comma is outside a quoted string a word of a text tree,
 `design@rootpoint-protocol@protocol-transport`.
 
 ### A command refuses what would put a cosmetic breach in the document, so no command creates one `##no-new-breach`

@@ -195,9 +195,9 @@ What exists today, at each site the work touches:
   style alone, `design@rootpoint-protocol@text-style-alone`; the `span-style` commands and the
   query `span-styles` change and list the span style table.
 - **The editor**, before #tree-caret. Every change of a text is one `text` command with the area's
-  whole text as a tree of one run, which drops the spans of a text loaded with them, until #tree-caret sends the small
-  commands; no release is made between the slices. Every change of a text is so sent,
-  `design@rootpoint-app@edit-in-place`; the caret is a Parley `Selection`, placed again by byte
+  whole text as a tree of one run, a style changed from the side panel aside, which drops the
+  spans of a text loaded with them, until #tree-caret sends the small commands; no release is made
+  between the slices. Every change of a text is so sent, `design@rootpoint-app@edit-in-place`; the caret is a Parley `Selection`, placed again by byte
   index after each command; the caret, the selection and the composing range are editor state,
   `design@rootpoint-app@caret-editor-state`.
 
@@ -760,8 +760,8 @@ The editor sends one small command per change, each one operation: `insert`, `de
 rival: a whole-text replacement at each change; defeated by #arg-9.
 
 `text` sets a whole tree, given on one line, `Op::SetText`, which gives its spans new ids; `tree`
-prints a text in the same form. An illustration, not the grammar, which #span-commands fixed in
-`design@rootpoint-protocol@protocol-transport`:
+prints a text in the same form. An illustration, not the grammar, whose shape #span-commands fixed
+in `design@rootpoint-protocol@protocol-transport`, its details in `path@rootpoint-protocol@README.md`:
 
 ```text
 text n3 ["Let x be a ", {bold "prime"}, " number"]
@@ -839,6 +839,7 @@ snapshot restores every span with its id and its style, and a text is small.
 | `span t<n> <style>` | `Op::SetSpanStyle` |
 | `split-span t<n> <offset>` | `Op::SplitSpan` |
 | `text <n> <tree> [options]` | `Op::SetText`, and the area style's options as today |
+| `text <n> <options>` | `Op::SetContent` of the area's current tree, `design@rootpoint-protocol@text-style-alone` |
 | `span-style add`, `set`, `rename`, `remove` | `Op::AddSpanStyle`, `Op::SetSpanStyleValues`, `Op::RenameSpanStyle`, `Op::RemoveSpanStyle` |
 
 `<n or t>` names the root of an area's text by the area's id, or a span by its id. `<style>` is
@@ -1031,8 +1032,14 @@ reopens #text-edit-commands.
   optional, over its parent's values", the decisions unchanged. It narrows titles the owner
   approved, so it blocked the merge of #text-tree.
 - **Q3** and **Q4**, ruled: accepted by the owner, "q3 and q4 accepted". Open at the design audit
-  of #span-commands, on how an area's style changes with its spans kept and how a span's value is
-  cleared, harvested as `design@rootpoint-protocol@text-style-alone` and
+  of #span-commands. Q3's text, on #text-node-ids: the tree of `text` is optional; `text n3 bold`
+  changes the area's style and keeps its tree and its ids, by `Op::SetContent` of its current
+  tree, and is refused on an image area, which has no text style to change; the side panel sends
+  that form; the rival, a verb of its own for the area's style. Q4's text, on
+  #span-style-overrides: `<key>=inherit`, as `bold=inherit`, for each of the five values, in every
+  list of a span's options, `span`, `span-style set`, `wrap`, `span-style add` and a span of
+  `text`, the last three starting from no value, where it changes nothing; the rival, an option
+  naming the values to clear, `clear=bold,size`. Harvested as `design@rootpoint-protocol@text-style-alone` and
   `design@rootpoint-protocol@span-value-inherit`. They blocked the merge of #span-commands.
 
 ## Harvest

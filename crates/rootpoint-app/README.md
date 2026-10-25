@@ -21,7 +21,7 @@ included, and a banner offers "Load the file", which makes it the presentation, 
 takes back, or "Keep mine", which writes the window's. Closing a window whose changes no file
 holds, in memory or in a workspace whose writes stopped or failed, asks first. The window reads an image or a font again when its file changes on disk. The window holds the
 authority to edit at start; `control` gives it to the socket, `release` gives it back, and the
-queries `tree`, `view`, `store`, `styles`, `assets` and `render` need none. While the socket holds control, a banner
+queries `tree`, `view`, `store`, `styles`, `span-styles`, `assets` and `render` need none. While the socket holds control, a banner
 over the toolbar says so beside a button "Take control", which takes it back; the window shows each
 change as it is made, and of the actions below it keeps only those that change the view or the
 window's own state: selecting by a click, Alt and the arrows, the outline or the node menu's
@@ -36,7 +36,8 @@ in memory as a pack ("Save as pack…") or as a workspace in an empty directory 
 sample in memory, previews, presents, and undoes (Ctrl+Z) and redoes (Ctrl+Shift+Z or Ctrl+Y). The
 window shows the shown slide, scaled uniformly to the largest size that fits and
 letterboxed, and, under it, what the slide's render could not draw as the document asks: missing
-images, fonts not found, characters no font has, styles the document lacks, and text not drawn.
+images, fonts not found, characters no font has, styles the document lacks, span styles the
+document lacks, and text not drawn.
 
 - A click on an area selects it. The side panel's outline shows the slide's whole tree, one row per
   node, indented by its depth, with the selection's row highlighted; a click on a row selects its

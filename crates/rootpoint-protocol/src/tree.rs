@@ -35,6 +35,8 @@ fn node_tree(node: &Node) -> String {
                     StyleChoice::Named(name) => format!("style={}", quote_always(name)),
                     StyleChoice::Custom(_) => "custom".to_owned(),
                 };
+                // The tree's items are separated by commas, which never meet the ` | ` that
+                // separates a split's children, so a slide's line reads as one.
                 format!("{} text {} {style}", a.id, tree_text(&tree_items(&t.root)))
             }
             Content::Image(i) => {

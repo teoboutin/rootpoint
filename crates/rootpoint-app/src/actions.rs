@@ -426,7 +426,8 @@ impl App {
         self.send_text_option(StyleOption::Custom);
     }
 
-    /// Change the selected text's style by one option, its tree and its spans' ids kept.
+    /// Change the selected text's style by one option, its tree and its spans' ids kept, by `text`
+    /// with no tree, `design@rootpoint-protocol@text-style-alone`.
     fn send_text_option(&mut self, option: StyleOption) {
         if self.socket_holds() {
             return;
