@@ -76,23 +76,42 @@ A `FontSet` holds the built-in fonts and the font files of the document's asset 
 else. Two guards keep system fonts out: parley's feature `system` is off, the default that turns on
 system font discovery, as parley 0.12's `Cargo.toml` reads; and the collection is created without
 system fonts, which fontique's collection honours whatever the feature. A unit test pins a new set
-to the built-in families alone: the text's, `design@rootpoint-render@builtin-noto-sans`, and the
+to the built-in families alone: the text's, `design@rootpoint-render@builtin-open-sans`, and the
 math font's, `design@rootpoint-render@builtin-libertinus-math`. A text whose font no font of the set
-has falls back to the built-in sans, and the render reports it.
+has falls back to the built-in sans, and the render reports it; a character neither has is drawn
+from the math font, `design@rootpoint-render@text-falls-back-to-math-font`.
 
 The rival, system fonts with a fallback, `rejected@rootpoint-render@system-fonts`, lays a slide
 out differently on another computer, whose fonts differ, and in the browser, which has none, so it
 fails `goal@rootpoint-render@same-slide-everywhere`. Whether a needed glyph is missing from every
 available font is watched by `tripwire@rootpoint-render@glyph-missing-everywhere`.
 
-### The built-in sans is Noto Sans, in its four static styles `##builtin-noto-sans`
+### The built-in sans is Open Sans, in the four static styles of its `noto-set` build `##builtin-open-sans`
 
-`FontRef::Builtin("sans")` names Noto Sans, regular, bold, italic and bold italic, embedded in the
-binary under the SIL Open Font License 1.1, whose text sits beside the files. Noto's glyph coverage
-serves the concern `tripwire@rootpoint-render@glyph-missing-everywhere` watches, and changing the
-built-in font changes every saved slide that names it. The four files weigh 2.1 MB, which every
-build carries. The family is the session's choice at the design audit of the renderer, among the
-fonts under the Open Font License on the owner's machine.
+`FontRef::Builtin("sans")` names Open Sans, regular, bold, italic and bold italic, of the `noto-set`
+build of googlefonts/opensans, in `path@rootpoint-render@fonts/open-sans/` under the SIL Open Font
+License 1.1, whose text sits beside the files. That build covers every script Noto Sans covers, and
+Hebrew and thirteen mathematical operators besides, as measured in
+`path@rootpoint@docs/grounding/math-typesetting.md`, section 4, where the plain build covers 21 of
+the 208 characters of Latin Extended-B; coverage is the concern
+`tripwire@rootpoint-render@glyph-missing-everywhere` watches. The four files weigh 2,159,352 bytes, which every build carries. Changing the built-in
+font changes every saved slide that names it. The rival, two built-in families, is
+`rejected@rootpoint-render@two-builtin-text-families`.
+
+On the owner's word: the owner found Noto Sans and Open Sans the easiest to read beside Libertinus
+Math, with a slight preference for Open Sans, and accepted it as the one built-in family.
+
+### A character the text's fonts lack is drawn from the math font `##text-falls-back-to-math-font`
+
+The font stack of every text ends with Libertinus Math, after the text's font and the built-in
+sans, so a character neither has, as an arrow, is drawn from the math font, character by
+character, and the report's `missing_glyphs` names only what no built-in font has. Open Sans and
+Noto Sans have no arrow among the 112 of their block, where Libertinus Math has all of them, as
+measured in `path@rootpoint@docs/grounding/math-typesetting.md`, section 4, so an author's `→`
+would otherwise be a box. The test
+`an_arrow_typed_in_a_text_is_drawn_from_the_math_font` of `path@rootpoint-render@src/text.rs`
+checks it. The fallback adds no weight to a build, since the math font is built in for formulas,
+`design@rootpoint-render@builtin-libertinus-math`.
 
 ### The built-in math font is Libertinus Math `##builtin-libertinus-math`
 
@@ -120,7 +139,7 @@ kerning.
 
 On the owner's word: the owner chose Libertinus Math from rendered samples of Noto Sans Math, Latin
 Modern Math, New Computer Modern Math, STIX Two Math and Fira Math, and found its missing set not
-much of a problem. The nearest rival, Noto Sans Math, matches the built-in Noto Sans, but scales
+much of a problem. The nearest rival, Noto Sans Math, matches Noto Sans, but scales
 its scripts to 60 and 50 per cent, has no math kerning and one weight, as measured in
 `path@rootpoint@docs/grounding/math-typesetting.md`, sections 2 and 4, beside the other fonts.
 

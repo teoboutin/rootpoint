@@ -222,8 +222,8 @@ The slices are built in the order of "Implementation sequence".
   `path@rootpoint-model@tests/data/fixture-edited-by-agent.ron`.
 - **Licences of what is built in.** A font or a data file built into a binary whose licence has
   conditions of its own keeps its licence text beside it, as
-  `path@rootpoint-render@fonts/open-sans/OFL.txt` sits beside Open Sans, by `design@rootpoint@permissive-licence`: the fonts' OFL, and the W3C
-  notice of the table of commands.
+  `path@rootpoint-render@fonts/open-sans/OFL.txt` sits beside Open Sans, by
+  `design@rootpoint@permissive-licence`: the fonts' OFL, and the W3C notice of the table of commands.
 
 ## Names
 
@@ -263,7 +263,7 @@ What exists today, at each site the work touches:
   `UNWRAP_VARIANT_NEWTYPES` and `IMPLICIT_SOME` and the default escaping of strings.
 - **The renderer.** `layout_text` lays a text's string out with Parley's `ranged_builder`, each
   span's values over its byte range, with a font stack of the text's family then `BUILTIN_SANS`,
-  "Noto Sans", four files embedded by `BUILTIN_FONTS`; `render_slide` draws a text area and an image
+  "Noto Sans" before #builtin-open-sans, four files embedded by `BUILTIN_FONTS`; `render_slide` draws a text area and an image
   area, and the report names `missing_glyphs`; no `InlineBox` is used; ttf-parser is in no crate's
   tree for the browser's target, `cargo tree -i ttf-parser --target wasm32-unknown-unknown` printing
   nothing.
@@ -344,8 +344,8 @@ the heads it changes, and reads each text against the change:
 - `design@rootpoint@wasm-from-the-start`: the crates the gate builds gain the math crate,
   #math-layout. Referenced at `path@rootpoint-model@CLAUDE.md` and `path@rootpoint-render@CLAUDE.md`,
   read at that slice.
-- `design@rootpoint-render@builtin-noto-sans`: rewritten for Open Sans, #builtin-open-sans.
-  Referenced by nothing.
+- `builtin-noto-sans`, now `design@rootpoint-render@builtin-open-sans`: rewritten for Open Sans,
+  #builtin-open-sans. Referenced by `design@rootpoint-render@font-sources`.
 - `design@rootpoint-render@font-sources`: the built-in fonts gain the math font, #math-layout, and
   the text's fallback to it, #builtin-open-sans. Referenced at `register@rootpoint-model@design`
   (`design@rootpoint-model@cosmetic-fallbacks`) and by
@@ -1073,7 +1073,8 @@ both text and math".
 ### The text default is a recorded decision `##arg-65`
 
 Round 5, the session. Bears on #builtin-text-family. "Making Libertinus the text default too would
-change a recorded decision, `design@rootpoint-render@builtin-noto-sans`, so I gather the facts first".
+change a recorded decision, `builtin-noto-sans`, so I gather the facts first"; the head is now
+`design@rootpoint-render@builtin-open-sans`.
 
 ### The text font was chosen in a rush `##arg-66`
 
@@ -1678,7 +1679,7 @@ the fallback member is dropped and the owner told.
    the math crate, Libertinus Math, the table of commands, the layout and its drawing. Fails alone
    on: the subset's round trip, the MATH values read against the survey's, AC2 and AC4; AC1 is the
    owner's judgement.
-2. [Open Sans as the built-in text family](builtin-open-sans.md), #builtin-open-sans. Fails alone on:
+2. Open Sans as the built-in text family, #builtin-open-sans, landed. Fails alone on:
    the goldens in Open Sans, and AC7.
 3. [The equation, a kind of content](equation-kind.md), #equation-kind: the model, the file at
    version 6, the renderer, `equation`, the window's entries and options. Fails alone on: the

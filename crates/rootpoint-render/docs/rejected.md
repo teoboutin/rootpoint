@@ -31,3 +31,10 @@ sections 2 and 4, covers every command of unicode-math's 2448, and so the 44 of 
 Libertinus Math lacks, for 838,652 bytes in every build, the browser build included: about 0.8 MB
 for 44 rare symbols, whose absence the owner judged not much of a problem, by
 `design@rootpoint-render@builtin-libertinus-math`.
+
+### Two built-in text families, a sans and a serif `##two-builtin-text-families`
+
+`live`. A second family, as Libertinus Serif beside the sans, adds about 2 MB to every build, the
+four static styles of either family weighing 2.1 MB to 2.2 MB as measured in
+`path@rootpoint@docs/grounding/math-typesetting.md`, section 4, when the owner named one preferred
+font, by `design@rootpoint-render@builtin-open-sans`.
