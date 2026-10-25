@@ -5,8 +5,9 @@ kind: defect
 
 ## Summary
 
-A stay in editing whose only edits are a composition later abandoned pushes an undo step whose net
-effect is none, so the next Ctrl+Z appears to do nothing.
+A stay in editing whose only edits are a composition later abandoned, or a span opened by a style
+action and left empty, pushes an undo step whose net effect is none, so the next Ctrl+Z appears to
+do nothing.
 
 ## Details
 
@@ -25,6 +26,13 @@ the step undone was the abandoned composition. Assumption, not run: a second und
 `text n5 "Z"`. Found by the self-consistency review of the text editing slice, with a probe test
 that is not committed.
 
+A style action with no selection reaches the same defect by another path. Ctrl+B, Ctrl+I or a
+control of the Selection tab, `App::style_action`, sends `wrap` of the empty range at the caret,
+and `App::stop_editing` sends `unwrap` of the span, still empty, inside the same group, so the stay
+pushes a step of two inverses that cancel out. Reproduction, a probe test that is not committed:
+run `text n5 "Z"`; select n3 and edit it, `App::edit_at`; call `App::bold`, then
+`App::stop_editing`; run `undo`. The undo replies `Ok("")`, and n5 is still `"Z"`.
+
 Not established: whether a stay that types a character and deletes it should leave a step. Text
 editors commonly keep one, and this entry does not claim it is a defect.
 
@@ -41,6 +49,7 @@ that changed nothing; and, in a workspace, the step costs one autosave write tha
 ### What would close it
 
 A stay whose group leaves the text as it found it pushes no step: either `Session::end_group`
-drops a group whose net effect is none, or the app skips the composition's two commands when it is
-abandoned with nothing committed. A test in `path@rootpoint-app@tests/editing.rs` runs the
-reproduction above and asserts that the first Ctrl+Z undoes `text n5 "Z"`.
+drops a group whose net effect is none, or the app skips the commands of a composition abandoned
+with nothing committed and of a span opened and left empty. A test in
+`path@rootpoint-app@tests/editing.rs` runs each reproduction above and asserts that the first
+Ctrl+Z undoes `text n5 "Z"`.
