@@ -408,12 +408,12 @@ A selection's anchor and caret are lifted to their nearest common text node: an 
 that node takes the span whole, so a selection begun in a span and extended past its end rises to
 the span's parent. Shift with an arrow at a span's edge passes the span whole. The anchor is kept
 where it was set and lifted when the selection is read, as LyX's `CursorData::normalAnchor` lifts
-its anchor, in the survey of LyX, so a selection dragged back inside the span selects in it again.
-A cut and typing over a selection are then each one `delete` over one node's range, never a cut
+its anchor, in the survey of LyX, so a selection dragged back inside the span selects in it again. A
+cut and typing over a selection are then each one `delete` over one node's range, never a cut
 through a span, `design@rootpoint-protocol@text-edit-commands`. The rival, a free selection across
-nodes, makes each of them a cut of several nodes at once. On the owner's word: the owner counted the rule, in the owner's opinion, a feature
-more than a cost, found LyX's selection model convenient, and judged that cutting a span in half
-is practically never needed.
+nodes, makes each of them a cut of several nodes at once. On the owner's word: the owner counted the
+rule, in the owner's opinion, a feature more than a cost, found LyX's selection model convenient,
+and judged that cutting a span in half is practically never needed.
 
 ### The editor unwraps an empty span when the caret leaves it, and every empty span when the stay ends `##empty-span-unwrapped`
 
