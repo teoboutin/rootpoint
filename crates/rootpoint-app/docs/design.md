@@ -412,13 +412,19 @@ parent and the caret where it was drawn. At the root's start or end the keys do 
 
 So every edit of the keys stays in the caret's text node, where typing goes,
 `design@rootpoint-app@boundary-caret-positions`, and a span's style is removed from the keyboard,
-with no style action. LyX acts the same, read in its source by the design audit of the slice that
-built the tree's caret: `site.bind` binds both keys with `confirm`, `Text::dispatch` selects a
-non-empty text inset before deleting it, `InsetText::confirmDeletion` being `!text().empty()`, and
-`Text::backspace` at an inset's start calls `dissolveInset`. The rival, deleting the character drawn
-before or after the caret in whatever text node holds it, never a span whole, edits a node the
-caret is not in, which the author does not see, and leaves an emptied span behind until the stay
-ends.
+with no style action. The first press asks nothing: it selects what the second deletes, as Shift
+with an arrow selects it, and the overlay draws the selection, so the author sees the whole span
+before deleting it; any other key then acts on that selection. It is no confirmation of
+`design@rootpoint-app@no-discard-confirmation`, whose rival is a question the author must answer
+before an action. LyX acts the same, read in its source, the Codeberg mirror `LyX-org/lyx` at
+commit `64141cf0e7a073e1226ec168d317618537ba0fab`: `site.bind` binds both keys with `confirm`;
+`Text::dispatch` of `path@elsewhere@src/Text.cpp` selects a non-empty text inset before deleting
+it, `InsetText::confirmDeletion` being `!text().empty()`; and `Text::backspace` at an inset's start
+calls `dissolveInset`. The rival, deleting the character drawn before or after the caret in
+whatever text node holds it, never a span whole, edits a node the caret is not in, which the
+author does not see, and leaves an emptied span behind until the stay ends. On the owner's word:
+the two shapes met every binding constraint, and the owner chose LyX's, finding it very
+convenient.
 
 ### A selection is a range of one text node, a span inside it taken whole `##selection-one-level`
 
