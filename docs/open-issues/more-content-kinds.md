@@ -17,10 +17,10 @@ drawing in the render crate and its editor in the app. For equations, the survey
 prototype said, unchecked, that Rust has no small, mature TeX-math renderer; the owner asked how
 hard a minimal one would be, and left the question for later.
 
-The owner intends maths in two forms: inline maths inside a text, and an equation kind of its own
-that holds one full equation and is numbered and referenceable, which inline maths is not; the
-owner gives this split of uses as an intuition, expected to be simpler for authors and for the
-implementation. The text tree of `milestone@plans@rich-text` admits a maths node kind and builds
+The owner is considering maths in two forms: inline maths inside a text, and an equation kind of
+its own that holds one full equation and is numbered and referenceable, which inline maths is not;
+the owner gives this split of uses as an intuition only, expected to be simpler for authors and for
+the implementation. The text tree of `milestone@plans@rich-text` admits a maths node kind and builds
 none; a reference to an equation, written inside a text, is another node kind it admits.
 
 ### Why it matters

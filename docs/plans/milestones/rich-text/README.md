@@ -177,10 +177,11 @@ before the next begins, D2.
 
 What exists today, at each site the work touches:
 
-- **The model.** A text is one string and one `StyleChoice`; `Op::SetContent` replaces an area's
+- - **The model.** A text is one string and one `StyleChoice`; `Op::SetContent` replaces an area's
   whole content, and `Op::AddStyle`, `Op::SetStyle`, `Op::RenameStyle`, `Op::RemoveStyle` and its
-  inverse `Op::RestoreStyle` act on the one style table, `path@rootpoint-model@src/ops.rs`. Ids come from `Document::next_id`, one
-  counter, for slides, nodes and assets, `design@rootpoint-model@stable-ids`.
+  inverse `Op::RestoreStyle` act on the one style table, `path@rootpoint-model@src/ops.rs`. Ids come
+  from `Document::next_id`, one counter, for slides, nodes and assets,
+  `design@rootpoint-model@stable-ids`.
 - **The file.** RON, `FORMAT_VERSION` 4; a text is written `Text(text: "…", style: …)`.
 - **The renderer.** `layout_text` lays one string out with one style through `ranged_builder`, and
   the colour is applied per area at drawing; no `InlineBox` is used.
@@ -213,6 +214,11 @@ What exists today, at each site the work touches:
 - `design@rootpoint-render@slide-renderer` and `rejected@rootpoint-render@toolkit-painter`: the
   project's renderer draws every text, with Parley; no toolkit draws slide text.
 - `rejected@rootpoint-app@plain-editor`: no Parley editor that owns its own layout.
+- `rejected@rootpoint-app@caret-command`: no command places or reads the caret or the selection;
+  `insert`, `delete` and `wrap` take an offset or a range read at the moment of the command, and
+  place no caret, so the rejected design does not come back.
+- `rejected@rootpoint-model@gui-mutation`: the editor changes a text tree only by commands, each an
+  operation, #text-edit-commands, so the rejected design does not come back.
 - `design@rootpoint-model@edit-operation-core`, `design@rootpoint-model@validated-documents`:
   every change is an `Op` with its inverse, and a structural breach is refused.
 - `rejected@rootpoint-protocol@json-rpc-commands`: no JSON payload.
@@ -352,7 +358,7 @@ flat runs of styles over one string, as LyX stores bold, and C, both at once, as
 Approved in round 2: "text-node-tree: agreed on A." C was ruled out on #arg-1; B lost on #arg-2 and
 #arg-3. Its shape is in "Decided design"; its harvest is the model's design home, at #text-tree.
 
-### A custom span that sets nothing is refused, the editor unwraps an empty span, and equal siblings stay apart `##text-tree-normal-form`
+### On D6, awaiting the owner: a custom span that sets nothing is refused, the editor unwraps an empty span, and equal siblings stay apart `##text-tree-normal-form`
 
 Proposed by the session in round 1, on #arg-5. Approved in round 2: "text-tree-normal-form:
 agreed". The reviews of this document found that dissolving a child "whose style changes nothing"
@@ -669,10 +675,12 @@ Defeated by #arg-2 and #arg-3.
 As built on D6: the model dissolves no span by itself. An operation that would leave a custom span
 setting no field is refused, and its caller unwraps the span instead; a named span is never
 dissolved, whatever its values, and a span that sets a value equal to its parent's is kept, so that
-a bold word inside a bold span stays bold when the outer span changes. The model accepts an empty
-span, in an operation and in a file; the editor sends `unwrap` for the empty span the caret was in
-when the caret leaves it, and for each empty span of the text when the stay ends. Adjacent spans with
-equal styles stay apart. Nearest rival: merging equal siblings; defeated by #arg-5.
+a bold word inside a bold span stays bold when the outer span changes. A file that holds a custom
+span setting no field loads, the span drawn with its parent's values, and an operation that leaves
+it as it is is not refused. The model accepts an empty span, in an operation and in a file; the
+editor sends `unwrap` for the empty span the caret was in when the caret leaves it, and for each
+empty span of the text when the stay ends. Adjacent spans with equal styles stay apart. Nearest
+rival: merging equal siblings; defeated by #arg-5.
 
 ### #span-style-overrides
 
@@ -897,7 +905,7 @@ T1 to T4 are written at the harvest of the slice that records the decision each 
 #text-tree, guarding the rewritten `design@rootpoint-model@stable-ids`; T2 at #span-commands,
 guarding the protocol's head of #text-edit-commands and the rewritten
 `design@rootpoint-protocol@protocol-transport`, its tree on one line; T1 at #span-styling,
-guarding the rewritten `design@rootpoint-app@editor-overlay`, where the frames are recorded; T4 at
+guarding `design@rootpoint-app@editor-overlay`, with the frames recorded in it; T4 at
 #span-styling, guarding the model's head of #named-span-styles, written at #text-tree.
 
 ## Acceptance criteria

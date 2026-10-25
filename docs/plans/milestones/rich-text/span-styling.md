@@ -58,8 +58,8 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
 
 ## Premises that expire
 
-- The frames' form is the one the owner will see first; T1 watches it, and the owner said they will
-  iterate on it.
+- The frames' form is the one the owner will see first; T1 watches it, and the owner said they would
+  probably iterate on it once they see it live.
 
 ## Decided design
 
@@ -83,6 +83,6 @@ AC2 is judged here, and the landing commits report on it.
 - Update `path@rootpoint-app@README.md` for the keys.
 - The losing alternatives of these threads, reserved space for the frames among them, which T1's
   response names, judged under `skill@knowledge-architect-decision-recording@losing-alternatives`.
-- Write T1, guarding `design@rootpoint-app@editor-overlay` as rewritten for the frames, and T4,
+- Write T1, guarding `design@rootpoint-app@editor-overlay`, with the frames recorded in it, and T4,
   guarding the model's head of #named-span-styles.
 - The milestone document's own row: its "Harvest" section.
