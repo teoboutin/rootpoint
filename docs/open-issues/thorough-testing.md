@@ -5,8 +5,8 @@ kind: todo
 
 ## Summary
 
-Property tests exist in rootpoint-model, and one in rootpoint-protocol drives the commands at
-random. Nothing is fuzzed, and the window's actions are tested only with fixed inputs written by
+Property tests exist in rootpoint-model, one in rootpoint-protocol drives the commands at random,
+and one in rootpoint-app walks the caret. Nothing is fuzzed, and the window's actions are tested only with fixed inputs written by
 hand. A systematic approach to testing, chosen for the whole project, is not set up.
 
 ## Details
@@ -26,9 +26,12 @@ What exists, read in the tree:
   on a headless `Session`: after each command the document is valid, holds no cosmetic breach, a
   missing style among them, and saves to a text that loads back equal. It does not check that an
   undo restores the document as it was before;
+- `path@rootpoint-app@tests/editing.rs` holds a proptest of the caret over random text trees, each
+  position visited once each way and drawn on its glyph;
 - every other test of the project is written by hand, with fixed inputs. A search of every
   `Cargo.toml` and `.rs` file for `proptest`, `quickcheck`, `arbitrary` and `libfuzzer` finds only
-  these four test files, and the dev-dependencies of rootpoint-model and rootpoint-protocol.
+  these five test files, and the dev-dependencies of rootpoint-app, rootpoint-model and
+  rootpoint-protocol.
 
 Approaches to weigh, as open leads, none chosen:
 
