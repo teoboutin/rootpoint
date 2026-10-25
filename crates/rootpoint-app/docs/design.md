@@ -892,7 +892,8 @@ which holds its edits in memory alone, `design@rootpoint-app@browser-pack-save`,
 question when an edit is in no download: a key the editor uses would raise that question, or leave. eframe 0.37.0 prevents
 the default of some keys itself, in `should_prevent_default_for_key` of
 `path@elsewhere@src/web/events.rs`: every arrow key, so Alt with an arrow,
-`design@rootpoint-app@selection-keys`, never goes back in the history, and Ctrl with O or S. It
+`design@rootpoint-app@selection-keys`, never goes back in the history, and Ctrl with Comma, O, P
+or S. It
 never prevents F5's, which starts presenter mode, and its listener on the canvas stops the
 propagation of every key, `WebOptions::should_stop_propagation` being true by default. So a
 listener of the window in the capture phase prevents F5's default before the canvas has the key,
