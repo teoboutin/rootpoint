@@ -156,7 +156,7 @@ answered by the owner's words of round 7, the missing set "not much of a problem
 | #equation-fit | approved | one layout scaled by k; both modes |
 
 The table's "todo issue for read-fonts ≥ 0.45" was opened as a `deferred` issue,
-`issue@rootpoint-render@read-fonts-math-table`, since an event, parley's move, gates its work. The
+`issue@rootpoint-math@read-fonts-math-table`, since an event, parley's move, gates its work. The
 table's `TextItem::Ref(n<id>)` writes a reference as commands print it; the file writes it
 `Ref(7)`, since an id is a plain number there, `design@rootpoint-model@save-format`.
 
@@ -244,7 +244,8 @@ The slices are built in the order of "Implementation sequence".
 - **The survey**: `path@rootpoint@docs/grounding/math-typesetting.md`.
 - **The missing set**: the 44 math commands of KaTeX, each mapping to one character, whose character
   Libertinus Math 7.051 has no glyph for, listed in the survey, section 4.
-- **The reference formulas**: the formulas of #math-layout's "Fixtures", which AC1 and AC2 lay out.
+- **The reference formulas**: the five formulas `REFERENCE` of `path@rootpoint-math@tests/layout.rs`,
+  which AC1 and AC2 lay out.
 - **The slices**: #math-layout, #builtin-open-sans, #equation-kind, #inline-math and #math-editing,
   each named by its spec's file name.
 
@@ -1195,7 +1196,7 @@ Existing: `Content`, `TextItem`, `Op`, `Breach`, `Command`, `TreeItem`, `Word`, 
 ### #math-storage-form
 
 The model holds `Formula`, a tree: a formula is rows, separated by `\\`; a row is atoms, aligned at
-`&`; an atom is one of the kinds of #math-layout's "Builds". The file and every command hold the
+`&`; an atom is one of the kinds of `Atom` in `path@rootpoint-math@src/lib.rs`. The file and every command hold the
 formula as LaTeX, written by `to_latex` and read by `parse`, over the closed subset of the mapping
 table "A LaTeX construct, to the atom it reads as". Text that does not parse makes the file refused,
 as a broken RON file is, and a command refused: an unbalanced brace, a second superscript or a second
@@ -1533,7 +1534,7 @@ Shift+N, a number per row, which #equation-rows leaves out; and Alt+M M, D, L an
 - **A fork of KenyC/ReX or latex-rust**, boxes with no node identity; **mathtex**, unsafe code from
   c2rust and a TeX format file; **typst's math layout**, private and a whole compilation; **RaTeX**,
   KaTeX's fonts and no MATH table: lost to #math-layout-engine, #arg-57.
-- **read-fonts 0.45 for the MATH table**: lost to ttf-parser, #arg-59; `issue@rootpoint-render@read-fonts-math-table`.
+- **read-fonts 0.45 for the MATH table**: lost to ttf-parser, #arg-59; `issue@rootpoint-math@read-fonts-math-table`.
 - **Noto Sans Math, Latin Modern Math, New Computer Modern Math, STIX Two Math, Fira Math**: the
   owner chose Libertinus Math from the samples, #math-font.
 - **STIX Two Math as a fallback font**: lost on #arg-69, weighed by the owner in #arg-73.
@@ -1606,8 +1607,7 @@ owner's word of round 8, "you can keep all tripwires and AC.", rules on every la
 
 ### The project's layout of the reference formulas is acceptable to the owner beside the browser's `##ac-layout-looks-right`
 
-AC1. Guards #math-layout-engine. Judged at #math-layout. Observable: the reference formulas, written
-in #math-layout's "Fixtures", drawn by the renderer in Libertinus Math into PNG files, and set by
+AC1. Guards #math-layout-engine. Judged at #math-layout. Observable: the reference formulas, drawn by the renderer in Libertinus Math into PNG files, and set by
 the owner beside the browser's rendering of the same formulas in the same font on the font sample
 page the session published for the discussion,
 https://claude.ai/artifact/AWzepf7P1m4S7T27EiRrMd, are judged acceptable by the owner before the
@@ -1669,7 +1669,7 @@ the fallback member is dropped and the owner told.
 
 ## Implementation sequence
 
-1. [The formula, its LaTeX form, and its layout from a MATH table](math-layout.md), #math-layout:
+1. The formula, its LaTeX form, and its layout from a MATH table, #math-layout, landed:
    the math crate, Libertinus Math, the table of commands, the layout and its drawing. Fails alone
    on: the subset's round trip, the MATH values read against the survey's, AC2 and AC4; AC1 is the
    owner's judgement.
@@ -1764,7 +1764,7 @@ purpose to the owner. A goal would be drafted under that skill and ruled by the 
 
 Ruled by the owner on the default, round 9: "agreed on the other defaults". No goal is written.
 
-### D6: the names of the table of commands
+### D6, ruled: the names of the table of commands
 
 Bears on #latex-command-set. The owner, round 3: "latex-command-set agreed on shape", the shape
 being a table "generated from W3C `unicode.xml`". A finding of #math-layout's audit: the column the
@@ -1788,7 +1788,10 @@ an upright letter, as `\mupalpha`, are left out, since the layout sets a letter 
 does, and `\mathrm` sets one upright. It widens the table's source beyond `unicode.xml` by these
 lists, which is the scope change.
 
-### D7: the operator names of LaTeX
+Ruled by the owner on the default, in the session that built #math-layout, by selecting
+"D6 command names" among the defaults put to the owner.
+
+### D7, ruled: the operator names of LaTeX
 
 Bears on #math-storage-form and #latex-command-set. A finding of #math-layout's audit: the reference
 formulas of #math-layout's "Fixtures" write `\cos` and `\sin`, which the closed subset read as
@@ -1799,7 +1802,10 @@ upright, of class op, with limits for the ten that LaTeX sets without `\nolimits
 reads it, a prime in the superscript of the atom before, `f'` being `f^{\prime}`. It adds a kind of
 atom and a construct to the subset the owner approved, which is the scope change.
 
-### D8: an empty group takes no width
+Ruled by the owner on the default, in the session that built #math-layout, by selecting "D7
+operator names, prime".
+
+### D8, ruled: an empty group takes no width
 
 Bears on #empty-cell-placeholder. The owner, round 2: "empty-cell-placeholder: agreed, I believe
 this is needed and an unfinished formula is not supposed to exist in a real presenter run". A
@@ -1811,6 +1817,9 @@ their box still marked empty for the editor's overlay; every other empty cell, o
 radical, a script, a delimited group, an accent, a font change, a matrix or the formula's grid,
 keeps the placeholder. It narrows the placeholder the owner approved, which is the scope change.
 
+Ruled by the owner on the default, in the session that built #math-layout, by selecting "D8 empty
+group".
+
 ## Harvest
 
 Each slice's row is in its spec. This document's own row, at the commit that deletes it, after the
@@ -1820,14 +1829,14 @@ last slice:
 - Check that T1 to T4 are written, each in the tripwires home of the head it guards.
 - Check that each later consequence below is in the issue entry, the plan document or the tripwire
   that it names, or in a `todo` issue opened for it then.
-- Check that `issue@rootpoint-render@read-fonts-math-table` stands in the math crate's issue home,
+- Check that `issue@rootpoint-math@read-fonts-math-table` stands in the math crate's issue home,
   moved there by #math-layout's harvest.
 
 ## Later consequences
 
 - **Naming equations**: `issue@rootpoint-model@equation-names`.
 - **Configurable keys**: `issue@rootpoint-app@configurable-keys`.
-- **One font parser**: `issue@rootpoint-render@read-fonts-math-table`.
+- **One font parser**: `issue@rootpoint-math@read-fonts-math-table`.
 - **A number per row, and a reference to a row**: no entry; opened as a `todo` issue at the harvest
   if the owner's talks need it by then.
 - **A math font from a font asset**: no entry; #arg-23 named it for later "under a tripwire", which

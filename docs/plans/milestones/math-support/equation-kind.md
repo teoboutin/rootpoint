@@ -96,6 +96,10 @@ command. No text item holds math yet, and no reference exists.
 
 ## Harvest
 
+- Into `register@rootpoint@design`: `design@rootpoint@crate-existence-rule`, its sentence that the
+  model's serialization stays inside it, since the text of a formula in the file is the math
+  crate's; and `design@rootpoint@gui-only-in-app`, its graph, where the model now depends on the
+  math crate. #math-layout's harvest left both, which were not yet true.
 - Into `register@rootpoint-model@design`: heads for #equation-content-kind, #equation-numbering and
   #equation-options with #equation-fit, by the test of one decision per head;
   `design@rootpoint-model@inline-content-assets` and `design@rootpoint-model@style-kinds` rewritten

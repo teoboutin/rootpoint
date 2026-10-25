@@ -15,6 +15,8 @@ not share; a crate that loses one of the three is merged back. Today the rule gi
 `path@rootpoint@crates/rootpoint-model/`, whose reason to change is the document model, and whose
 serialization stays inside it until it needs migrations of its own;
 `path@rootpoint@crates/rootpoint-render/`, whose reason to change is how slides look;
+`path@rootpoint@crates/rootpoint-math/`, whose reason to change is how a formula is written and laid
+out from a math font;
 `path@rootpoint@crates/rootpoint-protocol/`, whose reason to change is the command grammar; and
 `path@rootpoint@crates/rootpoint-app/`, whose reason to change is the user interface.
 
@@ -23,17 +25,18 @@ three conditions, and ruled that it is a decision of the design rather than a go
 
 ### No crate but the app depends on a GUI toolkit `##gui-only-in-app`
 
-`rootpoint-render` depends on `rootpoint-model`; `rootpoint-protocol` on both; `rootpoint-app` on
-the three and on eframe, the one GUI toolkit of the workspace. So the model, the renderer and the
+`rootpoint-math` depends on no crate of the workspace; `rootpoint-render` depends on
+`rootpoint-model` and `rootpoint-math`; `rootpoint-protocol` on the model and the renderer;
+`rootpoint-app` on those three and on eframe, the one GUI toolkit of the workspace. So the model, the renderer and the
 protocol's session run with no window, in a test or a script, which `goal@rootpoint@headless-core`
 asks of every operation the GUI offers. The rival, a model, a renderer or a session that links the
 toolkit, would need a window, or the toolkit's headless mode, for every test of the core. It is a
-reason respected at every crate's manifest. The crates are the four that
+reason respected at every crate's manifest. The crates are the five that
 `design@rootpoint@crate-existence-rule` gives.
 
 ### Every crate the browser build links builds for the wasm target, checked by the gate `wasm` `##wasm-from-the-start`
 
-The gate `wasm` of `path@xtask@src/main.rs` builds the model, render, protocol and app crates for
+The gate `wasm` of `path@xtask@src/main.rs` builds the math, model, render, protocol and app crates for
 `wasm32-unknown-unknown`, the app's binary included, the browser build's entry point. So a
 dependency that cannot build for the browser fails the gates when it is added to a crate the gate
 builds, not when the browser build is made, and the cost of `goal@rootpoint@runs-in-browser` shows

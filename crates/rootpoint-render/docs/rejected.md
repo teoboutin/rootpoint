@@ -23,3 +23,10 @@ took 199.6 ms, 0.4 ms within the bound.
 `live`. The toolkit survey found that the browser has no system fonts, read in the notes of blitz
 on building for wasm; and system fonts differ between machines, so a presentation opened on another
 computer lays out differently.
+
+### STIX Two Math built in as a fallback for the characters the math font lacks `##stix-math-fallback`
+
+`live`. STIX Two Math 2.13, measured in `path@rootpoint@docs/grounding/math-typesetting.md`,
+sections 2 and 4, covers every command of unicode-math's 2448, and so the 44 of KaTeX that
+Libertinus Math lacks, for 838,652 bytes in every build, the browser build included: about 0.8 MB
+for 44 rare symbols, which the owner judged not much of a problem.

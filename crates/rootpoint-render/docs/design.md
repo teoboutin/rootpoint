@@ -76,8 +76,9 @@ A `FontSet` holds the built-in fonts and the font files of the document's asset 
 else. Two guards keep system fonts out: parley's feature `system` is off, the default that turns on
 system font discovery, as parley 0.12's `Cargo.toml` reads; and the collection is created without
 system fonts, which fontique's collection honours whatever the feature. A unit test pins a new set
-to the built-in family alone. A text whose font no font of the set has falls back to the built-in
-sans, and the render reports it.
+to the built-in families alone: the text's, `design@rootpoint-render@builtin-noto-sans`, and the
+math font's, `design@rootpoint-render@builtin-libertinus-math`. A text whose font no font of the set
+has falls back to the built-in sans, and the render reports it.
 
 The rival, system fonts with a fallback, `rejected@rootpoint-render@system-fonts`, lays a slide
 out differently on another computer, whose fonts differ, and in the browser, which has none, so it
@@ -92,3 +93,42 @@ serves the concern `tripwire@rootpoint-render@glyph-missing-everywhere` watches,
 built-in font changes every saved slide that names it. The four files weigh 2.1 MB, which every
 build carries. The family is the session's choice at the design audit of the renderer, among the
 fonts under the Open Font License on the owner's machine.
+
+### The built-in math font is Libertinus Math 7.051 `##builtin-libertinus-math`
+
+`path@rootpoint-render@fonts/libertinus/LibertinusMath-Regular.otf`, under the SIL Open Font
+License 1.1, whose text sits beside it, is registered in every `FontSet`, and every formula is laid
+out from its MATH table and drawn with its glyphs. It weighs 588,848 bytes, which every build
+carries, the browser build included, as `cargo x web` measures it. Changing it changes the look and
+the layout of every saved formula, and the table of commands of
+`path@rootpoint-math@src/commands.rs`, which holds only the characters it has.
+
+Of the math commands of KaTeX v0.19.1 of one character, it lacks 44, recorded here on the owner's
+word: `\lessapprox`, `\gtrapprox`, `\lnapprox`, `\gnapprox`, `\eqslantless`, `\eqslantgtr`,
+`\lesseqqgtr`, `\gtreqqless`, `\precapprox`, `\succapprox`, `\precnapprox`, `\succnapprox`,
+`\subseteqq`, `\supseteqq`, `\subsetneqq`, `\supsetneqq`, `\Subset`, `\Supset`, `\bumpeq`,
+`\Bumpeq`, `\pitchfork`, `\multimap`, `\Cap`, `\Cup`, `\doublecap`, `\doublecup`, `\barwedge`,
+`\veebar`, `\doublebarwedge`, `\divideontimes`, `\leftthreetimes`, `\rightthreetimes`,
+`\intercal`, `\diamond`, `\triangleleft`, `\triangleright`, `\bigcirc`, `\blacklozenge`,
+`\checkmark`, `\maltese`, `\diagup`, `\diagdown`, `\Finv` and `\Game`. The test
+`the_missing_set_is_pinned_both_ways` of `path@rootpoint-math@tests/font.rs` pins that set, so a
+change of the font that changes its coverage of those commands fails it. Its `ssty` feature
+substitutes the six primes alone, measured with ttf-parser 0.25.1, so its other glyphs are set in
+scripts at their base form, scaled; its scripts are scaled to 80 and 60 per cent; it has no math
+kerning.
+
+On the owner's word: the owner chose Libertinus Math from rendered samples of Noto Sans Math, Latin
+Modern Math, New Computer Modern Math, STIX Two Math and Fira Math, and found its missing set not
+much of a problem. The measurements the samples came with are in
+`path@rootpoint@docs/grounding/math-typesetting.md`, sections 2 and 4.
+
+### No fallback math font is built in: a character the math font lacks is drawn as its missing glyph and reported `##no-fallback-math-font`
+
+A formula holding a character Libertinus Math has no glyph for draws the font's glyph 0, and
+`draw_formula` reports it, as a text's missing glyph is reported. The table of commands holds no
+command of such a character, so the palette and the commands an author types after `\` offer none;
+only a formula written by hand or by an agent can hold one. The rival, a second math font for those
+characters alone, is `rejected@rootpoint-render@stix-math-fallback`, and the owner judged the 44
+commands it would add not much of a problem, by `design@rootpoint-render@builtin-libertinus-math`.
+Whether a real talk needs one of them is watched by
+`tripwire@rootpoint-render@math-glyph-needed`.

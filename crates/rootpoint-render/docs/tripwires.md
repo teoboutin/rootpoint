@@ -28,3 +28,15 @@ defaults the session proposed and the owner kept.
 candidate.
 **Re-entry:** the design audit of any work that adds a content kind or changes the renderer; and
 the standing-state review before every merge.
+
+## Guarding `design@rootpoint-render@no-fallback-math-font`: a real slide needs a character the math font lacks `##math-glyph-needed`
+
+T4 of the premortem of `milestone@plans@math-support`, recorded on the owner's word.
+
+**Fires when:** a real slide needs a command of the missing set that
+`design@rootpoint-render@builtin-libertinus-math` lists, and drawing it as missing is not
+acceptable to the owner.
+**Response:** reopen `design@rootpoint-render@no-fallback-math-font`, with STIX Two Math as a
+fallback, `rejected@rootpoint-render@stix-math-fallback`, as the candidate.
+**Re-entry:** the first real talk given with math; and the standing-state review before every
+merge.
