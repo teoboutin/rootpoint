@@ -553,8 +553,8 @@ impl App {
         }
     }
 
-    /// Choose, in the dialog of a removal, what the texts naming the style take: another style, or
-    /// `None` for a custom copy.
+    /// Choose, in the dialog of a removal, what the texts or the spans naming the style take:
+    /// another style of its table, or `None` for a custom copy.
     pub fn choose_replacement(&mut self, into: Option<String>) {
         if let Some(removal) = &mut self.styles_tab.removal {
             removal.into = into;
@@ -608,7 +608,9 @@ impl App {
             .filter(|(_, style)| match &style.font {
                 None => true,
                 Some(FontRef::Asset(id)) => doc.assets.contains_key(id),
-                Some(FontRef::Builtin(family)) => family == "sans",
+                Some(FontRef::Builtin(family)) => {
+                    rootpoint_model::BUILTIN_FAMILIES.contains(&family.as_str())
+                }
             })
             .map(|(name, _)| name.clone())
             .collect()
@@ -1777,7 +1779,8 @@ impl App {
 
     /// "Split here", Ctrl+Space or the button of the ancestor row: the span that holds the caret is cut at the caret by `split-span`, the caret put between the
     /// two halves, in their parent; at the span's start or end nothing is sent, and the caret moves
-    /// out of the span, before or after it. In the root, nothing.
+    /// out of the span, before or after it. In the root, nothing; and with a selection, nothing,
+    /// since its caret's end is no place to cut at.
     pub fn split_here(&mut self) {
         if self.socket_holds() {
             return;
@@ -1785,7 +1788,10 @@ impl App {
         let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
             return;
         };
-        let caret = edit.focus(&content);
+        if edit.selected(&content).is_some() {
+            return;
+        }
+        let caret = edit.caret;
         let TextNodeRef::Span(span) = caret.node else {
             return;
         };

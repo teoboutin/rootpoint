@@ -503,8 +503,16 @@ impl App {
         Some(to_view(&text, layout, b))
     }
 
-    /// The values the caret types with: those of the caret's text node, or, when the selection is
-    /// one whole span, that span's, which the Selection tab's controls show while editing.
+    /// The values the caret types with, those of its text node, at which the overlay draws it.
+    pub fn typing_values(&self) -> Option<TextStyle> {
+        let edit = self.edit.as_ref()?;
+        let content = self.edited_text()?;
+        let node = edit.focus(&content).node;
+        Some(node_values(self.session.document(), &content, node))
+    }
+
+    /// The values the Selection tab's controls show while editing: those the caret types with, or,
+    /// when the selection is one whole span, that span's, which a control then changes.
     pub fn caret_values(&self) -> Option<TextStyle> {
         let edit = self.edit.as_ref()?;
         let content = self.edited_text()?;
@@ -516,12 +524,21 @@ impl App {
         Some(node_values(self.session.document(), &content, node))
     }
 
-    /// The spans that hold the caret, outer first, as the ancestor row lists them after the text.
+    /// The spans that hold the caret, outer first, as the ancestor row lists them after the text;
+    /// while one span is selected whole, that span and those that hold it, so the span a click on
+    /// the row selected stays in the row, shown as the one the controls change.
     pub fn caret_spans(&self) -> Vec<SpanId> {
         let (Some(edit), Some(content)) = (self.edit.as_ref(), self.edited_text()) else {
             return Vec::new();
         };
-        let mut spans = spans_holding(&content, edit.focus(&content));
+        let at = match self.selected_span() {
+            Some(span) => CaretPos {
+                node: TextNodeRef::Span(span),
+                offset: 0,
+            },
+            None => edit.focus(&content),
+        };
+        let mut spans = spans_holding(&content, at);
         spans.reverse();
         spans
     }
@@ -541,8 +558,8 @@ impl App {
     }
 
     /// The frames of the spans that hold the caret, inner first, each its span's lines in the
-    /// slide view. An empty span covers no glyph, so its frame stands around the caret,
-    /// `EMPTY_FRAME_HALF_WIDTH` on each side.
+    /// slide view. An empty span covers no glyph, so its frame stands around the caret, as tall as
+    /// it and `EMPTY_FRAME_HALF_WIDTH` on each side.
     pub fn span_frames(&mut self, layout: &Layout) -> Vec<SpanFrame> {
         let Some(content) = self.edited_text() else {
             return Vec::new();

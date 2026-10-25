@@ -396,10 +396,11 @@ fn the_keys_of_editing_are_kept_from_the_browser_only_while_editing() {
     canvas
         .add_event_listener_with_callback("keydown", stop.as_ref().unchecked_ref())
         .unwrap();
-    let key = |name: &str, ctrl: bool| {
+    let key_with = |name: &str, ctrl: bool, meta: bool| {
         let init = web_sys::KeyboardEventInit::new();
         init.set_key(name);
         init.set_ctrl_key(ctrl);
+        init.set_meta_key(meta);
         init.set_bubbles(true);
         init.set_cancelable(true);
         let event =
@@ -407,6 +408,7 @@ fn the_keys_of_editing_are_kept_from_the_browser_only_while_editing() {
         canvas.dispatch_event(&event).unwrap();
         event.default_prevented()
     };
+    let key = |name: &str, ctrl: bool| key_with(name, ctrl, false);
     for name in ["b", "i", " "] {
         assert!(!key(name, true), "Ctrl+{name:?} kept outside editing");
     }
@@ -421,6 +423,16 @@ fn the_keys_of_editing_are_kept_from_the_browser_only_while_editing() {
             "{name:?} with no Ctrl kept while editing"
         );
     }
+    // Meta with B or I is the editor's `command` too, as Ctrl is; Meta with Space is not.
+    assert!(
+        key_with("b", false, true),
+        "Meta+B reached the browser while editing"
+    );
+    assert!(
+        key_with("i", false, true),
+        "Meta+I reached the browser while editing"
+    );
+    assert!(!key_with(" ", false, true), "Meta+Space kept while editing");
     // An editor's own listener reads whether it edits a text, as its last frame left it.
     editing.set(false);
     let mut app = App::in_memory();

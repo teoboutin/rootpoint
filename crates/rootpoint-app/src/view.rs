@@ -354,7 +354,7 @@ impl App {
         // The selection, the composing text's underline and the caret of a text edited in place,
         // and the caret's place for the IME, per `design@rootpoint-app@edit-in-place`; and a thin
         // frame around each span that holds the caret, which takes no space in the slide: each
-        // outer frame lighter, and set one point further out, so that frames meeting at an edge
+        // outer frame lighter, and set `FRAME_GAP` further out, so that frames meeting at an edge
         // stay apart.
         if self.edit.is_some() {
             for frame in self.span_frames(layout) {
@@ -382,7 +382,7 @@ impl App {
             if let Some(caret) = self.caret_rect(layout) {
                 // In the colour the caret types with, so that the two positions at the edge of a
                 // span of another colour are told apart.
-                let colour = self.caret_values().map_or(accent, |v| {
+                let colour = self.typing_values().map_or(accent, |v| {
                     Color32::from_rgba_unmultiplied(v.colour.r, v.colour.g, v.colour.b, 255)
                 });
                 ui.painter().rect_filled(caret, 0.0, colour);

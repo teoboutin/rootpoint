@@ -1,7 +1,7 @@
 ---
 kind: defect
 ---
-# An IME composition abandoned in a stay in editing leaves an undo step that changes nothing
+# A stay in editing that changes nothing in the end, as an abandoned composition, leaves an undo step
 
 ## Summary
 

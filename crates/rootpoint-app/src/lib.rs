@@ -400,7 +400,7 @@ impl App {
         self.styles_tab.selected_span = Some(name.to_owned());
     }
 
-    /// The dialog of a style's removal, while it is open.
+    /// The dialog of the removal of a style or of a span style, while it is open.
     pub fn removal(&self) -> Option<&Removal> {
         self.styles_tab.removal.as_ref()
     }

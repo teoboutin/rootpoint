@@ -4,7 +4,7 @@
 
 | kind | title |
 | --- | --- |
-| defect | [An IME composition abandoned in a stay in editing leaves an undo step that changes nothing](abandoned-composition-undo-step.md) |
+| defect | [A stay in editing that changes nothing in the end, as an abandoned composition, leaves an undo step](abandoned-composition-undo-step.md) |
 | defect | [A secondary click during a divider drag, then the release, resets the divider as a double-click](double-click-across-buttons.md) |
 | observation | [A command of the control socket may wait while the window draws no frame](socket-waits-for-a-frame.md) |
 | question | [Two tripwires guard the decision on passing control, where one entry per decision is asked](two-tripwires-guard-control-passing.md) |

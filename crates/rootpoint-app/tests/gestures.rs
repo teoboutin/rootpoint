@@ -1088,6 +1088,12 @@ fn the_selection_tab_acts_at_the_caret_while_editing() {
             .center(),
     );
     assert_eq!(d.app.selected_span(), Some(new));
+    d.frame(vec![], Modifiers::NONE);
+    assert!(
+        d.app.button_rect(&new.to_string()).is_some(),
+        "the span the row selected left the row"
+    );
+    assert!(d.app.caret_spans().contains(&new));
     // In the bold span t28, "Split here" cuts it at the caret.
     let t28 = rootpoint_model::SpanId(28);
     d.app.set_caret_pos(CaretPos {

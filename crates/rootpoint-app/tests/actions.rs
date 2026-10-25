@@ -771,6 +771,35 @@ fn the_span_style_actions_issue_their_commands() {
             ]
         },
     );
+    // At a span's end, "split here" sends nothing and puts the caret after the span; a span style
+    // of the menu, at the caret, opens a span naming it, which typing goes into.
+    let new = Rc::new(RefCell::new(Vec::new()));
+    let seen = new.clone();
+    check(
+        "split here at a span's end, then a span style at the caret",
+        &["select n3", tree],
+        move |a| {
+            let before = spans_of(a.session());
+            edit_n3(a);
+            a.set_caret_pos(at(TextNodeRef::Span(before[0]), 2));
+            a.split_here();
+            a.type_str("W");
+            a.edit_control(StyleOption::Named("Key".to_owned()));
+            a.type_str("K");
+            *seen.borrow_mut() = made(&before, &spans_of(a.session()));
+            a.stop_editing();
+        },
+        move |_| {
+            let t = new.borrow()[0];
+            vec![
+                c("begin"),
+                c("insert n3 4 \"W\""),
+                c("wrap n3 5..5 style=\"Key\""),
+                c(&format!("insert {t} 0 \"K\"")),
+                c("end"),
+            ]
+        },
+    );
     // A span of the ancestor row selected, a control changes its style; an alignment changes the
     // area's; at the caret, a control opens a span, which the stay's end unwraps while empty.
     let new = Rc::new(RefCell::new(Vec::new()));

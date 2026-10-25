@@ -270,7 +270,7 @@ pub(crate) fn warn_before_unload(unsaved: std::rc::Weak<std::cell::Cell<bool>>) 
 /// Keep the editor's keys from the browser's own actions, per
 /// `design@rootpoint-app@editor-keys-kept-from-browser`: a listener of the window, in the capture
 /// phase, prevents the default of F5, which starts presenter mode, and, while `editing` holds, of
-/// Ctrl+B, Ctrl+I and Ctrl+Space, which the editor consumes then. eframe 0.37.0's text agent,
+/// Ctrl+B, Ctrl+I, their Meta forms, and Ctrl+Space, which the editor consumes then. eframe 0.37.0's text agent,
 /// which has the focus while a text is edited, hands its keydown to the canvas's handler, and the
 /// window's capture-phase listener sees both first. It holds the flag weakly, so an app dropped
 /// keeps F5 alone.
@@ -280,9 +280,14 @@ pub fn keep_editor_keys(editing: std::rc::Weak<std::cell::Cell<bool>>) {
     };
     let listener =
         Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |e: web_sys::KeyboardEvent| {
-            let styling = e.ctrl_key()
-                && matches!(e.key().to_lowercase().as_str(), "b" | "i" | " ")
-                && editing.upgrade().is_some_and(|flag| flag.get());
+            // The editor reads Ctrl+B and Ctrl+I as egui's `command`, which eframe 0.37.0's web
+            // input sets from Ctrl or Meta, and Ctrl+Space from Ctrl alone.
+            let key = e.key().to_lowercase();
+            let styling = match key.as_str() {
+                "b" | "i" => e.ctrl_key() || e.meta_key(),
+                " " => e.ctrl_key(),
+                _ => false,
+            } && editing.upgrade().is_some_and(|flag| flag.get());
             if e.key() == "F5" || styling {
                 e.prevent_default();
             }

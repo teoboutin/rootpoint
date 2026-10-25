@@ -319,7 +319,11 @@ impl App {
                 }
             }
         });
-        if self.button(ui, "Split here", !spans.is_empty()) {
+        let unselected = self
+            .edit
+            .as_ref()
+            .is_some_and(|e| e.selected(&text).is_none());
+        if self.button(ui, "Split here", unselected && !spans.is_empty()) {
             self.split_here();
         }
         if leave {
@@ -352,11 +356,6 @@ impl App {
                     if ui.selectable_label(on, &name).clicked() && !on {
                         option = Some(StyleOption::Named(name));
                     }
-                }
-                if let Some(SpanChoice::Named(_)) = choice
-                    && ui.selectable_label(false, "custom").clicked()
-                {
-                    option = Some(StyleOption::Custom);
                 }
             });
         let Some(mut values) = self.caret_values() else {
@@ -815,8 +814,9 @@ impl App {
                 }
             }
         });
+        // Shown while a value is set too, so that a font set with no font asset can be set to none.
         let fonts = self.font_assets();
-        if !fonts.is_empty() {
+        if !fonts.is_empty() || style.font.is_some() {
             let current = match &style.font {
                 None => UNSET.to_owned(),
                 Some(FontRef::Asset(id)) => id.to_string(),

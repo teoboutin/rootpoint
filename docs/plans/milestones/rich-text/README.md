@@ -244,8 +244,6 @@ What exists today, at each site the work touches:
   the editor's state, with no command. A caret position names a text node and an offset, so the
   caret's text node is part of the caret, D5.
 - `design@rootpoint@no-compat-in-initial-dev`: the format and the grammar change with no migration.
-- `design@rootpoint-app@editor-keys-kept-from-browser`: no editor key reaches the browser's own
-  action; the new keys are members of that rule.
 
 **The recorded decisions the work reverses or rewrites**, with every text `cargo klarch show`
 lists as referencing each, and the slice whose harvest judges or updates it:
@@ -266,8 +264,8 @@ lists as referencing each, and the slice whose harvest judges or updates it:
 | `design@rootpoint-protocol@asset-commands` | members added: a span's font is a use of an asset, for `assets uses=` and `asset-remove … into=` | `register@rootpoint-app@design` line 217, `register@rootpoint-protocol@design` line 202 | #span-commands |
 | `design@rootpoint-app@edit-in-place` | rewritten: a change of the text is one small command, #text-edit-commands, and the caret is a caret position mapped to Parley's byte index | `register@rootpoint-app@design` line 340, `:412`, `path@rootpoint-app@src/editing.rs` line 1, `path@rootpoint-app@src/view.rs` line 351, `path@rootpoint-app@tests/edit_ops.rs` line 4, `path@rootpoint-app@tests/editing.rs` line 4, `register@rootpoint-render@design` line 39, the issue `rich-text-spans`, closed | #tree-caret |
 | `design@rootpoint-app@editor-overlay` | members added: the frames of the caret's nodes | `path@rootpoint-app@CLAUDE.md` line 17, `register@rootpoint-app@design` line 108, `:364`, `:549`, `path@rootpoint-app@tests/presenter.rs` line 3 | #span-styling |
-| `design@rootpoint-app@gesture-groups` | rewritten, closed on its argument at the audit of #span-styling: an action of the side panel that acts on the edited text, a style control or a button of the ancestor row, joins the stay and its group, where the head ends a stay at any other action; the rival, ending the stay first, leaves no caret for #style-action-target to act at, and the rival of an undo step of its own splits the stay that #text-edit-commands keeps one group | `path@rootpoint-app@CLAUDE.md` line 35, `register@rootpoint-app@design` line 331, `path@rootpoint-app@docs/open-issues/abandoned-composition-undo-step.md` line 33, `path@rootpoint-app@src/actions.rs` line 1148, `path@rootpoint-app@src/lib.rs` line 872 | #span-styling |
-| `design@rootpoint-app@editor-keys-kept-from-browser` | rewritten, closed on its argument at the audit of #span-styling: while a text is edited, the capture-phase listener also prevents the default of Ctrl+B, Ctrl+I and Ctrl+Space, which the editor consumes then; the argument widens from a key whose default leaves the page to any key the editor consumes, whose default is then an action the author did not ask for; the rival, letting the browser act too, makes Ctrl+B both bold the text and, in Firefox by the session's knowledge, open the bookmarks sidebar | `register@rootpoint-app@rejected` line 99, `path@rootpoint-app@src/web.rs` line 272 | #span-styling |
+| `design@rootpoint-app@gesture-groups` | rewritten, closed on its argument at the audit of #span-styling: an action of the side panel that acts on the edited text, a style control or a button of the ancestor row, joins the stay and its group, where the head ends a stay at any other action; the rival, ending the stay first, leaves no caret for #style-action-target to act at, and the rival of an undo step of its own splits the stay that #text-edit-commands keeps one group | `path@rootpoint-app@CLAUDE.md` line 35, `register@rootpoint-app@design` line 331, `path@rootpoint-app@docs/open-issues/abandoned-composition-undo-step.md` line 41, `path@rootpoint-app@src/actions.rs` lines 1292 and 1693, `path@rootpoint-app@src/lib.rs` line 900 | #span-styling |
+| `design@rootpoint-app@editor-keys-kept-from-browser` | rewritten, closed on its argument at the audit of #span-styling: while a text is edited, the capture-phase listener also prevents the default of Ctrl+B, Ctrl+I, their Meta forms, which egui's `command` reads in eframe 0.37.0's web input, and Ctrl+Space, which the editor consumes then; the argument widens from a key whose default leaves the page to any key the editor consumes, whose default is then an action the author did not ask for; the rival, letting the browser act too, makes Ctrl+B both bold the text and, in Firefox by the session's knowledge, open the bookmarks sidebar | `register@rootpoint-app@rejected` line 99, `path@rootpoint-app@src/web.rs` line 271, `path@rootpoint-app@src/lib.rs` line 325 | #span-styling |
 | `design@rootpoint-app@styles-tab-edits-styles` | rewritten: the Styles tab also lists and edits the span styles | `register@rootpoint-app@design` line 223, `path@rootpoint-app@src/panels.rs` line 438, `:484` | #span-styling |
 
 **The standing entries the discussion's search returned, with their outcome:**
@@ -315,9 +313,10 @@ already built for the browser), `design@rootpoint@uniform-scaling` (the frames a
 `design@rootpoint-render@builtin-noto-sans` (no `MATH` table, measured; maths is outside the work),
 `design@rootpoint-protocol@view-state`
 (no span is part of the view; the frames are not drawn in the final view),
-`design@rootpoint-app@gesture-groups`, `design@rootpoint-app@gui-toolkit`,
-`design@rootpoint-app@edit-entry`, `goal@rootpoint-app@live-agent-edits` and
-`goal@rootpoint-app@browser-window`, each kept as it stands.
+`design@rootpoint-app@gui-toolkit`, `design@rootpoint-app@edit-entry`, `goal@rootpoint-app@live-agent-edits` and
+`goal@rootpoint-app@browser-window`, each kept as it stands; and
+`design@rootpoint-app@gesture-groups` and `design@rootpoint-app@editor-keys-kept-from-browser`,
+which the audit of #span-styling rewrites, in the table above.
 
 ## Criteria
 

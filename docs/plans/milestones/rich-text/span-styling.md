@@ -13,7 +13,7 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
   caret out at a span's edge.
 - The frames of the caret's spans, drawn by the overlay, and the caret drawn at the height and in
   the colour of the values it types with. An empty span that holds the caret, as a style action
-  with no selection opens, covers no glyph: its frame is drawn around the caret, the line's height
+  with no selection opens, covers no glyph: its frame is drawn around the caret, as tall as the caret
   and a few points wide, so the author sees the span the next letter goes into.
 - The ancestor row in the side panel's Selection tab while editing.
 - The span styles in the Styles tab, in their own section, sending `span-style add`, `set`, `rename`
@@ -139,11 +139,10 @@ The milestone's "Decided design" of #style-action-target, #ancestor-frames, #spl
 While a text is edited, the Selection tab's style controls show the values the caret types with,
 or, when the selection is one whole span, that span's, and act as the style actions of the
 milestone's table: `wrap` at the caret or over the selection, `span t<n>` for a selection that is
-one whole span. The style menu lists the span styles, and "custom" while the selection is one
-named span. The alignment buttons send `text n<area>` with the alignment, since a span has none.
-The ancestor row lists the text, then each span that holds the caret, outer to inner; a click on a
-span selects it whole, and a click on the text leaves editing, as Esc does, the area still
-selected. Every command goes into the stay's group. Nearest rivals: B and C of Q5; the owner chose
+one whole span. The style menu lists the span styles. The alignment buttons send `text n<area>` with the alignment, since a span has none.
+The ancestor row lists the text, then each span that holds the caret, outer to inner, or, while
+one span is selected whole, that span and those that hold it; a click on a span selects it whole,
+and a click on the text leaves editing, as Esc does, the area still selected. Every command goes into the stay's group. Nearest rivals: B and C of Q5; the owner chose
 A.
 
 ## Acceptance criteria
@@ -160,8 +159,21 @@ AC2 is judged here, and the landing commits report on it.
 - Rewrite `design@rootpoint-app@styles-tab-edits-styles` for the span styles; update the texts the
   milestone's table lists for these heads, the restatement in `path@rootpoint-app@CLAUDE.md`
   included.
-- Update `path@rootpoint-app@README.md` for the keys, and `design@rootpoint-protocol@builtin-sample`,
-  whose list of what the sample teaches gains the styled text.
+- Rewrite `design@rootpoint-app@gesture-groups`, an action of the side panel on the edited text
+  joining the stay, and `design@rootpoint-app@editor-keys-kept-from-browser`, its argument widened
+  to every key the editor consumes and its members Ctrl+B, Ctrl+I, their Meta forms and
+  Ctrl+Space while editing, as the slice's design audit closed them, each through
+  `skill@knowledge-architect-decision-recording@reversal-check`, their rivals judged under
+  `skill@knowledge-architect-decision-recording@losing-alternatives`: ending the stay first, an
+  undo step of its own, and letting the browser act too. The doc comment of
+  `rootpoint_app::keep_editor_keys` then points at the head for its argument. Update the texts the
+  milestone's table lists for both.
+- Rewrite `design@rootpoint-app@assets-tab`, whose span style's use is a button to the span style
+  now, not a label.
+- Update `path@rootpoint-app@README.md` for the keys, the frames and the two positions of an edge
+  drawn apart, the Selection tab while editing, the span styles of the Styles tab and an asset's
+  use by a span style; and `design@rootpoint-protocol@builtin-sample`, whose list of what the sample
+  teaches gains the styled text.
 - The losing alternatives of these threads, reserved space for the frames among them, which T1's
   response names, judged under `skill@knowledge-architect-decision-recording@losing-alternatives`.
 - Write T1, guarding `design@rootpoint-app@editor-overlay`, with the frames recorded in it, and T4,
