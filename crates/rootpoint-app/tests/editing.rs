@@ -609,8 +609,8 @@ fn typing_at_each_position_of_an_edge_goes_into_the_caret_s_text_node() {
     }
 }
 
-/// Right and Left walk the milestone's table of caret moves: into a span at its start, out of it
-/// at its end, and both positions of an edge stand at one byte index.
+/// Right and Left walk `design@rootpoint-app@boundary-caret-positions`: into a span at its start,
+/// out of it at its end, and both positions of an edge stand at one byte index.
 #[test]
 fn the_arrows_enter_and_leave_a_span_at_its_edges() {
     let mut d = edit_tree(r#"["a", {bold "b", {italic "c"}}, "d"]"#);

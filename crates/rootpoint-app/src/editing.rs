@@ -125,8 +125,9 @@ fn on_cluster_boundary(layout: &TextLayout<TextBrush>, index: usize) -> bool {
     Cluster::from_byte_index(layout, index).is_none_or(|c| c.text_range().start == index)
 }
 
-/// The caret position Right gives, by the milestone's table of caret moves: past one cluster of
-/// characters, into a span at its start, or out of a span at its end; nothing at the text's end.
+/// The caret position Right gives, `design@rootpoint-app@boundary-caret-positions`: past one
+/// cluster of characters, into a span at its start, or out of a span at its end; nothing at the
+/// text's end.
 /// With `over`, as Shift with Right, a span is passed whole rather than entered.
 pub(crate) fn right(
     text: &TextContent,
@@ -226,11 +227,12 @@ pub(crate) fn items_len(node: &TextNode) -> usize {
         .sum()
 }
 
-/// The caret position a byte index of the layout gives, as Parley's `Cursor` places it: in the
-/// deepest text node that owns the glyph on the cursor's side, `Downstream` the glyph after the
-/// index and `Upstream` the glyph before. Where several edges meet at the index, the caret goes
-/// into the node of that glyph, on the side of the glyph a click took. With no glyph on that side,
-/// at a text's start or end, the other side is taken; an empty text gives the root's offset 0.
+/// The caret position a byte index of the layout gives, as Parley's `Cursor` places it, by the
+/// backward rule of `design@rootpoint-app@boundary-caret-positions`: in the deepest text node that
+/// owns the glyph on the cursor's side, `Downstream` the glyph after the index and `Upstream` the
+/// glyph before. Where several edges meet at the index, the caret goes into the node of that glyph,
+/// on the side of the glyph a click took. With no glyph on that side, at a text's start or end, the
+/// other side is taken; an empty text gives the root's offset 0.
 pub(crate) fn from_byte(text: &TextContent, index: usize, affinity: Affinity) -> CaretPos {
     /// The node and offset of the character starting (`after`) or ending at `index`.
     fn walk(

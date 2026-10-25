@@ -353,23 +353,23 @@ be meaningful here.
 ### An area's text is edited on the slide, its caret placed by Parley's `Cursor` on the layout the render draws `##edit-in-place`
 
 The caret and the selection's anchor of a text being edited are caret positions of the text's tree,
-`design@rootpoint-app@boundary-caret-positions`, which the `TextMap` of `rootpoint_render::area_text`
-maps to the byte index of the layout `render_slide` draws, `design@rootpoint-render@area-text-layout`;
-Parley's `Cursor` and `Selection` place, draw and move the caret there, from that byte index and the
-affinity of the last move or click. Every change of the text, a typed string, a deletion, a cut, a
-paste, an IME composition and its commit, is an `insert` or a `delete` in one text node, the small
-commands of `design@rootpoint-protocol@text-edit-commands`, per
-`design@rootpoint-app@actions-are-commands`, so every span keeps its id; the render lays the new text
-out, and the caret keeps its caret position. A move past a character passes one cluster as Parley
-0.12.0 cuts the layout: a character with the marks drawn on it is one cluster, so the caret stays on
-a glyph's boundary; each character of a ligature is a cluster too, with an even share of its advance
-by `Cluster::advance`, where Parley's own moves stop as well. Backspace deletes one character of the
-cluster before the caret, or a whole line break or emoji, and Delete the cluster after it, as
-Parley's `PlainEditor` does. The composing text stands in the text node it was typed into, by
-commands, so the renderer draws it where it will stand; the overlay draws the caret, the selection
-and the composition's underline, per `design@rootpoint-app@editor-overlay`. While editing, the app
-sets `PlatformOutput::ime` every frame, since egui-winit 0.37.0 allows IME input only in a frame
-that sets it.
+`design@rootpoint-app@boundary-caret-positions`, which the `TextMap` of
+`rootpoint_render::area_text` maps to the byte index of the layout `render_slide` draws,
+`design@rootpoint-render@area-text-layout`; Parley's `Cursor` and `Selection` place, draw and move
+the caret there, from that byte index and the affinity of the last move or click. Every change of
+the text, a typed string, a deletion, a cut, a paste, an IME composition and its commit, is an
+`insert` or a `delete` in one text node, or an `unwrap` of a span,
+`design@rootpoint-app@empty-span-unwrapped`, the small commands of
+`design@rootpoint-protocol@text-edit-commands`, per `design@rootpoint-app@actions-are-commands`, so
+every span keeps its id; the render lays the new text out, and the caret keeps its caret position. A
+move past a character passes one cluster as Parley 0.12.0 cuts the layout: a character with the
+marks drawn on it is one cluster, so the caret stays on a glyph's boundary; each character of a
+ligature is a cluster too, with an even share of its advance by `Cluster::advance`, where Parley's
+own moves stop as well. The composing text stands in the text node it was typed into, by commands,
+so the renderer draws it where it will stand; the overlay draws the caret, the selection and the
+composition's underline, per `design@rootpoint-app@editor-overlay`. While editing, the app sets
+`PlatformOutput::ime` every frame, since egui-winit 0.37.0 allows IME input only in a frame that
+sets it.
 
 So the caret sits on the drawn glyphs at every size of the view, as
 `goal@rootpoint-render@same-slide-everywhere` asks of every display: a test over every character
@@ -400,7 +400,7 @@ into its flat runs of fonts, by `Cursor::setCurrentFont`, in the survey of LyX,
 where the span is an item of the sequence, `rejected@rootpoint-app@one-position-per-edge`. On the
 owner's word: the owner proposed the edge as an invisible character the caret enters, and judged
 the explicit choice the key feature, and that in practice no place has many edges meeting, since
-these trees rarely go deep, maths aside.
+these trees rarely go deep, maths aside, where LaTeX has the same problem.
 
 ### A selection is a range of one text node, a span inside it taken whole `##selection-one-level`
 
@@ -408,10 +408,10 @@ A selection's anchor and caret are lifted to their nearest common text node: an 
 that node takes the span whole, so a selection begun in a span and extended past its end rises to
 the span's parent. Shift with an arrow at a span's edge passes the span whole. The anchor is kept
 where it was set and lifted when the selection is read, as LyX's `CursorData::normalAnchor` lifts
-its anchor, in the survey of LyX, so a selection dragged back inside the span selects in it again. A cut, typing over a selection, and the style
-actions of a selection are then each one command over one node's range, `delete` or `wrap`, never a
-cut through a span. The rival, a free selection across nodes, makes each of them a cut of several
-nodes at once. On the owner's word: the owner counted the rule, in the owner's opinion, a feature
+its anchor, in the survey of LyX, so a selection dragged back inside the span selects in it again.
+A cut and typing over a selection are then each one `delete` over one node's range, never a cut
+through a span, `design@rootpoint-protocol@text-edit-commands`. The rival, a free selection across
+nodes, makes each of them a cut of several nodes at once. On the owner's word: the owner counted the rule, in the owner's opinion, a feature
 more than a cost, found LyX's selection model convenient, and judged that cutting a span in half
 is practically never needed.
 

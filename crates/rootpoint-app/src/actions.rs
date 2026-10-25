@@ -1222,8 +1222,8 @@ impl App {
     }
 
     /// Move the caret, collapsing the selection, or, with `extend`, move the selection's caret end.
-    /// Left and Right follow the milestone's table of caret moves through the tree, and with
-    /// `extend` pass a span whole; the moves by words and lines are Parley's on the byte index,
+    /// Left and Right follow `design@rootpoint-app@boundary-caret-positions` through the tree, and
+    /// with `extend` pass a span whole; the moves by words and lines are Parley's on the byte index,
     /// mapped back by `editing::from_byte`.
     pub fn move_caret(&mut self, m: CaretMove, extend: bool) {
         let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
@@ -1449,8 +1449,9 @@ impl App {
     /// for Backspace and at its end for Delete, the span itself, unwrapped, its content kept. At
     /// the root's start or end the key does nothing. So every edit stays in the caret's text node,
     /// where typing goes. A character is found by the caret's logical clusters, as Parley's
-    /// `PlainEditor` does: Backspace deletes one character of a cluster, or a whole line break or
-    /// emoji, and Delete the cluster after the caret.
+    /// `PlainEditor` does: a visual move at a soft line break only changes the caret's affinity,
+    /// and would delete nothing. Backspace deletes one character of a cluster, or a whole line
+    /// break or emoji, and Delete the cluster after the caret.
     fn delete(&mut self, forward: bool) {
         let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
             return;
@@ -1542,7 +1543,8 @@ impl App {
     }
 
     /// The caret position under the point `p` of the slide view, and its affinity: in the deepest
-    /// text node that owns the glyph under it, on the side of the glyph clicked.
+    /// text node that owns the glyph under it, on the side of the glyph clicked,
+    /// `design@rootpoint-app@boundary-caret-positions`.
     fn caret_at_point(&mut self, p: Pos2, layout: &Layout) -> Option<(CaretPos, Affinity)> {
         let area = self.editing()?;
         let text = self.area_text(area)?;

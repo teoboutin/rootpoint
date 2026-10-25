@@ -155,8 +155,9 @@ before the next begins, D2.
 - **`area_text`**: the public function of `path@rootpoint-render@src/lib.rs` that gives an area's
   `AreaText { layout, origin, map }`, the layout `render_slide` draws and its `TextMap`, per
   `design@rootpoint-render@area-text-layout`.
-- **The editor**: `Editing { area, selection, preedit }` of `path@rootpoint-app@src/editing.rs`,
-  the text being edited in place, its caret a Parley `Selection` on the layout `area_text` gives.
+- **The editor**: `Editing { area, caret, anchor, affinity, column, preedit }` of
+  `path@rootpoint-app@src/editing.rs`, the text being edited in place, its caret and its anchor
+  caret positions mapped to the layout `area_text` gives, since #tree-caret.
 - **A stay**: a stay in editing a text, from entering editing to leaving it, one undo group per
   `design@rootpoint-app@gesture-groups`.
 - **The overlay**: `App::overlay`, which draws the editor's marks with egui over the slide's
@@ -170,7 +171,8 @@ before the next begins, D2.
   span style of its own.
 - **An offset**: a position in a text node's sequence, counted in characters, Unicode scalar
   values, with each span counting as one item. Parley's index is a byte index; the map of
-  `AreaText` gives a caret position's byte index, and #tree-caret builds the other direction.
+  `AreaText` gives a caret position's byte index, and `editing::from_byte` the other direction,
+  since #tree-caret.
 - **An edge**: the place in a text node's sequence where a span begins or ends. Each edge is a
   caret position of its own, #boundary-caret-positions.
 - **A caret position**: a text node and an offset in it.
@@ -735,10 +737,11 @@ an arrow extends the selection; outside editing, Alt with an arrow stays the nod
 rival: one position per edge and a rule for the typing style; defeated by #arg-2 and #arg-12.
 
 Backspace and Delete, with no selection, act in the caret's text node, as LyX's do, D8: on a
-character, they delete it; on a span with items, a first press selects the span whole and a second
-deletes it; an empty span goes at once; at a span's own start for Backspace, or its end for Delete,
-the span is unwrapped, its content kept and the caret where it was drawn; at the root's start or
-end, nothing.
+character, they delete it, Backspace one character of the cluster before the caret or a whole line
+break or emoji, Delete the cluster after it, as the editor deleted before this slice; on a span with
+items, a first press selects the span whole and a second deletes it; an empty span goes at once; at
+a span's own start for Backspace, or its end for Delete, the span is unwrapped, its content kept and
+the caret where it was drawn; at the root's start or end, nothing.
 
 ### #ancestor-frames
 
@@ -1078,7 +1081,10 @@ reopens #text-edit-commands.
   caret, in whatever text node holds it, never a span whole and never unwrapping; it is nearer to
   a plain editor, but it edits a node the caret is not in, which the author cannot see until the
   frames of #span-styling, and it leaves an emptied span behind until the stay ends. It blocks the
-  merge of #tree-caret.
+  merge of #tree-caret. Once the owner rules, on #tree-caret's branch, the rule ruled is written
+  into `design@rootpoint-app@edit-in-place` and `design@rootpoint-app@boundary-caret-positions`,
+  the comments of `App::delete` and of its test point at those heads, and a rival not kept is
+  judged by the tests for a rejected design.
 
 ## Harvest
 

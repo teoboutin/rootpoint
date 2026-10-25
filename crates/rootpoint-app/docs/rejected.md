@@ -39,7 +39,8 @@ index.
 `live`. On the owner's word, the caret and the selection of a text being edited are the editor's
 state, not a view `goal@rootpoint-protocol@commands-drive-everything` asks a command for, so the
 protocol carries no command for them, `design@rootpoint-app@caret-editor-state`. A script changes a
-text with `text` or the commands of one operation each, which name a text node and an offset, and
+text with `text` or the commands of one operation each, which name a text node or a span by its id,
+`design@rootpoint-protocol@text-edit-commands`, and
 needs no caret to do so.
 
 ### The authority to edit held by one connection of the control socket `##control-per-connection`
