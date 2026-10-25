@@ -270,8 +270,9 @@ pub(crate) fn warn_before_unload(unsaved: std::rc::Weak<std::cell::Cell<bool>>) 
 
 /// Keep the editor's keys from the browser's own actions, the keys
 /// `design@rootpoint-app@editor-keys-kept-from-browser` names: a listener of the window, in the
-/// capture phase, prevents the default of F5 always, and of the keys of editing while `editing`
-/// holds. It holds the flag weakly, so an app dropped keeps F5 alone.
+/// capture phase, prevents the default of F5, Ctrl+Shift+M and Ctrl+Alt+N always, and of the keys
+/// of editing while `editing` holds. It holds the flag weakly, so an app dropped keeps those three
+/// alone.
 pub fn keep_editor_keys(editing: std::rc::Weak<std::cell::Cell<bool>>) {
     let Some(window) = web_sys::window() else {
         return;
@@ -283,11 +284,19 @@ pub fn keep_editor_keys(editing: std::rc::Weak<std::cell::Cell<bool>>) {
             // a text is edited; and Ctrl+Space, from Ctrl alone, while editing too.
             let command = e.ctrl_key() || e.meta_key();
             let edited = || editing.upgrade().is_some_and(|flag| flag.get());
-            let kept = match e.key().to_lowercase().as_str() {
+            // The math keys, `crate::keymap`: Ctrl+M and the prefix Alt+M while a text or a
+            // formula is edited, and Ctrl+Shift+M and Ctrl+Alt+N, which act on a selected area,
+            // always, as F5. Alt+M is read by its physical key too, since Option+M gives "µ".
+            let key = e.key().to_lowercase();
+            let m = key == "m" || e.code() == "KeyM";
+            let kept = match key.as_str() {
                 "f5" => true,
                 "z" | "y" => command,
                 "a" | "b" | "i" => command && edited(),
                 " " => e.ctrl_key() && edited(),
+                "n" => command && e.alt_key(),
+                _ if m && command && (e.shift_key() || edited()) => true,
+                _ if m && e.alt_key() => edited(),
                 _ => false,
             };
             if kept {

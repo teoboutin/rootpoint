@@ -1,7 +1,7 @@
 //! The browser build, run natively and in a browser: in the browser, the image the app hands its
 //! texture for the sample's first slide, and for its slide of an equation, is the native golden
-//! image, so the browser lays out the slide, and the formula, as the native build does; a picked directory's image is drawn; and, in a browser, F5 never reaches
-//! the browser. In a browser, run with
+//! image, so the browser lays out the slide, and the formula, as the native build does; a picked directory's image is drawn; the math keys reach
+//! the editor; and, in a browser, F5 never reaches the browser. In a browser, run with
 //! `cargo test --target wasm32-unknown-unknown -p rootpoint-app --test web --test actions`, which
 //! `wasm-bindgen-test-runner` runs in a headless browser.
 
@@ -475,6 +475,111 @@ fn the_keys_of_editing_are_kept_from_the_browser_only_while_editing() {
     presented_image(&mut app);
     assert!(!key("b", true), "Ctrl+B kept once the editor left editing");
     stop.forget();
+}
+
+/// One frame of the window of `presented_image`, with input events.
+fn frame_with(app: &mut App, events: Vec<eframe::egui::Event>, modifiers: eframe::egui::Modifiers) {
+    let ctx = FRAMES.with(|(ctx, _)| ctx.clone());
+    let time = FRAMES.with(|(_, t)| {
+        t.set(t.get() + 1.0 / 60.0);
+        t.get()
+    });
+    let mut events = events;
+    events.insert(0, eframe::egui::Event::ModifiersChanged(modifiers));
+    let input = RawInput {
+        screen_rect: Some(Rect::from_min_size(
+            Pos2::ZERO,
+            Vec2::new(SIZE[0] as f32, SIZE[1] as f32),
+        )),
+        max_texture_side: Some(8192),
+        time: Some(time),
+        events,
+        ..Default::default()
+    };
+    let mut out = ctx.run_ui(input, |ui| app.frame(ui));
+    out.textures_delta.clear();
+}
+
+/// The math keys reach the editor, natively and in the browser: while a text is edited, Alt+M
+/// then F inserts a formula holding a fraction, given as the events egui gives for them; and, in a
+/// browser, the window's listener prevents the default of Ctrl+M and of Alt+M while a text is
+/// edited, and of Ctrl+Shift+M and Ctrl+Alt+N always.
+#[test]
+fn the_math_keys_reach_the_editor() {
+    use eframe::egui::{Event, Key, Modifiers};
+    let key = |key: Key, modifiers: Modifiers| -> Vec<Event> {
+        [true, false]
+            .into_iter()
+            .map(|pressed| Event::Key {
+                key,
+                physical_key: None,
+                pressed,
+                repeat: false,
+                modifiers,
+            })
+            .collect()
+    };
+    let mut app = App::in_memory();
+    app.open_sample();
+    type_in_place(&mut app);
+    frame_with(&mut app, key(Key::M, Modifiers::ALT), Modifiers::ALT);
+    let mut f = key(Key::F, Modifiers::NONE);
+    f.insert(1, Event::Text("f".to_owned()));
+    frame_with(&mut app, f, Modifiers::NONE);
+    assert!(app.math_caret().is_some(), "the caret in the new formula");
+    assert_eq!(
+        app.edited_formula().map(|f| f.to_latex()).as_deref(),
+        Some(r"\frac{}{}")
+    );
+    #[cfg(target_arch = "wasm32")]
+    {
+        use wasm_bindgen::JsCast;
+        use wasm_bindgen::prelude::Closure;
+        let document = web_sys::window().unwrap().document().unwrap();
+        let canvas = document.create_element("canvas").unwrap();
+        document.body().unwrap().append_child(&canvas).unwrap();
+        let stop =
+            Closure::<dyn FnMut(web_sys::Event)>::new(|e: web_sys::Event| e.stop_propagation());
+        canvas
+            .add_event_listener_with_callback("keydown", stop.as_ref().unchecked_ref())
+            .unwrap();
+        let prevented = |name: &str, ctrl: bool, shift: bool, alt: bool| {
+            let init = web_sys::KeyboardEventInit::new();
+            init.set_key(name);
+            init.set_ctrl_key(ctrl);
+            init.set_shift_key(shift);
+            init.set_alt_key(alt);
+            init.set_bubbles(true);
+            init.set_cancelable(true);
+            let event = web_sys::KeyboardEvent::new_with_keyboard_event_init_dict("keydown", &init)
+                .unwrap();
+            canvas.dispatch_event(&event).unwrap();
+            event.default_prevented()
+        };
+        assert!(
+            prevented("m", true, false, false),
+            "Ctrl+M reached the browser"
+        );
+        assert!(
+            prevented("m", false, false, true),
+            "Alt+M reached the browser"
+        );
+        app.stop_editing();
+        frame_with(&mut app, Vec::new(), Modifiers::NONE);
+        assert!(
+            !prevented("m", true, false, false),
+            "Ctrl+M kept outside editing"
+        );
+        assert!(
+            prevented("M", true, true, false),
+            "Ctrl+Shift+M reached the browser"
+        );
+        assert!(
+            prevented("n", true, false, true),
+            "Ctrl+Alt+N reached the browser"
+        );
+        stop.forget();
+    }
 }
 
 /// A pack round-trips in the browser build: opened from its bytes, edited, saved as the pack the

@@ -14,6 +14,7 @@ pub mod control;
 pub mod editing;
 pub mod formula_editing;
 pub mod hit;
+pub mod keymap;
 mod memory;
 mod menu;
 pub mod palette;
@@ -76,6 +77,11 @@ pub struct App {
     edit_on_click: Option<Pos2>,
     /// Whether the primary button, pressed inside the edited text, drags a selection.
     text_drag: bool,
+    /// The keys of a sequence of the math keys typed so far, `keymap::lookup`, while it waits for
+    /// its next key; and whether a text egui gives for its chord, as Alt+M can give `m` or `µ`, is
+    /// still to be dropped.
+    key_sequence: Vec<keymap::Stroke>,
+    chord_text: bool,
     /// When a click on the slide last left the final view, in egui's seconds: the next press, if
     /// it comes within egui's delay of a double-click, is that double-click's second half.
     left_final_view: Option<f64>,
@@ -266,6 +272,8 @@ impl App {
             edit: None,
             edit_on_click: None,
             text_drag: false,
+            key_sequence: Vec::new(),
+            chord_text: false,
             left_final_view: None,
             #[cfg(unix)]
             listener: None,
@@ -1165,13 +1173,24 @@ impl App {
         if ui.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Delete)) {
             self.remove_selection();
         }
+        // The math keys that act on a selected area, Ctrl+Shift+M and Ctrl+Alt+N.
+        for binding in keymap::bindings() {
+            if let (keymap::Scope::Selected, [keymap::Stroke::Chord(modifiers, key)]) =
+                (binding.action.scope(), &binding.keys[..])
+                && ui.input_mut(|i| i.consume_key(*modifiers, *key))
+            {
+                self.run_key_action(binding.action);
+            }
+        }
     }
 
     /// The input while a text is edited in place, taken in the order it came: typed text, the IME,
     /// the clipboard, and the keys that move the caret, extend the selection with Shift, delete,
     /// undo and redo, set bold or italic by a style action with Ctrl+B and Ctrl+I, split the
-    /// caret's span with Ctrl+Space, or leave with Esc. The editor's other shortcuts do not act, so Delete and
-    /// Shift with an arrow reach the text.
+    /// caret's span with Ctrl+Space, or leave with Esc; and the math keys of `keymap`, a chord
+    /// and, after Alt+M, the keys typed next, which a waiting sequence takes as its own. While the
+    /// caret is in a formula, the keys are the formula's, `path@rootpoint-app@src/formula_editing.rs`.
+    /// The editor's other shortcuts do not act, so Delete and Shift with an arrow reach the text.
     fn editing_keys(&mut self, ui: &mut Ui) {
         use editing::CaretMove;
         let events = ui.input(|i| i.events.clone());
@@ -1180,6 +1199,11 @@ impl App {
                 return;
             }
             match event {
+                egui::Event::Text(t) if !self.key_sequence.is_empty() => {
+                    for ch in t.chars() {
+                        self.sequence_char(ch);
+                    }
+                }
                 egui::Event::Text(t) => self.type_str(&t),
                 egui::Event::Ime(egui::ImeEvent::Preedit { text, .. }) => self.set_preedit(&text),
                 egui::Event::Ime(egui::ImeEvent::Commit(t)) => self.commit_ime(&t),
@@ -1200,6 +1224,17 @@ impl App {
                     modifiers,
                     ..
                 } => {
+                    if self.math_chord(key, modifiers) {
+                        continue;
+                    }
+                    // The keys typed after a chord of a sequence come as text too, which the
+                    // sequence takes; Esc drops the sequence.
+                    if !self.key_sequence.is_empty() {
+                        if key == Key::Escape {
+                            self.key_sequence.clear();
+                        }
+                        continue;
+                    }
                     let shift = modifiers.shift;
                     let word = modifiers.command;
                     let moved = match key {
@@ -1223,7 +1258,6 @@ impl App {
                             self.math_new_row()
                         }
                         (None, Key::Enter) if self.math_caret().is_some() => {}
-                        (None, Key::M) if word && !shift => self.insert_formula(),
                         (None, Key::Backspace) => self.delete_backward(),
                         (None, Key::Delete) => self.delete_forward(),
                         (None, Key::Enter) => self.type_str("\n"),

@@ -240,7 +240,7 @@ impl App {
     }
 
     /// Set the caret in the formula, closing any selection of an atom.
-    pub(crate) fn set_math_caret(&mut self, path: CellPath) {
+    pub fn set_math_caret(&mut self, path: CellPath) {
         if let Some(Editing { math: Some(m), .. }) = &mut self.edit {
             m.path = path;
             m.selected = None;
@@ -381,6 +381,23 @@ impl App {
     /// Insert an atom at the caret in a formula, as a typed character or the palette does.
     pub fn insert_math_atom(&mut self, atom: Atom) {
         self.edit_formula(|f, p| insert(f, p, atom));
+    }
+
+    /// Alt+M N: the number of the equation being edited on or off, in the stay's group.
+    pub fn toggle_equation_number(&mut self) {
+        let Some(Place::Equation(area)) = self.place() else {
+            return;
+        };
+        if let Some(Node::Area(a)) = self.node(area)
+            && let Content::Equation(e) = &a.content
+        {
+            let command = Command::Equation {
+                area,
+                formula: e.formula.clone(),
+                options: vec![EquationOption::Numbered(!e.numbered)],
+            };
+            self.run(command);
+        }
     }
 
     /// Run a button of the palette at the caret.
