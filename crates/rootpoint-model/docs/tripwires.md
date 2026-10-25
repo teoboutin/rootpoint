@@ -34,3 +34,14 @@ once that the spans' ids or their syntax got in the way.
 may leave out and the loader gives.
 **Re-entry:** the next design work on the save format; and the standing-state review before every
 merge.
+
+## Guarding `design@rootpoint-model@named-span-styles`: two tables of styles confuse the author `##span-styles-confuse`
+
+T4 of the premortem of the milestone on rich text, recorded on the owner's word.
+
+**Fires when:** the owner reports, more than once after the Styles tab lists the span styles,
+looking for a style in the wrong table, or applying a text style where a span style was meant.
+**Response:** reopen `design@rootpoint-model@named-span-styles`, toward one table of styles whose
+fields are all optional, `rejected@rootpoint-model@one-table-of-optional-styles`.
+**Re-entry:** the design audit of the next work on styles; and the standing-state review before
+every merge.

@@ -270,10 +270,8 @@ pub(crate) fn warn_before_unload(unsaved: std::rc::Weak<std::cell::Cell<bool>>) 
 /// Keep the editor's keys from the browser's own actions, per
 /// `design@rootpoint-app@editor-keys-kept-from-browser`: a listener of the window, in the capture
 /// phase, prevents the default of F5, which starts presenter mode, and, while `editing` holds, of
-/// Ctrl+B, Ctrl+I, their Meta forms, and Ctrl+Space, which the editor consumes then. eframe 0.37.0's text agent,
-/// which has the focus while a text is edited, hands its keydown to the canvas's handler, and the
-/// window's capture-phase listener sees both first. It holds the flag weakly, so an app dropped
-/// keeps F5 alone.
+/// Ctrl+B, Ctrl+I, their Meta forms, and Ctrl+Space, which the editor consumes then. It holds the
+/// flag weakly, so an app dropped keeps F5 alone.
 pub fn keep_editor_keys(editing: std::rc::Weak<std::cell::Cell<bool>>) {
     let Some(window) = web_sys::window() else {
         return;

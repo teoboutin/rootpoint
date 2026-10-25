@@ -936,7 +936,7 @@ fn marks_over(d: &Driver, around: Rect) -> Vec<String> {
         .collect()
 }
 
-/// AC2 of `milestone@plans@rich-text`: the two caret positions at each edge of a span of the
+/// `design@rootpoint-app@editor-overlay`: the two caret positions at each edge of a span of the
 /// sample's styled text show different marks, a frame at one and not at the other, or a caret of
 /// another height or colour, as the overlay draws them with no window.
 #[test]

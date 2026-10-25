@@ -24,6 +24,18 @@ the implementation. A text's items are kinds of an enumeration that admits a mat
 none, `design@rootpoint-model@text-node-kinds`; a reference to an equation, written inside a text,
 is another kind it admits.
 
+Leads for inline maths, none decided, from the milestone on rich text:
+
+- the renderer lays a text out with Parley 0.12.0's `RangedBuilder`,
+  `design@rootpoint-render@area-text-layout`, whose `push_inline_box` places an `InlineBox`, of
+  the `width`, `height` and `baseline` given, at the byte index `index` the caller gives, read in
+  Parley's `path@elsewhere@src/builder.rs` and `path@elsewhere@src/inline_box.rs`; a maths item
+  laid out by the project could stand in the text's one layout as such a box;
+- the built-in Noto Sans has no `MATH` table: the table tags of each of its four files,
+  `path@rootpoint-render@fonts/NotoSans-Regular.ttf` and its bold, italic and bold italic, read by a
+  script, are DSIG, GDEF, GPOS, GSUB, OS/2, cmap, cvt, fpgm, gasp, glyf, head, hhea, hmtx, loca,
+  maxp, name, post and prep; maths would need a font of its own.
+
 ### Why it matters
 
 `goal@rootpoint@real-presentations` asks for talks that need mathematics, which the prototype draws

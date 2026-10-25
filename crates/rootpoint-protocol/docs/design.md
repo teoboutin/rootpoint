@@ -472,7 +472,7 @@ time from `path@rootpoint-protocol@sample/`. `sample` replaces the session's doc
 memory, its images in the session's map at the paths its text names, with empty stacks, as
 `open-copy` does, `design@rootpoint-protocol@editing-modes`. So the sample opens in the GUI and headless by one
 command, and the command is the interface every client of the protocol uses. Its slides say how
-to split, select, drag and swap, and its images stay under 50 KB in all.
+to split, select, drag and swap, and how to style a text, and its images stay under 50 KB in all.
 
 On the owner's word: the owner wants the sample kept as a permanent feature of every build, a
 tutorial and a demonstrator anywhere, not only in the browser. The rival, a file the app's `Files`

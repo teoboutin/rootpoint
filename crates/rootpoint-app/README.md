@@ -59,7 +59,12 @@ document lacks, and text not drawn.
   named style or "custom", its size, weight, slant, colour, alignment and font, and the image's
   fit, and adds an image asset: a file below a workspace's root is added at its path there, and any
   other file is copied into the presentation, as the protocol's `import` does. A change of a value of a text that names a style makes the text
-  custom: the Selection tab changes no named style.
+  custom: the Selection tab changes no named style. While a text is edited, the tab shows the
+  ancestor row, "text" then each span that holds the caret, and its controls style the text at the
+  caret: with no selection a control opens an empty span there, which the next letters go into,
+  and with one it puts the selection in a span; a span of the row, clicked, is selected whole, and
+  the controls then change its style; "text" leaves editing; "Split here" cuts the caret's span.
+  The alignment changes the area's.
 - A right-click on an area, or on a row of the outline, selects that node and opens the node menu
   on it: "Select" selects the node or one of its ancestors, "Content" makes an area a text or an
   image, "Style" names a text's style or makes it custom, and "Remove" removes the node, as the side
@@ -67,10 +72,12 @@ document lacks, and text not drawn.
   any click, on an entry, elsewhere in the menu or outside it, closes it.
 - The side panel's Styles tab lists the named styles, each with the number of areas that name it,
   and changes the one selected in its list: its name, its values, a new style, a copy, or its
-  removal, which asks what the areas naming it take instead, a custom copy first.
+  removal, which asks what the areas naming it take instead, a custom copy first. Below them, the
+  span styles, each with the number of spans that name it, are changed the same way, each value
+  of a span style set or not, "—", a span then taking its parent's.
 - The side panel's Assets tab shows the assets as a tree of their folders, with a search and a
   filter, all, unused, missing or untracked, and the total size. The selected asset shows its size,
-  its thumbnail and its uses, each a button to its node or its style; its path moves it when typed,
+  its thumbnail and its uses, each a button to its node, its style or its span style; its path moves it when typed,
   and a drag of its row onto a folder's moves it there; Replace… gives its file other bytes, Remove
   asset removes it while nothing names it, a removal into another asset makes its uses name that
   one, and a missing asset is relinked to a file the presentation does not name. Import… and a file
@@ -82,11 +89,15 @@ document lacks, and text not drawn.
   copy, cut and paste, and IME composition and dead keys edit the text; Esc leaves editing, the
   area still selected, and a click outside the area leaves editing and acts as it does outside
   it. The edits of one stay in editing are one undo step. In a styled text, each edge of a span is
-  two caret positions, inside the span and outside it, both drawn at one place, and the arrows step
-  through both, so typing goes inside or outside as the caret stands; a selection stays in one
+  two caret positions, inside the span and outside it, at one place, and the arrows step through
+  both, so typing goes inside or outside as the caret stands: a thin frame is drawn around each span
+  that holds the caret, and the caret takes the colour and the size it types with, so the two
+  positions look apart; a selection stays in one
   span, or takes a span whole. Backspace or Delete next to a span selects it, and a second press
   deletes it; at a span's own start, Backspace, or its end, Delete, removes the span's style and
-  keeps its text.
+  keeps its text. Ctrl+B and Ctrl+I make the selection, or the letters typed next, bold or italic;
+  Ctrl+Space cuts the span that holds the caret at the caret, or leaves it at its edge, so typing
+  goes on in its parent's style.
 - Preview, in the toolbar, shows the shown slide as it will be presented, inside the editor: no
   mark is drawn over it, no area is selected, and a press on it starts no gesture. A click on an
   area selects it and leaves the preview, a double-click acting as that one click, and Esc or the

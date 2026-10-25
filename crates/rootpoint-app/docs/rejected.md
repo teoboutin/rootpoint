@@ -156,3 +156,14 @@ its workspace would not see the change.
 the author opened plainly, nor one held in memory from its start, against
 `goal@rootpoint-app@live-agent-edits`; and two windows given one path raced at the bind, which the
 lock of a workspace now prevents. The command line was its interface.
+
+### Space reserved around each span for its frame, as LyX reserves it `##reserved-frame-space`
+
+`live`. LyX keeps the space of a frame in the metrics of every inset that could carry one, drawn or
+not, read in its source by the survey `path@rootpoint@docs/grounding/lyx-nested-text.md`, because
+its screen is not its output. Here the space would move the edited text away from where it is
+presented, against `goal@rootpoint-app@faithful-slide-view`; the frames are drawn over the texture
+and take none, `design@rootpoint-app@editor-overlay`. Doubt remains whether frames of no space let
+the author tell the two caret positions of an edge apart; the owner said they might relax the goal
+if the overlay alone does not work, and `tripwire@rootpoint-app@frames-mislead` brings this design
+back.

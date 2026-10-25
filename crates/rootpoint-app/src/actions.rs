@@ -1686,11 +1686,11 @@ impl App {
         self.replace(caret.node, range, "", None);
     }
 
-    /// A style action: with no selection, a `wrap` of the
-    /// empty range at the caret, the caret then put in the new span; with a selection, a `wrap` of
-    /// it, the new span then selected whole, so that a second action changes that span; and a
-    /// selection that is one whole span, a `span` that changes its style. Its commands join the
-    /// stay's group, `design@rootpoint-app@gesture-groups`.
+    /// A style action, `design@rootpoint-app@style-action-target`: with no selection, a `wrap` of
+    /// the empty range at the caret, the caret then put in the new span; with a selection, a
+    /// `wrap` of it, the new span then selected whole, so that a second action changes that span;
+    /// and a selection that is one whole span, a `span` that changes its style. Its commands join
+    /// the stay's group, `design@rootpoint-app@gesture-groups`.
     pub fn style_action(&mut self, style: Vec<SpanOption>) {
         if self.socket_holds() || style.is_empty() {
             return;
@@ -1777,8 +1777,9 @@ impl App {
         self.style_action(vec![span]);
     }
 
-    /// "Split here", Ctrl+Space or the button of the ancestor row: the span that holds the caret is cut at the caret by `split-span`, the caret put between the
-    /// two halves, in their parent; at the span's start or end nothing is sent, and the caret moves
+    /// "Split here", Ctrl+Space or the button of the ancestor row,
+    /// `design@rootpoint-app@split-at-caret`: the span that holds the caret is cut at the caret by
+    /// `split-span`, the caret put between the two halves, in their parent; at the span's start or end nothing is sent, and the caret moves
     /// out of the span, before or after it. In the root, nothing; and with a selection, nothing,
     /// since its caret's end is no place to cut at.
     pub fn split_here(&mut self) {

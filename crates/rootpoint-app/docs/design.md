@@ -52,7 +52,11 @@ start, after closing any group still open, so that within one frame a group clos
 opens. The release closes a drag's group with `end`, and Esc with `cancel`; the end of a stay, by
 Esc, a click outside its area, an undo, a redo or any other action, closes its group, the stay
 ending first as every action ends a gesture, as the protocol's `undo` inside a group closes it
-first. While a drag runs, no key but Esc acts, since a key's edit would join the drag's step. The
+first. An action of the side panel that acts on the edited text, a style control or a button of
+the ancestor row, `design@rootpoint-app@controls-act-at-the-caret`, is no other action: it joins
+the stay, its commands in the stay's group, as a key of editing's are. Ending the stay first would
+leave no caret for it to act at, and an undo step of its own would cut one stay into several,
+where `design@rootpoint-app@edit-in-place` makes every change of a stay one step. While a drag runs, no key but Esc acts, since a key's edit would join the drag's step. The
 groups are the protocol's, `design@rootpoint-protocol@gesture-undo`, so a gesture is one undo step
 in a script as in the window.
 
@@ -68,9 +72,9 @@ first, `design@rootpoint-app@one-controller-at-a-time`.
 ### The editor's marks are drawn over the slide's texture with egui, never into the slide's image `##editor-overlay`
 
 The divider lines, the highlight of the divider under the pointer, the selection's outline and its
-grip, the line of a split at the pointer, the hint of a drop, and the caret, the selection and the
-composition's underline of a text edited in place are drawn with egui's painter over the texture, in
-`App::overlay`; the marks of a gesture are not drawn while the control socket holds the authority to
+grip, the line of a split at the pointer, the hint of a drop, and the caret, the selection, the
+composition's underline and the frames of the spans that hold the caret, of a text edited in place,
+are drawn with egui's painter over the texture, in `App::overlay`; the marks of a gesture are not drawn while the control socket holds the authority to
 edit, `design@rootpoint-app@one-controller-at-a-time`, and no mark is drawn in the final view, the
 session's preview, `design@rootpoint-protocol@view-state`. The banner of the control socket and its
 button "Take control", `design@rootpoint-app@take-over-at-once`, are egui widgets, in presenter mode
@@ -80,6 +84,17 @@ it, which `path@rootpoint-app@tests/presenter.rs` compares, and which
 `goal@rootpoint-app@faithful-slide-view` asks. The marks are lines, rectangles and the hint's label,
 editor text that is no slide content, so they are not the slide text that
 `rejected@rootpoint-render@toolkit-painter` keeps out of the toolkit.
+
+The frames take no space in the slide, so the text an author edits stands where it is presented:
+one thin rectangle per line a span covers, each outer frame lighter and set `FRAME_GAP` of
+`path@rootpoint-app@src/view.rs` further out, so frames meeting at an edge stay apart, and around
+the caret for an empty span, which covers no glyph. The caret is drawn in the colour and at the
+size it types with. So the two caret positions at a span's edge, which stand at one byte index,
+show different marks, a frame at one and not the other, which the test
+`the_two_positions_at_an_edge_show_different_marks` of `path@rootpoint-app@tests/gestures.rs`
+checks over the spans of the sample's styled text. LyX's frames reserve their space,
+`rejected@rootpoint-app@reserved-frame-space`. Whether frames of no space let the author tell the
+two positions of an edge apart in real use is watched by `tripwire@rootpoint-app@frames-mislead`.
 
 ### The window always shows where its presentation is and whether it is saved, and names where each writing action writes `##visible-mode`
 
@@ -195,14 +210,18 @@ content fits. The rival, a fixed width with no drag, would give a deep tree or a
 room. On the owner's word: the owner asked for a side panel of a constant width, since a width that
 changes at a click resizes the slide view.
 
-### Only the Styles tab changes a named style, and a change from the selection makes the text custom `##styles-tab-edits-styles`
+### Only the Styles tab changes a named style, and a change from the selection makes the text or the span custom `##styles-tab-edits-styles`
 
 The Selection tab's style row names a style of the table, or makes the text's values its own; its
 other controls change only the text's own values, so a change of a value of a text naming a style
 makes that text custom, with the named values and that change,
-`design@rootpoint-model@named-styles`. The Styles tab is the one part of the window that sends
-`style set`, `style rename`, `style add` and `style remove`, and it lists, for each style, the
-number of areas that name it. A change to a style that slides out of view use is then made only from
+`design@rootpoint-model@named-styles`. While a text is edited, its controls name a span style or set
+a span's own values, `design@rootpoint-app@controls-act-at-the-caret`, so a value set on a span
+naming a span style makes that span custom, `design@rootpoint-model@named-span-styles`. The Styles
+tab is the one part of the window that sends `style set`, `style rename`, `style add` and
+`style remove`, and their `span-style` forms, and it lists, for each style, the number of areas
+that name it, and for each span style, in a section of its own, the number of spans; each value of
+a span style may be set or not, `<key>=inherit`, since each is optional. A change to a style that slides out of view use is then made only from
 the view that lists those uses, which answers the cost
 `rejected@rootpoint-model@content-by-reference` names, that editing a shared content changes every
 slide that shows it. The rival, controls of the selection that change the named style the text
@@ -219,7 +238,7 @@ the window that moves, relinks, replaces and removes an asset, by the commands o
 an image shows, and change none. It shows the tree of the asset paths, its folders the prefixes the
 paths have, `design@rootpoint-model@folders-from-paths`, with a search and the filters of
 `assets`, and, for the selected asset, its size, its thumbnail and its uses, each a button to its
-node or its style, but a span style's, a label while the Styles tab lists no span style. An asset an image shows on several slides is then changed only from the view that
+node, its style or its span style. An asset an image shows on several slides is then changed only from the view that
 lists those slides, for the reason `design@rootpoint-app@styles-tab-edits-styles` gives for a
 style: a change meant for one image would otherwise change slides out of view. It keeps the panel's
 width, `design@rootpoint-app@sidebar-width`, its rows cut
@@ -424,6 +443,65 @@ calls `dissolveInset`. The rival, deleting the character drawn before or after t
 whatever text node holds it, never a span whole, edits a node the caret is not in, which the
 author does not see, and leaves an emptied span behind until the stay ends. The two shapes meet
 every binding constraint. On the owner's word: the owner chose LyX's, finding it very convenient.
+
+### A style action opens an empty span at the caret with no selection, and wraps a selection `##style-action-target`
+
+A style action, Ctrl+B or Ctrl+I, or a control of the Selection tab while a text is edited,
+`design@rootpoint-app@controls-act-at-the-caret`, sends with no selection `wrap` of the empty
+range at the caret, the caret then put in the new span, so the next letters typed take its style;
+with a selection, `wrap` of it, the new span then selected whole; and on a selection that is one
+whole span, `span`, which changes that span's style, so a second action on a span just made
+changes it rather than wrapping it again. Ctrl+B sets bold and Ctrl+I italic; colour, size, font
+and a span style have no key, and are set from the Selection tab. A style action inside a span
+already in that style opens a span all the same, since equal spans stay apart,
+`design@rootpoint-model@text-tree-normal-form`. The empty span stays while the caret is in it,
+`design@rootpoint-app@empty-span-unwrapped`.
+
+So the author styles the letters about to be typed as well as those already typed, with no
+markup, as `goal@rootpoint@no-language-no-build` asks of the editor. The rival, an action that
+needs a selection, styles only what exists, and the author types first and styles after. On the
+owner's word: asked whether opening a new span means creating an empty one at the caret, styling a
+selection, or both, the owner chose both.
+
+### While a text is edited, the Selection tab's controls are the style actions, and the ancestor row selects a span `##controls-act-at-the-caret`
+
+While a text is edited, the Selection tab shows, in place of the area's content controls, the
+ancestor row and the controls at the caret. The row lists "text", then each span that holds the
+caret, outer first, with its style's name or "custom", or, while one span is selected whole, that
+span and those that hold it; a click on a span selects it whole, and a click on "text" leaves
+editing, as Esc does, the area still selected, where the controls change the area's style as
+outside editing. "Split here" is the row's button, `design@rootpoint-app@split-at-caret`. The
+controls show the values the caret types with, or those of a span selected whole, and each change
+is a style action, `design@rootpoint-app@style-action-target`: the style menu lists the span styles
+a span may name, and the values set a span's own; an alignment, which no span has, changes the
+area's style by `text` with no tree. Every command joins the stay's group,
+`design@rootpoint-app@gesture-groups`.
+
+Each control then has one meaning at a time, and the window holds no state of its own for it. On
+the owner's word: the owner chose this over two other shapes, a target the row chooses for the
+controls, the caret's, a span's or the area's, which never leaves editing but makes the author
+read the target before each click; and the area's controls shown beside those at the caret, which
+reach the area's style in the stay at the cost of the side panel showing its controls twice.
+
+### "Split here" cuts the span that holds the caret at the caret, on Ctrl+Space, and leaves it at its edge `##split-at-caret`
+
+Ctrl+Space, or "Split here" of the ancestor row, sends `split-span` of the span that holds the caret
+at the caret, the caret then put between the two halves, in their parent; pressed again it cuts the
+next span out. At the span's start or end it sends nothing, since `Op::SplitSpan` refuses there,
+where one half would be empty, and puts the caret before or after the span; in the
+root, or with a selection, whose caret's end is no place to cut at, it does nothing. So the author
+leaves a style anywhere, or splits it, where the caret's positions alone leave it only at an edge.
+The rival, a key per style that toggles it, Ctrl+B pressed in a bold span splitting it and going on
+unbolded, has no meaning for a colour or a named span, where "Split here" acts the same for every
+style.
+
+Ctrl+Space reaches the editor on the owner's desktop: `gsettings get
+org.freedesktop.ibus.general.hotkey triggers` and `gsettings get
+org.gnome.desktop.wm.keybindings switch-input-source` both name Super+Space; and egui-winit 0.37.0
+sends no text for a key pressed with Ctrl, `on_keyboard_input`, so no space is typed. In the browser
+it is kept from the page, `design@rootpoint-app@editor-keys-kept-from-browser`. On the owner's word:
+the owner asked to be able to leave a style at any place, or split it, and found Ctrl+Space fine as
+its key.
 
 ### A selection is a range of one text node, a span inside it taken whole `##selection-one-level`
 
@@ -811,3 +889,18 @@ and the canvas still receives it. A listener in the bubble phase never sees the 
 canvas has focus, `rejected@rootpoint-app@bubble-phase-f5-listener`. The test
 `f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation` of
 `path@rootpoint-app@tests/web.rs` checks it in a headless browser.
+
+The rule covers every key the editor consumes, since the browser's default of one is an action the
+author did not ask for, whether it leaves the page or not. While a text is edited the editor
+consumes Ctrl+B and Ctrl+I, and Meta with B or I, since eframe 0.37.0's web input sets egui's
+`command` from Ctrl or Meta, `modifiers_from_kb_event` of `path@elsewhere@src/web/input.rs`, and
+Ctrl+Space, `design@rootpoint-app@style-action-target` and `design@rootpoint-app@split-at-caret`;
+eframe prevents none of their defaults. That Firefox gives Ctrl+B to its bookmarks sidebar and
+Ctrl+I to page information is the session's knowledge of the browser, not measured; the rule does
+not rest on it, since a prevented default costs a key the editor consumes nothing. So the same
+listener prevents their default while a flag of the editor holds, which `App::frame` sets at each
+frame to whether a text is edited: eframe's text agent, which holds the focus while editing, hands
+its keydown to the canvas's handler, `path@elsewhere@src/web/text_agent.rs`, and the window's
+listener in the capture phase sees both first. Outside editing the editor consumes none of them,
+and the browser keeps them. The test
+`the_keys_of_editing_are_kept_from_the_browser_only_while_editing` of the same file checks it.

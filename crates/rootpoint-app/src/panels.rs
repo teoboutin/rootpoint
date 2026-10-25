@@ -280,9 +280,10 @@ impl App {
         }
     }
 
-    /// The Selection tab while a text is edited: the ancestor row, then the controls as style
-    /// actions at the caret or over the selection. The row lists the text, then each span that
-    /// holds the caret, outer first, with its style; a click on a span selects it whole, so the
+    /// The Selection tab while a text is edited, `design@rootpoint-app@controls-act-at-the-caret`:
+    /// the ancestor row, then the controls as style actions at the caret or over the selection. The row lists the text, then each span that
+    /// holds the caret, outer first, with its style, or, while one span is selected whole, that
+    /// span and those that hold it; a click on a span selects it whole, so the
     /// controls show and change its style, and a click on the text leaves editing, where the
     /// controls change the area's style. "Split here" cuts the caret's span. The controls send
     /// their commands in the stay's group, and never change a named style, which only the Styles

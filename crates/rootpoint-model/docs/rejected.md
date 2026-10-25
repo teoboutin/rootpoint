@@ -145,7 +145,7 @@ named inside a title leaves the title's size, and alignment means nothing inside
 
 `live`. Every area style becomes a set of optional fields with a fallback for each, the cascade
 `design@rootpoint-model@named-styles` keeps out of the area. Kept open by the doubt that two tables
-confuse authors.
+confuse authors, which `tripwire@rootpoint-model@span-styles-confuse` watches.
 
 ### A text's items untagged, a bare string beside a span, in the file `##untagged-text-items`
 
