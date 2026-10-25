@@ -863,9 +863,11 @@ snapshot restores every span with its id and its style, and a text is small.
 | last offset of the root | no move | (by item i−1) |
 | offset 0 of the root | (by item i) | no move |
 
-A move past a character passes one cluster of the layout, the characters drawn as one glyph or
-one cluster of glyphs, and stops at a span's edge: the caret stands on a glyph's boundary, as
-`design@rootpoint-app@edit-in-place` asks, and never inside a cluster, which has none.
+A move past a character passes one cluster of the layout, as Parley 0.12.0 cuts it, and stops at
+a span's edge: a character with the marks drawn on it is one cluster, so the caret stands on a
+glyph's boundary, as `design@rootpoint-app@edit-in-place` asks; each character of a ligature is a
+cluster of its own, given an even share of the ligature's advance by `Cluster::advance`, and
+Parley's own moves stop there too, so the caret stops inside a ligature, at that share.
 
 Up and Down, word moves and line moves are Parley's on the byte index, then mapped back to a caret
 position; #text-tree's map gives the forward direction and each span's byte range. The backward
@@ -965,8 +967,9 @@ guarding `design@rootpoint-app@editor-overlay`, with the frames recorded in it; 
 AC1. Guards #boundary-caret-positions and #text-node-tree. Judged at #tree-caret. Observable: a
 property test over random trees, in `path@rootpoint-app@tests/editing.rs`, walks the caret with
 Right from the start to the end and with Left back; each caret position that stands on a cluster's
-boundary is visited once in each direction, and each maps to a byte index whose drawn glyph is the caret's, within the half-pixel
-tolerance of `design@rootpoint-app@edit-in-place`, at the three window sizes that test uses.
+boundary is visited once in each direction, and each maps to a byte index whose drawn glyph is the
+caret's, a ligature's characters after its first excepted, within the half-pixel tolerance of
+`design@rootpoint-app@edit-in-place`, at the three window sizes that test uses.
 Response: the map is fixed in the slice; a tree whose positions cannot be mapped to the one layout
 reopens #text-node-tree.
 

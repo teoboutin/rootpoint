@@ -17,7 +17,9 @@ use eframe::egui::{Pos2, Rect, Vec2};
 use rootpoint_app::hit::{Edge, Layout, Preview, Zone};
 use rootpoint_app::selection::Move;
 use rootpoint_app::{App, MenuEntry};
-use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, Side, SlideId};
+use rootpoint_model::{
+    AssetId, Axis, CaretPos, Content, ImageFit, Node, NodeId, Side, SlideId, SpanId, TextNodeRef,
+};
 use rootpoint_protocol::{
     Command, Files, Reply, Session, StyleCommand, StyleOption, parse_command,
 };
@@ -61,6 +63,26 @@ impl MemoryFiles {
         }
         files
     }
+}
+
+/// The ids of n3's spans, in the order of its text.
+fn spans_of(session: &Session) -> Vec<SpanId> {
+    match session.document().node(NodeId(3)) {
+        Some(Node::Area(a)) => match &a.content {
+            Content::Text(t) => t.root.spans().iter().map(|s| s.id).collect(),
+            _ => Vec::new(),
+        },
+        _ => Vec::new(),
+    }
+}
+
+/// Enter editing n3, the selected area, with no window.
+fn edit_n3(a: &mut App) {
+    let doc = a.session().document();
+    let view = Rect::from_min_size(Pos2::ZERO, Vec2::new(960.0, 540.0));
+    let layout = Layout::new(doc, SlideId(1), view, [960, 540]).unwrap();
+    let p = layout.rect(NodeId(3)).unwrap().center();
+    a.edit_at(NodeId(3), p, &layout);
 }
 
 fn c(line: &str) -> Command {
@@ -356,6 +378,41 @@ fn the_content_actions_issue_their_commands() {
                 c("delete n3 2..3"),
                 c("insert n3 2 \"é\""),
                 c("delete n3 3..4"),
+                c("end"),
+            ]
+        },
+    );
+    // At a span's edge, Backspace selects the span, then deletes it, and unwraps the span the
+    // caret stands at the start of; the caret leaving an emptied span unwraps it, and so does the
+    // stay's end for every empty span left.
+    let tree = r#"text n3 ["ab", {bold "cd"}, "e", {italic "f"}, {bold "g"}, {bold ""}]"#;
+    check(
+        "delete and unwrap at a span's edges",
+        &["select n3", tree],
+        |a| {
+            let spans = spans_of(a.session());
+            let span = |i: usize| TextNodeRef::Span(spans[i]);
+            let at = |node, offset| CaretPos { node, offset };
+            edit_n3(a);
+            a.set_caret_pos(at(TextNodeRef::Root, 3));
+            a.delete_backward();
+            a.delete_backward();
+            a.set_caret_pos(at(span(1), 0));
+            a.delete_backward();
+            a.set_caret_pos(at(span(2), 1));
+            a.delete_backward();
+            a.move_caret(rootpoint_app::editing::CaretMove::Right, false);
+            a.stop_editing();
+        },
+        |s| {
+            let t = spans_of(s);
+            vec![
+                c("begin"),
+                c("delete n3 2..3"),
+                c(&format!("unwrap {}", t[1])),
+                c(&format!("delete {} 0..1", t[2])),
+                c(&format!("unwrap {}", t[2])),
+                c(&format!("unwrap {}", t[3])),
                 c("end"),
             ]
         },

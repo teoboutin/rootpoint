@@ -1378,8 +1378,9 @@ impl App {
     /// The offsets the IME's text replaces: the composing text, or, when composing starts, the
     /// selection or the caret.
     fn composed_range(&self, edit: &Editing) -> (TextNodeRef, std::ops::Range<usize>) {
+        // The composing text's own node, which a click during the composition does not change.
         if let Some(p) = &edit.preedit {
-            return (edit.caret.node, p.clone());
+            return p.clone();
         }
         let selected = self.edited_text().and_then(|t| edit.selected(&t));
         selected.unwrap_or((edit.caret.node, edit.caret.offset..edit.caret.offset))
@@ -1387,8 +1388,8 @@ impl App {
 
     /// Replace the offsets `range` of the text node `node` by `s`, by a `delete` and an `insert`,
     /// either left out when it would change nothing, and put the caret after `s`. `preedit` sets
-    /// the composing range when given, and keeps it otherwise, shifted by the change when it lies
-    /// after the edit in the same text node.
+    /// the composing range, offsets of `node`, when given, and keeps it otherwise, shifted by the
+    /// change when it lies after the edit in the same text node.
     fn replace(
         &mut self,
         node: TextNodeRef,
@@ -1420,21 +1421,18 @@ impl App {
         }
         let len = s.chars().count();
         let preedit = match preedit {
-            Some(p) => p,
-            None => edit
-                .preedit
-                .filter(|_| edit.caret.node == node)
-                .and_then(|p| {
-                    if p.end <= range.start {
-                        Some(p)
-                    } else if p.start >= range.end {
-                        // After the edit: moved by the change of length.
-                        let shift = |i: usize| i + len - range.len();
-                        Some(shift(p.start)..shift(p.end))
-                    } else {
-                        None
-                    }
-                }),
+            Some(p) => p.map(|p| (node, p)),
+            None => edit.preedit.and_then(|(n, p)| {
+                if n != node || p.end <= range.start {
+                    Some((n, p))
+                } else if p.start >= range.end {
+                    // After the edit: moved by the change of length.
+                    let shift = |i: usize| i + len - range.len();
+                    Some((n, shift(p.start)..shift(p.end)))
+                } else {
+                    None
+                }
+            }),
         };
         if let Some(e) = &mut self.edit {
             e.preedit = preedit;
@@ -1559,8 +1557,9 @@ impl App {
     }
 
     /// The one place the caret moves. Each empty span the caret was in and has left is unwrapped,
-    /// the inner first, #text-tree-normal-form of `milestone@plans@rich-text`, and
-    /// the caret and the anchor are moved back where they stood after it in its parent.
+    /// the inner first, #text-tree-normal-form of `milestone@plans@rich-text`; the caret, the
+    /// anchor and the composing text are carried to where they stand after it, an anchor left in
+    /// the span to the span's place in its parent, as Shift with an arrow out of it leaves one.
     fn put_caret(
         &mut self,
         mut caret: CaretPos,
@@ -1595,13 +1594,27 @@ impl App {
                 continue;
             }
             let shift = |pos: &mut CaretPos| {
-                if pos.node == up && pos.offset > at {
+                if pos.node == TextNodeRef::Span(span) {
+                    *pos = CaretPos {
+                        node: up,
+                        offset: at,
+                    };
+                } else if pos.node == up && pos.offset > at {
                     pos.offset -= 1;
                 }
             };
             shift(&mut caret);
             if let Some(a) = &mut anchor {
                 shift(a);
+            }
+            if let Some(Editing {
+                preedit: Some((node, r)),
+                ..
+            }) = &mut self.edit
+                && *node == up
+            {
+                let after = |i: usize| if i > at { i - 1 } else { i };
+                *r = after(r.start)..after(r.end);
             }
         }
         if let Some(e) = &mut self.edit {

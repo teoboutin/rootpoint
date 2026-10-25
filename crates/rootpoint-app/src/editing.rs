@@ -20,8 +20,8 @@ use crate::hit::Layout;
 pub const CARET_WIDTH: f32 = 2.0;
 
 /// The text being edited in place: its area, the caret and the selection's anchor as caret
-/// positions of its tree, and the offsets of the IME's composing text in the caret's text node,
-/// which stands in the area's text while composing.
+/// positions of its tree, and the IME's composing text, which stands in the area's text while
+/// composing: the text node it was typed into, and its offsets there.
 #[derive(Clone, Debug)]
 pub(crate) struct Editing {
     pub area: NodeId,
@@ -35,7 +35,7 @@ pub(crate) struct Editing {
     /// The Parley selection of the last move by lines, kept while the caret stays where it put
     /// it, so that a run of moves by lines keeps the caret's column.
     pub column: Option<Selection>,
-    pub preedit: Option<Range<usize>>,
+    pub preedit: Option<(TextNodeRef, Range<usize>)>,
 }
 
 /// A move of the caret.
@@ -399,14 +399,9 @@ impl App {
     /// The byte range of the composing text, if the IME is composing.
     pub fn preedit_range(&mut self) -> Option<Range<usize>> {
         let edit = self.edit.clone()?;
-        let r = edit.preedit?;
+        let (node, r) = edit.preedit?;
         let map = self.area_text(edit.area)?.map;
-        let at = |offset| {
-            map.byte_index(CaretPos {
-                node: edit.caret.node,
-                offset,
-            })
-        };
+        let at = |offset| map.byte_index(CaretPos { node, offset });
         Some(at(r.start)?..at(r.end)?)
     }
 

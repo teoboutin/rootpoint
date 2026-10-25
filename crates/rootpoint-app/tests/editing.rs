@@ -823,18 +823,18 @@ fn backspace_and_delete_at_an_edge_select_a_span_or_unwrap_it() {
 
 /// AC1, #ac-caret-walk of `milestone@plans@rich-text`: over generated trees, Right walks from the
 /// text's start to its end and Left back, each caret position on a cluster's boundary visited once
-/// each way, and each drawn on its glyph's boundary within half a
-/// pixel at three sizes of the view. The trees hold runs of ASCII letters but `f` and spaces, so
-/// each character is a cluster and a glyph of its own and every offset is a caret position: the
-/// built-in Noto Sans draws "ff" as one glyph, with no glyph boundary between its two characters,
-/// as the first run of this test found. The spans hold one item or more, nested three deep at
-/// most, since the walk unwraps an empty span it leaves.
+/// each way, and each drawn on its glyph's boundary within half a pixel at three sizes of the view,
+/// but inside a ligature, which has no glyph boundary between its characters. The trees hold runs
+/// of ASCII letters and spaces, so each character is a cluster of its own and every offset is a
+/// caret position; "ff" is a ligature of the built-in Noto Sans, which the first run of this test
+/// met, and `the_walk_crosses_a_ligature` walks one each time. The spans hold one item or more, nested three deep at most, since the
+/// walk unwraps an empty span it leaves.
 mod caret_walk {
     use super::*;
     use proptest::prelude::*;
 
     fn tree(depth: u32) -> BoxedStrategy<String> {
-        let chars = "[a-eg-z ]{1,4}".prop_map(|s| format!("{s:?}"));
+        let chars = "[a-z ]{1,4}".prop_map(|s| format!("{s:?}"));
         if depth == 0 {
             return chars.boxed();
         }
@@ -878,13 +878,14 @@ mod caret_walk {
         loop {
             let index = d.app.caret_index().unwrap();
             let caret = d.app.caret_rect(layout).unwrap();
-            // The glyph that starts at the caret's byte index, or, at the text's end, the last one's
-            // end; a caret at a soft line break stands before the next line's first glyph.
-            let want = glyphs
-                .iter()
-                .find(|g| g.0 == index)
-                .map(|g| g.1)
-                .or_else(|| glyphs.iter().find(|g| g.3 == index).map(|g| g.2));
+            // The left edge of the cluster that starts at the caret's byte index, or, at the text's
+            // end, the last one's right edge; a caret at a soft line break stands before the next
+            // line's first cluster. Inside a ligature, no glyph boundary is there to check.
+            let want = match glyphs.iter().find(|g| g.0 == index) {
+                Some(g) if g.4 => None,
+                Some(g) => Some(g.1),
+                None => glyphs.iter().find(|g| g.3 == index).map(|g| g.2),
+            };
             if let Some(x) = want {
                 let off = (caret.min.x - layout.to_points(x, 0.0).x).abs() * ppp;
                 assert!(off <= 0.5, "byte {index}: {off} px");
@@ -898,27 +899,56 @@ mod caret_walk {
         }
     }
 
-    /// Each glyph the render draws for n3: the byte its character starts at, its left and right x
-    /// in slide units, and the byte its character ends at.
-    fn glyph_edges(d: &Driver) -> Vec<(usize, f64, f64, usize)> {
+    /// Each cluster the render lays out for n3: the byte it starts at, its left and right x in
+    /// slide units, the byte it ends at, and whether it is a character of a ligature after its
+    /// first, which has no glyph boundary of its own: Parley 0.12.0 gives each character of a
+    /// ligature a cluster, with a share of the ligature's advance.
+    fn glyph_edges(d: &Driver) -> Vec<(usize, f64, f64, usize, bool)> {
         let doc = d.app.session().document();
         let slide = d.app.shown_slide().unwrap();
         let text = area_text(doc, slide, NodeId(3), &mut FontSet::new()).unwrap();
         let mut out = Vec::new();
         for line in text.layout.lines() {
-            let mut offsets = line.text_range();
             for item in line.items() {
                 if let PositionedLayoutItem::GlyphRun(run) = item {
-                    for g in run.positioned_glyphs() {
-                        if let Some(i) = offsets.next() {
-                            let x = text.origin.0 + f64::from(g.x);
-                            out.push((i, x, x + f64::from(g.advance), i + 1));
-                        }
+                    let mut x = text.origin.0 + f64::from(run.offset());
+                    for c in run.run().visual_clusters() {
+                        let r = c.text_range();
+                        let end = x + f64::from(c.advance());
+                        out.push((r.start, x, end, r.end, c.is_ligature_continuation()));
+                        x = end;
                     }
                 }
             }
         }
         out
+    }
+
+    /// The walk over a ligature: each of its characters is a caret position, and the caret is
+    /// checked on the ligature's left edge and after it.
+    #[test]
+    fn the_walk_crosses_a_ligature() {
+        let tree = r#"["off", {bold "ffa"}, "b"]"#;
+        let mut d = edit_tree(tree);
+        let size = Vec2::new(1000.0, 700.0);
+        let doc = d.app.session().document();
+        let slide = d.app.shown_slide().unwrap();
+        let layout = Layout::new(
+            doc,
+            slide,
+            Rect::from_min_size(Pos2::ZERO, size),
+            [1000, 700],
+        )
+        .unwrap();
+        assert!(
+            glyph_edges(&d).iter().any(|g| g.4),
+            "the text holds a ligature"
+        );
+        let mut all = Vec::new();
+        positions(ROOT, &content(&d, NodeId(3)).root, &mut all);
+        d.app.move_caret(CaretMove::TextStart, false);
+        let right = walk(&mut d, &layout, 1.0, CaretMove::Right);
+        assert_eq!(right, all);
     }
 
     proptest! {
@@ -990,4 +1020,33 @@ fn a_composition_inside_a_nested_span_commits_there_in_one_undo_step() {
         before,
         "one undo removes the stay's change"
     );
+}
+
+/// Shift with an arrow out of an empty span unwraps it, and the selection's anchor, which stood in
+/// it, stands at its place in the parent, so typing after it goes in.
+#[test]
+fn an_anchor_left_in_an_unwrapped_span_stands_at_its_place() {
+    let mut d = edit_tree(r#"["ab", {bold "c"}, "d"]"#);
+    let s = span(&d, 0);
+    d.app.set_caret_pos(at(s, 1));
+    d.app.delete_backward();
+    d.app.move_caret(CaretMove::Right, true);
+    assert_eq!(shape(&d, NodeId(3)), "abd");
+    assert_eq!(d.app.caret(), Some(at(ROOT, 2)));
+    d.app.type_str("X");
+    assert_eq!(shape(&d, NodeId(3)), "abXd");
+}
+
+/// A click during a composition moves the caret and leaves the composing text where it was typed,
+/// so the commit replaces that text and nothing of the clicked node.
+#[test]
+fn a_commit_after_the_caret_moved_replaces_the_composing_text() {
+    let mut d = edit_tree(r#"["ab", {bold "cd"}, "ef"]"#);
+    d.app.set_caret_pos(at(ROOT, 0));
+    d.app.set_preedit("xy");
+    assert_eq!(shape(&d, NodeId(3)), "xyab{cd}ef");
+    let s = span(&d, 0);
+    d.app.set_caret_pos(at(s, 1));
+    d.app.commit_ime("Z");
+    assert_eq!(shape(&d, NodeId(3)), "Zab{cd}ef");
 }
