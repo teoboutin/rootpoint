@@ -1246,3 +1246,26 @@ fn a_refused_removal_names_the_references_and_the_control() {
         ]
     );
 }
+
+/// A byte index inside a reference's drawn number, `(1)`, puts the caret at its nearer edge, never
+/// at the text's start.
+#[test]
+fn a_caret_inside_a_reference_stands_at_its_nearer_edge() {
+    let mut app = App::in_memory();
+    for line in ["sample", r#"text n3 ["ab", {ref n35}, "cd"]"#, "select n3"] {
+        assert!(matches!(app.run(c(line)), Reply::Ok(_)), "{line}");
+    }
+    edit_n3(&mut app);
+    // "ab" covers bytes 0..2, the reference's "(1)" 2..5.
+    for (index, offset) in [(2, 2), (3, 2), (4, 3), (5, 3)] {
+        app.set_caret(index);
+        assert_eq!(
+            app.caret(),
+            Some(CaretPos {
+                node: TextNodeRef::Root,
+                offset
+            }),
+            "byte {index}"
+        );
+    }
+}

@@ -268,6 +268,19 @@ pub(crate) fn from_byte(
         let at = |offset| map.byte_index(CaretPos { node: here, offset });
         for (offset, item) in items(node).into_iter().enumerate() {
             match item {
+                // A reference is drawn as several characters, `(12)`: an index inside it stands
+                // at its nearer edge, as the caret never enters it.
+                Item::Object(_)
+                    if let (Some(start), Some(end)) = (at(offset), at(offset + 1))
+                        && start < index
+                        && index < end =>
+                {
+                    let past = index - start > end - index;
+                    return Some(CaretPos {
+                        node: here,
+                        offset: offset + usize::from(past),
+                    });
+                }
                 Item::Char(_) | Item::Object(_) => {
                     if after && at(offset) == Some(index) {
                         return Some(CaretPos { node: here, offset });

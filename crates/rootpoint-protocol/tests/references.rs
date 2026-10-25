@@ -86,6 +86,62 @@ fn retarget_replies_the_count_and_undoes_what_it_moved() {
         refused(&mut s, &mut files, "retarget n3 n2"),
         "n2 holds no equation"
     );
+    assert_eq!(
+        refused(&mut s, &mut files, "retarget n3 n3"),
+        "n3 is retargeted to itself"
+    );
+}
+
+/// A removal of a split holding two referenced equations names each, with its texts and counts.
+#[test]
+fn a_refusal_names_each_referenced_equation() {
+    let (mut s, mut files) = session();
+    ok(&mut s, &mut files, "text n2 [{ref n3}, {ref n5}, {ref n5}]");
+    let split = match &s.document().slides[0].root {
+        rootpoint_model::Node::Split(top) => top.children[1].id(),
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(
+        refused(&mut s, &mut files, &format!("remove {split}")),
+        "n3 is referenced by n2 (1); n5 is referenced by n2 (2): `retarget` the references first"
+    );
+}
+
+/// A document holding a reference a file brought to an area that holds no equation: n2 references
+/// n5, made a text. A swap moves that text, and a duplicate copies it, as each carries a breach a
+/// file brought; no command gives a second reference to n5; and `retarget` moves the references
+/// to n5 onto an equation.
+#[test]
+fn a_breach_a_file_brought_is_carried_and_repaired_but_never_added_to() {
+    let (mut s, mut files) = session();
+    ok(&mut s, &mut files, "text n2 [{ref n5}]");
+    let mut doc = s.document().clone();
+    rootpoint_model::apply(
+        &mut doc,
+        rootpoint_model::Op::SetContent {
+            area: rootpoint_model::NodeId(5),
+            content: rootpoint_model::Content::default(),
+        },
+    )
+    .unwrap();
+    use rootpoint_protocol::Files;
+    files
+        .write(
+            "deck/presentation.ron",
+            rootpoint_model::save_ron(&doc).as_bytes(),
+        )
+        .unwrap();
+    ok(&mut s, &mut files, "open deck");
+    ok(&mut s, &mut files, "swap n2 n5");
+    ok(&mut s, &mut files, "undo");
+    ok(&mut s, &mut files, "duplicate-slide s1");
+    ok(&mut s, &mut files, "undo");
+    assert_eq!(
+        refused(&mut s, &mut files, "insert n2 0 {ref n5}"),
+        "n5 holds no equation"
+    );
+    assert_eq!(ok(&mut s, &mut files, "retarget n5 n3"), "1");
+    assert!(ok(&mut s, &mut files, "tree").contains("n2 text [{ref n3}]"));
 }
 
 /// A command that would leave a text referencing an area that holds no equation is refused, naming
@@ -100,7 +156,7 @@ fn a_removal_is_refused_while_referenced() {
         &mut files,
         r#"text n2 [{ref n3}, " and ", {ref n3}]"#,
     );
-    let reason = "n3 is referenced by n2 (2): `retarget` its references first";
+    let reason = "n3 is referenced by n2 (2): `retarget` the references first";
     let before = s.document().clone();
     let split = match &before.slides[0].root {
         rootpoint_model::Node::Split(top) => top.children[1].id(),
@@ -130,7 +186,7 @@ fn a_removal_is_refused_while_referenced() {
     ok(&mut s, &mut files, &format!("text {other} [{{ref n3}}]"));
     assert_eq!(
         refused(&mut s, &mut files, "remove-slide s1"),
-        format!("n3 is referenced by {other} (1): `retarget` its references first")
+        format!("n3 is referenced by {other} (1): `retarget` the references first")
     );
     ok(&mut s, &mut files, &format!("text {other} \"\""));
     ok(&mut s, &mut files, "remove-slide s1");

@@ -6,9 +6,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use rootpoint_math::Formula;
 use rootpoint_model::{
-    Area, Asset, AssetId, BUILTIN_FAMILIES, Breach, Content, Document, EquationContent,
-    EquationSize, FontRef, ImageContent, Node, NodeId, Op, Replacement, SlideId, Span, SpanChoice,
-    SpanId, SpanStyle, StyleChoice, TextContent, TextItem, TextNode, TextNodeRef, TextStyle, apply,
+    Area, Asset, AssetId, BUILTIN_FAMILIES, Content, Document, EquationContent, EquationSize,
+    FontRef, ImageContent, Node, NodeId, Op, Replacement, SlideId, Span, SpanChoice, SpanId,
+    SpanStyle, StyleChoice, TextContent, TextItem, TextNode, TextNodeRef, TextStyle, apply,
     asset_path_is_confined, load_ron, save_ron, span_style_users,
 };
 use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
@@ -1048,12 +1048,14 @@ impl Session {
         Ok(self.created(&before, last.as_ref()))
     }
 
-    /// Refuse the operations of a command that would leave a text referencing an area that holds no
-    /// equation where none did, `design@rootpoint-protocol@no-new-breach`: a removal, or a change of
-    /// kind, of an equation that a text it leaves in place references, a split or a slide holding
-    /// one included, names each such text with the count of its references; a reference given to
-    /// an area that holds no equation names that area. A reload, which takes a file as it is, is no
-    /// such command, and an undo takes another path, so neither is refused.
+    /// Refuse the operations of a command that would leave an area that holds an equation holding
+    /// none, by its removal, a split's or a slide's that holds it, or a change of its kind, while a
+    /// text the command leaves in place references it, `design@rootpoint-protocol@no-new-breach`:
+    /// the reason names each such equation, each text that references it and the count of its
+    /// references. A swap carries the references with the contents, and a duplicate adds
+    /// equations, so neither meets it, whatever breaches the document holds. A reload, which takes a
+    /// file as it is, is no such command, and an undo takes another path, so neither is refused. A
+    /// reference a command gives is refused where it is given, `Session::equation_target`.
     fn no_new_dangling_reference(&self, ops: &[Op]) -> Result<(), String> {
         if ops
             .iter()
@@ -1061,15 +1063,6 @@ impl Session {
         {
             return Ok(());
         }
-        let dangling = |doc: &Document| -> BTreeSet<(NodeId, NodeId)> {
-            doc.breaches()
-                .into_iter()
-                .filter_map(|b| match b {
-                    Breach::DanglingReference { area, target } => Some((area, target)),
-                    _ => None,
-                })
-                .collect()
-        };
         let mut after = self.doc.clone();
         for op in ops {
             // A refused operation is refused again, with its reason, by the edit that follows.
@@ -1077,26 +1070,35 @@ impl Session {
                 return Ok(());
             }
         }
-        let before = dangling(&self.doc);
-        let new: BTreeSet<NodeId> = dangling(&after)
-            .difference(&before)
-            .map(|(_, target)| *target)
-            .collect();
-        let Some(&target) = new.first() else {
-            return Ok(());
-        };
-        if !self.doc.holds_equation(target) {
-            return Err(format!("{target} holds no equation"));
-        }
-        let users: Vec<String> = after
-            .references_to(target)
+        let lost: Vec<String> = equation_areas(&self.doc)
             .into_iter()
-            .map(|(area, n)| format!("{area} ({n})"))
+            .filter(|area| !after.holds_equation(*area))
+            .filter_map(|area| {
+                let users: Vec<String> = after
+                    .references_to(area)
+                    .into_iter()
+                    .map(|(text, n)| format!("{text} ({n})"))
+                    .collect();
+                (!users.is_empty()).then(|| format!("{area} is referenced by {}", users.join(" ")))
+            })
             .collect();
+        if lost.is_empty() {
+            return Ok(());
+        }
         Err(format!(
-            "{target} is referenced by {}: `retarget` its references first",
-            users.join(" ")
+            "{}: `retarget` the references first",
+            lost.join("; ")
         ))
+    }
+
+    /// Refuse a reference a command gives to an area that holds no equation, which would draw
+    /// `(??)`, `design@rootpoint-protocol@no-new-breach`.
+    fn equation_target(&self, target: NodeId) -> Result<(), String> {
+        if self.doc.holds_equation(target) {
+            Ok(())
+        } else {
+            Err(format!("{target} holds no equation"))
+        }
     }
 
     /// Apply a step of moves and operations, as one command, and record its revert.
@@ -1433,6 +1435,7 @@ impl Session {
                 offset,
                 target,
             } => {
+                self.equation_target(target)?;
                 let (area, node) = self.text_node(node)?;
                 Op::InsertRef {
                     area,
@@ -1455,12 +1458,13 @@ impl Session {
                     formula,
                 }
             }
+            // `from` may hold no equation, so that the references a file brought to such an area
+            // can be moved to an equation.
             Command::Retarget { from, to } => {
-                for area in [from, to] {
-                    if !self.doc.holds_equation(area) {
-                        return Err(format!("{area} holds no equation"));
-                    }
+                if from == to {
+                    return Err(format!("{from} is retargeted to itself"));
                 }
+                self.equation_target(to)?;
                 Op::RetargetReferences { from, to }
             }
             Command::Delete { node, range } => {
@@ -1651,7 +1655,10 @@ impl Session {
                         printable(&formula)?;
                         Ok(TextItem::Math(formula))
                     }
-                    TreeItem::Ref(target) => Ok(TextItem::Ref(target)),
+                    TreeItem::Ref(target) => {
+                        self.equation_target(target)?;
+                        Ok(TextItem::Ref(target))
+                    }
                     TreeItem::Span(span) => Ok(TextItem::Span(Span {
                         id: SpanId(0),
                         style: self
@@ -2232,4 +2239,14 @@ fn printable(formula: &Formula) -> Result<(), String> {
         return Err("the formula's LaTeX does not read back to it".to_owned());
     }
     Ok(())
+}
+
+/// The areas of a document that hold an equation.
+fn equation_areas(doc: &Document) -> Vec<NodeId> {
+    doc.slides
+        .iter()
+        .flat_map(|s| s.root.areas())
+        .filter(|a| matches!(a.content, Content::Equation(_)))
+        .map(|a| a.id)
+        .collect()
 }

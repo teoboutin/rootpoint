@@ -242,14 +242,9 @@ fn area_text_gives_the_layout_render_slide_draws() {
         let text = area_text(&doc, slide, *area, &mut fonts).unwrap();
         // The same lines as the render laid out. The report holds each range within the text's
         // length, where Parley gives an empty text one line of one byte.
-        let Some(Node::Area(Area {
-            content: Content::Text(t),
-            ..
-        })) = doc.slides[0].root.find(*area)
-        else {
-            panic!("{area} is not a text area");
-        };
-        let len = t.plain_text().len();
+        // The laid-out string's length, which the map gives: a formula and a reference stand there
+        // on other characters than in `plain_text`.
+        let len = text.map.text().len();
         let got: Vec<_> = text
             .layout
             .lines()

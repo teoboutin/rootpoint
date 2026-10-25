@@ -561,29 +561,42 @@ impl App {
     }
 
     /// The reason of a refused command as the status line gives it: a removal refused while texts
-    /// reference the equation names the count of its references and the control that moves them,
-    /// where the session's reason names the `retarget` command.
+    /// reference an equation it removes names the count of those references, as the session's
+    /// reason counts them, and the control that moves them, where the session's reason names the
+    /// `retarget` command.
     fn window_reason(&self, reason: &str) -> String {
-        let referenced = reason
-            .strip_suffix(": `retarget` its references first")
-            .and_then(|r| r.split_once(" is referenced by "))
-            .and_then(|(target, _)| target.strip_prefix('n')?.parse().ok())
-            .map(NodeId);
-        match referenced {
-            Some(target) => {
-                let count: usize = self
-                    .session
-                    .document()
-                    .references_to(target)
-                    .iter()
-                    .map(|(_, n)| n)
-                    .sum();
-                format!(
-                    "{target} is referenced {count} times: \"Retarget all to…\" on its Selection \
-                     tab moves its references to another equation"
-                )
-            }
-            None => reason.to_owned(),
+        let Some(named) = reason.strip_suffix(": `retarget` the references first") else {
+            return reason.to_owned();
+        };
+        // Each part reads `n<id> is referenced by n<text> (<count>) …`.
+        let mut equations = Vec::new();
+        let mut count = 0;
+        for part in named.split("; ") {
+            let Some((equation, users)) = part.split_once(" is referenced by ") else {
+                return reason.to_owned();
+            };
+            equations.push(equation);
+            count += users
+                .split(") ")
+                .filter_map(|u| {
+                    u.split_once(" (")?
+                        .1
+                        .trim_end_matches(')')
+                        .parse::<usize>()
+                        .ok()
+                })
+                .sum::<usize>();
+        }
+        match equations[..] {
+            [one] => format!(
+                "{one} is referenced {count} times: \"Retarget all to…\" on its Selection tab \
+                 moves its references to another equation"
+            ),
+            _ => format!(
+                "{} are referenced {count} times: \"Retarget all to…\" on the Selection tab of \
+                 each moves its references to another equation",
+                equations.join(", ")
+            ),
         }
     }
 
