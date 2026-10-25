@@ -31,6 +31,15 @@ fn check_invariants(doc: &Document) {
 
 fn check_node(node: &Node, ids: &mut BTreeSet<u64>) {
     assert!(ids.insert(node.id().0), "node id {} reused", node.id().0);
+    if let Node::Area(Area {
+        content: Content::Text(t),
+        ..
+    }) = node
+    {
+        for span in t.root.spans() {
+            assert!(ids.insert(span.id.0), "span id {} reused", span.id.0);
+        }
+    }
     if let Node::Split(s) = node {
         assert!(
             s.children.len() >= 2,
@@ -697,4 +706,342 @@ fn an_asset_a_style_uses_cannot_be_removed() {
         apply(&mut doc, Op::RemoveAsset { id: asset }),
         Err(OpError::AssetInUse(asset))
     );
+}
+
+/// A document of one slide whose root is one text area, and the area's id.
+fn one_text(text: &str) -> (Document, NodeId) {
+    let mut doc = Document::default();
+    apply(&mut doc, Op::AddSlide { at: 0 }).unwrap();
+    let area = doc.slides[0].root.id();
+    apply(
+        &mut doc,
+        Op::InsertText {
+            area,
+            node: TextNodeRef::Root,
+            offset: 0,
+            text: text.to_owned(),
+        },
+    )
+    .unwrap();
+    (doc, area)
+}
+
+fn text_of(doc: &Document, area: NodeId) -> &TextContent {
+    match doc.node(area) {
+        Some(Node::Area(Area {
+            content: Content::Text(t),
+            ..
+        })) => t,
+        other => panic!("area {area:?} holds no text: {other:?}"),
+    }
+}
+
+fn bold() -> SpanChoice {
+    SpanChoice::Custom(SpanStyle {
+        bold: Some(true),
+        ..SpanStyle::default()
+    })
+}
+
+/// The id of the first span of the area's text.
+fn first_span(doc: &Document, area: NodeId) -> SpanId {
+    text_of(doc, area).root.spans()[0].id
+}
+
+/// Every text of the document is in its canonical form: no run of characters empty, no two
+/// adjacent, and no custom span that sets no field.
+fn check_canonical(node: &TextNode) {
+    let mut last_chars = false;
+    for item in &node.items {
+        match item {
+            TextItem::Chars(s) => {
+                assert!(!s.is_empty(), "an empty run in {node:?}");
+                assert!(!last_chars, "two adjacent runs in {node:?}");
+                last_chars = true;
+            }
+            TextItem::Span(span) => {
+                last_chars = false;
+                assert_ne!(
+                    span.style,
+                    SpanChoice::Custom(SpanStyle::default()),
+                    "a custom span that sets nothing"
+                );
+                check_canonical(&span.text);
+            }
+        }
+    }
+}
+
+#[test]
+fn wrapping_a_range_makes_a_span_with_a_new_id() {
+    let (mut doc, area) = one_text("a prime number");
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 2..7,
+            style: bold(),
+        },
+    )
+    .unwrap();
+    let t = text_of(&doc, area);
+    assert_eq!(t.plain_text(), "a prime number");
+    let span = t.root.spans()[0];
+    assert_eq!(span.text, TextNode::plain("prime"));
+    assert!(span.id.0 < next_id(&doc));
+}
+
+#[test]
+fn a_custom_span_that_sets_nothing_is_refused() {
+    let (mut doc, area) = one_text("abc");
+    let before = doc.clone();
+    let empty = SpanChoice::Custom(SpanStyle::default());
+    assert_eq!(
+        apply(
+            &mut doc,
+            Op::WrapSpan {
+                area,
+                node: TextNodeRef::Root,
+                range: 0..1,
+                style: empty.clone(),
+            },
+        ),
+        Err(OpError::EmptySpanStyle)
+    );
+    assert_eq!(doc, before);
+}
+
+/// A named span is kept whatever its values, and so is a span that sets a value equal to its
+/// parent's: a bold word in a bold span stays a span of its own.
+#[test]
+fn a_named_span_and_a_span_equal_to_its_parent_are_kept() {
+    let (mut doc, area) = one_text("bold word");
+    let wrap = |doc: &mut Document, node, range, style| {
+        apply(
+            doc,
+            Op::WrapSpan {
+                area,
+                node,
+                range,
+                style,
+            },
+        )
+        .unwrap()
+    };
+    wrap(&mut doc, TextNodeRef::Root, 0..9, bold());
+    let outer = first_span(&doc, area);
+    wrap(&mut doc, TextNodeRef::Span(outer), 5..9, bold());
+    wrap(
+        &mut doc,
+        TextNodeRef::Span(outer),
+        0..1,
+        SpanChoice::Named("Missing".to_owned()),
+    );
+    let spans = text_of(&doc, area).root.spans().len();
+    assert_eq!(spans, 3);
+}
+
+#[test]
+fn a_span_cut_at_an_edge_is_refused_and_inside_gives_two_spans() {
+    let (mut doc, area) = one_text("primenumber");
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 0..11,
+            style: bold(),
+        },
+    )
+    .unwrap();
+    let span = first_span(&doc, area);
+    for offset in [0, 11] {
+        assert_eq!(
+            apply(&mut doc, Op::SplitSpan { area, span, offset }),
+            Err(OpError::SpanEdge(span))
+        );
+    }
+    apply(
+        &mut doc,
+        Op::SplitSpan {
+            area,
+            span,
+            offset: 5,
+        },
+    )
+    .unwrap();
+    let t = text_of(&doc, area);
+    let spans = t.root.spans();
+    assert_eq!(spans.len(), 2);
+    assert_eq!(spans[0].id, span);
+    assert_eq!(spans[0].text, TextNode::plain("prime"));
+    assert_eq!(spans[1].text, TextNode::plain("number"));
+    assert_eq!(spans[0].style, spans[1].style);
+}
+
+/// A deleted range takes a span inside it whole, and the undo brings the span back with its id.
+#[test]
+fn a_deletion_takes_a_span_whole_and_its_undo_brings_it_back() {
+    let (mut doc, area) = one_text("a prime number");
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 2..7,
+            style: bold(),
+        },
+    )
+    .unwrap();
+    // "a " then the span, one offset, then " number".
+    let before = doc.clone();
+    let inverse = apply(
+        &mut doc,
+        Op::DeleteText {
+            area,
+            node: TextNodeRef::Root,
+            range: 1..4,
+        },
+    )
+    .unwrap();
+    assert_eq!(text_of(&doc, area).plain_text(), "anumber");
+    apply(&mut doc, inverse).unwrap();
+    assert!(doc.same_content(&before));
+}
+
+#[test]
+fn a_tree_set_whole_gives_every_span_a_new_id() {
+    let (mut doc, area) = one_text("");
+    let given = TextNode {
+        items: vec![
+            TextItem::Chars("a ".to_owned()),
+            TextItem::Span(Span {
+                id: SpanId(0),
+                style: bold(),
+                text: TextNode::plain("b"),
+            }),
+        ],
+    };
+    apply(&mut doc, Op::SetText { area, root: given }).unwrap();
+    let span = first_span(&doc, area);
+    assert_ne!(span, SpanId(0));
+    check_invariants(&doc);
+}
+
+/// A step of a random edit of one text: which operation, two offsets, which text node, and a
+/// string.
+#[derive(Clone, Debug)]
+struct TextStep {
+    kind: u8,
+    a: usize,
+    b: usize,
+    node: usize,
+    text: String,
+}
+
+fn text_step() -> impl Strategy<Value = TextStep> {
+    (0u8..7, 0usize..20, 0usize..20, 0usize..6, "[a-cé ]{0,4}").prop_map(
+        |(kind, a, b, node, text)| TextStep {
+            kind,
+            a,
+            b,
+            node,
+            text,
+        },
+    )
+}
+
+/// The operation a step makes on the text of `area`, with its offsets taken within the chosen
+/// text node, so that most steps are accepted.
+fn text_op(doc: &Document, area: NodeId, s: &TextStep) -> Op {
+    let t = text_of(doc, area);
+    let spans = t.root.spans();
+    let node = match s.node % (spans.len() + 1) {
+        0 => TextNodeRef::Root,
+        i => TextNodeRef::Span(spans[i - 1].id),
+    };
+    let len = match node {
+        TextNodeRef::Root => offsets(&t.root),
+        TextNodeRef::Span(id) => offsets(&spans.iter().find(|x| x.id == id).unwrap().text),
+    };
+    let (lo, hi) = {
+        let (a, b) = (s.a % (len + 1), s.b % (len + 1));
+        (a.min(b), a.max(b))
+    };
+    let span = match node {
+        TextNodeRef::Span(id) => id,
+        TextNodeRef::Root => spans.first().map(|x| x.id).unwrap_or(SpanId(u64::MAX)),
+    };
+    let style = if s.b.is_multiple_of(3) {
+        SpanChoice::Named("Term".to_owned())
+    } else {
+        bold()
+    };
+    match s.kind {
+        0 => Op::InsertText {
+            area,
+            node,
+            offset: lo,
+            text: s.text.clone(),
+        },
+        1 => Op::DeleteText {
+            area,
+            node,
+            range: lo..hi,
+        },
+        2 => Op::WrapSpan {
+            area,
+            node,
+            range: lo..hi,
+            style,
+        },
+        3 => Op::UnwrapSpan { area, span },
+        4 => Op::SetSpanStyle { area, span, style },
+        5 => Op::SplitSpan {
+            area,
+            span,
+            offset: lo,
+        },
+        _ => Op::SetText {
+            area,
+            root: t.root.clone(),
+        },
+    }
+}
+
+/// The number of offsets of a text node: its characters, and one per span.
+fn offsets(node: &TextNode) -> usize {
+    node.items
+        .iter()
+        .map(|i| match i {
+            TextItem::Chars(s) => s.chars().count(),
+            TextItem::Span(_) => 1,
+        })
+        .sum()
+}
+
+proptest! {
+    /// Over random edits of one text, every accepted operation keeps the invariants and the
+    /// canonical form and is undone by its inverse, and every refused one changes nothing.
+    #[test]
+    fn random_text_edits_keep_the_canonical_form_and_invert(
+        steps in prop::collection::vec(text_step(), 1..40)
+    ) {
+        let (mut doc, area) = one_text("ab cd");
+        for s in &steps {
+            let op = text_op(&doc, area, s);
+            let before = doc.clone();
+            match apply(&mut doc, op.clone()) {
+                Ok(inverse) => {
+                    check_invariants(&doc);
+                    check_canonical(&text_of(&doc, area).root);
+                    let mut undone = doc.clone();
+                    apply(&mut undone, inverse).unwrap();
+                    prop_assert!(undone.same_content(&before), "{:?} not undone", op);
+                }
+                Err(_) => prop_assert_eq!(&doc, &before),
+            }
+        }
+    }
 }

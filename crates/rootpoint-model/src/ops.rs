@@ -116,6 +116,49 @@ pub enum Op {
         users: Vec<NodeId>,
         into: Option<Replacement>,
     },
+    /// Insert characters in a text node of an area's text, at an offset.
+    InsertText {
+        area: NodeId,
+        node: TextNodeRef,
+        offset: usize,
+        text: String,
+    },
+    /// Remove a range of offsets of a text node; a span in the range goes whole.
+    DeleteText {
+        area: NodeId,
+        node: TextNodeRef,
+        range: std::ops::Range<usize>,
+    },
+    /// Put a range of offsets of a text node into a new span, whose id the counter gives; an empty
+    /// range opens an empty span.
+    WrapSpan {
+        area: NodeId,
+        node: TextNodeRef,
+        range: std::ops::Range<usize>,
+        style: SpanChoice,
+    },
+    /// Replace a span by its content, in its parent.
+    UnwrapSpan {
+        area: NodeId,
+        span: SpanId,
+    },
+    SetSpanStyle {
+        area: NodeId,
+        span: SpanId,
+        style: SpanChoice,
+    },
+    /// Cut a span at an offset inside it into two spans of its style, the second with a new id.
+    /// Refused at the span's edges, where one half would be empty.
+    SplitSpan {
+        area: NodeId,
+        span: SpanId,
+        offset: usize,
+    },
+    /// Replace an area's whole text tree, every span given a new id; the area keeps its style.
+    SetText {
+        area: NodeId,
+        root: TextNode,
+    },
     /// Replace the whole document, as a reload of its file changed outside the editor does; the
     /// inverse holds the document replaced, so an undo brings the editor's own back.
     ReplaceDocument {
@@ -163,6 +206,19 @@ pub enum OpError {
     EmptyStyleName,
     /// A text a style's restoration names is not a text area.
     NotAText(NodeId),
+    /// A span the area's text lacks.
+    UnknownSpan(SpanId),
+    /// An offset, or the end of a range, past the end of its text node, or a range whose start is
+    /// past its end.
+    OffsetOutOfRange {
+        offset: usize,
+        len: usize,
+    },
+    /// A custom span style that sets no field: the span would change nothing, and its caller
+    /// unwraps the span instead.
+    EmptySpanStyle,
+    /// A span cut at its edge, where one half would be empty.
+    SpanEdge(SpanId),
     /// The result would break an invariant of the document, which the reason names.
     Invalid(String),
 }
@@ -383,6 +439,103 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
                 document: Box::new(old),
             })
         }
+        // Every edit of a text tree is undone by the area's former content, as `Op::SetTree` undoes
+        // a slide's structural edits: a snapshot brings back every span with its id, and a text is
+        // small.
+        Op::InsertText {
+            area,
+            node,
+            offset,
+            text,
+        } => edit_text(doc, area, |_, root| {
+            let mut seq = Seq::of(text_node(root, node)?);
+            seq.check(offset)?;
+            let chars = text.chars().map(Elem::Char);
+            seq.0.splice(offset..offset, chars);
+            seq.store(text_node(root, node)?);
+            Ok(())
+        }),
+        Op::DeleteText { area, node, range } => edit_text(doc, area, |_, root| {
+            let mut seq = Seq::of(text_node(root, node)?);
+            seq.check_range(&range)?;
+            seq.0.drain(range);
+            seq.store(text_node(root, node)?);
+            Ok(())
+        }),
+        Op::WrapSpan {
+            area,
+            node,
+            range,
+            style,
+        } => edit_text(doc, area, |doc, root| {
+            check_span_style(&style)?;
+            let mut seq = Seq::of(text_node(root, node)?);
+            seq.check_range(&range)?;
+            let inner: Vec<Elem> = seq.0.drain(range.clone()).collect();
+            let mut text = TextNode::default();
+            Seq(inner).store(&mut text);
+            let span = Span {
+                id: SpanId(doc.alloc()),
+                style,
+                text,
+            };
+            seq.0.insert(range.start, Elem::Span(span));
+            seq.store(text_node(root, node)?);
+            Ok(())
+        }),
+        Op::UnwrapSpan { area, span } => edit_text(doc, area, |_, root| {
+            let (parent, at) = span_parent(root, span)?;
+            let mut seq = Seq::of(parent);
+            let Elem::Span(removed) = seq.0.remove(at) else {
+                unreachable!("span_parent gives the index of the span")
+            };
+            let inner = Seq::of(&removed.text).0;
+            seq.0.splice(at..at, inner);
+            seq.store(parent);
+            Ok(())
+        }),
+        Op::SetSpanStyle { area, span, style } => edit_text(doc, area, |_, root| {
+            check_span_style(&style)?;
+            let (parent, at) = span_parent(root, span)?;
+            let mut seq = Seq::of(parent);
+            if let Elem::Span(s) = &mut seq.0[at] {
+                s.style = style;
+            }
+            seq.store(parent);
+            Ok(())
+        }),
+        Op::SplitSpan { area, span, offset } => edit_text(doc, area, |doc, root| {
+            let (parent, at) = span_parent(root, span)?;
+            let mut seq = Seq::of(parent);
+            let Elem::Span(first) = &mut seq.0[at] else {
+                unreachable!("span_parent gives the index of the span")
+            };
+            let mut inner = Seq::of(&first.text);
+            inner.check(offset)?;
+            if offset == 0 || offset == inner.0.len() {
+                return Err(OpError::SpanEdge(span));
+            }
+            let tail = Seq(inner.0.split_off(offset));
+            inner.store(&mut first.text);
+            let mut text = TextNode::default();
+            tail.store(&mut text);
+            let second = Span {
+                id: SpanId(doc.alloc()),
+                style: first.style.clone(),
+                text,
+            };
+            seq.0.insert(at + 1, Elem::Span(second));
+            seq.store(parent);
+            Ok(())
+        }),
+        Op::SetText { area, root: new } => edit_text(doc, area, |doc, root| {
+            for span in new.spans() {
+                check_span_style(&span.style)?;
+            }
+            *root = new;
+            crate::ops::renumber_spans(root, doc);
+            Ok(())
+        }),
         Op::RemoveStyle { name, into } => {
             let style = doc
                 .styles
@@ -419,6 +572,155 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             }
             Ok(Op::RemoveStyle { name, into })
         }
+    }
+}
+
+/// Change the text of the area `area` by `edit`, which is given the document, for the counter, and
+/// the text's root, and return the inverse: the area's former content.
+fn edit_text(
+    doc: &mut Document,
+    area: NodeId,
+    edit: impl FnOnce(&mut Document, &mut TextNode) -> Result<(), OpError>,
+) -> Result<Op, OpError> {
+    let before = area_mut(doc, area)?.content.clone();
+    let Content::Text(text) = &before else {
+        return Err(OpError::NotAText(area));
+    };
+    let mut root = text.root.clone();
+    edit(doc, &mut root)?;
+    if let Content::Text(text) = &mut area_mut(doc, area)?.content {
+        text.root = root;
+    }
+    Ok(Op::SetContent {
+        area,
+        content: before,
+    })
+}
+
+/// Refuse a custom span style that sets no field: such a span changes nothing, so its caller
+/// unwraps it instead. A named span is never refused, whatever its values, so that a span keeps its
+/// name when its style's values come to equal its parent's.
+fn check_span_style(style: &SpanChoice) -> Result<(), OpError> {
+    match style {
+        SpanChoice::Custom(s) if *s == SpanStyle::default() => Err(OpError::EmptySpanStyle),
+        _ => Ok(()),
+    }
+}
+
+/// The text node `node` of a text's root.
+fn text_node(root: &mut TextNode, node: TextNodeRef) -> Result<&mut TextNode, OpError> {
+    match node {
+        TextNodeRef::Root => Ok(root),
+        TextNodeRef::Span(id) => find_span(root, id)
+            .map(|s| &mut s.text)
+            .ok_or(OpError::UnknownSpan(id)),
+    }
+}
+
+fn find_span(node: &mut TextNode, id: SpanId) -> Option<&mut Span> {
+    // The item is found first by a shared search, since returning a mutable borrow from one branch
+    // of a loop that goes on borrowing is refused by the borrow checker.
+    let at = node.items.iter().position(|item| match item {
+        TextItem::Span(s) => s.id == id || s.text.spans().iter().any(|t| t.id == id),
+        TextItem::Chars(_) => false,
+    })?;
+    let TextItem::Span(s) = &mut node.items[at] else {
+        unreachable!("the position is a span's")
+    };
+    if s.id == id {
+        Some(s)
+    } else {
+        find_span(&mut s.text, id)
+    }
+}
+
+/// The text node that holds the span `id` as an item, and the span's offset in it.
+fn span_parent(root: &mut TextNode, id: SpanId) -> Result<(&mut TextNode, usize), OpError> {
+    fn holds(node: &TextNode, id: SpanId) -> bool {
+        node.items
+            .iter()
+            .any(|i| matches!(i, TextItem::Span(s) if s.id == id))
+    }
+    fn walk(node: &mut TextNode, id: SpanId) -> Option<&mut TextNode> {
+        if holds(node, id) {
+            return Some(node);
+        }
+        node.items.iter_mut().find_map(|item| match item {
+            TextItem::Span(s) => walk(&mut s.text, id),
+            TextItem::Chars(_) => None,
+        })
+    }
+    let parent = walk(root, id).ok_or(OpError::UnknownSpan(id))?;
+    let at = Seq::of(parent)
+        .0
+        .iter()
+        .position(|e| matches!(e, Elem::Span(s) if s.id == id))
+        .expect("walk found the span among the node's items");
+    Ok((parent, at))
+}
+
+/// One offset of a text node: a character, or a span.
+enum Elem {
+    Char(char),
+    Span(Span),
+}
+
+/// A text node as its sequence of offsets, which the operations edit by offset, then store back in
+/// the canonical form.
+struct Seq(Vec<Elem>);
+
+impl Seq {
+    fn of(node: &TextNode) -> Seq {
+        let mut out = Vec::new();
+        for item in &node.items {
+            match item {
+                TextItem::Chars(s) => out.extend(s.chars().map(Elem::Char)),
+                TextItem::Span(span) => out.push(Elem::Span(span.clone())),
+            }
+        }
+        Seq(out)
+    }
+
+    fn store(self, node: &mut TextNode) {
+        let mut items = Vec::new();
+        let mut run = String::new();
+        for elem in self.0 {
+            match elem {
+                Elem::Char(c) => run.push(c),
+                Elem::Span(span) => {
+                    if !run.is_empty() {
+                        items.push(TextItem::Chars(std::mem::take(&mut run)));
+                    }
+                    items.push(TextItem::Span(span));
+                }
+            }
+        }
+        if !run.is_empty() {
+            items.push(TextItem::Chars(run));
+        }
+        node.items = items;
+    }
+
+    fn check(&self, offset: usize) -> Result<(), OpError> {
+        if offset <= self.0.len() {
+            Ok(())
+        } else {
+            Err(OpError::OffsetOutOfRange {
+                offset,
+                len: self.0.len(),
+            })
+        }
+    }
+
+    fn check_range(&self, range: &std::ops::Range<usize>) -> Result<(), OpError> {
+        self.check(range.end)?;
+        if range.start > range.end {
+            return Err(OpError::OffsetOutOfRange {
+                offset: range.start,
+                len: range.end,
+            });
+        }
+        Ok(())
     }
 }
 
