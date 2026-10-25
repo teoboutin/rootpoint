@@ -12,10 +12,10 @@ effect is none, so the next Ctrl+Z appears to do nothing.
 
 ### What
 
-While a text is edited in place, `App::set_preedit` writes the composing text into the area's text
-with a `text` command, inside the group the stay holds. Abandoning the composition, by an empty
-`ImeEvent::Preedit` or by `App::stop_editing` (Esc, a click outside), sends a second `text` command
-that restores the text. `Session::end_group` in `path@rootpoint-protocol@src/session.rs` skips a
+While a text is edited in place, `App::set_preedit` writes the composing text into the caret's
+text node with an `insert` command, inside the group the stay holds. Abandoning the composition, by
+an empty `ImeEvent::Preedit` or by `App::stop_editing` (Esc, a click outside), sends a `delete`
+command that removes it. `Session::end_group` in `path@rootpoint-protocol@src/session.rs` skips a
 group only when it holds no inverse, so the stay pushes a step of two inverses that cancel out.
 
 Reproduction, with the `Driver` of `path@rootpoint-app@tests/editing.rs`: run `text n5 "Z"`; edit
