@@ -1,0 +1,13 @@
+[package]
+name = "rootpoint-math"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Its default features hold `opentype-layout`, which exports the `math` and `gsub` modules.
+ttf-parser = "0.25.1"
+
+[dev-dependencies]
+proptest = "1"

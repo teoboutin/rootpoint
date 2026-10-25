@@ -47,8 +47,8 @@ impl Default for TextBrush {
 #[derive(Clone, Debug, PartialEq)]
 pub struct FontError(pub String);
 
-/// The fonts a render may use: the built-in Noto Sans and the font files of the document's asset
-/// table, and nothing else. No font of the system is ever discovered: parley's feature `system`
+/// The fonts a render may use: the built-in Noto Sans and Libertinus Math, and the font files of
+/// the document's asset table, and nothing else. No font of the system is ever discovered: parley's feature `system`
 /// is off, and the collection is created without system fonts.
 pub struct FontSet {
     fonts: FontContext,
@@ -72,7 +72,10 @@ impl FontSet {
             }),
             source_cache: Default::default(),
         };
-        for bytes in BUILTIN_FONTS {
+        for bytes in BUILTIN_FONTS
+            .into_iter()
+            .chain([crate::formula::BUILTIN_MATH])
+        {
             fonts
                 .collection
                 .register_fonts(Blob::new(Arc::new(bytes)), None);
@@ -299,18 +302,22 @@ pub(crate) fn draw_text(
 mod tests {
     use super::*;
 
-    /// The set's collection holds the built-in family alone: a font of the system, loaded by
-    /// either guard failing, would add a family.
+    /// The set's collection holds the built-in families alone, the text's and the math font's: a
+    /// font of the system, loaded by either guard failing, would add a family.
     #[test]
-    fn a_new_set_holds_the_built_in_family_alone() {
+    fn a_new_set_holds_the_built_in_families_alone() {
         let mut set = FontSet::new();
-        let names: Vec<String> = set
+        let mut names: Vec<String> = set
             .fonts
             .collection
             .family_names()
             .map(str::to_owned)
             .collect();
-        assert_eq!(names, vec![BUILTIN_SANS.to_owned()]);
+        names.sort();
+        assert_eq!(
+            names,
+            vec!["Libertinus Math".to_owned(), BUILTIN_SANS.to_owned()]
+        );
     }
 
     /// The binary carries one family, so `family` resolves every built-in name to it: a second

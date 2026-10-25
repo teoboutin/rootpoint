@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "crates/rootpoint-app",
+    "crates/rootpoint-math",
     "crates/rootpoint-model",
     "crates/rootpoint-protocol",
     "crates/rootpoint-render",

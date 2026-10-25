@@ -1411,6 +1411,9 @@ The `type` attribute of a `<character>` of `unicode.xml`, which the generator of
 | `punctuation` | punct |
 | `alphabetic`, `normal`, `diacritic`, `other`, and a character with no type | ord |
 
+Six ASCII characters take the class LaTeX's `path@elsewhere@base/fontdef.dtx` declares instead, by
+D6: `.` ord, `-` and `*` bin, `:` rel, `!` and `?` close.
+
 ### A pair of classes, to the space between them
 
 TeX's table of the spacing between atoms, The TeXbook, chapter 18: "thin" is 3/18 em, "medium" 4/18
@@ -1763,7 +1766,12 @@ The default, in #latex-command-set's decided design: every name of the five colu
 going to the first column of the order AMS, `<mathlatex>` without a set, IEEE, unicode-math,
 `<latex>`, which gives each Greek command its TeX character; and a list of the generator's own for
 LaTeX's aliases, each naming the command or character it stands for in `path@elsewhere@base/fontdef.dtx`.
-It widens the table's source beyond `unicode.xml` by that list of names, which is the scope change.
+The same finding for the ASCII characters: `unicode.xml` types `.` a punctuation, so `3.14` would
+take a thin space after its point, and `-` and `*` ordinary characters, where LaTeX's fontdef.dtx
+declares `.` an ord, `-` and `*` bins drawn as − and ∗, `:` a rel, `!` and `?` closes. The default:
+those six characters take LaTeX's classes, and `-` and `*` are drawn as LaTeX draws them, the other
+characters keeping the mapping table "A `unicode.xml` type, to the class of an atom". It widens the
+table's source beyond `unicode.xml` by these lists, which is the scope change.
 
 ### D7: the operator names of LaTeX
 

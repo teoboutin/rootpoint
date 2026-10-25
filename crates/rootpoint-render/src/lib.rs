@@ -4,6 +4,15 @@
 // Ties this crate's build to its checkout.
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
+// No content draws a formula until the equation, a kind of content, lands.
+#[cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        reason = "`render_slide` draws formulas from #equation-kind"
+    )
+)]
+mod formula;
 mod images;
 mod map;
 mod text;
@@ -66,6 +75,8 @@ pub struct Report {
     /// The spans naming a span style the document's table lacks, each with its area and the name;
     /// each is drawn with its parent's values.
     pub missing_span_styles: Vec<(NodeId, SpanId, String)>,
+    /// The areas whose formula holds a command the math subset does not know, drawn red.
+    pub unknown_commands: Vec<NodeId>,
     /// The text areas whose glyphs could not all be drawn, as from a damaged font file.
     pub undrawn_text: Vec<NodeId>,
     /// For each text area, the byte range of its text on each line, as laid out.

@@ -9,3 +9,7 @@ license = "MIT OR Apache-2.0"
 clap = { version = "4", features = ["derive"] }
 knowledge-architect = "=0.8.0"
 knowledge-architect-gates = "=0.8.0"
+# The XML reader of `cargo x math-commands`, which reads W3C `unicode.xml`.
+quick-xml = "0.41"
+# The font reader of `cargo x math-commands`, which keeps the characters the math font has.
+ttf-parser = "0.25.1"

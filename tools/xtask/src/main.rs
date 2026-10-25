@@ -1,3 +1,5 @@
+mod math_commands;
+
 use std::path::{Path, PathBuf};
 use std::process::{Command as Process, ExitCode};
 
@@ -28,6 +30,20 @@ enum Command {
     /// Run the app's tests in a headless Firefox, as the gate `wasm-test` does, once the programs
     /// they need are found.
     WasmTest,
+    /// Generate the math crate's table of commands, `path@rootpoint-math@src/commands.rs`, and its
+    /// W3C notice, from W3C `unicode.xml` and the math font. Run again by hand when either changes.
+    MathCommands {
+        /// The `unicode.xml` of w3c/xml-entities.
+        unicode_xml: PathBuf,
+        /// The math font file, whose characters alone enter the table.
+        font: PathBuf,
+        /// Which revision of `unicode.xml` it is, written in the notice.
+        #[arg(long)]
+        revision: String,
+        /// The date of the generation, written in the notice, as the W3C licence asks.
+        #[arg(long)]
+        date: String,
+    },
     /// The knowledge-architect checker, at the version this crate pins.
     Klarch {
         #[command(subcommand)]
@@ -83,6 +99,28 @@ fn main() -> ExitCode {
                 }
             }
         }
+        Command::MathCommands {
+            unicode_xml,
+            font,
+            revision,
+            date,
+        } => {
+            let cwd = std::env::current_dir().expect("a working directory");
+            let Some(root) = project_root(&cwd, knowledge_architect::MANIFEST_NAME) else {
+                eprintln!("xtask: not inside the project");
+                return ExitCode::FAILURE;
+            };
+            match math_commands::generate(&root, &unicode_xml, &font, &revision, &date) {
+                Ok((commands, classes)) => {
+                    println!("{commands} commands, {classes} classes");
+                    ExitCode::SUCCESS
+                }
+                Err(e) => {
+                    eprintln!("xtask math-commands: {e}");
+                    ExitCode::FAILURE
+                }
+            }
+        }
         Command::Klarch { command } => {
             let own = Path::new(env!("CARGO_MANIFEST_DIR"));
             let outcome = cli::locate().and_then(|manifest| {
@@ -112,6 +150,7 @@ fn main() -> ExitCode {
 /// build for the browser fails the gates at once rather than at the browser build.
 const WASM_CRATES: &[&str] = &[
     "rootpoint-app",
+    "rootpoint-math",
     "rootpoint-model",
     "rootpoint-protocol",
     "rootpoint-render",

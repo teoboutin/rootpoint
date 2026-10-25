@@ -44,6 +44,7 @@ checker-version = "0.8.0"
 command = "cargo klarch"
 components = [
     "crates/rootpoint-app",
+    "crates/rootpoint-math",
     "crates/rootpoint-model",
     "crates/rootpoint-protocol",
     "crates/rootpoint-render",

@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc e6cdb05dd8c52b2f9c83772d03f80fed30912cc09f9502205a4863991533dc99 # shrinks to f = Formula { rows: [[[Scripts { nucleus: [], sub: Some([Delimited { open: None, close: None, body: [] }, Symbol { ch: 'a', class: Ord, name: None }]), sup: None }]]] }

@@ -3293,6 +3293,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rootpoint-math"
+version = "0.0.0"
+dependencies = [
+ "proptest",
+ "ttf-parser",
+]
+
+[[package]]
 name = "rootpoint-model"
 version = "0.0.0"
 dependencies = [
@@ -3322,6 +3330,7 @@ dependencies = [
  "glifo 0.4.0",
  "image",
  "parley",
+ "rootpoint-math",
  "rootpoint-model",
  "vello_cpu 0.3.0",
 ]
@@ -5083,6 +5092,8 @@ dependencies = [
  "clap",
  "knowledge-architect",
  "knowledge-architect-gates",
+ "quick-xml",
+ "ttf-parser",
 ]
 
 [[package]]

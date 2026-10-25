@@ -13,7 +13,7 @@ renderer. It lands the shape of `thread@math-support@math-storage-form`,
 
 ## Builds
 
-- The crate `planned@rootpoint@crates/rootpoint-math/`, a member of the workspace, built for the
+- The crate `path@rootpoint@crates/rootpoint-math/`, a member of the workspace, built for the
   wasm target by the gate `wasm`, whose list `WASM_CRATES` in `path@xtask@src/main.rs` gains it; its
   manifest declares `license = "MIT OR Apache-2.0"`, by `design@rootpoint@permissive-licence`,
   `publish = false`, as every crate of the workspace declares it, and
@@ -30,11 +30,11 @@ renderer. It lands the shape of `thread@math-support@math-storage-form`,
   - `Formula::parse` and `Formula::to_latex`, the closed LaTeX subset of the milestone's mapping table
     "A LaTeX construct, to the atom it reads as", and back, with the errors of #math-storage-form's
     decided design. `to_latex` of `parse` of a text written by `to_latex` gives the same text;
-  - `COMMANDS`, the table of commands, in `planned@rootpoint@crates/rootpoint-math/src/commands.rs`,
+  - `COMMANDS`, the table of commands, in `path@rootpoint-math@src/commands.rs`,
     generated, each command name with its character and its class: the names of W3C `unicode.xml`
     and LaTeX's aliases, by the milestone's decided design of #latex-command-set and its D6; the class from the character's `type`, by the milestone's mapping table "A
     `unicode.xml` type, to the class of an atom"; and only the characters Libertinus Math's cmap
-    has. The W3C notice sits beside it, in `planned@rootpoint@crates/rootpoint-math/W3C-NOTICE.txt`;
+    has. The W3C notice sits beside it, in `path@rootpoint-math@W3C-NOTICE.txt`;
   - the generator, the command `cargo x math-commands <unicode.xml> <font file>` of
     `path@xtask@src/main.rs`, which writes the two files; it is run again by hand when the font or
     the source changes, and xtask takes quick-xml 0.41 as a dependency for it, MIT, already in
@@ -51,10 +51,10 @@ renderer. It lands the shape of `thread@math-support@math-storage-form`,
 - Libertinus Math 7.051, `LibertinusMath-Regular.otf` of the release archive `Libertinus-7.051.zip`
   of `github.com/alerque/libertinus`, `path@elsewhere@static/OTF/LibertinusMath-Regular.otf` in it,
   embedded in the render crate beside its `OFL.txt`, under
-  `planned@rootpoint-render@fonts/libertinus/`, and registered in `FontSet::new` with the built-in
+  `path@rootpoint-render@fonts/libertinus/`, and registered in `FontSet::new` with the built-in
   sans; the unit test `a_new_set_holds_the_built_in_family_alone` of
   `path@rootpoint-render@src/text.rs` changes in this slice to the built-in families, text and math.
-- In the render crate, `draw_formula`, crate-private, in `planned@rootpoint-render@src/formula.rs`, which draws a `FormulaLayout` with vello_cpu
+- In the render crate, `draw_formula`, crate-private, in `path@rootpoint-render@src/formula.rs`, which draws a `FormulaLayout` with vello_cpu
   through the slide's transform, glyphs unhinted, in a colour; a glyph the font lacks, glyph 0, is
   reported in `Report::missing_glyphs` with the area that holds the formula, and an unknown command
   in a new field `Report::unknown_commands`. No content shows a formula before #equation-kind, which
@@ -62,12 +62,12 @@ renderer. It lands the shape of `thread@math-support@math-storage-form`,
   `path@rootpoint-protocol@src/session.rs` and in `App::status` of `path@rootpoint-app@src/lib.rs`.
 - A test that pins the missing set both ways, so any change of the font or of its version fails it,
   as the owner approved in round 8: of the math commands of KaTeX v0.19.1 that map to one character,
-  a fixture of the test, `planned@rootpoint@crates/rootpoint-math/tests/data/katex-symbols.txt`,
+  a fixture of the test, `path@rootpoint-math@tests/data/katex-symbols.txt`,
   generated from KaTeX's `path@elsewhere@src/symbols.ts` as section 4 of the survey counts them, with
   KaTeX's MIT notice beside it, the commands whose character Libertinus Math's cmap lacks are exactly
   the 44 of that section, and no entry of `COMMANDS` holds the character of one of them. The
   fixture holds 457 commands, counted at the audit by the rule of section 4, which counted 458.
-- An ignored test of `planned@rootpoint-render@src/formula.rs`, a unit test since `draw_formula` is
+- An ignored test of `path@rootpoint-render@src/formula.rs`, a unit test since `draw_formula` is
   crate-private, that draws the reference formulas into PNG files in the directory
   `ROOTPOINT_MATH_IMAGES` names, for the owner's comparison of AC1.
 
@@ -157,7 +157,7 @@ R(\theta) = \begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta 
   dependencies; `design@rootpoint@wasm-from-the-start`, the crates its gate builds.
 - A new Component: the manifest declares `rootpoint-math`, with its README, its `CLAUDE.md`, and its
   goals, design, rejected, tripwires and issues homes, under
-  `planned@rootpoint@crates/rootpoint-math/docs/`. Its goals are drafted under
+  `path@rootpoint-math@docs/`. Its goals are drafted under
   `skill@knowledge-architect-goal-setting` and ruled by the owner, goal by goal, before the harvest
   merges. Heads, by `skill@knowledge-architect-decision-recording`: #math-storage-form's tree and
   LaTeX subset; #math-layout-engine, with its rivals in `rejected` entries where they pass the tests;
