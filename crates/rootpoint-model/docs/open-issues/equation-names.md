@@ -6,8 +6,8 @@ kind: todo
 ## Summary
 
 A reference to an equation names the equation's area by its id, `n<id>`, in the file and in
-commands, so a reader of the file looks the id up to know which equation is meant. The owner wants
-equations to be nameable, as LyX labels them, with the name set in the side panel.
+commands, so a reader of the file looks the id up to know which equation is meant. The owner
+believes naming would help, as LyX labels equations, with the name set in the side panel.
 
 ## Details
 
@@ -17,8 +17,8 @@ equations to be nameable, as LyX labels them, with the name set in the side pane
 reads `Ref(7)` in the file, where an id is a plain number, and `{ref n7}` in commands, and draws as
 the equation's number, `design@rootpoint-model@equation-reference-target`. The design
 discussion of that milestone weighed names, as LyX's `\label{eq:energy}` and `reference "eq:red"`
-are, against ids, and the owner chose ids for a first shape, and asked that naming stay open as
-this entry.
+are, against ids, and the owner chose, tentatively, ids for a first shape, and asked that naming
+stay open as this entry.
 
 Leads, none decided:
 
