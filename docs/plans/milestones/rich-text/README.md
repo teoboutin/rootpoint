@@ -147,8 +147,8 @@ before the next begins, D2.
   `h_align` and `v_align`, every field set.
 - **The style table**: `Document::styles`, the named text styles, by name; the span style table is
   `Document::span_styles`.
-- **The text command**: `Command::Text { area, text, style }` of
-  `path@rootpoint-protocol@src/command.rs`, which sets an area's whole text.
+- **The text command**: `Command::Text { area, root, style }` of
+  `path@rootpoint-protocol@src/command.rs`, which sets an area's whole text, its tree in `root`.
 - **The layout of a text**: `layout_text` of `path@rootpoint-render@src/text.rs`, which builds a
   Parley `Layout<TextBrush>` with `ranged_builder`, each span's values over its byte range and each
   run's colour its brush, since #text-tree.
