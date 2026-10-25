@@ -71,9 +71,10 @@ are part of every saved file.
 ### An area holds its content, and heavy data is an asset the content refers to by id `##inline-content-assets`
 
 An area holds one content: a text, its tree of characters and spans with its style,
-`design@rootpoint-model@text-node-tree`, or an image, `design@rootpoint-model@no-empty-kind`. Image data and font files live once in the document's asset
-table, keyed by asset id, so a slide's text is read in the file where it is shown, as
-`goal@rootpoint@readable-save-file` asks, and an image placed on many slides is stored once. A
+`design@rootpoint-model@text-node-tree`, an image, `design@rootpoint-model@no-empty-kind`, or an
+equation, `design@rootpoint-model@equation-content-kind`. Image data and font files live once in the
+document's asset table, keyed by asset id, so a slide's text is read in the file where it is shown,
+as `goal@rootpoint@readable-save-file` asks, and an image placed on many slides is stored once. A
 text's style may name an entry of the document's style table, `design@rootpoint-model@named-styles`,
 and a span's an entry of its span style table, `design@rootpoint-model@named-span-styles`: the parts
 of a content shared by name.
@@ -257,11 +258,12 @@ that referring by name is important.
 ### Named styles are for text only, until another kind of content needs its own `##style-kinds`
 
 The style tables hold text styles, for areas, and span styles, for spans of a text,
-`design@rootpoint-model@named-span-styles`; an image's one option, how it fits its area, is chosen
-per area with no name. A kind of content added later, `issue@rootpoint@more-content-kinds`, decides then
-whether its options earn named styles. The rival, a style object per kind from the start, splits
-styles by kind before any kind but text has options worth sharing: an image has one option, so a
-named image style would save one click.
+`design@rootpoint-model@named-span-styles`; an image's one option, how it fits its area, and an
+equation's, `design@rootpoint-model@equation-options`, are chosen per area with no name. A kind of
+content added later, `issue@rootpoint@more-content-kinds`, decides then whether its options earn
+named styles. The rival, a style object per kind from the start, splits styles by kind before any
+kind but text has options worth sharing: an image has one option, so a named image style would save
+one click.
 
 ### Removing a style that texts name takes a replacement for them `##style-removal`
 
@@ -280,11 +282,11 @@ session's, the one replacement that changes no slide.
 ### A new area takes the style of the text area it was split from, or Body `##new-area-style`
 
 A split of a text area gives its new area that area's style; every other new area, of a split of a
-split or of an image, of `Op::AddSlide`, or of an image area emptied or given a text with no style,
-takes Body. Splitting a body text for a second column gives a body text with no further step, which
-`goal@rootpoint-app@direct-manipulation` asks of common tasks. The rival, a new area that always
-takes Body, costs a style change after a split of a styled text; whether inheriting gets in the way
-instead is watched by `tripwire@rootpoint-model@inherited-style-in-the-way`.
+split, of an image or of an equation, of `Op::AddSlide`, or of an image area emptied or given a text
+with no style, takes Body. Splitting a body text for a second column gives a body text with no
+further step, which `goal@rootpoint-app@direct-manipulation` asks of common tasks. The rival, a new
+area that always takes Body, costs a style change after a split of a styled text; whether inheriting
+gets in the way instead is watched by `tripwire@rootpoint-model@inherited-style-in-the-way`.
 
 Body is taken only while the table holds it and it draws with no stand-in, its font an asset of the
 table or a family of `BUILTIN_FAMILIES`, and otherwise the default values: Body taken always would
@@ -293,6 +295,74 @@ file edited by hand, which `design@rootpoint-protocol@no-new-breach` refuses. A 
 a style name the table lacks, its new area taking the style any other new area takes, so that no
 split spreads a breach a file brought, where `duplicate-slide` copies one. On the owner's word: the
 owner chose that a split does not copy the missing name, over copying it as `duplicate-slide` does.
+
+## Equations
+
+### An equation is a kind of content of its own, one per area `##equation-content-kind`
+
+`Content::Equation(EquationContent)` holds a formula of the math crate,
+`design@rootpoint-math@formula-tree`, with the options of
+`design@rootpoint-model@equation-options`. The file writes the formula as its LaTeX,
+`design@rootpoint-math@math-storage-form`, and a formula that does not parse makes the file
+refused. A displayed equation stands in an area of its own, as every piece of content does,
+`goal@rootpoint@free-slide-division`, and `goal@rootpoint@minimal-content-set` names the equation
+among the kinds. The nearest rival, a display block inside a text, as LyX sets one between
+paragraphs, would place a piece of content by a second mechanism beside the tree of areas, and a
+block in the text's layout would be new work in Parley. On the owner's word: the owner asked for a
+kind of node holding a numbered equation.
+
+### An equation's rows stand under one number, centred on them `##equation-one-number`
+
+An equation is numbered as a whole, whatever the rows of its formula,
+`design@rootpoint-math@equation-rows`: `Document::equation_numbers` gives the area one number, and
+the renderer draws it once, at the area's right edge, on the formula's axis when the formula has
+one row and centred on the rows when it has several. The nearest rival, a number per row, as
+LaTeX's `align` gives, makes a numbered thing smaller than an area, so a number, and anything that
+names one, would need a row's identity inside the formula.
+
+### An equation is numbered by its place in the order of the slides, then of each slide's tree `##equation-numbering`
+
+`Document::equation_numbers` gives each equation whose `numbered` is true a number from 1, counted
+over the slides in their order, then over the areas of a slide in the depth-first order of its tree.
+A number is computed, never stored, so a move of a slide or a swap of two areas renumbers, and no
+edit leaves a stale number. The order of the tree does not change when a divider moves, so a drag
+renumbers nothing. The nearest rival, the order of the areas' places on the slide, renumbers when a
+drag moves one area above another.
+
+### An equation has its own options, unnamed: whether it is numbered, its size mode and its colour `##equation-options`
+
+`EquationContent` holds `numbered`, `size` and `colour`, set per area; a new equation is numbered,
+since the kind was asked for as a numbered equation, sized `Fit`,
+`design@rootpoint-model@equation-fit`, and in the Body style's colour, or black when the table has
+no Body. An equation names no style, `design@rootpoint-model@style-kinds`: a text style named by the
+equation carries a font, a weight, a slant and an alignment that have no meaning for it, which
+`goal@rootpoint@minimal-content-set` rules out, and two options shared by name would save one click
+per area.
+
+### An equation is fitted to its area by one layout scaled, or held at most at a size `##equation-fit`
+
+`EquationSize::Fit` lays the formula out once, at the Body style's size, and scales it by the
+largest factor at which it fits the area less the padding of a text,
+`design@rootpoint-render@text-padding`, with room kept for its number on both sides;
+`EquationSize::AtMost(size)` lays it out at `size`, scaled down by that factor when it is below 1.
+The number is drawn at the Body style's size and does not scale. One layout and one multiplication
+give the fitted formula, since a layout scales exactly,
+`design@rootpoint-math@layout-scales-exactly`. `Fit` is the default of a new equation, which
+`tripwire@rootpoint-model@at-most-for-most-equations` watches. On the owner's word: the owner asked
+whether an equation could fit its area automatically, which would be convenient, and chose that both
+modes be offered, if both could be, over a shrink only, which keeps one size across slides and
+leaves white space in a large area. A third mode, a fixed size that overflows its area, would differ
+from `AtMost` only by overflowing.
+
+### An unknown command of a formula is no breach of the document `##unknown-command-no-breach`
+
+A formula may hold a command the math subset does not know, an atom of its own,
+`design@rootpoint-math@math-storage-form`. A file holding one loads, `Document::validate` and
+`Document::breaches` name nothing for it, and `equation` may write one; the renderer draws it red
+and names its area, `Report::unknown_commands`, which the `render` reply lists after `commands=` and
+the window's status shows, as a missing glyph is named. The rival, a breach that refuses the
+command, would refuse an agent's formula for one command of LaTeX outside the subset, and a file for
+a typo, where the formula around it is drawn and the author sees the red command in place.
 
 ## Changes
 
@@ -406,3 +476,9 @@ project keeps no compatibility, `design@rootpoint@no-compat-in-initial-dev`, and
 earlier version is `rejected@rootpoint-model@format-migration`. It serves
 `goal@rootpoint@readable-save-file`, and the file is an interface every saved presentation
 consumes.
+
+`save_ron` sets ron's `escape_strings(false)`, so a string holding a `"` or a `\` is written as a
+raw string: a formula, which nearly always holds a `\`, reads `r#"\frac{a}{b}"#`, and reads back
+equal, as measured with ron 0.12.2. The setting applies to every string of the file, a text's
+characters included. The rival, the escapes kept, writes every backslash of a formula twice, which
+a person editing the file by hand would have to write too.

@@ -183,7 +183,8 @@ impl Document {
                     continue;
                 }
                 // An unknown command of a formula is drawn red and reported by the renderer, as a
-                // missing glyph is, and is no breach of the document.
+                // missing glyph is, and is no breach of the document,
+                // `design@rootpoint-model@unknown-command-no-breach`.
                 Content::Equation(_) => continue,
                 Content::Text(TextContent {
                     style: StyleChoice::Named(name),

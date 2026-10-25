@@ -1682,9 +1682,9 @@ the fallback member is dropped and the owner told.
    owner's judgement.
 2. Open Sans as the built-in text family, #builtin-open-sans, landed. Fails alone on:
    the goldens in Open Sans, and AC7.
-3. [The equation, a kind of content](equation-kind.md), #equation-kind: the model, the file at
-   version 6, the renderer, `equation`, the window's entries and options. Fails alone on: the
-   fixture's round trip and the numbering test.
+3. The equation, a kind of content, #equation-kind, landed: the model, the file at version 6, the
+   renderer, `equation`, the window's entries and options. Fails alone on: the fixture's round trip
+   and the numbering test.
 4. [Math inside a text, and references to equations](inline-math.md), #inline-math: the items, the
    file at version 7, inline boxes, the tree's items, `math`, `retarget`, the refusals, the picker.
    Fails alone on: the refusals, and AC5.

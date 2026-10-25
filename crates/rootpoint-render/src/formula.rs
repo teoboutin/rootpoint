@@ -67,7 +67,8 @@ const NUMBER_GAP: f64 = 1.0;
 /// area less the padding of a text, with room for its number on both sides, a factor no greater
 /// than 1 for `AtMost`; the formula centred, the number `(n)` at the right edge, in the built-in
 /// sans at the Body style's size, centred on the formula's axis, or on its rows when it has
-/// several. One layout and one multiplication suffice, since a layout scales exactly,
+/// several, `design@rootpoint-model@equation-one-number`, `design@rootpoint-model@equation-fit`.
+/// One layout and one multiplication suffice, since a layout scales exactly,
 /// `design@rootpoint-math@layout-scales-exactly`.
 pub(crate) fn lay_out_equation(
     doc: &Document,

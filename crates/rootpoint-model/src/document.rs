@@ -215,8 +215,8 @@ impl Document {
     }
 
     /// The number of each numbered equation, from 1: the slides in their order, then the areas of
-    /// a slide in the depth-first order of its tree. A number is computed, never stored, so a move
-    /// renumbers and a divider's drag does not.
+    /// a slide in the depth-first order of its tree, `design@rootpoint-model@equation-numbering`. A
+    /// number is computed, never stored, so a move renumbers and a divider's drag does not.
     pub fn equation_numbers(&self) -> BTreeMap<NodeId, u32> {
         let mut out = BTreeMap::new();
         let mut next = 1;
@@ -639,9 +639,9 @@ pub enum VAlign {
     Bottom,
 }
 
-/// An equation area: its formula, whether it is numbered, how it is sized in its area, and its
-/// colour. The file writes the formula as LaTeX, which `Formula::parse` reads back; a text that
-/// does not parse makes the file refused.
+/// An equation area, `design@rootpoint-model@equation-content-kind`: its formula, whether it is
+/// numbered, how it is sized in its area, and its colour. The file writes the formula as LaTeX,
+/// which `Formula::parse` reads back; a text that does not parse makes the file refused.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EquationContent {
     #[serde(with = "formula_text")]

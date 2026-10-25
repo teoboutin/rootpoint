@@ -46,12 +46,13 @@ consumes it. A layout the editor made itself, from the same styles set again, wo
 layout that must agree with the drawn one, as `rejected@rootpoint-app@plain-editor` records of
 Parley's own editor.
 
-### A text is inset from its area by 24 slide units `##text-padding`
+### A text or an equation is inset from its area by 24 slide units `##text-padding`
 
-Every text is laid out within its area less 24 slide units on each side. The padding sets the
-wrap width of every text, so changing it moves the line breaks of every saved slide. The value is
-the session's choice at the design audit of the renderer; the owner judged it right, and may
-adjust it later.
+Every text is laid out within its area less 24 slide units on each side, and an equation is fitted
+within the same rectangle, so a formula's edge and its number line up with the texts beside it. The
+padding sets the wrap width of every text, so changing it moves the line breaks of every saved
+slide. The value is the session's choice at the design audit of the renderer; the owner judged it
+right, and may adjust it later.
 
 ### A render is limited to 16384 pixels a side `##size-limit`
 

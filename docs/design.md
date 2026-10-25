@@ -13,7 +13,8 @@ The workspace is split into crates by this rule: a part of the code becomes a cr
 when it has tests of its own, a public API others use, and a reason to change that the rest does
 not share; a crate that loses one of the three is merged back. Today the rule gives
 `path@rootpoint@crates/rootpoint-model/`, whose reason to change is the document model, and whose
-serialization stays inside it until it needs migrations of its own;
+serialization stays inside it until it needs migrations of its own, but for a formula's text, which
+the math crate reads and writes;
 `path@rootpoint@crates/rootpoint-render/`, whose reason to change is how slides look;
 `path@rootpoint@crates/rootpoint-math/`, whose reason to change is how a formula is written and laid
 out from a math font;
@@ -25,14 +26,14 @@ three conditions, and ruled that it is a decision of the design rather than a go
 
 ### No crate but the app depends on a GUI toolkit `##gui-only-in-app`
 
-`rootpoint-math` depends on no crate of the workspace; `rootpoint-render` depends on
-`rootpoint-model` and `rootpoint-math`; `rootpoint-protocol` on the model and the renderer;
-`rootpoint-app` on those three and on eframe, the one GUI toolkit of the workspace. So the model, the renderer and the
-protocol's session run with no window, in a test or a script, which `goal@rootpoint@headless-core`
-asks of every operation the GUI offers. The rival, a model, a renderer or a session that links the
-toolkit, would need a window, or the toolkit's headless mode, for every test of the core. It is a
-reason respected at every crate's manifest. The crates are the five that
-`design@rootpoint@crate-existence-rule` gives.
+`rootpoint-math` depends on no crate of the workspace; `rootpoint-model` on `rootpoint-math`;
+`rootpoint-render` on the model and the math crate; `rootpoint-protocol` on those three; and
+`rootpoint-app` on those four and on eframe, the one GUI toolkit of the workspace. So the model, the
+renderer and the protocol's session run with no window, in a test or a script, which
+`goal@rootpoint@headless-core` asks of every operation the GUI offers. The rival, a model, a
+renderer or a session that links the toolkit, would need a window, or the toolkit's headless mode,
+for every test of the core. It is a reason respected at every crate's manifest. The crates are the
+five that `design@rootpoint@crate-existence-rule` gives.
 
 ### Every crate the browser build links builds for the wasm target, checked by the gate `wasm` `##wasm-from-the-start`
 

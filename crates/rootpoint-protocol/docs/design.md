@@ -10,19 +10,24 @@ rootpoint-protocol is for is in `register@rootpoint-protocol@goal`.
 
 A command is one line: a verb, then words separated by spaces. A text is a double-quoted string,
 with `\"`, `\\` and `\n` escapes; a path is one too where it holds a space, a quote, a backslash or
-a word of a tree; a named option is `key=value`, its value bare or a quoted string, as a style's
-name with a space is. A text tree is given on one line, in brackets, braces and commas, which are
-words of their own outside a quoted string: `["Let x be a ", {t41 bold "prime"}, " number"]`, a
-tree its items separated by commas, each a quoted text or a span, and a span `{` its id, its
-options, then its items `}`. `text` takes a tree so and `tree` prints one so, so that an agent
-writes and reads a styled text as one line; the nearest rival, a tree as a JSON payload,
-`rejected@rootpoint-protocol@json-rpc-commands`, is easier to parse and harder to type.
-`tripwire@rootpoint-protocol@one-line-tree-written-badly` watches agents writing the tree. A blank
-line and a line starting with `#` are no command, so a script carries comments. Each command
-gets one reply line, `ok` or `err` followed by its result or its reason; a command that creates ids
-names them, and `render` names what it could not draw. A printed `Command` is a line that parses
-back to it, so a session can be written out as a script and run again. The binary
-`rootpoint-headless` runs a `Session` on its stdin, one reply per command on its stdout.
+a word of a tree, or starts with `$`; a named option is `key=value`, its value bare or a quoted
+string, as a style's name with a space is. A text tree is given on one line, in brackets, braces and
+commas, which are words of their own outside a quoted string:
+`["Let x be a ", {t41 bold "prime"}, " number"]`, a tree its items separated by commas, each a
+quoted text or a span, and a span `{` its id, its options, then its items `}`. `text` takes a tree
+so and `tree` prints one so, so that an agent writes and reads a styled text as one line; the
+nearest rival, a tree as a JSON payload, `rejected@rootpoint-protocol@json-rpc-commands`, is easier
+to parse and harder to type. `tripwire@rootpoint-protocol@one-line-tree-written-badly` watches
+agents writing the tree. A formula is a word between `$` signs, read with no escape up to the first
+`$` preceded by an even number of `\`, so `\$` is a dollar of the formula and `\\` just before the
+closing `$` is a row break that ends it; `equation` takes one so and `tree` prints one so. The
+nearest rival, a formula in a quoted string, doubles every backslash of its LaTeX, which agents
+write wrong, where `$…$` is the form they know from LaTeX and Markdown. A blank line and a line
+starting with `#` are no command, so a script carries comments. Each command gets one reply line,
+`ok` or `err` followed by its result or its reason; a command that creates ids names them, and
+`render` names what it could not draw. A printed `Command` is a line that parses back to it, so a
+session can be written out as a script and run again. The binary `rootpoint-headless` runs a
+`Session` on its stdin, one reply per command on its stdout.
 
 The commands serve what a readable save file cannot: an edit applied to a running editor, a query
 of its state, and a script run headless, as `goal@rootpoint-protocol@commands-drive-everything`

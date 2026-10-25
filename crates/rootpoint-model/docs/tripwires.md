@@ -45,3 +45,14 @@ looking for a style in the wrong table, or applying a text style where a span st
 fields are all optional, `rejected@rootpoint-model@one-table-of-optional-styles`.
 **Re-entry:** the design audit of the next work on styles; and the standing-state review before
 every merge.
+
+## Guarding `design@rootpoint-model@equation-fit`: the owner holds most equations at a size `##at-most-for-most-equations`
+
+T1 of the premortem of the milestone on math, recorded on the owner's word.
+
+**Fires when:** while preparing one real talk, the owner sets `AtMost` on more than half of its
+equations.
+**Response:** reopen `design@rootpoint-model@equation-fit`, toward `AtMost` as the default of a new
+equation.
+**Re-entry:** the first real talk given with math; and the standing-state review before every
+merge.

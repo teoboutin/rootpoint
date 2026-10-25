@@ -142,26 +142,27 @@ rather than selecting its split, since a drag starts there. The selection is the
 
 Under a row for the slide, each node has a row in depth-first order, indented by its depth: a split
 with its axis, a text with its style's name and the start of its text, an image with its asset's
-path. The selection's row is highlighted, and the overlay outlines the node of the row under the
-pointer. An outline grows downward, one row per node; the nearest rival, a tree drawn top-down like
-an organization chart, needs a column per area, and a slide of 10 areas does not fit a panel of 260
-points. The keys move as the outline reads, `design@rootpoint-app@selection-keys`, so a change of
-the drawing reopens them. On the owner's word: the owner asked for the whole tree with the selection
-highlighted, and maybe the splits told from the areas.
+path, an equation with its number and the start of its LaTeX. The selection's row is highlighted,
+and the overlay outlines the node of the row under the pointer. An outline grows downward, one row
+per node; the nearest rival, a tree drawn top-down like an organization chart, needs a column per
+area, and a slide of 10 areas does not fit a panel of 260 points. The keys move as the outline
+reads, `design@rootpoint-app@selection-keys`, so a change of the drawing reopens them. On the
+owner's word: the owner asked for the whole tree with the selection highlighted, and maybe the
+splits told from the areas.
 
 ### A secondary click selects the node under it, then opens the node menu on that node `##node-menu`
 
 A secondary click on an area of the slide, on a divider's band or the grip too, or on a row of the
 outline, sends `select` for that node, then opens the node menu at the click: "Select", with the
 node's ancestors from the slide's root down and the node itself; on an area, "Content", text, image
-while the document holds an image asset, and on an image area each image asset; on a text area,
-"Style", the table's styles and custom; and "Remove", except on the slide's root. Each entry runs
-the action of the side panel's equivalent or of Delete, `design@rootpoint-app@actions-are-commands`,
-and the menu closes as soon as the selection is no longer its node, so an entry acts on the node the
-menu names. A secondary click on the letterbox, or on the slide's row of the outline, names no node
-and opens no menu; during a drag of a divider, of the grip or of a text selection it does nothing.
-The menu is the window's own state, not a view of the session,
-`goal@rootpoint-protocol@commands-drive-everything`.
+while the document holds an image asset, and on an image area each image asset, then equation; on a
+text area, "Style", the table's styles and custom; and "Remove", except on the slide's root. Each
+entry runs the action of the side panel's equivalent or of Delete,
+`design@rootpoint-app@actions-are-commands`, and the menu closes as soon as the selection is no
+longer its node, so an entry acts on the node the menu names. A secondary click on the letterbox, or
+on the slide's row of the outline, names no node and opens no menu; during a drag of a divider, of
+the grip or of a text selection it does nothing. The menu is the window's own state, not a view of
+the session, `goal@rootpoint-protocol@commands-drive-everything`.
 
 The click selects first, so the menu and the side panel describe one node. The nearest rival, a menu
 that leaves the selection where it was, would describe another node than the side panel does, and
@@ -553,10 +554,10 @@ authority to edit, a click on the selected text area only selects it,
 `design@rootpoint-app@one-controller-at-a-time`. In the final view a click selects and enters no
 editing, `design@rootpoint-app@final-view-presses`, and a double-click begun there acts as that one
 click. A secondary click in the slide view or on a row of the outline, inside the edited area too,
-leaves editing before it opens the node menu, `design@rootpoint-app@node-menu`. Every area that
-holds no image holds a text, a new area an empty one, per `design@rootpoint-model@no-empty-kind`, so
-a second click enters editing on a new area too, and typing into it needs no step that makes it a
-text first.
+leaves editing before it opens the node menu, `design@rootpoint-app@node-menu`. A new area holds an
+empty text, per `design@rootpoint-model@no-empty-kind`, so a second click enters editing on a new
+area too, and typing into it needs no step that makes it a text first; a click on an image area or
+an equation area, which hold no text, only selects it.
 
 On the owner's word: the owner chose this shape over a single click that selects a text area and
 edits it at once, which saves a click before typing in an area not yet selected, but leaves the node

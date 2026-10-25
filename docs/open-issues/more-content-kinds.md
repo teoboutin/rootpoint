@@ -5,9 +5,9 @@ kind: todo
 
 ## Summary
 
-An area holds text or an image, and equations are scheduled by `milestone@plans@math-support`. The
-other kinds `goal@rootpoint@minimal-content-set` lists, bullet lists, code snippets and video, do
-not exist.
+An area holds a text, an image or an equation, and math inline in a text is scheduled by
+`milestone@plans@math-support`. The other kinds `goal@rootpoint@minimal-content-set` lists, bullet
+lists, code snippets and video, do not exist.
 
 ## Details
 
