@@ -164,6 +164,7 @@ not, read in its source by the survey `path@rootpoint@docs/grounding/lyx-nested-
 its screen is not its output. Here the space would move the edited text away from where it is
 presented, against `goal@rootpoint-app@faithful-slide-view`; the frames are drawn over the texture
 and take none, `design@rootpoint-app@editor-overlay`. Doubt remains whether frames of no space let
-the author tell the two caret positions of an edge apart; the owner said they might relax the goal
-if the overlay alone does not work, and `tripwire@rootpoint-app@frames-mislead` brings this design
+the author tell the two caret positions of an edge apart; the owner said they might consider
+relaxing the goal if the overlay alone does not work, while believing it has good chances of
+working out, and `tripwire@rootpoint-app@frames-mislead` brings this design
 back.

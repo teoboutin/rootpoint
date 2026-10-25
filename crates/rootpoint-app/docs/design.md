@@ -95,8 +95,9 @@ show different marks, a frame at one and not the other, which the test
 checks over the spans of the sample's styled text. LyX's frames reserve their space,
 `rejected@rootpoint-app@reserved-frame-space`. Whether frames of no space let the author tell the
 two positions of an edge apart in real use is watched by `tripwire@rootpoint-app@frames-mislead`.
-On the owner's word: the owner expects to revise the frames' form once seen live, and might relax
-`goal@rootpoint-app@faithful-slide-view` if a pure overlay does not work.
+On the owner's word: the owner expects to revise the frames' form once seen live, and might
+consider relaxing `goal@rootpoint-app@faithful-slide-view` if a pure overlay does not work, while
+believing it has good chances of working out.
 
 ### The window always shows where its presentation is and whether it is saved, and names where each writing action writes `##visible-mode`
 
@@ -481,7 +482,9 @@ area's style by `text` with no tree. Every command joins the stay's group,
 
 Each control then has one meaning at a time, and the window holds no state of its own for it; the
 cost is that changing the area's size or style name while editing takes one click out of the stay.
-On the owner's word: the owner chose this over two other shapes, a target the row chooses for the
+The row's listing, which names each span with its style, comes from the frames' design: the
+frames over the slide show where a span is, not its style. On the owner's word: the owner chose
+what the controls and the row's clicks do over two other shapes, a target the row chooses for the
 controls, the caret's, a span's or the area's, which never leaves editing but makes the author
 read the target before each click, held by the window with a rule for when it returns to the
 caret at each move of the caret; and the area's controls shown beside those at the caret, which
