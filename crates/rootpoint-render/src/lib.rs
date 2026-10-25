@@ -14,6 +14,12 @@ use std::ops::Range;
 use std::sync::Arc;
 
 pub use formula::AreaFormula;
+
+/// The bytes of the built-in math font, Libertinus Math, which the editor's own controls draw a
+/// symbol of the palette with.
+pub fn builtin_math_font() -> &'static [u8] {
+    formula::BUILTIN_MATH
+}
 pub use images::{DecodeError, ImageSet, decode_rgba};
 pub use map::TextMap;
 use parley::Layout;

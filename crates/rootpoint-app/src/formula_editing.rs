@@ -383,6 +383,24 @@ impl App {
         self.edit_formula(|f, p| insert(f, p, atom));
     }
 
+    /// Run a button of the palette at the caret.
+    pub fn palette_action(&mut self, action: crate::palette::Action) {
+        match action {
+            crate::palette::Action::Insert(atom) => self.insert_math_atom(atom),
+            crate::palette::Action::Script(sup) => self.math_script(sup),
+            crate::palette::Action::Matrix(rows, edit) => self.edit_math_matrix(rows, edit),
+        }
+    }
+
+    /// Whether a matrix holds the caret in the formula being edited, so its rows and columns can
+    /// be edited.
+    pub fn caret_in_matrix(&self) -> bool {
+        let (Some(mut f), Some(path)) = (self.edited_formula(), self.math_caret()) else {
+            return false;
+        };
+        edit_matrix(&mut f, &path, true, MatrixEdit::Copy).is_some()
+    }
+
     /// Edit the rows (`rows`) or the columns of the matrix that holds the caret.
     pub fn edit_math_matrix(&mut self, rows: bool, edit: MatrixEdit) {
         self.edit_formula(|f, p| edit_matrix(f, p, rows, edit));

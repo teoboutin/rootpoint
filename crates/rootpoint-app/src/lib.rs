@@ -16,6 +16,7 @@ pub mod formula_editing;
 pub mod hit;
 mod memory;
 mod menu;
+pub mod palette;
 mod panels;
 pub mod selection;
 mod view;
@@ -952,6 +953,19 @@ impl App {
         #[cfg(target_arch = "wasm32")]
         self.serve_pickers(ui.ctx());
         self.take_dropped_files(ui.ctx());
+        // The palette's symbols, which egui's own fonts lack, are drawn from the built-in math font,
+        // after them; egui adds a font of one name once.
+        ui.ctx().add_font(egui::epaint::text::FontInsert {
+            name: "Libertinus Math".to_owned(),
+            data: egui::FontData::from_static(rootpoint_render::builtin_math_font()),
+            families: [egui::FontFamily::Proportional, egui::FontFamily::Monospace]
+                .into_iter()
+                .map(|family| egui::epaint::text::InsertFontFamily {
+                    family,
+                    priority: egui::epaint::text::FontPriority::Lowest,
+                })
+                .collect(),
+        });
         self.view.take_control = None;
         // A loss of focus releases a drag and leaves a stay in editing and its group, per
         // `design@rootpoint-app@gesture-groups`.

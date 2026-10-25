@@ -1205,6 +1205,35 @@ fn the_formula_actions_issue_their_commands() {
         },
     );
     check(
+        "the palette: a structure, a script and a row of a matrix",
+        &["select n3", r"equation n3 $x$"],
+        |a| {
+            use rootpoint_app::palette::{Action, structures};
+            let structure = |label: &str| {
+                structures()
+                    .into_iter()
+                    .find(|(l, _)| *l == label)
+                    .unwrap()
+                    .1
+            };
+            edit_n3(a);
+            a.move_caret(CaretMove::TextEnd, false);
+            a.palette_action(Action::Script(true));
+            a.palette_action(structure("pmatrix"));
+            a.palette_action(Action::Matrix(false, rootpoint_math::MatrixEdit::Append));
+            a.stop_editing();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c(r"equation n3 $x^{}$"),
+                c(r"equation n3 $x^{\begin{pmatrix} & \\ & \end{pmatrix}}$"),
+                c(r"equation n3 $x^{\begin{pmatrix} & & \\ & & \end{pmatrix}}$"),
+                c("end"),
+            ]
+        },
+    );
+    check(
         "typing in an equation area",
         &["select n3", r"equation n3 $\alpha$"],
         |a| {

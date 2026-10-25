@@ -12,6 +12,7 @@ use rootpoint_model::{
 use rootpoint_protocol::{EquationOption, SpanField, SpanOption, StyleOption};
 
 use crate::hit::Edge;
+use crate::palette;
 use crate::{App, OutlineRow, SideTab};
 
 /// The sizes of the size menu, in slide units. A menu, not a drag field: each choice is one
@@ -271,7 +272,18 @@ impl App {
         if ui.button("Remove").clicked() {
             self.remove_selection();
         }
-        if self.editing().is_some() && self.editing() == self.selected_area() {
+        if self.math_caret().is_some() && self.editing() == self.selected_area() {
+            ui.separator();
+            self.formula_controls(ui);
+            if let Some(content) = self.selected_content().cloned()
+                && let Content::Equation(e) = &content
+            {
+                ui.separator();
+                if let Some(option) = self.equation(ui, e) {
+                    self.set_equation_option(option);
+                }
+            }
+        } else if self.editing().is_some() && self.editing() == self.selected_area() {
             ui.separator();
             self.editing_controls(ui);
         } else if let Some(content) = self.selected_content().cloned() {
@@ -330,6 +342,9 @@ impl App {
         if self.button(ui, "Split here", unselected && !spans.is_empty()) {
             self.split_here();
         }
+        if self.button(ui, "Insert formula", true) {
+            self.insert_formula();
+        }
         // A reference names an equation by its area, and the picker lists the numbered ones.
         if let Some(target) = self.equation_picker(ui, "Insert reference", None) {
             self.insert_reference(target);
@@ -376,6 +391,61 @@ impl App {
         }
         if let Some(option) = option {
             self.edit_control(option);
+        }
+    }
+
+    /// The Selection tab while a formula is edited, `design@rootpoint-app@controls-act-at-the-caret`:
+    /// the palette, each button inserting at the caret by the same edit a key makes; its
+    /// structures, the scripts among them, and the controls of the rows and columns of the matrix
+    /// that holds the caret, then the table's commands by category, each category folded until
+    /// opened. A button is recorded by its label, so a test can click it.
+    fn formula_controls(&mut self, ui: &mut Ui) {
+        ui.label("Insert in the formula:");
+        let mut chosen = None;
+        ui.horizontal_wrapped(|ui| {
+            for (label, action) in palette::structures() {
+                if self.button(ui, label, true) {
+                    chosen = Some(action);
+                }
+            }
+        });
+        let in_matrix = self.caret_in_matrix();
+        ui.horizontal_wrapped(|ui| {
+            for (label, action) in palette::matrix_controls() {
+                if self.button(ui, label, in_matrix) {
+                    chosen = Some(action);
+                }
+            }
+        });
+        for category in palette::Category::ALL {
+            let folded = egui::CollapsingHeader::new(category.label())
+                .id_salt(category.label())
+                .show(ui, |ui| {
+                    ui.horizontal_wrapped(|ui| {
+                        for c in palette::of_category(category) {
+                            let response = ui
+                                .button(c.ch.to_string())
+                                .on_hover_text(format!("\\{}", c.name));
+                            self.view
+                                .buttons
+                                .push((format!("\\{}", c.name), response.rect));
+                            if response.clicked() {
+                                chosen =
+                                    Some(palette::Action::Insert(rootpoint_math::Atom::Symbol {
+                                        ch: c.ch,
+                                        class: c.class,
+                                        name: Some(c.name),
+                                    }));
+                            }
+                        }
+                    });
+                });
+            self.view
+                .buttons
+                .push((category.label().to_owned(), folded.header_response.rect));
+        }
+        if let Some(action) = chosen {
+            self.palette_action(action);
         }
     }
 
@@ -637,8 +707,8 @@ impl App {
 
     /// The selected equation's options, numbered, its size mode and its colour: each control
     /// returns the one option it changes, which its caller sends; and how many references name
-    /// it, with "Retarget all to…", which moves them to another equation. Its formula is changed by
-    /// the protocol until the window edits it in place.
+    /// it, with "Retarget all to…", which moves them to another equation. Its formula is edited in
+    /// place, `path@rootpoint-app@src/formula_editing.rs`, the palette shown above these options.
     fn equation(&mut self, ui: &mut Ui, e: &EquationContent) -> Option<EquationOption> {
         if let Some(area) = self.selected_area() {
             let count: usize = self

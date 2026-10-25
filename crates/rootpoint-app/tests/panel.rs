@@ -1,6 +1,7 @@
 //! The side panel: its width is the same in every state of its content,
 //! `design@rootpoint-app@sidebar-width`, the Assets tab's included; and the Styles tab, the only part of the window that
-//! changes a named style, with the dialog of a style's removal.
+//! changes a named style, with the dialog of a style's removal; and the palette of a formula
+//! edited.
 
 use eframe::egui::{Context, Event, Modifiers, PointerButton, Pos2, RawInput, Rect, Vec2};
 use rootpoint_app::{App, MemoryFiles};
@@ -69,6 +70,60 @@ fn click(ctx: &Context, app: &mut App, label: &str) {
         );
     }
     frame(ctx, app);
+}
+
+/// The palette lists every command of the math crate's table once, in one category, and no
+/// category is empty; every structure is one atom.
+#[test]
+fn the_palette_lists_every_command_once() {
+    use rootpoint_app::palette::{Category, of_category, structures};
+    let listed: usize = Category::ALL.iter().map(|c| of_category(*c).count()).sum();
+    assert_eq!(listed, rootpoint_math::commands().len());
+    for c in Category::ALL {
+        assert!(of_category(c).next().is_some(), "{c:?} is empty");
+    }
+    assert!(structures().len() > 30);
+}
+
+/// While a formula is edited, the Selection tab's palette inserts at the caret: a structure, with
+/// the caret in its first cell, then a symbol of a category opened by its header; the controls of
+/// a matrix are enabled only while a matrix holds the caret.
+#[test]
+fn the_palette_inserts_at_the_caret_in_a_formula() {
+    let mut app = App::new(Box::new(MemoryFiles::default()));
+    let ctx = Context::default();
+    ok(&mut app, "sample");
+    ok(&mut app, "select n3");
+    ok(&mut app, r"equation n3 $x$");
+    frame(&ctx, &mut app);
+    let layout = app.layout().unwrap().clone();
+    let at = layout.rect(rootpoint_model::NodeId(3)).unwrap().center();
+    app.edit_at(rootpoint_model::NodeId(3), at, &layout);
+    app.move_caret(rootpoint_app::editing::CaretMove::TextEnd, false);
+    frame(&ctx, &mut app);
+    frame(&ctx, &mut app);
+    assert!(!app.caret_in_matrix());
+    click(&ctx, &mut app, "a/b");
+    assert_eq!(app.math_caret().map(|p| p.steps), Some(vec![(1, 0)]));
+    click(&ctx, &mut app, "Relations");
+    // The category's first command, which stands inside the panel with no scroll.
+    let first = rootpoint_app::palette::of_category(rootpoint_app::palette::Category::Relations)
+        .next()
+        .unwrap();
+    let label = format!("\\{}", first.name);
+    let panel = app.side_panel_rect().unwrap();
+    assert!(panel.contains(app.button_rect(&label).unwrap().center()));
+    click(&ctx, &mut app, &label);
+    let latex = |app: &App| app.edited_formula().map(|f| f.to_latex());
+    let after = latex(&app).unwrap();
+    assert!(after.contains(&label), "{after}");
+    click(&ctx, &mut app, "pmatrix");
+    assert!(app.caret_in_matrix());
+    click(&ctx, &mut app, "row: append");
+    assert_eq!(
+        latex(&app),
+        Some(after.replace("}{}", r" \begin{pmatrix} & \\ & \\ & \end{pmatrix}}{}"))
+    );
 }
 
 /// Removing a style that texts name opens the dialog and sends nothing; its "Remove style" with the
@@ -239,6 +294,18 @@ fn the_side_panel_s_width_is_the_same_in_every_state_of_its_content() {
         app.button_rect("t32").is_some(),
         "the ancestor row lists t32"
     );
+    // A formula edited, with the palette's structures and a category opened.
+    app.stop_editing();
+    ok(&mut app, "select n3");
+    ok(&mut app, r"equation n3 $x$");
+    frame(&ctx, &mut app);
+    let layout = app.layout().unwrap().clone();
+    let at = layout.rect(rootpoint_model::NodeId(3)).unwrap().center();
+    app.edit_at(rootpoint_model::NodeId(3), at, &layout);
+    frame(&ctx, &mut app);
+    frame(&ctx, &mut app);
+    click(&ctx, &mut app, "Arrows");
+    widths.push(("a formula edited, with its palette", width(&ctx, &mut app)));
     app.stop_editing();
     frame(&ctx, &mut app);
     click(&ctx, &mut app, "Styles");
