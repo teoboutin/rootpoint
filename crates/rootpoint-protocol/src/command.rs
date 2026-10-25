@@ -105,6 +105,31 @@ pub enum Command {
         offset: usize,
         text: String,
     },
+    /// Insert a formula, one item, in a text node at an offset: `insert <n|t> <offset> $…$`.
+    InsertMath {
+        node: TextTarget,
+        offset: usize,
+        formula: Formula,
+    },
+    /// Insert a reference to an equation area, one item, in a text node at an offset:
+    /// `insert <n|t> <offset> {ref n<id>}`.
+    InsertRef {
+        node: TextTarget,
+        offset: usize,
+        target: NodeId,
+    },
+    /// Replace the formula at an offset of a text node.
+    Math {
+        node: TextTarget,
+        offset: usize,
+        formula: Formula,
+    },
+    /// Make every reference to the equation area `from` name the equation area `to`; the reply is
+    /// the number moved.
+    Retarget {
+        from: NodeId,
+        to: NodeId,
+    },
     /// Remove a range of a text node's offsets; a span in the range goes whole.
     Delete {
         node: TextTarget,
@@ -238,6 +263,10 @@ pub enum TextTarget {
 pub enum TreeItem {
     Chars(String),
     Span(TreeSpan),
+    /// A formula, written `$…$`.
+    Math(Formula),
+    /// A reference to an equation area, written `{ref n<id>}`.
+    Ref(NodeId),
 }
 
 /// A span of a text tree: its id, which `tree` prints and `text` ignores, since it gives every span
@@ -498,10 +527,42 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
             }
             Command::Text { area, root, style }
         }
-        "insert" => Command::Insert {
+        "insert" => {
+            let node = parse_target(&args.word("a text node")?)?;
+            let offset = parse_index(&args.word("an offset")?)?;
+            match args.peek() {
+                Some(Word::Math(_)) => Command::InsertMath {
+                    node,
+                    offset,
+                    formula: args.formula()?,
+                },
+                Some(Word::Punct('{')) => match parse_item(&mut args)? {
+                    TreeItem::Ref(target) => Command::InsertRef {
+                        node,
+                        offset,
+                        target,
+                    },
+                    _ => {
+                        return Err(ParseError(
+                            "`insert` takes a quoted text, a formula or a reference".to_owned(),
+                        ));
+                    }
+                },
+                _ => Command::Insert {
+                    node,
+                    offset,
+                    text: args.quoted("a quoted text, a formula or a reference")?,
+                },
+            }
+        }
+        "math" => Command::Math {
             node: parse_target(&args.word("a text node")?)?,
             offset: parse_index(&args.word("an offset")?)?,
-            text: args.quoted("a quoted text")?,
+            formula: args.formula()?,
+        },
+        "retarget" => Command::Retarget {
+            from: parse_node(&args.word("an equation area")?)?,
+            to: parse_node(&args.word("an equation area")?)?,
         },
         "delete" => Command::Delete {
             node: parse_target(&args.word("a text node")?)?,
@@ -721,6 +782,22 @@ impl fmt::Display for Command {
             Command::Insert { node, offset, text } => {
                 write!(f, "insert {node} {offset} {}", quote_always(text))
             }
+            Command::InsertMath {
+                node,
+                offset,
+                formula,
+            } => write!(f, "insert {node} {offset} ${}$", formula.to_latex()),
+            Command::InsertRef {
+                node,
+                offset,
+                target,
+            } => write!(f, "insert {node} {offset} {{ref {target}}}"),
+            Command::Math {
+                node,
+                offset,
+                formula,
+            } => write!(f, "math {node} {offset} ${}$", formula.to_latex()),
+            Command::Retarget { from, to } => write!(f, "retarget {from} {to}"),
             Command::Delete { node, range } => {
                 write!(f, "delete {node} {}..{}", range.start, range.end)
             }
@@ -900,7 +977,8 @@ impl fmt::Display for SpanOption {
 }
 
 /// A text tree on one line: `[` its items separated by `, ` `]`, a span written `{`, its id if
-/// it has one, its options, then its items, `}`, as `["a ", {t4 bold "b"}]`.
+/// it has one, its options, then its items, `}`, a formula `$…$` and a reference `{ref n<id>}`, as
+/// `["a ", {t4 bold "b"}, $x^2$, {ref n7}]`.
 pub(crate) fn tree_text(items: &[TreeItem]) -> String {
     format!("[{}]", items_text(items))
 }
@@ -918,6 +996,8 @@ fn items_text(items: &[TreeItem]) -> String {
                 }
                 format!("{{{}}}", words.join(" "))
             }
+            TreeItem::Math(formula) => format!("${}$", formula.to_latex()),
+            TreeItem::Ref(target) => format!("{{ref {target}}}"),
         })
         .collect::<Vec<_>>()
         .join(", ")
@@ -1238,15 +1318,30 @@ fn parse_items(args: &mut Args, end: char) -> Result<Vec<TreeItem>, ParseError> 
     }
 }
 
-/// A quoted string, or a span `{[t<n>] <options> <items>}`.
+/// A quoted string, a formula `$…$`, a reference `{ref n<id>}`, or a span
+/// `{[t<n>] <options> <items>}`.
 fn parse_item(args: &mut Args) -> Result<TreeItem, ParseError> {
-    if let Some(Word::Quoted(_)) = args.peek() {
-        return Ok(TreeItem::Chars(args.quoted("a quoted text")?));
+    match args.peek() {
+        Some(Word::Quoted(_)) => return Ok(TreeItem::Chars(args.quoted("a quoted text")?)),
+        Some(Word::Math(_)) => return Ok(TreeItem::Math(args.formula()?)),
+        _ => {}
     }
     if !args.punct('{') {
         return Err(ParseError(
-            "missing a quoted text or a span `{…}` in a text tree".to_owned(),
+            "missing a quoted text, a formula, a reference or a span `{…}` in a text tree"
+                .to_owned(),
         ));
+    }
+    // `ref` is no option of a span, so a brace that opens with it is a reference.
+    if let Some(Word::Bare(word)) = args.peek()
+        && word == "ref"
+    {
+        args.next += 1;
+        let target = parse_node(&args.word("an equation area")?)?;
+        if !args.punct('}') {
+            return Err(ParseError("missing `}` after a reference".to_owned()));
+        }
+        return Ok(TreeItem::Ref(target));
     }
     let id = match args.peek() {
         Some(Word::Bare(word)) if word.starts_with('t') => {

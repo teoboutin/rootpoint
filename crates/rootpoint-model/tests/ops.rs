@@ -443,7 +443,7 @@ struct Step {
 fn step() -> impl Strategy<Value = Step> {
     // Positions near 0 and 1 as well as ordinary ones, where rounding meets the dividers.
     let at = prop_oneof![0.05f64..0.95, 1e-12f64..1e-3, (1.0 - 1e-3)..(1.0 - 1e-12)];
-    (0u8..19, any::<usize>(), any::<usize>(), at, any::<bool>()).prop_map(
+    (0u8..21, any::<usize>(), any::<usize>(), at, any::<bool>()).prop_map(
         |(kind, pick, other, at, flag)| Step {
             kind,
             pick,
@@ -642,6 +642,17 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
                 document: Box::new(file),
             }
         }
+        19 if !areas.is_empty() => Op::RetargetReferences {
+            from: areas[pick(areas.len())],
+            to: areas[s.other % areas.len()],
+        },
+        // A reference to an area, which swaps, duplicates, removals and retargets then carry.
+        20 if !areas.is_empty() => Op::InsertRef {
+            area: areas[pick(areas.len())],
+            node: TextNodeRef::Root,
+            offset: 0,
+            target: areas[s.other % areas.len()],
+        },
         _ => return None,
     })
 }
@@ -784,6 +795,7 @@ fn check_canonical(node: &TextNode) {
                 );
                 check_canonical(&span.text);
             }
+            TextItem::Math(_) | TextItem::Ref(_) => last_chars = false,
         }
     }
 }
@@ -957,7 +969,7 @@ struct TextStep {
 }
 
 fn text_step() -> impl Strategy<Value = TextStep> {
-    (0u8..7, 0usize..20, 0usize..20, 0usize..6, "[a-cé ]{0,4}").prop_map(
+    (0u8..10, 0usize..20, 0usize..20, 0usize..6, "[a-cé ]{0,4}").prop_map(
         |(kind, a, b, node, text)| TextStep {
             kind,
             a,
@@ -1019,20 +1031,40 @@ fn text_op(doc: &Document, area: NodeId, s: &TextStep) -> Op {
             span,
             offset: lo,
         },
-        _ => Op::SetText {
+        6 => Op::SetText {
             area,
             root: t.root.clone(),
+        },
+        7 => Op::InsertMath {
+            area,
+            node,
+            offset: lo,
+            formula: rootpoint_math::Formula::parse(&format!("x^{}", s.a)).unwrap(),
+        },
+        // A reference to the text's own area, a cosmetic breach, which an operation accepts.
+        8 => Op::InsertRef {
+            area,
+            node,
+            offset: lo,
+            target: area,
+        },
+        // At an offset that holds a formula or not, so both the change and the refusal are met.
+        _ => Op::SetMath {
+            area,
+            node,
+            offset: lo,
+            formula: rootpoint_math::Formula::parse("y").unwrap(),
         },
     }
 }
 
-/// The number of offsets of a text node: its characters, and one per span.
+/// The number of offsets of a text node: its characters, and one per span, formula and reference.
 fn offsets(node: &TextNode) -> usize {
     node.items
         .iter()
         .map(|i| match i {
             TextItem::Chars(s) => s.chars().count(),
-            TextItem::Span(_) => 1,
+            TextItem::Span(_) | TextItem::Math(_) | TextItem::Ref(_) => 1,
         })
         .sum()
 }

@@ -3,6 +3,8 @@
 //! Every change of a document is an [`Op`] given to [`apply`], which returns the operation that
 //! undoes it. The GUI, the protocol and the tests change a document through nothing else.
 
+use rootpoint_math::Formula;
+
 use crate::document::*;
 use crate::validate::Invalid;
 
@@ -32,7 +34,8 @@ pub enum Op {
         slide: SlideId,
         to: usize,
     },
-    /// Insert, after the slide, a copy whose every node has a new id.
+    /// Insert, after the slide, a copy whose every node has a new id; a reference of the copy to an
+    /// area of the slide names that area's copy.
     DuplicateSlide {
         slide: SlideId,
     },
@@ -60,7 +63,8 @@ pub enum Op {
         index: usize,
         pos: f64,
     },
-    /// Exchange the contents of two areas, which keep their ids and their places.
+    /// Exchange the contents of two areas, which keep their ids and their places; every reference
+    /// to either area follows its content to the other.
     Swap {
         a: NodeId,
         b: NodeId,
@@ -68,6 +72,10 @@ pub enum Op {
     SetContent {
         area: NodeId,
         content: Content,
+    },
+    /// Set the content of each area, as the inverse of an operation that changes several texts.
+    SetContents {
+        contents: Vec<(NodeId, Content)>,
     },
     AddAsset {
         asset: Asset,
@@ -122,6 +130,33 @@ pub enum Op {
         node: TextNodeRef,
         offset: usize,
         text: String,
+    },
+    /// Insert a formula, one item, in a text node of an area's text, at an offset.
+    InsertMath {
+        area: NodeId,
+        node: TextNodeRef,
+        offset: usize,
+        formula: Formula,
+    },
+    /// Insert a reference to the area `target`, one item, in a text node, at an offset.
+    InsertRef {
+        area: NodeId,
+        node: TextNodeRef,
+        offset: usize,
+        target: NodeId,
+    },
+    /// Replace the formula at an offset of a text node.
+    SetMath {
+        area: NodeId,
+        node: TextNodeRef,
+        offset: usize,
+        formula: Formula,
+    },
+    /// Make every reference to the area `from` name `to`. Its inverse sets each text it changed
+    /// back, so it moves back only the references it moved.
+    RetargetReferences {
+        from: NodeId,
+        to: NodeId,
     },
     /// Remove a range of offsets of a text node; a span in the range goes whole.
     DeleteText {
@@ -253,6 +288,10 @@ pub enum OpError {
     EmptySpanStyle,
     /// A span cut at its edge, where one half would be empty.
     SpanEdge(SpanId),
+    /// No formula stands at this offset of its text node.
+    NotAFormula {
+        offset: usize,
+    },
     /// The result would break an invariant of the document, which the reason names.
     Invalid(String),
 }
@@ -313,7 +352,9 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
         Op::DuplicateSlide { slide } => {
             let at = slide_index(doc, slide)?;
             let mut root = doc.slides[at].root.clone();
-            renumber(&mut root, doc);
+            let mut copies = std::collections::BTreeMap::new();
+            renumber(&mut root, doc, &mut copies);
+            redirect(&mut root, &copies);
             let copy = SlideId(doc.alloc());
             doc.slides.insert(at + 1, Slide { id: copy, root });
             Ok(Op::RemoveSlide { slide: copy })
@@ -382,11 +423,35 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
                 pos: old,
             })
         }
+        // The references follow the contents, so a moved equation keeps them; the swap is its own
+        // inverse, references included.
         Op::Swap { a, b } => {
             let content_a = area_mut(doc, a)?.content.clone();
             let content_b = std::mem::replace(&mut area_mut(doc, b)?.content, content_a);
             area_mut(doc, a)?.content = content_b;
+            retarget_texts(doc, |id| {
+                if id == a {
+                    Some(b)
+                } else if id == b {
+                    Some(a)
+                } else {
+                    None
+                }
+            });
             Ok(Op::Swap { a, b })
+        }
+        Op::SetContents { contents } => {
+            let mut before = Vec::with_capacity(contents.len());
+            for (area, content) in contents {
+                let old = std::mem::replace(&mut area_mut(doc, area)?.content, content);
+                before.push((area, old));
+            }
+            before.reverse();
+            Ok(Op::SetContents { contents: before })
+        }
+        Op::RetargetReferences { from, to } => {
+            let before = retarget_texts(doc, |id| (id == from).then_some(to));
+            Ok(Op::SetContents { contents: before })
         }
         // An image whose asset the table lacks is not refused: it is a cosmetic breach, and the
         // inverse of an edit of an area loaded with one brings it back,
@@ -486,6 +551,32 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             seq.check(offset)?;
             let chars = text.chars().map(Elem::Char);
             seq.0.splice(offset..offset, chars);
+            seq.store(text_node(root, node)?);
+            Ok(())
+        }),
+        Op::InsertMath {
+            area,
+            node,
+            offset,
+            formula,
+        } => insert_item(doc, area, node, offset, Elem::Math(formula)),
+        Op::InsertRef {
+            area,
+            node,
+            offset,
+            target,
+        } => insert_item(doc, area, node, offset, Elem::Ref(target)),
+        Op::SetMath {
+            area,
+            node,
+            offset,
+            formula,
+        } => edit_text(doc, area, |_, root| {
+            let mut seq = Seq::of(text_node(root, node)?);
+            match seq.0.get_mut(offset) {
+                Some(Elem::Math(f)) => *f = formula,
+                _ => return Err(OpError::NotAFormula { offset }),
+            }
             seq.store(text_node(root, node)?);
             Ok(())
         }),
@@ -707,6 +798,58 @@ fn edit_text(
     })
 }
 
+/// Insert one item at an offset of a text node.
+fn insert_item(
+    doc: &mut Document,
+    area: NodeId,
+    node: TextNodeRef,
+    offset: usize,
+    item: Elem,
+) -> Result<Op, OpError> {
+    edit_text(doc, area, |_, root| {
+        let mut seq = Seq::of(text_node(root, node)?);
+        seq.check(offset)?;
+        seq.0.insert(offset, item);
+        seq.store(text_node(root, node)?);
+        Ok(())
+    })
+}
+
+/// Make each reference of every text that `retarget` maps name what it gives, and return each
+/// changed area with its former content, in the order of the slides and of their trees.
+fn retarget_texts(
+    doc: &mut Document,
+    retarget: impl Fn(NodeId) -> Option<NodeId>,
+) -> Vec<(NodeId, Content)> {
+    let mut before = Vec::new();
+    for slide in &mut doc.slides {
+        retarget_node(&mut slide.root, &retarget, &mut before);
+    }
+    before
+}
+
+fn retarget_node(
+    node: &mut Node,
+    retarget: &impl Fn(NodeId) -> Option<NodeId>,
+    before: &mut Vec<(NodeId, Content)>,
+) {
+    match node {
+        Node::Split(s) => {
+            for child in &mut s.children {
+                retarget_node(child, retarget, before);
+            }
+        }
+        Node::Area(a) => {
+            if let Content::Text(text) = &mut a.content {
+                let old = text.clone();
+                if text.root.retarget(retarget) {
+                    before.push((a.id, Content::Text(old)));
+                }
+            }
+        }
+    }
+}
+
 /// Refuse a custom span style that sets no field: such a span changes nothing, so its caller
 /// unwraps it instead, `design@rootpoint-model@text-tree-normal-form`. A named span is never refused, whatever its values, so that a span keeps its
 /// name when its style's values come to equal its parent's.
@@ -732,7 +875,7 @@ fn find_span(node: &mut TextNode, id: SpanId) -> Option<&mut Span> {
     // of a loop that goes on borrowing is refused by the borrow checker.
     let at = node.items.iter().position(|item| match item {
         TextItem::Span(s) => s.id == id || s.text.spans().iter().any(|t| t.id == id),
-        TextItem::Chars(_) => false,
+        TextItem::Chars(_) | TextItem::Math(_) | TextItem::Ref(_) => false,
     })?;
     let TextItem::Span(s) = &mut node.items[at] else {
         unreachable!("the position is a span's")
@@ -757,7 +900,7 @@ fn span_parent(root: &mut TextNode, id: SpanId) -> Result<(&mut TextNode, usize)
         }
         node.items.iter_mut().find_map(|item| match item {
             TextItem::Span(s) => walk(&mut s.text, id),
-            TextItem::Chars(_) => None,
+            TextItem::Chars(_) | TextItem::Math(_) | TextItem::Ref(_) => None,
         })
     }
     let parent = walk(root, id).ok_or(OpError::UnknownSpan(id))?;
@@ -769,10 +912,12 @@ fn span_parent(root: &mut TextNode, id: SpanId) -> Result<(&mut TextNode, usize)
     Ok((parent, at))
 }
 
-/// One offset of a text node: a character, or a span.
+/// One offset of a text node: a character, a span, a formula or a reference.
 enum Elem {
     Char(char),
     Span(Span),
+    Math(Formula),
+    Ref(NodeId),
 }
 
 /// A text node as its sequence of offsets, which the operations edit by offset, then store back in
@@ -786,6 +931,8 @@ impl Seq {
             match item {
                 TextItem::Chars(s) => out.extend(s.chars().map(Elem::Char)),
                 TextItem::Span(span) => out.push(Elem::Span(span.clone())),
+                TextItem::Math(formula) => out.push(Elem::Math(formula.clone())),
+                TextItem::Ref(area) => out.push(Elem::Ref(*area)),
             }
         }
         Seq(out)
@@ -795,15 +942,19 @@ impl Seq {
         let mut items = Vec::new();
         let mut run = String::new();
         for elem in self.0 {
-            match elem {
-                Elem::Char(c) => run.push(c),
-                Elem::Span(span) => {
-                    if !run.is_empty() {
-                        items.push(TextItem::Chars(std::mem::take(&mut run)));
-                    }
-                    items.push(TextItem::Span(span));
+            let item = match elem {
+                Elem::Char(c) => {
+                    run.push(c);
+                    continue;
                 }
+                Elem::Span(span) => TextItem::Span(span),
+                Elem::Math(formula) => TextItem::Math(formula),
+                Elem::Ref(area) => TextItem::Ref(area),
+            };
+            if !run.is_empty() {
+                items.push(TextItem::Chars(std::mem::take(&mut run)));
             }
+            items.push(item);
         }
         if !run.is_empty() {
             items.push(TextItem::Chars(run));
@@ -1031,21 +1182,42 @@ fn asset_in_use(doc: &Document, id: AssetId) -> bool {
             })
 }
 
-/// Give every node of the subtree, and every span of its texts, a new id.
-fn renumber(node: &mut Node, doc: &mut Document) {
+/// Give every node of the subtree, and every span of its texts, a new id, and record each area's new
+/// id in `copies` by its former one.
+fn renumber(
+    node: &mut Node,
+    doc: &mut Document,
+    copies: &mut std::collections::BTreeMap<NodeId, NodeId>,
+) {
     match node {
         Node::Split(s) => {
             s.id = NodeId(doc.alloc());
             for child in &mut s.children {
-                renumber(child, doc);
+                renumber(child, doc, copies);
             }
         }
         Node::Area(a) => {
-            a.id = NodeId(doc.alloc());
+            let id = NodeId(doc.alloc());
+            copies.insert(a.id, id);
+            a.id = id;
             if let Content::Text(text) = &mut a.content {
                 renumber_spans(&mut text.root, doc);
             }
         }
+    }
+}
+
+/// Make each reference of the subtree's texts to an area `copies` holds name that area's copy.
+fn redirect(node: &mut Node, copies: &std::collections::BTreeMap<NodeId, NodeId>) {
+    match node {
+        Node::Split(s) => s.children.iter_mut().for_each(|c| redirect(c, copies)),
+        Node::Area(Area {
+            content: Content::Text(text),
+            ..
+        }) => {
+            text.root.retarget(&|id| copies.get(&id).copied());
+        }
+        Node::Area(_) => {}
     }
 }
 

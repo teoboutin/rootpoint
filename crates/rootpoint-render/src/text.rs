@@ -7,8 +7,9 @@ use std::sync::Arc;
 use parley::fontique::{Blob, CollectionOptions, FontInfoOverride};
 use parley::{
     Alignment, AlignmentOptions, FontContext, FontFamily, FontFamilyName, FontStyle, FontWeight,
-    Layout, LayoutContext, PositionedLayoutItem, StyleProperty,
+    InlineBox, InlineBoxKind, Layout, LayoutContext, PositionedLayoutItem, StyleProperty,
 };
+use rootpoint_math::FormulaLayout;
 use rootpoint_model::{AssetId, BUILTIN_FAMILIES, FontRef, HAlign, Rgba, SpanStyle, TextStyle};
 use vello_cpu::kurbo::{Affine, Diagonal2};
 
@@ -138,12 +139,26 @@ pub(crate) struct TextLayout {
     /// Whether the text's font, or a font a span sets, was missing, and the built-in sans stood
     /// in.
     pub fell_back: bool,
-    /// Whether a character has no glyph in any font of the stack, and is drawn as a box.
+    /// Whether a character has no glyph in any font of the stack, and is drawn as a box, or a
+    /// formula holds a command the math font lacks.
     pub missing_glyph: bool,
+    /// Whether a formula holds a command the math subset does not know, drawn red.
+    pub unknown_command: bool,
+    /// The text's formulas, each laid out with its colour; the inline box of each has its index as
+    /// its id.
+    pub formulas: Vec<(FormulaLayout, Rgba)>,
+}
+
+/// A formula of a text, laid out, to stand in the text's layout as an inline box at a byte index.
+pub(crate) struct InlineFormula {
+    pub index: usize,
+    pub layout: FormulaLayout,
+    pub colour: Rgba,
 }
 
 /// Lay a text out in slide units in the style `style`, each span's values in `spans` set over its
-/// byte range, wrapped to `width` slide units. `spans` lists the spans outer before inner, as a
+/// byte range, each formula of `formulas` an inline box at its byte index, as wide as the formula and
+/// standing on its baseline, wrapped to `width` slide units. `spans` lists the spans outer before inner, as a
 /// later range's value wins where two overlap, as Parley 0.12.0's `RangedStyleBuilder::finish`
 /// applies the ranges in the order pushed. The layout depends on no pixel size: every display
 /// draws this one layout through its own scale.
@@ -152,6 +167,7 @@ pub(crate) fn layout_text(
     text: &str,
     style: &TextStyle,
     spans: &[(Range<usize>, SpanStyle)],
+    formulas: Vec<InlineFormula>,
     width: f32,
 ) -> TextLayout {
     // The built-in sans follows the chosen font, so a character the chosen font lacks is drawn in
@@ -209,6 +225,18 @@ pub(crate) fn layout_text(
             builder.push(StyleProperty::Brush(TextBrush(colour)), range.clone());
         }
     }
+    for (id, f) in formulas.iter().enumerate() {
+        let ascent = f.layout.ascent as f32;
+        builder.push_inline_box(InlineBox {
+            id: id as u64,
+            kind: InlineBoxKind::InFlow,
+            index: f.index,
+            width: f.layout.width as f32,
+            height: ascent + f.layout.descent as f32,
+            baseline: Some(ascent),
+            vertical_align: Default::default(),
+        });
+    }
     let mut layout: Layout<TextBrush> = builder.build(text);
     layout.break_all_lines(Some(width));
     let alignment = match style.h_align {
@@ -236,7 +264,9 @@ pub(crate) fn layout_text(
         layout,
         lines,
         fell_back,
-        missing_glyph,
+        missing_glyph: missing_glyph || formulas.iter().any(|f| f.layout.missing_glyph),
+        unknown_command: formulas.iter().any(|f| f.layout.unknown_command),
+        formulas: formulas.into_iter().map(|f| (f.layout, f.colour)).collect(),
     }
 }
 
@@ -261,19 +291,31 @@ fn slant(italic: bool) -> FontStyle {
     }
 }
 
-/// Draw a laid-out text with its top-left corner at the origin of the context's transform, each
-/// glyph run in its run's colour.
+/// Draw a laid-out text with its top-left corner at the origin of `base`, the context's transform,
+/// each glyph run in its run's colour, and each formula on its box in the math font `math`.
 /// Returns false when a glyph run could not be drawn, as from a damaged font file.
 pub(crate) fn draw_text(
     ctx: &mut vello_cpu::RenderContext,
     resources: &mut vello_cpu::Resources,
     text: &TextLayout,
+    math: &vello_cpu::peniko::FontData,
+    base: Affine,
 ) -> bool {
     let mut drawn = true;
+    ctx.set_transform(base);
     for line in text.layout.lines() {
         for item in line.items() {
-            let PositionedLayoutItem::GlyphRun(glyph_run) = item else {
-                continue;
+            let glyph_run = match item {
+                PositionedLayoutItem::GlyphRun(run) => run,
+                PositionedLayoutItem::InlineBox(b) => {
+                    let (layout, colour) = &text.formulas[b.id as usize];
+                    let origin = (f64::from(b.x), f64::from(b.y) + layout.ascent);
+                    ctx.set_transform(base * Affine::translate(origin));
+                    drawn &=
+                        crate::formula::draw_formula(ctx, resources, math, layout, *colour).all;
+                    ctx.set_transform(base);
+                    continue;
+                }
             };
             let run = glyph_run.run();
             let TextBrush(c) = glyph_run.style().brush;
@@ -340,7 +382,14 @@ mod tests {
     #[test]
     fn an_arrow_typed_in_a_text_is_drawn_from_the_math_font() {
         let mut set = FontSet::new();
-        let laid = layout_text(&mut set, "a → b", &TextStyle::default(), &[], 1000.0);
+        let laid = layout_text(
+            &mut set,
+            "a → b",
+            &TextStyle::default(),
+            &[],
+            Vec::new(),
+            1000.0,
+        );
         assert!(!laid.missing_glyph);
         let mut math_runs = 0;
         for line in laid.layout.lines() {

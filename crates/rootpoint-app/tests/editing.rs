@@ -548,6 +548,8 @@ fn shape(d: &Driver, area: NodeId) -> String {
                     of(&span.text, out);
                     out.push('}');
                 }
+                TextItem::Math(_) => out.push('$'),
+                TextItem::Ref(_) => out.push('#'),
             }
         }
     }
@@ -864,6 +866,10 @@ mod caret_walk {
                 }
                 TextItem::Span(span) => {
                     positions(TextNodeRef::Span(span.id), &span.text, out);
+                    offset += 1;
+                    out.push(at(node, offset));
+                }
+                TextItem::Math(_) | TextItem::Ref(_) => {
                     offset += 1;
                     out.push(at(node, offset));
                 }

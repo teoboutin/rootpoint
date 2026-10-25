@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 6,
+    version: 7,
     aspect: (
         width: 16,
         height: 9,
@@ -119,6 +119,8 @@
                                 id: 5,
                                 content: Text(
                                     root: [
+                                        Math(r#"x^2 \leq \frac{1}{2}"#),
+                                        Ref(11),
                                         Chars("Some "),
                                         Span(
                                             id: 8,

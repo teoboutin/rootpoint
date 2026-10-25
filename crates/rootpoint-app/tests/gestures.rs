@@ -996,6 +996,9 @@ fn the_two_positions_at_an_edge_show_different_marks() {
         for item in &node.items {
             match item {
                 rootpoint_model::TextItem::Chars(s) => offset += s.chars().count(),
+                rootpoint_model::TextItem::Math(_) | rootpoint_model::TextItem::Ref(_) => {
+                    offset += 1
+                }
                 rootpoint_model::TextItem::Span(s) => {
                     let len = s
                         .text
@@ -1003,7 +1006,7 @@ fn the_two_positions_at_an_edge_show_different_marks() {
                         .iter()
                         .map(|i| match i {
                             rootpoint_model::TextItem::Chars(c) => c.chars().count(),
-                            rootpoint_model::TextItem::Span(_) => 1,
+                            _ => 1,
                         })
                         .sum();
                     out.push((s.id, here, offset, len));

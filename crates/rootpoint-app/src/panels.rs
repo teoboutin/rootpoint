@@ -330,6 +330,10 @@ impl App {
         if self.button(ui, "Split here", unselected && !spans.is_empty()) {
             self.split_here();
         }
+        // A reference names an equation by its area, and the picker lists the numbered ones.
+        if let Some(target) = self.equation_picker(ui, "Insert reference", None) {
+            self.insert_reference(target);
+        }
         if leave {
             self.stop_editing();
             return;
@@ -597,10 +601,62 @@ impl App {
         }
     }
 
+    /// A picker of the presentation's numbered equations, each by its number and the start of its
+    /// LaTeX, but `except`: the area picked, if one was.
+    fn equation_picker(
+        &mut self,
+        ui: &mut Ui,
+        label: &str,
+        except: Option<NodeId>,
+    ) -> Option<NodeId> {
+        let equations: Vec<(NodeId, u32, String)> = self
+            .numbered_equations()
+            .into_iter()
+            .filter(|(area, _, _)| Some(*area) != except)
+            .collect();
+        let mut picked = None;
+        let response = ui.add_enabled_ui(!equations.is_empty(), |ui| {
+            egui::ComboBox::from_id_salt(label)
+                .selected_text(label)
+                .show_ui(ui, |ui| {
+                    for (area, n, latex) in &equations {
+                        if ui
+                            .selectable_label(false, format!("({n}) {latex}"))
+                            .clicked()
+                        {
+                            picked = Some(*area);
+                        }
+                    }
+                })
+        });
+        self.view
+            .buttons
+            .push((label.to_owned(), response.response.rect));
+        picked
+    }
+
     /// The selected equation's options, numbered, its size mode and its colour: each control
-    /// returns the one option it changes, which its caller sends. Its formula is changed by the
-    /// protocol until the window edits it in place.
+    /// returns the one option it changes, which its caller sends; and how many references name
+    /// it, with "Retarget all to…", which moves them to another equation. Its formula is changed by
+    /// the protocol until the window edits it in place.
     fn equation(&mut self, ui: &mut Ui, e: &EquationContent) -> Option<EquationOption> {
+        if let Some(area) = self.selected_area() {
+            let count: usize = self
+                .session
+                .document()
+                .references_to(area)
+                .iter()
+                .map(|(_, n)| n)
+                .sum();
+            ui.horizontal_wrapped(|ui| {
+                ui.label(format!("Referenced {count} times"));
+                if count > 0
+                    && let Some(to) = self.equation_picker(ui, "Retarget all to…", Some(area))
+                {
+                    self.retarget_references(to);
+                }
+            });
+        }
         let mut chosen = None;
         ui.horizontal_wrapped(|ui| {
             let mut numbered = e.numbered;

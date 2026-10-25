@@ -28,7 +28,7 @@ struct Step {
 
 fn step() -> impl Strategy<Value = Step> {
     (
-        0u8..45,
+        0u8..50,
         any::<usize>(),
         any::<usize>(),
         0.05f64..0.95,
@@ -261,6 +261,27 @@ fn line_for(doc: &Document, s: &Step) -> String {
             ["bold", "style=\"Title\"", "custom"][s.other % 3]
         ),
         43 => "span-styles".to_owned(),
+        // Formulas and references, to areas that hold an equation or not, which the refusals of
+        // a reference to an area that holds no equation meet.
+        44 => format!(
+            "insert {} {} $x_{}$",
+            target(s.pick),
+            s.other % 4,
+            s.other % 10
+        ),
+        45 => format!(
+            "insert {} {} {{ref {}}}",
+            target(s.pick),
+            s.other % 4,
+            node(s.other)
+        ),
+        46 => format!("math {} {} $y$", target(s.pick), s.other % 4),
+        47 => format!("retarget {} {}", node(s.pick), node(s.other)),
+        48 => format!(
+            "text {} [\"a \", $z$, {{ref {}}}]",
+            node(s.pick),
+            node(s.other)
+        ),
         _ => format!("select {}", node(s.pick)),
     }
 }

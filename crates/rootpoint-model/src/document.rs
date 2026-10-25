@@ -233,6 +233,33 @@ impl Document {
         out
     }
 
+    /// Whether `area` is an area that holds an equation, which a reference may name.
+    pub fn holds_equation(&self, area: NodeId) -> bool {
+        matches!(
+            self.node(area),
+            Some(Node::Area(Area {
+                content: Content::Equation(_),
+                ..
+            }))
+        )
+    }
+
+    /// The areas whose text references `target`, each with the number of its references to it, in
+    /// the order of the slides and of their trees.
+    pub fn references_to(&self, target: NodeId) -> Vec<(NodeId, usize)> {
+        self.slides
+            .iter()
+            .flat_map(|s| s.root.areas())
+            .filter_map(|a| match &a.content {
+                Content::Text(text) => {
+                    let n = text.root.refs().iter().filter(|r| **r == target).count();
+                    (n > 0).then_some((a.id, n))
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
     /// A new equation of `formula`: numbered, fitted to its area, in the colour of the Body style
     /// of the table, or black when the table has none.
     pub fn new_equation(&self, formula: Formula) -> EquationContent {
@@ -376,7 +403,7 @@ impl Default for Content {
     }
 }
 
-/// Wrapped text: a tree of characters and spans, the root drawn in the area's style and each span
+/// Wrapped text: a tree of characters, spans, formulas and references, the root drawn in the area's style and each span
 /// in its own values over its parent's, `design@rootpoint-model@text-node-tree`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextContent {
@@ -393,7 +420,8 @@ impl TextContent {
         }
     }
 
-    /// The text's characters, the spans' included, in order.
+    /// The text's characters, the spans' included, in order, a formula written `$<LaTeX>$` and a
+    /// reference `{ref n<id>}`, as the protocol writes them in a tree.
     pub fn plain_text(&self) -> String {
         let mut out = String::new();
         self.root.push_plain(&mut out);
@@ -443,7 +471,8 @@ impl TextContent {
     }
 }
 
-/// A sequence of characters and spans: the root of a text, or a span's content. Kept in one
+/// A sequence of characters, spans, formulas and references: the root of a text, or a span's
+/// content. Kept in one
 /// canonical form, no run of characters empty and no two adjacent, which [`TextNode::normalise`]
 /// restores, so that a document and its round trip through an operation and its inverse compare
 /// equal.
@@ -479,6 +508,7 @@ impl TextNode {
                     }
                 }
                 TextItem::Span(span) => span.text.normalise(),
+                TextItem::Math(_) | TextItem::Ref(_) => {}
             }
             items.push(item);
         }
@@ -490,8 +520,50 @@ impl TextNode {
             match item {
                 TextItem::Chars(s) => out.push_str(s),
                 TextItem::Span(span) => span.text.push_plain(out),
+                TextItem::Math(formula) => {
+                    out.push('$');
+                    out.push_str(&formula.to_latex());
+                    out.push('$');
+                }
+                TextItem::Ref(area) => out.push_str(&format!("{{ref {area}}}")),
             }
         }
+    }
+
+    /// The area each reference of this node and below names, in the order of the text.
+    pub fn refs(&self) -> Vec<NodeId> {
+        let mut out = Vec::new();
+        self.collect_refs(&mut out);
+        out
+    }
+
+    fn collect_refs(&self, out: &mut Vec<NodeId>) {
+        for item in &self.items {
+            match item {
+                TextItem::Ref(area) => out.push(*area),
+                TextItem::Span(span) => span.text.collect_refs(out),
+                TextItem::Chars(_) | TextItem::Math(_) => {}
+            }
+        }
+    }
+
+    /// Make each reference to an area `retarget` maps name what it gives instead, in this node and
+    /// below; whether any changed.
+    pub fn retarget(&mut self, retarget: &impl Fn(NodeId) -> Option<NodeId>) -> bool {
+        let mut changed = false;
+        for item in &mut self.items {
+            match item {
+                TextItem::Ref(area) => {
+                    if let Some(to) = retarget(*area) {
+                        changed |= to != *area;
+                        *area = to;
+                    }
+                }
+                TextItem::Span(span) => changed |= span.text.retarget(retarget),
+                TextItem::Chars(_) | TextItem::Math(_) => {}
+            }
+        }
+        changed
     }
 
     /// Every span of this node and below, in the order of the text.
@@ -511,15 +583,20 @@ impl TextNode {
     }
 }
 
-/// An item of a text node. Room is left for other kinds, as maths, beside the span,
-/// `design@rootpoint-model@text-node-kinds`.
+/// An item of a text node, `design@rootpoint-model@text-node-kinds`: characters, a span, a formula
+/// set inline, or a reference to an equation area, which draws that equation's number. A formula and
+/// a reference each count as one offset, as a span does.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum TextItem {
     Chars(String),
     Span(Span),
+    /// A formula, written in the file as its LaTeX.
+    Math(#[serde(with = "formula_text")] Formula),
+    /// A reference to the equation area of this id.
+    Ref(NodeId),
 }
 
-/// A span of a text: its id, its style, and its own sequence of characters and spans.
+/// A span of a text: its id, its style, and its own sequence of items.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Span {
     pub id: SpanId,
@@ -559,7 +636,7 @@ pub enum TextNodeRef {
 }
 
 /// A caret position in an area's text: a text node and an offset in its sequence, counted in
-/// characters, a span counting as one item.
+/// characters, a span, a formula and a reference each counting as one item.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct CaretPos {
     pub node: TextNodeRef,

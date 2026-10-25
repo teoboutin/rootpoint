@@ -537,7 +537,7 @@ impl App {
         }
         self.error = match &reply {
             Reply::Ok(_) => None,
-            Reply::Err(reason) => Some(reason.clone()),
+            Reply::Err(reason) => Some(self.window_reason(reason)),
         };
         self.view.drawn = None;
         #[cfg(target_arch = "wasm32")]
@@ -558,6 +558,33 @@ impl App {
             self.memory.note(slide, node);
         }
         reply
+    }
+
+    /// The reason of a refused command as the status line gives it: a removal refused while texts
+    /// reference the equation names the count of its references and the control that moves them,
+    /// where the session's reason names the `retarget` command.
+    fn window_reason(&self, reason: &str) -> String {
+        let referenced = reason
+            .strip_suffix(": `retarget` its references first")
+            .and_then(|r| r.split_once(" is referenced by "))
+            .and_then(|(target, _)| target.strip_prefix('n')?.parse().ok())
+            .map(NodeId);
+        match referenced {
+            Some(target) => {
+                let count: usize = self
+                    .session
+                    .document()
+                    .references_to(target)
+                    .iter()
+                    .map(|(_, n)| n)
+                    .sum();
+                format!(
+                    "{target} is referenced {count} times: \"Retarget all to…\" on its Selection \
+                     tab moves its references to another equation"
+                )
+            }
+            None => reason.to_owned(),
+        }
     }
 
     /// The slide the editor shows: the view's shown slide, or the first slide when none is.
@@ -633,6 +660,14 @@ impl App {
                 .unknown_commands
                 .iter()
                 .map(|n| n.to_string())
+                .collect(),
+        );
+        list(
+            "references to no equation, drawn (??)",
+            report
+                .dangling_references
+                .iter()
+                .map(|(area, target)| format!("{area} {target}"))
                 .collect(),
         );
         list(

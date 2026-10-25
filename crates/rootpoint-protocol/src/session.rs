@@ -6,9 +6,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use rootpoint_math::Formula;
 use rootpoint_model::{
-    Area, Asset, AssetId, BUILTIN_FAMILIES, Content, Document, EquationContent, EquationSize,
-    FontRef, ImageContent, Node, NodeId, Op, Replacement, SlideId, Span, SpanChoice, SpanId,
-    SpanStyle, StyleChoice, TextContent, TextItem, TextNode, TextNodeRef, TextStyle, apply,
+    Area, Asset, AssetId, BUILTIN_FAMILIES, Breach, Content, Document, EquationContent,
+    EquationSize, FontRef, ImageContent, Node, NodeId, Op, Replacement, SlideId, Span, SpanChoice,
+    SpanId, SpanStyle, StyleChoice, TextContent, TextItem, TextNode, TextNodeRef, TextStyle, apply,
     asset_path_is_confined, load_ron, save_ron, span_style_users,
 };
 use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
@@ -786,6 +786,13 @@ impl Session {
                 let ops = self.text_ops(area, root, style)?;
                 self.edit_ops(ops, files)
             }
+            // The reply is the number of references moved, the count of `from`'s before.
+            Command::Retarget { from, to } => {
+                let moved: usize = self.doc.references_to(from).iter().map(|(_, n)| n).sum();
+                let op = self.operation(Command::Retarget { from, to })?;
+                self.edit_ops(vec![op], files)?;
+                Ok(moved.to_string())
+            }
             editing => {
                 let op = self.operation(editing)?;
                 self.edit_ops(vec![op], files)
@@ -1033,11 +1040,63 @@ impl Session {
     /// Apply the operations of one command, all or none: their inverses join the open group, or
     /// are one undo step. The reply names the ids they created.
     fn edit_ops(&mut self, ops: Vec<Op>, files: &mut dyn Files) -> Result<String, String> {
+        self.no_new_dangling_reference(&ops)?;
         let before = ids(&self.doc);
         let revert = self.apply_step(Step::ops(ops), files)?;
         let last = revert.ops.first().cloned();
         self.record(revert, files);
         Ok(self.created(&before, last.as_ref()))
+    }
+
+    /// Refuse the operations of a command that would leave a text referencing an area that holds no
+    /// equation where none did, `design@rootpoint-protocol@no-new-breach`: a removal, or a change of
+    /// kind, of an equation that a text it leaves in place references, a split or a slide holding
+    /// one included, names each such text with the count of its references; a reference given to
+    /// an area that holds no equation names that area. A reload, which takes a file as it is, is no
+    /// such command, and an undo takes another path, so neither is refused.
+    fn no_new_dangling_reference(&self, ops: &[Op]) -> Result<(), String> {
+        if ops
+            .iter()
+            .any(|op| matches!(op, Op::ReplaceDocument { .. }))
+        {
+            return Ok(());
+        }
+        let dangling = |doc: &Document| -> BTreeSet<(NodeId, NodeId)> {
+            doc.breaches()
+                .into_iter()
+                .filter_map(|b| match b {
+                    Breach::DanglingReference { area, target } => Some((area, target)),
+                    _ => None,
+                })
+                .collect()
+        };
+        let mut after = self.doc.clone();
+        for op in ops {
+            // A refused operation is refused again, with its reason, by the edit that follows.
+            if apply(&mut after, op.clone()).is_err() {
+                return Ok(());
+            }
+        }
+        let before = dangling(&self.doc);
+        let new: BTreeSet<NodeId> = dangling(&after)
+            .difference(&before)
+            .map(|(_, target)| *target)
+            .collect();
+        let Some(&target) = new.first() else {
+            return Ok(());
+        };
+        if !self.doc.holds_equation(target) {
+            return Err(format!("{target} holds no equation"));
+        }
+        let users: Vec<String> = after
+            .references_to(target)
+            .into_iter()
+            .map(|(area, n)| format!("{area} ({n})"))
+            .collect();
+        Err(format!(
+            "{target} is referenced by {}: `retarget` its references first",
+            users.join(" ")
+        ))
     }
 
     /// Apply a step of moves and operations, as one command, and record its revert.
@@ -1280,9 +1339,7 @@ impl Session {
                 };
                 // A command built through the API is held to the grammar, so that it prints back
                 // as a line that parses: a formula whose LaTeX reads back to it, and a size above 0.
-                if Formula::parse(&formula.to_latex()).as_ref() != Ok(&formula) {
-                    return Err("the formula's LaTeX does not read back to it".to_owned());
-                }
+                printable(&formula)?;
                 let mut equation = EquationContent { formula, ..current };
                 for option in options {
                     match option {
@@ -1356,6 +1413,55 @@ impl Session {
                     offset,
                     text,
                 }
+            }
+            Command::InsertMath {
+                node,
+                offset,
+                formula,
+            } => {
+                printable(&formula)?;
+                let (area, node) = self.text_node(node)?;
+                Op::InsertMath {
+                    area,
+                    node,
+                    offset,
+                    formula,
+                }
+            }
+            Command::InsertRef {
+                node,
+                offset,
+                target,
+            } => {
+                let (area, node) = self.text_node(node)?;
+                Op::InsertRef {
+                    area,
+                    node,
+                    offset,
+                    target,
+                }
+            }
+            Command::Math {
+                node,
+                offset,
+                formula,
+            } => {
+                printable(&formula)?;
+                let (area, node) = self.text_node(node)?;
+                Op::SetMath {
+                    area,
+                    node,
+                    offset,
+                    formula,
+                }
+            }
+            Command::Retarget { from, to } => {
+                for area in [from, to] {
+                    if !self.doc.holds_equation(area) {
+                        return Err(format!("{area} holds no equation"));
+                    }
+                }
+                Op::RetargetReferences { from, to }
             }
             Command::Delete { node, range } => {
                 let (area, node) = self.text_node(node)?;
@@ -1541,6 +1647,11 @@ impl Session {
                 .into_iter()
                 .map(|item| match item {
                     TreeItem::Chars(text) => Ok(TextItem::Chars(text)),
+                    TreeItem::Math(formula) => {
+                        printable(&formula)?;
+                        Ok(TextItem::Math(formula))
+                    }
+                    TreeItem::Ref(target) => Ok(TextItem::Ref(target)),
                     TreeItem::Span(span) => Ok(TextItem::Span(Span {
                         id: SpanId(0),
                         style: self
@@ -1990,8 +2101,9 @@ fn ids(doc: &Document) -> BTreeSet<Id> {
 }
 
 /// A render's report, as its reply states it: the text areas whose font fell back, the image
-/// assets with no image, the text areas with a character no font has, the text areas naming a
-/// style the table lacks, and the spans naming a span style the table lacks.
+/// assets with no image, the areas with a character no font has, the text areas naming a style the
+/// table lacks, the spans naming a span style the table lacks, the areas whose formula holds an
+/// unknown command, and each reference to an area that holds no equation, with its text's area.
 fn report_words(report: &Report) -> String {
     fn list<T: fmt::Display>(items: &[T]) -> String {
         if items.is_empty() {
@@ -2014,14 +2126,20 @@ fn report_words(report: &Report) -> String {
         .iter()
         .map(|(_, span, name)| format!("{span}:{}", quote(name)))
         .collect();
+    let refs: Vec<String> = report
+        .dangling_references
+        .iter()
+        .map(|(area, target)| format!("{area}:{target}"))
+        .collect();
     format!(
-        "fallback={} missing={} glyphs={} styles={} span-styles={} commands={}",
+        "fallback={} missing={} glyphs={} styles={} span-styles={} commands={} refs={}",
         list(&report.font_fallbacks),
         list(&report.missing_images),
         list(&report.missing_glyphs),
         list(&styles),
         list(&span_styles),
-        list(&report.unknown_commands)
+        list(&report.unknown_commands),
+        list(&refs)
     )
 }
 
@@ -2105,4 +2223,13 @@ fn trash_path(root: &str, entry: &str, files: &mut dyn Files) -> Result<String, 
 /// `.gitignore` are left out with the store's own, `design@rootpoint-protocol@table-of-added-assets`.
 pub fn listed_untracked(path: &str) -> bool {
     asset_path_is_confined(path) && !path.split('/').any(|c| c.starts_with('.'))
+}
+
+/// Refuse a formula whose LaTeX does not read back to it, which a command built through the API
+/// can hold: the command would print as a line that does not parse back to it.
+fn printable(formula: &Formula) -> Result<(), String> {
+    if Formula::parse(&formula.to_latex()).as_ref() != Ok(formula) {
+        return Err("the formula's LaTeX does not read back to it".to_owned());
+    }
+    Ok(())
 }

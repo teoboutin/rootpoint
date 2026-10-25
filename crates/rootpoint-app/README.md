@@ -64,8 +64,12 @@ document lacks, and text not drawn.
   ancestor row, "text" then each span that holds the caret, and its controls style the text at the
   caret: with no selection a control opens an empty span there, which the next letters go into,
   and with one it puts the selection in a span; a span of the row, clicked, is selected whole, and
-  the controls then change its style; "text" leaves editing; "Split here" cuts the caret's span.
-  The alignment changes the area's.
+  the controls then change its style; "text" leaves editing; "Split here" cuts the caret's span;
+  "Insert reference" lists the numbered equations, by their number and the start of their LaTeX,
+  and inserts a reference to the one picked at the caret, drawn as its number. The alignment
+  changes the area's. An equation's tab shows how many references name it, and "Retarget all to…"
+  moves them to another equation: an equation that texts reference is removed only once none
+  does, and the status line says so when a removal is refused.
 - A right-click on an area, or on a row of the outline, selects that node and opens the node menu
   on it: "Select" selects the node or one of its ancestors, "Content" makes an area a text, an
   image or an equation, "Style" names a text's style or makes it custom, and "Remove" removes the node, as the side

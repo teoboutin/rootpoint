@@ -276,6 +276,33 @@ fn every_command_prints_back_as_it_parses() {
             offset: 0,
             text: "a, [b]".into(),
         },
+        Command::InsertMath {
+            node: TextTarget::Span(SpanId(7)),
+            offset: 1,
+            formula: rootpoint_math::Formula::parse(r"\frac{a}{b}").unwrap(),
+        },
+        Command::InsertRef {
+            node: TextTarget::Root(NodeId(2)),
+            offset: 0,
+            target: NodeId(9),
+        },
+        Command::Math {
+            node: TextTarget::Root(NodeId(2)),
+            offset: 4,
+            formula: rootpoint_math::Formula::parse("x^2").unwrap(),
+        },
+        Command::Retarget {
+            from: NodeId(3),
+            to: NodeId(9),
+        },
+        Command::Text {
+            area: NodeId(2),
+            root: Some(vec![
+                TreeItem::Math(rootpoint_math::Formula::parse(r"\alpha").unwrap()),
+                TreeItem::Ref(NodeId(9)),
+            ]),
+            style: Vec::new(),
+        },
         Command::Delete {
             node: TextTarget::Root(NodeId(2)),
             range: 2..5,
@@ -905,7 +932,7 @@ fn the_sample_opens_with_its_images_and_no_history() {
                 &mut files,
                 &format!("render {} out.png 192 108", slide.id)
             ),
-            "fallback=- missing=- glyphs=- styles=- span-styles=- commands=-"
+            "fallback=- missing=- glyphs=- styles=- span-styles=- commands=- refs=-"
         );
     }
 }

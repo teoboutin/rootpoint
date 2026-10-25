@@ -127,6 +127,24 @@ fn fixture() -> Document {
     let formula = rootpoint_math::Formula::parse(r#"\frac{a}{b} + \alpha = \text{"c"}"#).unwrap();
     let equation = Content::Equation(doc.new_equation(formula));
     set(&mut doc, area, equation);
+    // A formula and a reference to the equation, in the first slide's third text.
+    let x = rootpoint_math::Formula::parse(r"x^2 \leq \frac{1}{2}").unwrap();
+    for op in [
+        Op::InsertMath {
+            area: areas[2],
+            node: TextNodeRef::Root,
+            offset: 0,
+            formula: x,
+        },
+        Op::InsertRef {
+            area: areas[2],
+            node: TextNodeRef::Root,
+            offset: 1,
+            target: area,
+        },
+    ] {
+        apply(&mut doc, op).unwrap();
+    }
     doc
 }
 

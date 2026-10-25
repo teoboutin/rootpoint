@@ -265,7 +265,7 @@ fn a_file_naming_a_missing_style_opens_and_the_status_names_it() {
     assert!(row.label.contains("\u{26a0} Heading"), "{}", row.label);
     match app.run(parse_command("render s1 out.png 160 90").unwrap()) {
         Reply::Ok(reply) => assert!(
-            reply.ends_with("styles=n2:Heading span-styles=- commands=-"),
+            reply.ends_with("styles=n2:Heading span-styles=- commands=- refs=-"),
             "{reply}"
         ),
         other => panic!("render gave {other}"),
@@ -319,7 +319,7 @@ fn a_file_naming_a_missing_span_style_opens_and_the_status_names_it() {
     );
     match app.run(parse_command("render s1 out.png 160 90").unwrap()) {
         Reply::Ok(reply) => assert!(
-            reply.ends_with(&format!("span-styles={span}:Gone commands=-")),
+            reply.ends_with(&format!("span-styles={span}:Gone commands=- refs=-")),
             "{reply}"
         ),
         other => panic!("render gave {other}"),

@@ -46,7 +46,7 @@ fn without_ids(node: &TextNode) -> TextNode {
             .items
             .iter()
             .map(|item| match item {
-                TextItem::Chars(s) => TextItem::Chars(s.clone()),
+                TextItem::Chars(_) | TextItem::Math(_) | TextItem::Ref(_) => item.clone(),
                 TextItem::Span(span) => TextItem::Span(Span {
                     id: SpanId(0),
                     style: span.style.clone(),
@@ -426,7 +426,7 @@ fn a_missing_span_style_is_named_by_the_render() {
     ok(&mut s, &mut files, "open-copy deck");
     let reply = ok(&mut s, &mut files, "render s1 out.png 160 90");
     assert!(
-        reply.ends_with(" span-styles=t3:Term commands=-"),
+        reply.ends_with(" span-styles=t3:Term commands=- refs=-"),
         "{reply}"
     );
 }

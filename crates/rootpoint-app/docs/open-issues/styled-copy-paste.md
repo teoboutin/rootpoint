@@ -16,11 +16,11 @@ node it lands in.
 
 `App::cut`, and the `Copy` event of `App::editing_keys` through `App::selected_text`, give the
 clipboard `editing::range_text`, the characters of the selected range, a span's included, with
-nothing of its style; `Event::Paste`
-reaches `App::type_str`, which sends one `insert` of the pasted string. So a bold word copied from
-one area and pasted into another arrives plain. The milestone on rich text chose this for its slice
-of the tree caret, its default D3, which the owner accepted, and named styled copy and paste a
-later consequence.
+nothing of its style, and a formula as `$<LaTeX>$` and a reference as `{ref n<id>}`, as the protocol
+writes them; `Event::Paste` reaches `App::type_str`, which sends one `insert` of the pasted string.
+So a bold word copied from one area and pasted into another arrives plain. The milestone on rich
+text chose this for its slice of the tree caret, its default D3, which the owner accepted, and named
+styled copy and paste a later consequence.
 
 Leads, none decided:
 

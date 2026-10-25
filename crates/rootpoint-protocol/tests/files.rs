@@ -35,7 +35,9 @@ fn a_headless_script_renders_the_renderers_golden_image() {
     std::fs::write(dir.join("talk/two-colours.png"), two_colour_png()).unwrap();
     let out = headless(&script("golden.txt"), &dir);
     assert!(
-        out.ends_with("ok fallback=- missing=- glyphs=- styles=- span-styles=- commands=-\n"),
+        out.ends_with(
+            "ok fallback=- missing=- glyphs=- styles=- span-styles=- commands=- refs=-\n"
+        ),
         "{out}"
     );
     let golden = image::open(
@@ -69,7 +71,7 @@ fn a_render_reports_what_it_could_not_draw() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 192 108"),
-        "fallback=- missing=a5 glyphs=n3 styles=- span-styles=- commands=-"
+        "fallback=- missing=a5 glyphs=n3 styles=- span-styles=- commands=- refs=-"
     );
     assert!(files.files.contains_key("out.png"));
 }

@@ -443,6 +443,41 @@ impl App {
         }
     }
 
+    /// Make every reference to the selected equation name the equation area `to`, by `retarget`.
+    pub fn retarget_references(&mut self, to: NodeId) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        if let (Some(from), Some(C::Equation(_))) = (self.selected_area(), self.selected_content())
+        {
+            self.run(Command::Retarget { from, to });
+        }
+    }
+
+    /// The numbered equations a reference may name, in the order of their numbers: each area,
+    /// its number, and the start of its LaTeX, which the pickers of "Insert reference" and
+    /// "Retarget all to…" list.
+    pub fn numbered_equations(&self) -> Vec<(NodeId, u32, String)> {
+        let doc = self.session.document();
+        let mut out: Vec<(NodeId, u32, String)> = doc
+            .equation_numbers()
+            .into_iter()
+            .filter_map(|(area, n)| match doc.node(area) {
+                Some(Node::Area(a)) => match &a.content {
+                    C::Equation(e) => {
+                        let latex: String = e.formula.to_latex().chars().take(30).collect();
+                        Some((area, n, latex))
+                    }
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect();
+        out.sort_by_key(|(_, n, _)| *n);
+        out
+    }
+
     /// Change one option of the selected equation, its formula sent as it stands, since `equation`
     /// keeps the options it does not give.
     pub fn set_equation_option(&mut self, option: EquationOption) {
@@ -1345,7 +1380,7 @@ impl App {
         };
         let (x, y) = layout_point(&text, layout, p);
         let cursor = Selection::from_point(&text.layout, x, y).focus();
-        let caret = from_byte(&content, cursor.index(), cursor.affinity());
+        let caret = from_byte(&content, &text.map, cursor.index(), cursor.affinity());
         if self.open_group() {
             self.edit = Some(Editing {
                 area,
@@ -1464,7 +1499,7 @@ impl App {
                 }
                 let cursor = moved.focus();
                 affinity = cursor.affinity();
-                from_byte(&content, cursor.index(), affinity)
+                from_byte(&content, &text.map, cursor.index(), affinity)
             }
         };
         self.put_caret(caret, anchor, affinity, column);
@@ -1489,8 +1524,10 @@ impl App {
     /// Put the caret at a byte offset of the text, before the glyph there, as a test does to visit
     /// every offset.
     pub fn set_caret(&mut self, index: usize) {
-        if let Some(content) = self.edited_text() {
-            let caret = from_byte(&content, index, Affinity::Downstream);
+        if let (Some(content), Some(area)) = (self.edited_text(), self.editing())
+            && let Some(text) = self.area_text(area)
+        {
+            let caret = from_byte(&content, &text.map, index, Affinity::Downstream);
             self.put_caret(caret, None, Affinity::Downstream, None);
         }
     }
@@ -1512,6 +1549,37 @@ impl App {
         self.replace(node, range, s, None);
     }
 
+    /// Insert a reference to the equation area `target` at the caret, in place of the selection,
+    /// by `insert … {ref …}`, the caret after it.
+    pub fn insert_reference(&mut self, target: NodeId) {
+        let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
+            return;
+        };
+        let (node, range) = match edit.selected(&content) {
+            Some(selected) => selected,
+            None => (edit.caret.node, edit.caret.offset..edit.caret.offset),
+        };
+        let at = text_target(edit.area, node);
+        if !range.is_empty()
+            && !matches!(
+                self.run(Command::Delete {
+                    node: at,
+                    range: range.clone(),
+                }),
+                Reply::Ok(_)
+            )
+        {
+            return;
+        }
+        let reply = self.run(Command::InsertRef {
+            node: at,
+            offset: range.start,
+            target,
+        });
+        let offset = range.start + usize::from(matches!(reply, Reply::Ok(_)));
+        self.put_caret(CaretPos { node, offset }, None, Affinity::Downstream, None);
+    }
+
     /// Backspace: delete the selection, or the character before the caret.
     pub fn delete_backward(&mut self) {
         self.delete(false);
@@ -1523,7 +1591,8 @@ impl App {
     }
 
     /// Cut: the selected text, deleted, for the clipboard. A span in the selection goes whole, and
-    /// the clipboard carries its characters alone, `issue@rootpoint-app@styled-copy-paste`.
+    /// the clipboard carries its characters alone, a formula as `$<LaTeX>$` and a reference as
+    /// `{ref n<id>}`, `issue@rootpoint-app@styled-copy-paste`.
     pub fn cut(&mut self) -> Option<String> {
         let edit = self.edit.clone()?;
         let content = self.edited_text()?;
@@ -1692,8 +1761,8 @@ impl App {
                 );
                 return;
             }
-            Some(Item::Span(_)) if forward => i..i + 1,
-            Some(Item::Span(_)) => i - 1..i,
+            Some(Item::Span(_) | Item::Object(_)) if forward => i..i + 1,
+            Some(Item::Span(_) | Item::Object(_)) => i - 1..i,
             Some(Item::Char(_)) => {
                 let Some(index) = byte(i) else {
                     return;
@@ -1899,7 +1968,7 @@ impl App {
         let (x, y) = layout_point(&text, layout, p);
         let cursor = Selection::from_point(&text.layout, x, y).focus();
         Some((
-            from_byte(&content, cursor.index(), cursor.affinity()),
+            from_byte(&content, &text.map, cursor.index(), cursor.affinity()),
             cursor.affinity(),
         ))
     }
@@ -2003,7 +2072,7 @@ fn whole_span(
     }
     match items(text_node(text, node)?).get(range.start)? {
         Item::Span(s) => Some(s.id),
-        Item::Char(_) => None,
+        Item::Char(_) | Item::Object(_) => None,
     }
 }
 

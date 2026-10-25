@@ -40,14 +40,17 @@ pub enum Breach {
     /// An asset's path fails `asset_path_is_confined`: no store reads or writes it, so an image
     /// that shows it is drawn grey, and a text in its font in the built-in sans.
     UnconfinedAsset { asset: AssetId },
+    /// A reference of a text names an area that holds no equation, or no area; it is drawn `(??)`.
+    DanglingReference { area: NodeId, target: NodeId },
 }
 
 impl Document {
     /// Check every invariant the types state: the aspect ratio has no zero side; every id is
     /// unique and below the id counter; every split has two children or more, one divider fewer,
     /// finite, strictly increasing and strictly between 0 and 1, and no child split of its own
-    /// axis; every asset an area, a span or a style of a table names has an id below the counter. An
-    /// asset the table lacks is a cosmetic breach, which [`Document::breaches`] names, and is not
+    /// axis; every asset an area, a span or a style of a table names, and every area a reference
+    /// names, has an id below the counter. An asset the table lacks, or a reference to an area that
+    /// holds no equation, is a cosmetic breach, which [`Document::breaches`] names, and is not
     /// checked here.
     pub fn validate(&self) -> Result<(), Invalid> {
         if self.aspect.width == 0 || self.aspect.height == 0 {
@@ -153,6 +156,15 @@ impl Document {
     /// `Op::AddAsset` would give that id to a new asset, which the area would then show,
     /// `design@rootpoint-model@validated-documents`.
     fn validate_content(&self, area: &Area) -> Result<(), Invalid> {
+        // A reference at or above the counter would name the area a later operation creates.
+        if let Content::Text(text) = &area.content
+            && let Some(target) = text.root.refs().into_iter().find(|t| t.0 >= self.next_id)
+        {
+            return Err(Invalid(format!(
+                "area {} references {}, which is not below the id counter, next_id {}",
+                area.id.0, target.0, self.next_id
+            )));
+        }
         match assets_named(area)
             .into_iter()
             .find(|id| id.0 >= self.next_id)
@@ -197,11 +209,13 @@ impl Document {
                     // The spans are drawn over the stand-in, and named as the renderer names them.
                     if let Content::Text(text) = &area.content {
                         self.span_breaches(area.id, &text.root, &mut out);
+                        self.reference_breaches(area.id, &text.root, &mut out);
                     }
                     continue;
                 }
                 Content::Text(text) => {
                     self.span_breaches(area.id, &text.root, &mut out);
+                    self.reference_breaches(area.id, &text.root, &mut out);
                     self.resolve_style(&text.style).font
                 }
             };
@@ -227,6 +241,15 @@ impl Document {
             }
         }
         out
+    }
+
+    /// The references of a text to an area that holds no equation, in the order of the text.
+    fn reference_breaches(&self, area: NodeId, root: &TextNode, out: &mut Vec<Breach>) {
+        for target in root.refs() {
+            if !self.holds_equation(target) {
+                out.push(Breach::DanglingReference { area, target });
+            }
+        }
     }
 
     /// The breaches of a text's spans: a span style the table lacks, and a font the document or

@@ -323,6 +323,17 @@ fn the_grip_actions_issue_their_commands() {
 #[test]
 fn the_content_actions_issue_their_commands() {
     check(
+        "retarget the references of an equation",
+        &[
+            r"equation n3 $a$",
+            r"equation n5 $b$",
+            "text n2 [{ref n3}, {ref n3}]",
+            "select n3",
+        ],
+        |a| a.retarget_references(NodeId(5)),
+        |_| vec![c("retarget n3 n5")],
+    );
+    check(
         "set the content to an equation",
         &["select n3"],
         App::set_equation_content,
@@ -377,6 +388,26 @@ fn the_content_actions_issue_their_commands() {
                 c("insert n3 0 \"A\""),
                 c("insert n3 1 \"b\""),
                 c("delete n3 1..2"),
+                c("end"),
+            ]
+        },
+    );
+    // The sample's sixth slide holds n35, an equation.
+    check(
+        "insert a reference in place",
+        &["select n3"],
+        |a| {
+            edit_n3(a);
+            a.set_caret(0);
+            a.insert_reference(NodeId(35));
+            a.type_str("x");
+            a.stop_editing();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c("insert n3 0 {ref n35}"),
+                c("insert n3 1 \"x\""),
                 c("end"),
             ]
         },
@@ -1189,4 +1220,29 @@ fn a_picked_pack_opens_as_open_pack_does() {
     assert_eq!(app.status().len(), 1, "{:?}", app.status());
     assert_eq!(app.session().document(), &before);
     assert!(matches!(app.run(c("open-pack s.rpk")), Reply::Ok(_)));
+}
+
+/// A removal refused while texts reference the equation leaves a status line that names the count
+/// of its references and the control that moves them, and the document as it was.
+#[test]
+fn a_refused_removal_names_the_references_and_the_control() {
+    let mut app = App::in_memory();
+    for line in [
+        "sample",
+        r"equation n3 $a$",
+        "text n2 [{ref n3}, {ref n3}]",
+        "select n3",
+    ] {
+        assert!(matches!(app.run(c(line)), Reply::Ok(_)), "{line}");
+    }
+    let before = app.session().document().clone();
+    app.remove_selection();
+    assert_eq!(app.session().document(), &before);
+    assert_eq!(
+        app.status(),
+        [
+            "n3 is referenced 2 times: \"Retarget all to…\" on its Selection tab moves its references \
+          to another equation"
+        ]
+    );
 }

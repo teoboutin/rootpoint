@@ -99,7 +99,7 @@ pub(crate) fn lay_out_equation(
             italic: false,
             ..body.clone()
         };
-        crate::text::layout_text(fonts, &format!("({n})"), &style, &[], f32::MAX)
+        crate::text::layout_text(fonts, &format!("({n})"), &style, &[], Vec::new(), f32::MAX)
     });
     let reserved = number.as_ref().map_or(0.0, |n| {
         f64::from(n.layout.width()) + NUMBER_GAP * body.size

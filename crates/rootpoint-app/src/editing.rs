@@ -67,11 +67,13 @@ pub enum CaretMove {
     TextEnd,
 }
 
-/// One item of a text node's sequence, as an offset counts it: a character, or a span whole.
+/// One item of a text node's sequence, as an offset counts it: a character, a span whole, or a
+/// formula or a reference, which the caret steps over as one item.
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Item<'a> {
     Char(char),
     Span(&'a Span),
+    Object(&'a TextItem),
 }
 
 /// The text node `node` of a text.
@@ -94,6 +96,7 @@ pub(crate) fn items(node: &TextNode) -> Vec<Item<'_>> {
         match item {
             TextItem::Chars(s) => out.extend(s.chars().map(Item::Char)),
             TextItem::Span(span) => out.push(Item::Span(span)),
+            TextItem::Math(_) | TextItem::Ref(_) => out.push(Item::Object(item)),
         }
     }
     out
@@ -159,7 +162,7 @@ pub(crate) fn right(
             node: TextNodeRef::Span(s.id),
             offset: 0,
         },
-        Some(Item::Span(_)) => CaretPos {
+        Some(Item::Span(_) | Item::Object(_)) => CaretPos {
             offset: pos.offset + 1,
             ..pos
         },
@@ -210,7 +213,7 @@ pub(crate) fn left(
             node: TextNodeRef::Span(s.id),
             offset: items_len(&s.text),
         },
-        Some(Item::Span(_)) => CaretPos {
+        Some(Item::Span(_) | Item::Object(_)) => CaretPos {
             offset: pos.offset - 1,
             ..pos
         },
@@ -236,7 +239,7 @@ pub(crate) fn items_len(node: &TextNode) -> usize {
         .iter()
         .map(|item| match item {
             TextItem::Chars(s) => s.chars().count(),
-            TextItem::Span(_) => 1,
+            TextItem::Span(_) | TextItem::Math(_) | TextItem::Ref(_) => 1,
         })
         .sum()
 }
@@ -247,24 +250,29 @@ pub(crate) fn items_len(node: &TextNode) -> usize {
 /// glyph before. Where several edges meet at the index, the caret goes into the node of that glyph,
 /// on the side of the glyph a click took. With no glyph on that side, at a text's start or end, the
 /// other side is taken; an empty text gives the root's offset 0.
-pub(crate) fn from_byte(text: &TextContent, index: usize, affinity: Affinity) -> CaretPos {
-    /// The node and offset of the character starting (`after`) or ending at `index`.
+pub(crate) fn from_byte(
+    text: &TextContent,
+    map: &TextMap,
+    index: usize,
+    affinity: Affinity,
+) -> CaretPos {
+    /// The node and offset of the character, the formula or the reference starting (`after`) or
+    /// ending at `index`, the bytes each covers read from the map.
     fn walk(
         node: &TextNode,
         here: TextNodeRef,
-        at: &mut usize,
+        map: &TextMap,
         index: usize,
         after: bool,
     ) -> Option<CaretPos> {
+        let at = |offset| map.byte_index(CaretPos { node: here, offset });
         for (offset, item) in items(node).into_iter().enumerate() {
             match item {
-                Item::Char(c) => {
-                    let (start, end) = (*at, *at + c.len_utf8());
-                    *at = end;
-                    if after && start == index {
+                Item::Char(_) | Item::Object(_) => {
+                    if after && at(offset) == Some(index) {
                         return Some(CaretPos { node: here, offset });
                     }
-                    if !after && end == index {
+                    if !after && at(offset + 1) == Some(index) {
                         return Some(CaretPos {
                             node: here,
                             offset: offset + 1,
@@ -272,7 +280,7 @@ pub(crate) fn from_byte(text: &TextContent, index: usize, affinity: Affinity) ->
                     }
                 }
                 Item::Span(s) => {
-                    if let Some(pos) = walk(&s.text, TextNodeRef::Span(s.id), at, index, after) {
+                    if let Some(pos) = walk(&s.text, TextNodeRef::Span(s.id), map, index, after) {
                         return Some(pos);
                     }
                 }
@@ -280,7 +288,7 @@ pub(crate) fn from_byte(text: &TextContent, index: usize, affinity: Affinity) ->
         }
         None
     }
-    let find = |after: bool| walk(&text.root, TextNodeRef::Root, &mut 0, index, after);
+    let find = |after: bool| walk(&text.root, TextNodeRef::Root, map, index, after);
     let downstream = affinity == Affinity::Downstream;
     find(downstream)
         .or_else(|| find(!downstream))
@@ -383,6 +391,17 @@ pub(crate) fn empty_spans(text: &TextContent) -> Vec<SpanId> {
         .collect()
 }
 
+/// A formula or a reference as a copy writes it, as the protocol writes it in a tree: `$<LaTeX>$`
+/// and `{ref n<id>}`, so that a formula copied to another program keeps its LaTeX.
+fn object_text(item: &TextItem) -> String {
+    match item {
+        TextItem::Math(formula) => format!("${}$", formula.to_latex()),
+        TextItem::Ref(area) => format!("{{ref {area}}}"),
+        TextItem::Chars(s) => s.clone(),
+        TextItem::Span(_) => String::new(),
+    }
+}
+
 /// The characters of the items `range` of a text node, a span's included.
 pub(crate) fn range_text(node: &TextNode, range: Range<usize>) -> String {
     fn push_all(node: &TextNode, out: &mut String) {
@@ -390,6 +409,7 @@ pub(crate) fn range_text(node: &TextNode, range: Range<usize>) -> String {
             match item {
                 TextItem::Chars(s) => out.push_str(s),
                 TextItem::Span(span) => push_all(&span.text, out),
+                object => out.push_str(&object_text(object)),
             }
         }
     }
@@ -398,6 +418,7 @@ pub(crate) fn range_text(node: &TextNode, range: Range<usize>) -> String {
         match item {
             Item::Char(c) => out.push(c),
             Item::Span(s) => push_all(&s.text, &mut out),
+            Item::Object(object) => out.push_str(&object_text(object)),
         }
     }
     out
@@ -553,7 +574,7 @@ impl App {
         }
         match items(text_node(&content, node)?).get(r.start)? {
             Item::Span(s) => Some(s.id),
-            Item::Char(_) => None,
+            Item::Char(_) | Item::Object(_) => None,
         }
     }
 

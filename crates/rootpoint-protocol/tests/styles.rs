@@ -172,7 +172,7 @@ fn a_missing_style_draws_with_the_default_and_is_reported() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 heading.png 320 180"),
-        "fallback=- missing=- glyphs=- styles=n2:Heading span-styles=- commands=-"
+        "fallback=- missing=- glyphs=- styles=n2:Heading span-styles=- commands=- refs=-"
     );
     // The same text in the default values, as its own, draws the same image.
     ok(&mut s, &mut files, "text n2 \"rootpoint\" custom");
@@ -182,7 +182,7 @@ fn a_missing_style_draws_with_the_default_and_is_reported() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 default.png 320 180"),
-        "fallback=- missing=- glyphs=- styles=- span-styles=- commands=-"
+        "fallback=- missing=- glyphs=- styles=- span-styles=- commands=- refs=-"
     );
     assert_eq!(files.files["heading.png"], files.files["default.png"]);
 }

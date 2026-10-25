@@ -75,6 +75,8 @@ pub(crate) fn tree_items(node: &TextNode) -> Vec<TreeItem> {
         .iter()
         .map(|item| match item {
             TextItem::Chars(text) => TreeItem::Chars(text.clone()),
+            TextItem::Math(formula) => TreeItem::Math(formula.clone()),
+            TextItem::Ref(target) => TreeItem::Ref(*target),
             TextItem::Span(span) => TreeItem::Span(TreeSpan {
                 id: Some(span.id),
                 style: match &span.style {

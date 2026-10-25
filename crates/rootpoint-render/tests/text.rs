@@ -141,6 +141,87 @@ fn time_the_mixed_slide_at_4k() {
     );
 }
 
+/// AC5 of the milestone on math, `tripwire@rootpoint-render@render-within-bounds`'s 4K bound on a
+/// slide of formulas: a text holding 6 inline formulas above 4 equations, two of them of several
+/// rows, 10 renders at 3840×2160, each within 200 ms. Run with the test above.
+#[test]
+#[ignore]
+fn time_a_slide_of_formulas_at_4k() {
+    use rootpoint_math::Formula;
+    let (mut doc, text) = one_slide();
+    split(&mut doc, text, Axis::TopToBottom, 0.3);
+    let below = doc.slides[0].root.areas()[1].id;
+    split(&mut doc, below, Axis::LeftToRight, 0.5);
+    for i in [1, 2] {
+        let area = doc.slides[0].root.areas()[i].id;
+        split(&mut doc, area, Axis::TopToBottom, 0.5);
+    }
+    let areas: Vec<NodeId> = doc.slides[0].root.areas().iter().map(|a| a.id).collect();
+    assert_eq!(areas.len(), 5);
+    let equations = [
+        r"\frac{\partial f_i}{\partial t} + \mathbf{c}_i \cdot \nabla_{\mathbf{x}} f_i = \Omega(f_i)",
+        r"\int_{-\infty}^{\infty} P_n(x)\,\bar{\omega}(x)\,\mathrm{d}x = \sum_{i=1}^{N} w_i P_n(x_i)",
+        r"f(x) &= (x+1)^2 \\ &= x^2 + 2x + 1 \\ &\leq \sqrt{\frac{a^2+b^2}{2}}",
+        r"|x| = \begin{cases} x & \text{if } x \geq 0 \\ -x & \text{otherwise} \end{cases}",
+    ];
+    for (area, latex) in areas[1..].iter().zip(equations) {
+        let content = Content::Equation(doc.new_equation(Formula::parse(latex).unwrap()));
+        set(&mut doc, *area, content);
+    }
+    set(
+        &mut doc,
+        text,
+        Content::Text(TextContent::plain(
+            "With , ,  and , the bound  holds, and  follows.",
+            StyleChoice::Custom(TextStyle::default()),
+        )),
+    );
+    let inline = [
+        r"x \in \mathbb{R}",
+        r"\alpha_i^2",
+        r"\frac{1}{n}",
+        r"\sqrt{2}",
+        r"\sum_{k} a_k \leq C",
+        r"e^{i\theta}",
+    ];
+    // The gaps of the text, from the last, so that each insertion leaves the earlier ones in place.
+    for (offset, latex) in [5, 7, 9, 14, 26, 38].into_iter().zip(inline).rev() {
+        apply(
+            &mut doc,
+            Op::InsertMath {
+                area: text,
+                node: TextNodeRef::Root,
+                offset,
+                formula: Formula::parse(latex).unwrap(),
+            },
+        )
+        .unwrap();
+    }
+    let mut fonts = FontSet::new();
+    let mut times = Vec::new();
+    for _ in 0..10 {
+        let start = std::time::Instant::now();
+        let out = render_slide(
+            &doc,
+            doc.slides[0].id,
+            3840,
+            2160,
+            &mut fonts,
+            &ImageSet::new(),
+            Precision::Native,
+        )
+        .unwrap();
+        times.push(start.elapsed());
+        assert_eq!(out.report.unknown_commands, vec![]);
+    }
+    let max = *times.iter().max().unwrap();
+    println!("formulas 3840x2160 renders: {times:?}; largest {max:?}");
+    assert!(
+        max.as_millis() <= 200,
+        "a render took {max:?}, over the 200 ms of `tripwire@rootpoint-render@render-within-bounds`"
+    );
+}
+
 #[test]
 fn area_text_gives_the_layout_render_slide_draws() {
     let (doc, _) = mixed();
@@ -369,8 +450,8 @@ fn the_map_places_every_caret_position_on_its_byte_index() {
     else {
         panic!("no text")
     };
-    let map = rootpoint_render::TextMap::new(t);
-    let plain = t.plain_text();
+    let map = rootpoint_render::TextMap::new(t, &Default::default());
+    let plain = map.text().to_owned();
     let spans = text_spans(&doc, root);
     let at = |node, offset| map.byte_index(CaretPos { node, offset }).unwrap();
     assert_eq!(
@@ -472,6 +553,10 @@ fn every_caret_position_stands_on_its_counted_byte() {
             .map(|i| match i {
                 TextItem::Chars(s) => s.len(),
                 TextItem::Span(s) => len(&s.text),
+                // A formula stands on its mark, U+2060, three bytes; a reference with no number on
+                // `(??)`.
+                TextItem::Math(_) => 3,
+                TextItem::Ref(_) => 4,
             })
             .sum()
     }
@@ -501,6 +586,13 @@ fn every_caret_position_stands_on_its_counted_byte() {
                     offset += 1;
                     expect(offset, at);
                 }
+                TextItem::Math(_) | TextItem::Ref(_) => {
+                    at += len(&TextNode {
+                        items: vec![item.clone()],
+                    });
+                    offset += 1;
+                    expect(offset, at);
+                }
             }
         }
         assert_eq!(map.positions(node), Some(offset + 1));
@@ -527,7 +619,7 @@ fn every_caret_position_stands_on_its_counted_byte() {
         panic!("no text")
     };
     check(
-        &rootpoint_render::TextMap::new(t),
+        &rootpoint_render::TextMap::new(t, &Default::default()),
         TextNodeRef::Root,
         &t.root,
         0,

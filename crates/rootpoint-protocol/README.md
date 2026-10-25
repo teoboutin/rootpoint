@@ -117,9 +117,11 @@ those texts take instead. A command naming a
 style the table lacks is refused; a file naming one loads, its text drawn in the default values,
 and `render` names the area and the style after `styles=`.
 
-A text is a tree of characters and spans, each span with its id, `t<n>`, and its style. `text`
-takes the whole tree on one line, `text n3 ["Let x be a ", {bold "prime"}, " number"]`: `[` its
-items separated by commas `]`, each a quoted text or a span, `{` its options, then its items `}`;
+A text is a tree of characters, spans, formulas and references to equations, each span with its id,
+`t<n>`, and its style. `text` takes the whole tree on one line,
+`text n3 ["Let x be a ", {bold "prime"}, " number"]`: `[` its items separated by commas `]`, each a
+quoted text, a span, `{` its options, then its items `}`, a formula `$…$`, or a reference
+`{ref n<id>}`, which draws that equation's number, `(2)`;
 a quoted text alone is a tree of one run, and spaces around the brackets, the braces and the commas
 are free. `tree` prints each span with its id first, `{t41 bold "prime"}`, and `text` gives every
 span of its tree a new id, ignoring any given, so `tree`'s line given back to `text` copies a text,
@@ -131,8 +133,10 @@ text, `[`, `]`, `{`, `}` and `,` are words of their own, so a path holding one i
 a path that starts with `$`, which starts a formula.
 
 The commands that change a tree name a text node, the root of an area's text by the area's id or a
-span by its own, and an offset or a range in it, read at that moment, a span counting as one
-offset: `insert <n|t> <offset> "<text>"`, `delete <n|t> <a>..<b>`, a span in the range removed
+span by its own, and an offset or a range in it, read at that moment, a span, a formula and a
+reference each counting as one offset: `insert <n|t> <offset> "<text>"`, which inserts a formula
+too, `insert n3 2 $x^2$`, or a reference, `insert n3 2 {ref n7}`; `math <n|t> <offset> $…$`, which
+replaces the formula at an offset; `delete <n|t> <a>..<b>`, a span in the range removed
 whole, and `wrap <n|t> <a>..<b> <options>`, which puts the range in a new span and replies its id.
 `unwrap t<n>` puts a span's content in its parent, `span t<n> <options>` changes its style, and
 `split-span t<n> <offset>` cuts it in two spans of its style, replying the second's id, refused at
@@ -159,6 +163,18 @@ with all its options, then its number, `(2)`: the numbered equations count from 
 the slides, then of each slide's tree, so moving a slide renumbers and dragging a divider does not.
 A command the math subset does not know is drawn red, and `render` names its area after
 `commands=`.
+
+A reference names an equation area, and no command leaves one naming an area that holds no
+equation: `insert` and `text` refuse a reference to such an area, and `remove`, `remove-slide`,
+`text`, `image` and `clear` refuse to remove an equation, or to turn it into another kind, while a
+text they leave in place references it, naming each such text with the count of its references, as
+`n3 is referenced by n2 (2)`; a reference inside the slide removed goes with it.
+`retarget n<from> n<to>` makes every reference to one equation name another, and replies how many
+it moved; its undo moves back only those. A swap of two areas carries their references with their
+contents, and a duplicated slide's references to its own equations name the copies. A file holding
+a reference to an area that holds no equation loads, the reference drawn `(??)`, and `render` names
+the text and the area after `refs=`. A reference to an equation with no number draws `(??)` too,
+and is no breach: numbering it again draws its number.
 
 `sample` opens the built-in sample in memory, a presentation of six slides that says how the
 editor's gestures work, how a text is styled, where a presentation is saved and what an equation

@@ -9,6 +9,7 @@ mod images;
 mod map;
 mod text;
 
+use std::collections::{BTreeMap, HashMap};
 use std::ops::Range;
 use std::sync::Arc;
 
@@ -16,6 +17,7 @@ pub use formula::AreaFormula;
 pub use images::{DecodeError, ImageSet, decode_rgba};
 pub use map::TextMap;
 use parley::Layout;
+use rootpoint_math::{FormulaLayout, Style};
 use rootpoint_model::{
     AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, SpanChoice,
     SpanId, SpanStyle, StyleChoice, TextContent, TextStyle, VAlign, area_rects,
@@ -71,8 +73,12 @@ pub struct Report {
     /// The spans naming a span style the document's table lacks, each with its area and the name;
     /// each is drawn with its parent's values.
     pub missing_span_styles: Vec<(NodeId, SpanId, String)>,
-    /// The equation areas whose formula holds a command the math subset does not know, drawn red.
+    /// The equation areas, and the text areas holding a formula, whose formula holds a command the
+    /// math subset does not know, drawn red.
     pub unknown_commands: Vec<NodeId>,
+    /// The references of a text to an area that holds no equation, each with its area and the area
+    /// it names; each is drawn `(??)`.
+    pub dangling_references: Vec<(NodeId, NodeId)>,
     /// The text and equation areas whose glyphs could not all be drawn, as from a damaged font file.
     pub undrawn_text: Vec<NodeId>,
     /// For each text area, the byte range of its text on each line, as laid out.
@@ -162,16 +168,24 @@ pub fn render_slide(
                         report.missing_span_styles.push((id, span.id, name.clone()));
                     }
                 }
+                for target in content.root.refs() {
+                    if !doc.holds_equation(target) {
+                        report.dangling_references.push((id, target));
+                    }
+                }
                 let style = doc.resolve_style(&content.style);
-                let (laid, origin) = lay_out_area(doc, fonts, content, &style, area);
+                let (laid, origin, _) = lay_out_area(doc, fonts, content, &style, area, &numbers);
                 if laid.fell_back {
                     report.font_fallbacks.push(id);
                 }
                 if laid.missing_glyph {
                     report.missing_glyphs.push(id);
                 }
-                ctx.set_transform(to_pixels * Affine::translate(origin));
-                if !text::draw_text(&mut ctx, &mut resources, &laid) {
+                if laid.unknown_command {
+                    report.unknown_commands.push(id);
+                }
+                let base = to_pixels * Affine::translate(origin);
+                if !text::draw_text(&mut ctx, &mut resources, &laid, &fonts.math.data, base) {
                     report.undrawn_text.push(id);
                 }
                 report.lines.push((id, laid.lines));
@@ -207,8 +221,9 @@ pub fn render_slide(
                 let mut all = drawn.all;
                 let mut missing = drawn.missing_glyph;
                 if let Some((number, origin)) = &laid.number {
-                    ctx.set_transform(to_pixels * Affine::translate(*origin));
-                    all &= text::draw_text(&mut ctx, &mut resources, number);
+                    let base = to_pixels * Affine::translate(*origin);
+                    all &=
+                        text::draw_text(&mut ctx, &mut resources, number, &fonts.math.data, base);
                     missing |= number.missing_glyph;
                 }
                 if missing {
@@ -231,13 +246,25 @@ pub fn render_slide(
 }
 
 /// The text of one area as `render_slide` draws it: its layout, in slide units, the point of the
-/// slide, in slide units, where the layout's origin is drawn, and the map from the text's caret
-/// positions to the layout's byte indices. An editor that places a caret or a selection on this
-/// layout, with Parley's `Selection` and `Cursor`, places it on the drawn glyphs.
+/// slide, in slide units, where the layout's origin is drawn, the map from the text's caret
+/// positions to the layout's byte indices, and each formula of the text. An editor that places a
+/// caret or a selection on this layout, with Parley's `Selection` and `Cursor`, places it on the
+/// drawn glyphs.
 pub struct AreaText {
     pub layout: Layout<TextBrush>,
     pub origin: (f64, f64),
     pub map: TextMap,
+    pub formulas: Vec<TextFormula>,
+}
+
+/// A formula of a text as `render_slide` draws it: the byte range of the laid-out string it covers,
+/// its layout, and the point of the text's layout, in slide units, where the origin of its first
+/// row's baseline is drawn.
+#[derive(Clone, Debug)]
+pub struct TextFormula {
+    pub range: Range<usize>,
+    pub layout: FormulaLayout,
+    pub origin: (f64, f64),
 }
 
 /// The text of the area `area` of the slide `slide`, laid out as `render_slide` lays it out; `None`
@@ -260,11 +287,33 @@ pub fn area_text(
         return None;
     };
     let style = doc.resolve_style(&content.style);
-    let (laid, origin) = lay_out_area(doc, fonts, content, &style, rect);
+    let numbers = doc.equation_numbers();
+    let (laid, origin, map) = lay_out_area(doc, fonts, content, &style, rect, &numbers);
+    let mut placed = vec![(0.0, 0.0); laid.formulas.len()];
+    for line in laid.layout.lines() {
+        for item in line.items() {
+            if let parley::PositionedLayoutItem::InlineBox(b) = item {
+                let ascent = laid.formulas[b.id as usize].0.ascent;
+                placed[b.id as usize] = (f64::from(b.x), f64::from(b.y) + ascent);
+            }
+        }
+    }
+    let formulas = map
+        .formulas()
+        .iter()
+        .zip(laid.formulas)
+        .zip(placed)
+        .map(|((f, (layout, _)), origin)| TextFormula {
+            range: f.range.clone(),
+            layout,
+            origin,
+        })
+        .collect();
     Some(AreaText {
         layout: laid.layout,
         origin,
-        map: TextMap::new(content),
+        map,
+        formulas,
     })
 }
 
@@ -291,35 +340,64 @@ pub fn area_formula(
     Some(formula::lay_out_equation(doc, fonts, equation, number, rect).formula)
 }
 
-/// A text area's layout in its resolved style, wrapped to the area's width less its padding, and
-/// the point its origin is drawn at: inset by the padding, and moved down by the vertical
-/// alignment's share of the room left. `render_slide` and `area_text` both lay a text out here, so
-/// they give one layout.
+/// A text area's layout in its resolved style, wrapped to the area's width less its padding, the
+/// point its origin is drawn at, inset by the padding and moved down by the vertical alignment's
+/// share of the room left, and the map of its caret positions. `render_slide` and `area_text` both
+/// lay a text out here, so they give one layout.
 fn lay_out_area(
     doc: &Document,
     fonts: &mut FontSet,
     content: &TextContent,
     style: &TextStyle,
     area: SlideRect,
-) -> (text::TextLayout, (f64, f64)) {
+    numbers: &BTreeMap<NodeId, u32>,
+) -> (text::TextLayout, (f64, f64), TextMap) {
     let inner = (area.w - 2.0 * TEXT_PADDING).max(0.0);
     // Each span's values over its byte range, outer spans first, as `TextNode::spans` lists them:
     // a span naming a style the table lacks sets nothing, and draws with its parent's values.
-    let map = TextMap::new(content);
+    let map = TextMap::new(content, numbers);
+    let values: HashMap<SpanId, SpanStyle> = content
+        .root
+        .spans()
+        .into_iter()
+        .filter_map(|span| Some((span.id, doc.resolve_span(&span.style)?)))
+        .collect();
     let spans: Vec<(Range<usize>, SpanStyle)> = content
         .root
         .spans()
         .into_iter()
-        .filter_map(|span| Some((map.span_range(span.id)?, doc.resolve_span(&span.style)?)))
+        .filter_map(|span| Some((map.span_range(span.id)?, values.get(&span.id)?.clone())))
         .collect();
-    let laid = text::layout_text(fonts, &content.plain_text(), style, &spans, inner as f32);
+    // A formula takes the size and the colour its text node resolves to, the spans that hold it set
+    // over the text's style, outer first; bold and italic do not apply to it.
+    let formulas = map
+        .formulas()
+        .iter()
+        .map(|f| {
+            let (mut size, mut colour) = (style.size, style.colour);
+            for v in f.spans.iter().filter_map(|id| values.get(id)) {
+                size = v.size.unwrap_or(size);
+                colour = v.colour.unwrap_or(colour);
+            }
+            text::InlineFormula {
+                index: f.range.start,
+                layout: rootpoint_math::lay_out(&f.formula, &fonts.math.font, Style::Text, size),
+                colour,
+            }
+        })
+        .collect();
+    let laid = text::layout_text(fonts, map.text(), style, &spans, formulas, inner as f32);
     let free = area.h - 2.0 * TEXT_PADDING - f64::from(laid.layout.height());
     let dy = match style.v_align {
         VAlign::Top => 0.0,
         VAlign::Middle => free / 2.0,
         VAlign::Bottom => free,
     };
-    (laid, (area.x + TEXT_PADDING, area.y + TEXT_PADDING + dy))
+    (
+        laid,
+        (area.x + TEXT_PADDING, area.y + TEXT_PADDING + dy),
+        map,
+    )
 }
 
 /// How slide units are carried to the pixels of an image: a point `(u, v)` of the slide is at the

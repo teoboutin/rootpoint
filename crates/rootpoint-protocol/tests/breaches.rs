@@ -50,7 +50,7 @@ fn a_document_with_a_missing_asset_loads_and_its_render_names_it() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 160 90"),
-        "fallback=- missing=a99 glyphs=- styles=- span-styles=- commands=-"
+        "fallback=- missing=a99 glyphs=- styles=- span-styles=- commands=- refs=-"
     );
 }
 
@@ -116,6 +116,6 @@ fn a_text_whose_font_is_missing_is_named_by_the_render() {
     ok(&mut s, &mut files, "open deck");
     assert_eq!(
         ok(&mut s, &mut files, "render s1 out.png 160 90"),
-        "fallback=n3 missing=- glyphs=- styles=- span-styles=- commands=-"
+        "fallback=n3 missing=- glyphs=- styles=- span-styles=- commands=- refs=-"
     );
 }
