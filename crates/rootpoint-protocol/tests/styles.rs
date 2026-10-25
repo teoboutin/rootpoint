@@ -6,7 +6,7 @@ mod common;
 
 use common::*;
 use rootpoint_model::*;
-use rootpoint_protocol::{Command, Reply, Session, parse_command};
+use rootpoint_protocol::{Command, Reply, Session, TreeItem, parse_command};
 
 fn sample(files: &mut MemoryFiles) -> Session {
     let mut s = Session::new();
@@ -172,7 +172,7 @@ fn a_missing_style_draws_with_the_default_and_is_reported() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 heading.png 320 180"),
-        "fallback=- missing=- glyphs=- styles=n2:Heading"
+        "fallback=- missing=- glyphs=- styles=n2:Heading span-styles=-"
     );
     // The same text in the default values, as its own, draws the same image.
     ok(&mut s, &mut files, "text n2 \"rootpoint\" custom");
@@ -182,7 +182,7 @@ fn a_missing_style_draws_with_the_default_and_is_reported() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 default.png 320 180"),
-        "fallback=- missing=- glyphs=- styles=-"
+        "fallback=- missing=- glyphs=- styles=- span-styles=-"
     );
     assert_eq!(files.files["heading.png"], files.files["default.png"]);
 }
@@ -338,7 +338,7 @@ fn a_name_with_a_space_reads_and_prints_back() {
         parse_command("text n3 \"x\" style=\"Style 1\""),
         Ok(Command::Text {
             area: NodeId(3),
-            text: "x".into(),
+            root: Some(vec![TreeItem::Chars("x".into())]),
             style: vec![rootpoint_protocol::StyleOption::Named("Style 1".into())],
         })
     );

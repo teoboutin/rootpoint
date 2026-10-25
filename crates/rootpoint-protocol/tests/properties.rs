@@ -1,5 +1,6 @@
 //! Over random sequences of commands on a headless session, `undo`, `redo`, the groups, imports,
-//! copies of a directory and the asset commands included, the document stays valid, holds no
+//! copies of a directory, the asset commands, the commands of a text tree and of the span style
+//! table included, the document stays valid, holds no
 //! cosmetic breach, an asset path that leads out of the root among them, and saves to a text that
 //! loads back equal. A
 //! breach reaches a document only by a file edited by hand, never by a command,
@@ -27,7 +28,7 @@ struct Step {
 
 fn step() -> impl Strategy<Value = Step> {
     (
-        0u8..31,
+        0u8..45,
         any::<usize>(),
         any::<usize>(),
         0.05f64..0.95,
@@ -45,6 +46,21 @@ fn step() -> impl Strategy<Value = Step> {
 /// The names a style command picks from: two of the predefined styles, two new ones, and one with a
 /// space.
 const STYLE_NAMES: [&str; 5] = ["Title", "Body", "Quote", "Note", "Style 1"];
+
+/// The names a span style command picks from: two the table may hold, and one with a space.
+const SPAN_STYLE_NAMES: [&str; 3] = ["Term", "Key", "Key term"];
+
+/// Every span of every text of the document.
+fn spans(doc: &Document) -> Vec<SpanId> {
+    doc.slides
+        .iter()
+        .flat_map(|s| s.root.areas())
+        .flat_map(|a| match &a.content {
+            Content::Text(t) => t.root.spans().iter().map(|s| s.id).collect(),
+            Content::Image(_) => Vec::new(),
+        })
+        .collect()
+}
 
 /// Every id the document holds, of any kind.
 fn ids(doc: &Document) -> Vec<u64> {
@@ -94,6 +110,30 @@ fn line_for(doc: &Document, s: &Step) -> String {
     };
     let asset = |k: usize| format!("a{}", 1 + k as u64 % (all.iter().max().unwrap_or(&0) + 2));
     let style = |k: usize| format!("\"{}\"", STYLE_NAMES[k % STYLE_NAMES.len()]);
+    let span_style = |k: usize| format!("\"{}\"", SPAN_STYLE_NAMES[k % SPAN_STYLE_NAMES.len()]);
+    // A span is picked among the document's, or an id that names none.
+    let all_spans = spans(doc);
+    let span = |k: usize| match all_spans.get(k % (all_spans.len() + 1)) {
+        Some(t) => t.to_string(),
+        None => format!("t{}", k % 50),
+    };
+    // A text node: an area's root, or a span.
+    let target = |k: usize| {
+        if k.is_multiple_of(2) {
+            node(k / 2)
+        } else {
+            span(k / 2)
+        }
+    };
+    // A span's options: values, a named span style the table may lack, a font asset it may lack,
+    // and an inherited value, which leaves a new span setting nothing.
+    let span_options = |k: usize| match k % 5 {
+        0 => "bold".to_owned(),
+        1 => format!("style={}", span_style(k / 5)),
+        2 => format!("font={} size=20", asset(k / 5)),
+        3 => "italic=inherit".to_owned(),
+        _ => "colour=#ff000080 custom".to_owned(),
+    };
     let axis = if s.flag { "beside" } else { "stacked" };
     match s.kind {
         0 => "add-slide".to_owned(),
@@ -162,6 +202,58 @@ fn line_for(doc: &Document, s: &Step) -> String {
             "assets untracked",
         ][s.other % 4]
             .to_owned(),
+        31 => format!(
+            "text {} [\"ab \", {{{} \"cd\", {{italic \"e\"}}}}, \" f\"]",
+            node(s.pick),
+            span_options(s.other)
+        ),
+        32 => format!("insert {} {} \"x\"", target(s.pick), s.other % 6),
+        33 => format!(
+            "delete {} {}..{}",
+            target(s.pick),
+            s.other % 4,
+            s.other % 4 + s.pick % 3
+        ),
+        34 => format!(
+            "wrap {} {}..{} {}",
+            target(s.pick),
+            s.other % 3,
+            s.other % 3 + s.pick % 3,
+            span_options(s.other / 3)
+        ),
+        35 => format!("unwrap {}", span(s.pick)),
+        36 => format!("span {} {}", span(s.pick), span_options(s.other)),
+        37 => format!("split-span {} {}", span(s.pick), s.other % 4),
+        38 => format!(
+            "span-style add {} {}",
+            span_style(s.pick),
+            span_options(s.other)
+        ),
+        39 => format!(
+            "span-style set {} bold font={}",
+            span_style(s.pick),
+            asset(s.other)
+        ),
+        40 => format!(
+            "span-style rename {} {}",
+            span_style(s.pick),
+            span_style(s.other)
+        ),
+        41 => match s.other % 3 {
+            0 => format!("span-style remove {}", span_style(s.pick)),
+            1 => format!("span-style remove {} into=custom", span_style(s.pick)),
+            _ => format!(
+                "span-style remove {} into={}",
+                span_style(s.pick),
+                span_style(s.other / 3)
+            ),
+        },
+        42 => format!(
+            "text {} {}",
+            node(s.pick),
+            ["bold", "style=\"Title\"", "custom"][s.other % 3]
+        ),
+        43 => "span-styles".to_owned(),
         _ => format!("select {}", node(s.pick)),
     }
 }

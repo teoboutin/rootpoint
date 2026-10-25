@@ -2,9 +2,11 @@
 
 use std::fmt;
 
+use std::ops::Range;
+
 use rootpoint_model::{
-    AssetId, Axis, FontRef, HAlign, ImageFit, NodeId, Replacement, Rgba, Side, SlideId, TextStyle,
-    VAlign,
+    AssetId, Axis, FontRef, HAlign, ImageFit, NodeId, Replacement, Rgba, Side, SlideId, SpanId,
+    SpanStyle, TextStyle, VAlign,
 };
 
 /// One command of the protocol.
@@ -86,13 +88,47 @@ pub enum Command {
         a: NodeId,
         b: NodeId,
     },
-    /// Set an area's text. Its style is the area's current one, or the style a new area takes when
-    /// the area holds an image; `style=` names a style, `custom` copies the values drawn into the
-    /// text's own, and any other option changes the values drawn, which makes a named style custom.
+    /// Set an area's text tree, every span given a new id, or, with no tree, keep it and its ids
+    /// and change the style alone. Its style is the area's current one, or the style a new area
+    /// takes when the area holds an image; `style=` names a style, `custom` copies the values drawn
+    /// into the text's own, and any other option changes the values drawn, which makes a named
+    /// style custom.
     Text {
         area: NodeId,
-        text: String,
+        root: Option<Vec<TreeItem>>,
         style: Vec<StyleOption>,
+    },
+    /// Insert characters in a text node at an offset.
+    Insert {
+        node: TextTarget,
+        offset: usize,
+        text: String,
+    },
+    /// Remove a range of a text node's offsets; a span in the range goes whole.
+    Delete {
+        node: TextTarget,
+        range: Range<usize>,
+    },
+    /// Put a range of a text node's offsets into a new span, whose style the options give over a
+    /// custom style that sets nothing.
+    Wrap {
+        node: TextTarget,
+        range: Range<usize>,
+        style: Vec<SpanOption>,
+    },
+    /// Replace a span by its content.
+    Unwrap {
+        span: SpanId,
+    },
+    /// Change a span's style, the options applied over its current one.
+    Span {
+        span: SpanId,
+        style: Vec<SpanOption>,
+    },
+    /// Cut a span at an offset inside it into two spans of its style.
+    SplitSpan {
+        span: SpanId,
+        offset: usize,
     },
     Image {
         area: NodeId,
@@ -174,6 +210,115 @@ pub enum Command {
     Style(StyleCommand),
     /// List the named styles, a query.
     Styles,
+    /// Change the document's table of named span styles.
+    SpanStyle(SpanStyleCommand),
+    /// List the named span styles, a query.
+    SpanStyles,
+}
+
+/// A text node a command names: the root of an area's text, by the area's id, or a span, by its
+/// own, which is unique in the document.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TextTarget {
+    Root(NodeId),
+    Span(SpanId),
+}
+
+/// An item of a text tree as `text` takes it and `tree` prints it.
+#[derive(Clone, Debug, PartialEq)]
+pub enum TreeItem {
+    Chars(String),
+    Span(TreeSpan),
+}
+
+/// A span of a text tree: its id, which `tree` prints and `text` ignores, since it gives every span
+/// a new one; its style's options, applied over a custom style that sets nothing; and its items.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TreeSpan {
+    pub id: Option<SpanId>,
+    pub style: Vec<SpanOption>,
+    pub items: Vec<TreeItem>,
+}
+
+/// One option of a span's style. Alignment is the area's alone, so a span has none.
+#[derive(Clone, Debug, PartialEq)]
+pub enum SpanOption {
+    /// `style="<name>"`: name a span style of the table.
+    Named(String),
+    /// `custom`: copy the values the span draws with into its own.
+    Custom,
+    Size(f64),
+    Bold(bool),
+    Italic(bool),
+    Colour(Rgba),
+    /// `sans`, the built-in font, or an asset id.
+    Font(Option<AssetId>),
+    /// `<key>=inherit`: set no value, so the span draws with its parent's.
+    Inherit(SpanField),
+}
+
+/// A value a span style sets.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SpanField {
+    Font,
+    Size,
+    Bold,
+    Italic,
+    Colour,
+}
+
+impl SpanField {
+    fn key(self) -> &'static str {
+        match self {
+            SpanField::Font => "font",
+            SpanField::Size => "size",
+            SpanField::Bold => "bold",
+            SpanField::Italic => "italic",
+            SpanField::Colour => "colour",
+        }
+    }
+}
+
+impl SpanOption {
+    /// The options that set the values `style` sets, in a fixed order: size, bold, italic, colour,
+    /// font. A built-in family the binary does not carry, which only a file edited by hand holds,
+    /// has no option, so it is left out.
+    pub fn values_of(style: &SpanStyle) -> Vec<SpanOption> {
+        let mut options = Vec::new();
+        options.extend(style.size.map(SpanOption::Size));
+        options.extend(style.bold.map(SpanOption::Bold));
+        options.extend(style.italic.map(SpanOption::Italic));
+        options.extend(style.colour.map(SpanOption::Colour));
+        match &style.font {
+            Some(FontRef::Builtin(name)) if name == "sans" => options.push(SpanOption::Font(None)),
+            Some(FontRef::Asset(id)) => options.push(SpanOption::Font(Some(*id))),
+            Some(FontRef::Builtin(_)) | None => {}
+        }
+        options
+    }
+}
+
+/// A change of the table of named span styles.
+#[derive(Clone, Debug, PartialEq)]
+pub enum SpanStyleCommand {
+    /// Add a span style, which sets the values its options give.
+    Add {
+        name: String,
+        options: Vec<SpanOption>,
+    },
+    /// Change a span style's values, the options applied over its current ones.
+    Set {
+        name: String,
+        options: Vec<SpanOption>,
+    },
+    /// Rename a span style, and every span naming it with it.
+    Rename { from: String, to: String },
+    /// Remove a span style; the spans naming it take `into`, and with none the removal is refused
+    /// while a span names it.
+    Remove {
+        name: String,
+        into: Option<Replacement>,
+    },
 }
 
 /// Which entries `assets` lists.
@@ -326,13 +471,78 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
         },
         "text" => {
             let area = parse_node(&args.word("an area")?)?;
-            let text = args.quoted("a quoted text")?;
+            let root = match args.peek() {
+                Some(Word::Quoted(_)) => {
+                    let text = args.quoted("a quoted text")?;
+                    Some(vec![TreeItem::Chars(text)])
+                }
+                Some(Word::Punct('[')) => Some(parse_tree(&mut args)?),
+                _ => None,
+            };
             let mut style = Vec::new();
             while let Some(option) = args.optional(parse_style_option)? {
                 style.push(option);
             }
-            Command::Text { area, text, style }
+            if root.is_none() && style.is_empty() {
+                return Err(ParseError("missing a text or a style option".to_owned()));
+            }
+            Command::Text { area, root, style }
         }
+        "insert" => Command::Insert {
+            node: parse_target(&args.word("a text node")?)?,
+            offset: parse_index(&args.word("an offset")?)?,
+            text: args.quoted("a quoted text")?,
+        },
+        "delete" => Command::Delete {
+            node: parse_target(&args.word("a text node")?)?,
+            range: parse_range(&args.word("a range")?)?,
+        },
+        "wrap" => Command::Wrap {
+            node: parse_target(&args.word("a text node")?)?,
+            range: parse_range(&args.word("a range")?)?,
+            style: span_options(&mut args)?,
+        },
+        "unwrap" => Command::Unwrap {
+            span: parse_span(&args.word("a span")?)?,
+        },
+        "span" => {
+            let span = parse_span(&args.word("a span")?)?;
+            let style = span_options(&mut args)?;
+            if style.is_empty() {
+                return Err(ParseError("missing a span's style option".to_owned()));
+            }
+            Command::Span { span, style }
+        }
+        "split-span" => Command::SplitSpan {
+            span: parse_span(&args.word("a span")?)?,
+            offset: parse_index(&args.word("an offset")?)?,
+        },
+        "span-styles" => Command::SpanStyles,
+        "span-style" => Command::SpanStyle(
+            match args.word("`add`, `set`, `rename` or `remove`")?.as_str() {
+                "add" => SpanStyleCommand::Add {
+                    name: args.quoted("a quoted span style name")?,
+                    options: span_value_options(&mut args)?,
+                },
+                "set" => SpanStyleCommand::Set {
+                    name: args.quoted("a quoted span style name")?,
+                    options: span_value_options(&mut args)?,
+                },
+                "rename" => SpanStyleCommand::Rename {
+                    from: args.quoted("a quoted span style name")?,
+                    to: args.quoted("a quoted new name")?,
+                },
+                "remove" => SpanStyleCommand::Remove {
+                    name: args.quoted("a quoted span style name")?,
+                    into: args.optional(parse_into)?,
+                },
+                other => {
+                    return Err(ParseError(format!(
+                        "`{other}` is not `add`, `set`, `rename` or `remove`"
+                    )));
+                }
+            },
+        ),
         "image" => Command::Image {
             area: parse_node(&args.word("an area")?)?,
             asset: parse_asset(&args.word("an asset")?)?,
@@ -477,12 +687,54 @@ impl fmt::Display for Command {
             Command::Remove { node } => write!(f, "remove {node}"),
             Command::Divider { split, index, pos } => write!(f, "divider {split} {index} {pos}"),
             Command::Swap { a, b } => write!(f, "swap {a} {b}"),
-            Command::Text { area, text, style } => {
-                write!(f, "text {area} {}", quote_always(text))?;
+            Command::Text { area, root, style } => {
+                write!(f, "text {area}")?;
+                if let Some(root) = root {
+                    write!(f, " {}", tree_text(root))?;
+                }
                 for option in style {
                     write!(f, " {option}")?;
                 }
                 Ok(())
+            }
+            Command::Insert { node, offset, text } => {
+                write!(f, "insert {node} {offset} {}", quote_always(text))
+            }
+            Command::Delete { node, range } => {
+                write!(f, "delete {node} {}..{}", range.start, range.end)
+            }
+            Command::Wrap { node, range, style } => {
+                write!(f, "wrap {node} {}..{}", range.start, range.end)?;
+                style.iter().try_for_each(|o| write!(f, " {o}"))
+            }
+            Command::Unwrap { span } => write!(f, "unwrap {span}"),
+            Command::Span { span, style } => {
+                write!(f, "span {span}")?;
+                style.iter().try_for_each(|o| write!(f, " {o}"))
+            }
+            Command::SplitSpan { span, offset } => write!(f, "split-span {span} {offset}"),
+            Command::SpanStyles => f.write_str("span-styles"),
+            Command::SpanStyle(SpanStyleCommand::Add { name, options }) => {
+                write!(f, "span-style add {}", quote_always(name))?;
+                options.iter().try_for_each(|o| write!(f, " {o}"))
+            }
+            Command::SpanStyle(SpanStyleCommand::Set { name, options }) => {
+                write!(f, "span-style set {}", quote_always(name))?;
+                options.iter().try_for_each(|o| write!(f, " {o}"))
+            }
+            Command::SpanStyle(SpanStyleCommand::Rename { from, to }) => write!(
+                f,
+                "span-style rename {} {}",
+                quote_always(from),
+                quote_always(to)
+            ),
+            Command::SpanStyle(SpanStyleCommand::Remove { name, into }) => {
+                write!(f, "span-style remove {}", quote_always(name))?;
+                match into {
+                    None => Ok(()),
+                    Some(Replacement::Custom) => f.write_str(" into=custom"),
+                    Some(Replacement::Named(other)) => write!(f, " into={}", quote_always(other)),
+                }
             }
             Command::Image { area, asset, fit } => {
                 let fit = match fit {
@@ -591,18 +843,77 @@ impl fmt::Display for StyleOption {
     }
 }
 
-/// A word of a line: a run of characters without spaces, or a double-quoted string with `\"`,
-/// `\\` and `\n` escapes. A quoted word is kept apart, so `"bold"` is a text and not a flag.
+impl fmt::Display for TextTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TextTarget::Root(area) => write!(f, "{area}"),
+            TextTarget::Span(span) => write!(f, "{span}"),
+        }
+    }
+}
+
+impl fmt::Display for SpanOption {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SpanOption::Named(name) => StyleOption::Named(name.clone()).fmt(f),
+            SpanOption::Custom => f.write_str("custom"),
+            SpanOption::Size(v) => StyleOption::Size(*v).fmt(f),
+            SpanOption::Bold(v) => StyleOption::Bold(*v).fmt(f),
+            SpanOption::Italic(v) => StyleOption::Italic(*v).fmt(f),
+            SpanOption::Colour(v) => StyleOption::Colour(*v).fmt(f),
+            SpanOption::Font(v) => StyleOption::Font(*v).fmt(f),
+            SpanOption::Inherit(field) => write!(f, "{}=inherit", field.key()),
+        }
+    }
+}
+
+/// A text tree on one line: `[` its items separated by `, ` `]`, a span written `{`, its id if
+/// it has one, its options, then its items, `}`, as `["a ", {t4 bold "b"}]`.
+pub(crate) fn tree_text(items: &[TreeItem]) -> String {
+    format!("[{}]", items_text(items))
+}
+
+fn items_text(items: &[TreeItem]) -> String {
+    items
+        .iter()
+        .map(|item| match item {
+            TreeItem::Chars(text) => quote_always(text),
+            TreeItem::Span(span) => {
+                let mut words: Vec<String> = span.id.iter().map(|id| id.to_string()).collect();
+                words.extend(span.style.iter().map(|o| o.to_string()));
+                if !span.items.is_empty() {
+                    words.push(items_text(&span.items));
+                }
+                format!("{{{}}}", words.join(" "))
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// The characters that are words of their own outside a quoted string: the brackets, the braces
+/// and the commas of a text tree.
+const PUNCTUATION: [char; 5] = ['[', ']', '{', '}', ','];
+
+/// A word of a line: a run of characters without spaces, a double-quoted string with `\"`, `\\`
+/// and `\n` escapes, or one of the `PUNCTUATION` characters. A quoted word is kept apart, so
+/// `"bold"` is a text and not a flag.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Word {
     Bare(String),
     Quoted(String),
+    Punct(char),
 }
 
 impl Word {
     pub(crate) fn text(&self) -> &str {
         match self {
             Word::Bare(s) | Word::Quoted(s) => s,
+            Word::Punct('[') => "[",
+            Word::Punct(']') => "]",
+            Word::Punct('{') => "{",
+            Word::Punct('}') => "}",
+            Word::Punct(_) => ",",
         }
     }
 }
@@ -613,13 +924,16 @@ pub(crate) fn split_words(line: &str) -> Result<Vec<Word>, ParseError> {
     while let Some(&c) = chars.peek() {
         if c.is_whitespace() {
             chars.next();
+        } else if PUNCTUATION.contains(&c) {
+            chars.next();
+            words.push(Word::Punct(c));
         } else if c == '"' {
             chars.next();
             words.push(Word::Quoted(read_quoted(&mut chars)?));
         } else {
             let mut text = String::new();
             while let Some(&c) = chars.peek() {
-                if c.is_whitespace() {
+                if c.is_whitespace() || PUNCTUATION.contains(&c) {
                     break;
                 }
                 chars.next();
@@ -662,8 +976,10 @@ fn read_quoted(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) -> Result<S
 
 /// A word as the printer writes it: bare when it can be read back bare, quoted otherwise.
 pub(crate) fn quote(text: &str) -> String {
-    let bare =
-        !text.is_empty() && !text.contains(|c: char| c.is_whitespace() || c == '"' || c == '\\');
+    let bare = !text.is_empty()
+        && !text.contains(|c: char| {
+            c.is_whitespace() || c == '"' || c == '\\' || PUNCTUATION.contains(&c)
+        });
     if bare {
         return text.to_owned();
     }
@@ -699,8 +1015,23 @@ impl<'a> Args<'a> {
                 Ok(text.clone())
             }
             Some(Word::Quoted(_)) => Err(ParseError(format!("a quoted word instead of {what}"))),
+            Some(Word::Punct(c)) => Err(ParseError(format!("`{c}` instead of {what}"))),
             None => Err(ParseError(format!("missing {what}"))),
         }
+    }
+
+    /// The next word, left in place.
+    pub(crate) fn peek(&self) -> Option<&Word> {
+        self.words.get(self.next)
+    }
+
+    /// Take the next word when it is the punctuation `c`.
+    fn punct(&mut self, c: char) -> bool {
+        let found = self.peek() == Some(&Word::Punct(c));
+        if found {
+            self.next += 1;
+        }
+        found
     }
 
     /// The next word, bare or quoted, as a path. An empty path is refused: a host reads it as its
@@ -710,6 +1041,9 @@ impl<'a> Args<'a> {
             .words
             .get(self.next)
             .ok_or_else(|| ParseError("missing a path".to_owned()))?;
+        if let Word::Punct(c) = word {
+            return Err(ParseError(format!("`{c}` instead of a path")));
+        }
         self.next += 1;
         if word.text().is_empty() {
             return Err(ParseError("an empty path".to_owned()));
@@ -787,6 +1121,77 @@ pub(crate) fn parse_asset(text: &str) -> Result<AssetId, ParseError> {
     parse_id(text, 'a').map(AssetId)
 }
 
+pub(crate) fn parse_span(text: &str) -> Result<SpanId, ParseError> {
+    parse_id(text, 't').map(SpanId)
+}
+
+/// `n<n>`, the root of an area's text, or `t<n>`, a span.
+fn parse_target(text: &str) -> Result<TextTarget, ParseError> {
+    if text.starts_with('t') {
+        parse_span(text).map(TextTarget::Span)
+    } else {
+        parse_node(text).map(TextTarget::Root)
+    }
+}
+
+/// `<a>..<b>`, a range of offsets.
+fn parse_range(text: &str) -> Result<Range<usize>, ParseError> {
+    let bad = || ParseError(format!("`{text}` is not a range `<a>..<b>`"));
+    let (a, b) = text.split_once("..").ok_or_else(bad)?;
+    Ok(parse_digits(a).ok_or_else(bad)?..parse_digits(b).ok_or_else(bad)?)
+}
+
+/// A text tree: `[` items separated by commas `]`.
+fn parse_tree(args: &mut Args) -> Result<Vec<TreeItem>, ParseError> {
+    if !args.punct('[') {
+        return Err(ParseError("missing a text tree `[…]`".to_owned()));
+    }
+    parse_items(args, ']')
+}
+
+/// The items of a tree or of a span, separated by commas, up to and with the closing `end`.
+fn parse_items(args: &mut Args, end: char) -> Result<Vec<TreeItem>, ParseError> {
+    let mut items = Vec::new();
+    if args.punct(end) {
+        return Ok(items);
+    }
+    loop {
+        items.push(parse_item(args)?);
+        if args.punct(end) {
+            return Ok(items);
+        }
+        if !args.punct(',') {
+            return Err(ParseError(format!("missing `,` or `{end}` in a text tree")));
+        }
+    }
+}
+
+/// A quoted string, or a span `{[t<n>] <options> <items>}`.
+fn parse_item(args: &mut Args) -> Result<TreeItem, ParseError> {
+    if let Some(Word::Quoted(_)) = args.peek() {
+        return Ok(TreeItem::Chars(args.quoted("a quoted text")?));
+    }
+    if !args.punct('{') {
+        return Err(ParseError(
+            "missing a quoted text or a span `{…}` in a text tree".to_owned(),
+        ));
+    }
+    let id = match args.peek() {
+        Some(Word::Bare(word)) if word.starts_with('t') => {
+            let id = parse_span(word)?;
+            args.next += 1;
+            Some(id)
+        }
+        _ => None,
+    };
+    let mut style = Vec::new();
+    while let Some(option) = args.optional(parse_span_option)? {
+        style.push(option);
+    }
+    let items = parse_items(args, '}')?;
+    Ok(TreeItem::Span(TreeSpan { id, style, items }))
+}
+
 /// A text always quoted, so that a text such as `bold` is never read as an option.
 pub(crate) fn quote_always(text: &str) -> String {
     let q = quote(text);
@@ -852,6 +1257,63 @@ fn value_options(args: &mut Args) -> Result<Vec<StyleOption>, ParseError> {
         options.push(option);
     }
     Ok(options)
+}
+
+/// The options of a span's style, `wrap`'s and `span`'s.
+fn span_options(args: &mut Args) -> Result<Vec<SpanOption>, ParseError> {
+    let mut options = Vec::new();
+    while let Some(option) = args.optional(parse_span_option)? {
+        options.push(option);
+    }
+    Ok(options)
+}
+
+/// The options of `span-style add` and `span-style set`: values, never `style=` or `custom`, which
+/// choose a span's style and mean nothing for a style of the table.
+fn span_value_options(args: &mut Args) -> Result<Vec<SpanOption>, ParseError> {
+    let options = span_options(args)?;
+    if let Some(option) = options
+        .iter()
+        .find(|o| matches!(o, SpanOption::Named(_) | SpanOption::Custom))
+    {
+        return Err(ParseError(format!(
+            "`{option}` chooses a span's style, not a value of a span style"
+        )));
+    }
+    Ok(options)
+}
+
+/// A span's option: one of `text`'s but alignment, which is the area's alone, or `<key>=inherit`.
+fn parse_span_option(text: &str) -> Result<SpanOption, ParseError> {
+    let field = match text.split_once('=') {
+        Some((key, "inherit")) => [
+            SpanField::Font,
+            SpanField::Size,
+            SpanField::Bold,
+            SpanField::Italic,
+            SpanField::Colour,
+        ]
+        .into_iter()
+        .find(|f| f.key() == key),
+        _ => None,
+    };
+    if let Some(field) = field {
+        return Ok(SpanOption::Inherit(field));
+    }
+    Ok(match parse_style_option(text)? {
+        StyleOption::Named(name) => SpanOption::Named(name),
+        StyleOption::Custom => SpanOption::Custom,
+        StyleOption::Size(v) => SpanOption::Size(v),
+        StyleOption::Bold(v) => SpanOption::Bold(v),
+        StyleOption::Italic(v) => SpanOption::Italic(v),
+        StyleOption::Colour(v) => SpanOption::Colour(v),
+        StyleOption::Font(v) => SpanOption::Font(v),
+        StyleOption::Align(_) | StyleOption::VAlign(_) => {
+            return Err(ParseError(format!(
+                "`{text}` is the area's alignment, which a span does not set"
+            )));
+        }
+    })
 }
 
 /// `into=a<n>`: the asset that names a removed one's uses.

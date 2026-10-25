@@ -16,7 +16,7 @@ The binary `rootpoint-headless` reads commands from stdin and writes the replies
 $ printf 'add-slide\nsplit n2 beside 0.5\ntree\n' | rootpoint-headless
 ok s1 root=n2
 ok new=n3 split=n4
-ok s1 n4:beside(0.5)[n2 text "" style="Body" | n3 text "" style="Body"]
+ok s1 n4:beside(0.5)[n2 text [] style="Body" | n3 text [] style="Body"]
 ```
 
 The binary `rootpoint-ctl`, on Unix, sends commands to a running editor's control socket and
@@ -85,7 +85,8 @@ image, text, span and style that names it name `a<n>` first; `asset-remove-unuse
 nothing names, in one undo step, and replies their ids. A removed or replaced file goes to the
 trash, `.rootpoint/trash/` in a workspace, from which `undo` takes it back; the next `open` of the
 workspace empties it. `assets [all|unused|missing|untracked]` lists the assets, each
-`a<id> <path> <bytes|missing> uses=<areas and styles|->`, separated by `; `, `missing` for a file
+`a<id> <path> <bytes|missing> uses=<areas and styles|->`, separated by `; `, a span style written
+`span:"<name>"`, `missing` for a file
 it cannot read or a path outside the root, or the paths of the store's files that no asset names,
 which `pack` leaves out, but for those whose path has a component that starts with `.`, as
 `.git/`. The undo of an `import` takes the file it wrote out again. A move or a replace of a file
@@ -115,6 +116,33 @@ unless `into="<other>"`, another style, or `into=custom`, a copy of the removed 
 those texts take instead. A command naming a
 style the table lacks is refused; a file naming one loads, its text drawn in the default values,
 and `render` names the area and the style after `styles=`.
+
+A text is a tree of characters and spans, each span with its id, `t<n>`, and its style. `text`
+takes the whole tree on one line, `text n3 ["Let x be a ", {bold "prime"}, " number"]`: `[` its
+items separated by commas `]`, each a quoted text or a span, `{` its options, then its items `}`;
+a quoted text alone is a tree of one run, and spaces around the brackets, the braces and the commas
+are free. `tree` prints each span with its id first, `{t41 bold "prime"}`, and `text` gives every
+span of its tree a new id, ignoring any given, so `tree`'s line given back to `text` copies a text.
+`text` replies the new spans' ids. With options and no tree, `text n3 bold` changes the area's style
+alone and keeps its spans and their ids. Outside a quoted text, `[`, `]`, `{`, `}` and `,` are words
+of their own, so a path holding one is quoted.
+
+The commands that change a tree name a text node, the root of an area's text by the area's id or a
+span by its own, and an offset or a range in it, read at that moment, a span counting as one
+offset: `insert <n|t> <offset> "<text>"`, `delete <n|t> <a>..<b>`, a span in the range removed
+whole, and `wrap <n|t> <a>..<b> <options>`, which puts the range in a new span and replies its id.
+`unwrap t<n>` puts a span's content in its parent, `span t<n> <options>` changes its style, and
+`split-span t<n> <offset>` cuts it in two spans of its style, replying the second's id, refused at
+the span's edges. A span's options are `text`'s but alignment, which is the area's alone: values,
+`style="<name>"` for a span style of the table, `custom`, and `<key>=inherit` for `font`, `size`,
+`bold`, `italic` and `colour`, which clears a value so the span draws with its parent's. They apply
+in order over the span's current style, so a value set on a named span makes it custom. A custom
+span that would set nothing is refused: `unwrap` removes the span instead. `span-style add`,
+`span-style set`, `span-style rename` and `span-style remove` change the table of span styles, as
+the `style` commands change the text styles, and `span-styles` lists it, each entry with the values
+it sets. A command naming a span style or a font asset the document lacks is refused; a file naming
+a missing span style loads, its span drawn with its parent's values, and `render` names the span and
+the style after `span-styles=`.
 
 `sample` opens the built-in sample in memory, a presentation of four slides that says how the
 editor's gestures work and where a presentation is saved; the crate holds its RON text and its image, in `sample/`, so it opens in

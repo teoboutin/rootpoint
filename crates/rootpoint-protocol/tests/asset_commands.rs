@@ -142,7 +142,7 @@ fn a_move_keeps_every_slide() {
             &mut files,
             &format!("render s1 {r}/out.png 192 108")
         ),
-        "fallback=- missing=- glyphs=- styles=-"
+        "fallback=- missing=- glyphs=- styles=- span-styles=-"
     );
     run_ok(&mut s, &mut files, "save");
     let text = std::fs::read_to_string(root.join("presentation.ron")).unwrap();
@@ -691,7 +691,10 @@ fn a_font_a_span_sets_is_a_use_of_its_asset() {
     run_ok(&mut s, &mut files, "open deck");
     let assets = run_ok(&mut s, &mut files, "assets");
     assert!(assets.contains("a3 font.ttf 5 uses=n2"), "{assets}");
-    assert!(assets.contains("a5 spare.ttf 5 uses=\"Code\""), "{assets}");
+    assert!(
+        assets.contains("a5 spare.ttf 5 uses=span:\"Code\""),
+        "{assets}"
+    );
     assert_eq!(
         refused(&mut s, &mut files, "asset-remove a3"),
         "a3 is used by n2"

@@ -19,7 +19,7 @@ use rootpoint_app::selection::Move;
 use rootpoint_app::{App, MenuEntry};
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, Side, SlideId};
 use rootpoint_protocol::{
-    Command, Files, Reply, Session, StyleCommand, StyleOption, parse_command,
+    Command, Files, Reply, Session, StyleCommand, StyleOption, TreeItem, parse_command,
 };
 
 /// Files held in memory, by path, shared so that the test reads what a save wrote.
@@ -323,7 +323,7 @@ fn the_content_actions_issue_their_commands() {
             let t = text_of(s, NodeId(3));
             let text = |prefix: &str| Command::Text {
                 area: NodeId(3),
-                text: format!("{prefix}{t}"),
+                root: Some(vec![TreeItem::Chars(format!("{prefix}{t}"))]),
                 style: Vec::new(),
             };
             vec![c("begin"), text("A"), text("Ab"), text("A"), c("end")]
@@ -351,7 +351,7 @@ fn the_content_actions_issue_their_commands() {
             let t = text_of(s, NodeId(3));
             let text = |s: String| Command::Text {
                 area: NodeId(3),
-                text: s,
+                root: Some(vec![TreeItem::Chars(s)]),
                 style: Vec::new(),
             };
             let rest = &t[1..];
@@ -366,18 +366,18 @@ fn the_content_actions_issue_their_commands() {
             ]
         },
     );
-    // A style option repeats the area's whole text: `text n3 "<its text>" bold`.
+    // A style option changes the style alone, the text's tree and its ids kept: `text n3 bold`.
     for word in ["bold", "size=80", "align=right"] {
         check(
             word,
             &["select n3"],
             |a| {
-                let Command::Text { mut style, .. } = c(&format!("text n3 \"\" {word}")) else {
+                let Command::Text { mut style, .. } = c(&format!("text n3 {word}")) else {
                     panic!("a text command");
                 };
                 a.set_style(style.remove(0));
             },
-            |s| vec![c(&format!("text n3 {:?} {word}", text_of(s, NodeId(3))))],
+            |_| vec![c(&format!("text n3 {word}"))],
         );
     }
     check(

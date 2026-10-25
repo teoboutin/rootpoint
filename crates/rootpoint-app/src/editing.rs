@@ -7,7 +7,7 @@ use std::ops::Range;
 use eframe::egui::{Pos2, Rect};
 use parley::{Affinity, Selection};
 use rootpoint_model::{Content, Node, NodeId};
-use rootpoint_protocol::Command;
+use rootpoint_protocol::{Command, TreeItem};
 use rootpoint_render::{AreaText, area_text};
 
 use crate::App;
@@ -259,7 +259,7 @@ impl App {
         let kept = edit.preedit.clone();
         self.run(Command::Text {
             area,
-            text,
+            root: Some(vec![TreeItem::Chars(text)]),
             style: Vec::new(),
         });
         let preedit = match preedit {

@@ -6,7 +6,8 @@ mod common;
 use common::*;
 use rootpoint_model::*;
 use rootpoint_protocol::{
-    AssetFilter, Command, Reply, Session, Store, StyleCommand, StyleOption, parse_command,
+    AssetFilter, Command, Reply, Session, SpanField, SpanOption, SpanStyleCommand, Store,
+    StyleCommand, StyleOption, TextTarget, TreeItem, TreeSpan, parse_command,
 };
 
 #[test]
@@ -81,7 +82,9 @@ fn every_command_prints_back_as_it_parses() {
         },
         Command::Text {
             area: NodeId(2),
-            text: "A \"quoted\" back\\slash\nand a new line".into(),
+            root: Some(vec![TreeItem::Chars(
+                "A \"quoted\" back\\slash\nand a new line".into(),
+            )]),
             style: vec![
                 StyleOption::Size(64.0),
                 StyleOption::Bold(true),
@@ -100,7 +103,7 @@ fn every_command_prints_back_as_it_parses() {
         },
         Command::Text {
             area: NodeId(2),
-            text: "bold".into(),
+            root: Some(vec![TreeItem::Chars("bold".into())]),
             style: vec![],
         },
         Command::Image {
@@ -165,7 +168,7 @@ fn every_command_prints_back_as_it_parses() {
         Command::View,
         Command::Text {
             area: NodeId(2),
-            text: "x".into(),
+            root: Some(vec![TreeItem::Chars("x".into())]),
             style: vec![
                 StyleOption::Named("Style \"1\" \\ b".into()),
                 StyleOption::Custom,
@@ -204,8 +207,114 @@ fn every_command_prints_back_as_it_parses() {
         }),
         Command::Text {
             area: NodeId(2),
-            text: "x".into(),
+            root: Some(vec![TreeItem::Chars("x".into())]),
             style: vec![StyleOption::Named("custom".into())],
+        },
+        // A tree with nested and named spans, its texts holding a quote, a backslash, a new line
+        // and the tree's own punctuation; a span with no id, an empty span and an empty tree.
+        Command::Text {
+            area: NodeId(2),
+            root: Some(vec![
+                TreeItem::Chars("a \"q\" \\ [b], {c}\n".into()),
+                TreeItem::Span(TreeSpan {
+                    id: Some(SpanId(41)),
+                    style: vec![SpanOption::Bold(true), SpanOption::Size(30.0)],
+                    items: vec![
+                        TreeItem::Chars("x".into()),
+                        TreeItem::Span(TreeSpan {
+                            id: None,
+                            style: vec![SpanOption::Named("Term \"1\"".into())],
+                            items: vec![TreeItem::Chars("y".into())],
+                        }),
+                    ],
+                }),
+                TreeItem::Span(TreeSpan {
+                    id: None,
+                    style: vec![SpanOption::Italic(false)],
+                    items: Vec::new(),
+                }),
+            ]),
+            style: vec![StyleOption::Named("Title".into())],
+        },
+        Command::Text {
+            area: NodeId(2),
+            root: Some(Vec::new()),
+            style: Vec::new(),
+        },
+        Command::Text {
+            area: NodeId(2),
+            root: None,
+            style: vec![StyleOption::Align(HAlign::Right)],
+        },
+        Command::Insert {
+            node: TextTarget::Span(SpanId(7)),
+            offset: 3,
+            text: "bold".into(),
+        },
+        Command::Insert {
+            node: TextTarget::Root(NodeId(2)),
+            offset: 0,
+            text: "a, [b]".into(),
+        },
+        Command::Delete {
+            node: TextTarget::Root(NodeId(2)),
+            range: 2..5,
+        },
+        Command::Wrap {
+            node: TextTarget::Span(SpanId(7)),
+            range: 0..0,
+            style: vec![
+                SpanOption::Colour(Rgba {
+                    r: 255,
+                    g: 0,
+                    b: 0,
+                    a: 128,
+                }),
+                SpanOption::Font(Some(AssetId(3))),
+                SpanOption::Font(None),
+            ],
+        },
+        Command::Unwrap { span: SpanId(7) },
+        Command::Span {
+            span: SpanId(7),
+            style: vec![
+                SpanOption::Named("custom".into()),
+                SpanOption::Custom,
+                SpanOption::Inherit(SpanField::Bold),
+                SpanOption::Inherit(SpanField::Font),
+                SpanOption::Inherit(SpanField::Size),
+                SpanOption::Inherit(SpanField::Italic),
+                SpanOption::Inherit(SpanField::Colour),
+            ],
+        },
+        Command::SplitSpan {
+            span: SpanId(7),
+            offset: 2,
+        },
+        Command::SpanStyles,
+        Command::SpanStyle(SpanStyleCommand::Add {
+            name: "Term".into(),
+            options: vec![SpanOption::Italic(true)],
+        }),
+        Command::SpanStyle(SpanStyleCommand::Set {
+            name: "Term \"x\"".into(),
+            options: vec![SpanOption::Inherit(SpanField::Italic)],
+        }),
+        Command::SpanStyle(SpanStyleCommand::Rename {
+            from: "Term".into(),
+            to: "Key term".into(),
+        }),
+        Command::SpanStyle(SpanStyleCommand::Remove {
+            name: "Term".into(),
+            into: Some(Replacement::Custom),
+        }),
+        Command::SpanStyle(SpanStyleCommand::Remove {
+            name: "Term".into(),
+            into: Some(Replacement::Named("custom".into())),
+        }),
+        // A path holding the tree's punctuation is quoted, so it is no tree.
+        Command::Open {
+            dir: "talks, [old]".into(),
         },
     ];
     for command in commands {
@@ -224,6 +333,7 @@ fn every_scripted_line_prints_back_as_a_line_that_parses_to_it() {
         "groups.txt",
         "ids-build.txt",
         "ids-readdress.txt",
+        "spans.txt",
         "view.txt",
     ] {
         for line in script(name).lines() {
@@ -392,7 +502,7 @@ fn the_replies_name_the_ids_a_command_created() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "tree"),
-        "s1 n4:beside(0.5,0.75)[n2 text \"\" style=\"Body\" | n3 text \"\" style=\"Body\" | n8:stacked(0.5)[n7 text \"\" style=\"Body\" | n5 text \"\" style=\"Body\"]]"
+        "s1 n4:beside(0.5,0.75)[n2 text [] style=\"Body\" | n3 text [] style=\"Body\" | n8:stacked(0.5)[n7 text [] style=\"Body\" | n5 text [] style=\"Body\"]]"
     );
     assert_eq!(ok(&mut s, &mut files, "import cat.png"), "a9");
     // An import of a file an asset already holds names that asset, and adds none.
@@ -495,7 +605,7 @@ fn a_refused_command_changes_nothing() {
         "divider n4 3 0.5",
         "divider n4 0 2",
         "swap n2 n4",
-        "text n2 bold",
+        "text n2",
         "text n2 \"x\" size=-1",
         "image n2 a9 fit",
         "asset-remove a5",
@@ -511,6 +621,29 @@ fn a_refused_command_changes_nothing() {
         "import cat.png .rootpoint/cat.png",
         "import cat.png presentation.ron",
         "text n2 \"unclosed",
+        // A text tree's grammar, and the span commands' words.
+        "text n2 [\"a\" \"b\"]",
+        "text n2 [\"a\",]",
+        "text n2 [\"a\"",
+        "text n2 [bold]",
+        "text n2 [{t3 bold \"a\" {italic}}]",
+        "text n2 [{align=left \"a\"}]",
+        "text n2 [{t03 \"a\"}]",
+        "text n2 [] bold=inherit",
+        "wrap n2 0..1 align=left",
+        "wrap n2 1 bold",
+        "wrap n2 0..x bold",
+        "delete t3 0..1 bold",
+        "insert t3 0 bold",
+        "insert s1 0 \"x\"",
+        "unwrap n2",
+        "span t3",
+        "split-span t3",
+        "span-style add \"Term\" style=\"Body\"",
+        "span-style set \"Term\" custom",
+        "span-style move \"Term\"",
+        "span-styles all",
+        "open [deck]",
         "add-slide 5",
         "duplicate-slide s9",
         "clear n9",
@@ -615,7 +748,7 @@ fn save_open_and_tree() {
     assert_eq!(t.document(), s.document());
     assert_eq!(
         ok(&mut t, &mut files, "tree s1"),
-        "s1 n4:beside(0.5)[n2 text \"Hello\" style=\"Body\" | n3 text \"\" style=\"Body\"]"
+        "s1 n4:beside(0.5)[n2 text [\"Hello\"] style=\"Body\" | n3 text [] style=\"Body\"]"
     );
 }
 
@@ -640,7 +773,7 @@ fn a_command_built_through_the_api_keeps_the_grammars_sizes() {
         let reply = s.run(
             Command::Text {
                 area: NodeId(2),
-                text: "x".into(),
+                root: Some(vec![TreeItem::Chars("x".into())]),
                 style: vec![StyleOption::Size(size)],
             },
             &mut files,
@@ -680,14 +813,14 @@ fn a_cancelled_group_restores_the_document_and_both_stacks() {
     ok(&mut s, &mut files, "redo");
     assert_eq!(
         ok(&mut s, &mut files, "tree s1"),
-        "s1 n4:beside(0.4)[n2 text \"A\" style=\"Body\" | n3 text \"\" style=\"Body\"]"
+        "s1 n4:beside(0.4)[n2 text [\"A\"] style=\"Body\" | n3 text [] style=\"Body\"]"
     );
     // And the undo stack: two undos reach the empty slide, a third removes the slide, and a
     // fourth has nothing, so the cancelled group left no step.
     run(&mut s, &mut files, "undo\nundo");
     assert_eq!(
         ok(&mut s, &mut files, "tree s1"),
-        "s1 n2 text \"\" style=\"Body\""
+        "s1 n2 text [] style=\"Body\""
     );
     ok(&mut s, &mut files, "undo");
     assert!(s.document().slides.is_empty());
@@ -706,7 +839,7 @@ fn an_open_inside_a_group_closes_it_and_leaves_no_history() {
     ok(&mut s, &mut files, "open d");
     assert_eq!(
         ok(&mut s, &mut files, "tree s1"),
-        "s1 n2 text \"\" style=\"Body\""
+        "s1 n2 text [] style=\"Body\""
     );
     // The group was closed by the open: `end` finds none open, and nothing is left to undo.
     assert!(matches!(s.execute("end", &mut files), Some(Reply::Err(_))));
@@ -747,7 +880,7 @@ fn the_sample_opens_with_its_images_and_no_history() {
                 &mut files,
                 &format!("render {} out.png 192 108", slide.id)
             ),
-            "fallback=- missing=- glyphs=- styles=-"
+            "fallback=- missing=- glyphs=- styles=- span-styles=-"
         );
     }
 }

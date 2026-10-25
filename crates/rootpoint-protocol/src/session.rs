@@ -5,14 +5,16 @@ use std::fmt;
 use std::collections::{BTreeMap, BTreeSet};
 
 use rootpoint_model::{
-    Area, Asset, AssetId, Content, Document, FontRef, ImageContent, Node, NodeId, Op, Replacement,
-    SlideId, StyleChoice, TextContent, TextStyle, apply, asset_path_is_confined, load_ron,
-    save_ron,
+    Area, Asset, AssetId, BUILTIN_FAMILIES, Content, Document, FontRef, ImageContent, Node, NodeId,
+    Op, Replacement, SlideId, Span, SpanChoice, SpanId, SpanStyle, StyleChoice, TextContent,
+    TextItem, TextNode, TextNodeRef, TextStyle, apply, asset_path_is_confined, load_ron, save_ron,
+    span_style_users,
 };
 use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
 
 use crate::command::{
-    AssetFilter, Command, StyleCommand, StyleOption, parse_command, quote, quote_always,
+    AssetFilter, Command, SpanField, SpanOption, SpanStyleCommand, StyleCommand, StyleOption,
+    TextTarget, TreeItem, parse_command, quote, quote_always,
 };
 use crate::files::Files;
 use crate::store::{PRESENTATION, TRASH, join, readable, unconfined, with_suffix, writable};
@@ -754,9 +756,24 @@ impl Session {
                     .join(" "))
             }
             Command::Assets { filter } => self.list_assets(filter, files),
+            Command::SpanStyles => Ok(self
+                .doc
+                .span_styles
+                .iter()
+                .map(|(name, style)| {
+                    let mut words = vec![quote_always(name)];
+                    words.extend(SpanOption::values_of(style).iter().map(|o| o.to_string()));
+                    words.join(" ")
+                })
+                .collect::<Vec<_>>()
+                .join("; ")),
+            Command::Text { area, root, style } => {
+                let ops = self.text_ops(area, root, style)?;
+                self.edit_ops(ops, files)
+            }
             editing => {
                 let op = self.operation(editing)?;
-                self.edit(op, files)
+                self.edit_ops(vec![op], files)
             }
         }
     }
@@ -897,12 +914,13 @@ impl Session {
                 .span_styles
                 .iter()
                 .filter(|(_, s)| s.font.as_ref() == Some(&font))
-                .map(|(name, _)| quote_always(name)),
+                .map(|(name, _)| format!("span:{}", quote_always(name))),
         );
         uses
     }
 
-    /// The operations that make every image, text and named style naming `asset` name `other`.
+    /// The operations that make every image, text, named style and named span style naming `asset`
+    /// name `other`.
     fn renaming_ops(&self, asset: AssetId, other: AssetId) -> Vec<Op> {
         let font = FontRef::Asset(asset);
         let mut ops = Vec::new();
@@ -993,10 +1011,17 @@ impl Session {
     /// Apply an editing operation: its inverse joins the open group, or is an undo step of its
     /// own. The reply names the ids it created.
     fn edit(&mut self, op: Op, files: &mut dyn Files) -> Result<String, String> {
+        self.edit_ops(vec![op], files)
+    }
+
+    /// Apply the operations of one command, all or none: their inverses join the open group, or
+    /// are one undo step. The reply names the ids they created.
+    fn edit_ops(&mut self, ops: Vec<Op>, files: &mut dyn Files) -> Result<String, String> {
         let before = ids(&self.doc);
-        let inverse = self.apply_op(op)?;
-        self.record(Step::ops(vec![inverse.clone()]), files);
-        Ok(self.created(&before, &inverse))
+        let revert = self.apply_step(Step::ops(ops), files)?;
+        let last = revert.ops.first().cloned();
+        self.record(revert, files);
+        Ok(self.created(&before, last.as_ref()))
     }
 
     /// Apply a step of moves and operations, as one command, and record its revert.
@@ -1218,42 +1243,6 @@ impl Session {
             Command::Remove { node } => Op::Remove { node },
             Command::Divider { split, index, pos } => Op::MoveDivider { split, index, pos },
             Command::Swap { a, b } => Op::Swap { a, b },
-            Command::Text { area, text, style } => {
-                // The grammar refuses these sizes; a command built through the API is held to the
-                // same rule, so that it prints back as a line that parses.
-                if style
-                    .iter()
-                    .any(|o| matches!(o, StyleOption::Size(s) if !(s.is_finite() && *s > 0.0)))
-                {
-                    return Err("a text size is a number above 0".to_owned());
-                }
-                let mut choice = self.text_style(area);
-                for option in style {
-                    choice = match option {
-                        StyleOption::Named(name) => {
-                            self.usable_style(&name)?;
-                            StyleChoice::Named(name)
-                        }
-                        StyleOption::Custom => StyleChoice::Custom(self.doc.resolve_style(&choice)),
-                        // Any other option changes the values drawn, so a named style forks to a
-                        // custom copy: no command but `style set` changes a shared style,
-                        // `design@rootpoint-model@named-styles`.
-                        value => {
-                            self.usable_option(&value)?;
-                            let mut values = self.doc.resolve_style(&choice);
-                            apply_style(&mut values, value);
-                            StyleChoice::Custom(values)
-                        }
-                    };
-                }
-                Op::SetContent {
-                    area,
-                    content: Content::Text(TextContent {
-                        root: rootpoint_model::TextNode::plain(text),
-                        style: choice,
-                    }),
-                }
-            }
             Command::Image { area, asset, fit } => {
                 self.existing_asset(asset)?;
                 Op::SetContent {
@@ -1308,8 +1297,310 @@ impl Session {
                 }
                 Op::RemoveStyle { name, into }
             }
+            Command::Insert { node, offset, text } => {
+                let (area, node) = self.text_node(node)?;
+                Op::InsertText {
+                    area,
+                    node,
+                    offset,
+                    text,
+                }
+            }
+            Command::Delete { node, range } => {
+                let (area, node) = self.text_node(node)?;
+                Op::DeleteText { area, node, range }
+            }
+            Command::Wrap { node, range, style } => {
+                let (area, node) = self.text_node(node)?;
+                Op::WrapSpan {
+                    area,
+                    node,
+                    range,
+                    style: self.span_choice(SpanChoice::Custom(SpanStyle::default()), style)?,
+                }
+            }
+            Command::Unwrap { span } => Op::UnwrapSpan {
+                area: self.span_area(span)?.0,
+                span,
+            },
+            Command::Span { span, style } => {
+                let (area, current) = self.span_area(span)?;
+                Op::SetSpanStyle {
+                    area,
+                    span,
+                    style: self.span_choice(current, style)?,
+                }
+            }
+            Command::SplitSpan { span, offset } => Op::SplitSpan {
+                area: self.span_area(span)?.0,
+                span,
+                offset,
+            },
+            Command::SpanStyle(SpanStyleCommand::Add { name, options }) => Op::AddSpanStyle {
+                style: self.span_values(SpanStyle::default(), options)?,
+                name,
+            },
+            Command::SpanStyle(SpanStyleCommand::Set { name, options }) => {
+                let current = self
+                    .doc
+                    .span_styles
+                    .get(&name)
+                    .ok_or_else(|| no_span_style(&name))?;
+                Op::SetSpanStyleValues {
+                    style: self.span_values(current.clone(), options)?,
+                    name,
+                }
+            }
+            Command::SpanStyle(SpanStyleCommand::Rename { from, to }) => {
+                // The operation refuses a span that names `to` too; the reply names the span.
+                if let Some((_, span)) = span_style_users(&self.doc, &to).first() {
+                    return Err(format!("{span} names {}", quote_always(&to)));
+                }
+                Op::RenameSpanStyle { from, to }
+            }
+            Command::SpanStyle(SpanStyleCommand::Remove { name, into }) => {
+                let removed = self
+                    .doc
+                    .span_styles
+                    .get(&name)
+                    .ok_or_else(|| no_span_style(&name))?;
+                let users = span_style_users(&self.doc, &name);
+                match &into {
+                    None if !users.is_empty() => {
+                        let users: Vec<String> = users.iter().map(|(_, t)| t.to_string()).collect();
+                        return Err(format!(
+                            "{} is used by {}",
+                            quote_always(&name),
+                            users.join(" ")
+                        ));
+                    }
+                    None => {}
+                    Some(Replacement::Named(other)) if *other == name => {
+                        return Err(format!("{} cannot replace itself", quote_always(&name)));
+                    }
+                    Some(Replacement::Named(other)) => self.usable_span_style(other)?,
+                    // A copy of values that set nothing would make each user a custom span that
+                    // sets nothing.
+                    Some(Replacement::Custom)
+                        if *removed == SpanStyle::default() && !users.is_empty() =>
+                    {
+                        return Err(format!(
+                            "{} sets no value, so its users cannot hold a copy: \
+                             `into=\"<name>\"` names another",
+                            quote_always(&name)
+                        ));
+                    }
+                    Some(Replacement::Custom) => {}
+                }
+                Op::RemoveSpanStyle { name, into }
+            }
             other => return Err(format!("`{other}` applies no operation")),
         })
+    }
+
+    /// The operations of `text`: with a tree, `Op::SetContent` gives the area its style and an
+    /// empty text, then `Op::SetText` the tree, every span with a new id; with none, the area keeps
+    /// its tree and its ids, and `Op::SetContent` gives it the style alone.
+    fn text_ops(
+        &self,
+        area: NodeId,
+        root: Option<Vec<TreeItem>>,
+        style: Vec<StyleOption>,
+    ) -> Result<Vec<Op>, String> {
+        // The grammar refuses these sizes; a command built through the API is held to the same
+        // rule, so that it prints back as a line that parses.
+        if style
+            .iter()
+            .any(|o| matches!(o, StyleOption::Size(s) if !(s.is_finite() && *s > 0.0)))
+        {
+            return Err("a text size is a number above 0".to_owned());
+        }
+        if root.is_none() && style.is_empty() {
+            return Err("`text` with no tree changes the style: give it an option".to_owned());
+        }
+        let mut choice = self.text_style(area);
+        for option in style {
+            choice = match option {
+                StyleOption::Named(name) => {
+                    self.usable_style(&name)?;
+                    StyleChoice::Named(name)
+                }
+                StyleOption::Custom => StyleChoice::Custom(self.doc.resolve_style(&choice)),
+                // Any other option changes the values drawn, so a named style forks to a custom
+                // copy: no command but `style set` changes a shared style,
+                // `design@rootpoint-model@named-styles`.
+                value => {
+                    self.usable_option(&value)?;
+                    let mut values = self.doc.resolve_style(&choice);
+                    apply_style(&mut values, value);
+                    StyleChoice::Custom(values)
+                }
+            };
+        }
+        let content = |root: TextNode| Op::SetContent {
+            area,
+            content: Content::Text(TextContent {
+                root,
+                style: choice.clone(),
+            }),
+        };
+        Ok(match root {
+            Some(items) => vec![
+                content(TextNode::default()),
+                Op::SetText {
+                    area,
+                    root: self.text_tree(items)?,
+                },
+            ],
+            None => {
+                let current = match self.doc.node(area) {
+                    Some(Node::Area(Area {
+                        content: Content::Text(t),
+                        ..
+                    })) => t.root.clone(),
+                    _ => TextNode::default(),
+                };
+                vec![content(current)]
+            }
+        })
+    }
+
+    /// The text node a tree's items give, each span's style refused as `wrap` refuses it. Its ids
+    /// are placeholders, which `Op::SetText` replaces, and `apply` merges its adjacent runs.
+    fn text_tree(&self, items: Vec<TreeItem>) -> Result<TextNode, String> {
+        Ok(TextNode {
+            items: items
+                .into_iter()
+                .map(|item| match item {
+                    TreeItem::Chars(text) => Ok(TextItem::Chars(text)),
+                    TreeItem::Span(span) => Ok(TextItem::Span(Span {
+                        id: SpanId(0),
+                        style: self
+                            .span_choice(SpanChoice::Custom(SpanStyle::default()), span.style)?,
+                        text: self.text_tree(span.items)?,
+                    })),
+                })
+                .collect::<Result<_, String>>()?,
+        })
+    }
+
+    /// The area and the text node a command names: an area's root, or a span found by its id,
+    /// which is unique in the document.
+    fn text_node(&self, target: TextTarget) -> Result<(NodeId, TextNodeRef), String> {
+        Ok(match target {
+            TextTarget::Root(area) => (area, TextNodeRef::Root),
+            TextTarget::Span(span) => (self.span_area(span)?.0, TextNodeRef::Span(span)),
+        })
+    }
+
+    /// The area whose text holds the span, and the span's style.
+    fn span_area(&self, span: SpanId) -> Result<(NodeId, SpanChoice), String> {
+        self.doc
+            .slides
+            .iter()
+            .flat_map(|s| s.root.areas())
+            .find_map(|a| match &a.content {
+                Content::Text(text) => text
+                    .root
+                    .spans()
+                    .into_iter()
+                    .find(|s| s.id == span)
+                    .map(|s| (a.id, s.style.clone())),
+                Content::Image(_) => None,
+            })
+            .ok_or(format!("no span {span}"))
+    }
+
+    /// The style `options` give a span whose style was `current`, applied in order as `text`'s
+    /// are: a value set on a named span makes it custom, with the named values and that change,
+    /// `design@rootpoint-model@named-span-styles`. A custom style left setting nothing is refused,
+    /// since its span would change nothing, `design@rootpoint-model@text-tree-normal-form`.
+    fn span_choice(
+        &self,
+        current: SpanChoice,
+        options: Vec<SpanOption>,
+    ) -> Result<SpanChoice, String> {
+        let mut choice = current;
+        for option in options {
+            choice = match option {
+                SpanOption::Named(name) => {
+                    self.usable_span_style(&name)?;
+                    SpanChoice::Named(name)
+                }
+                SpanOption::Custom => {
+                    SpanChoice::Custom(self.doc.resolve_span(&choice).unwrap_or_default())
+                }
+                value => {
+                    let mut values = self.doc.resolve_span(&choice).unwrap_or_default();
+                    self.apply_span_value(&mut values, value)?;
+                    SpanChoice::Custom(values)
+                }
+            };
+        }
+        if choice == SpanChoice::Custom(SpanStyle::default()) {
+            return Err(
+                "a custom span sets one value at least: `unwrap` puts a span's text in its parent"
+                    .to_owned(),
+            );
+        }
+        Ok(choice)
+    }
+
+    /// The values `options` give a span style whose values were `values`.
+    fn span_values(
+        &self,
+        mut values: SpanStyle,
+        options: Vec<SpanOption>,
+    ) -> Result<SpanStyle, String> {
+        for option in options {
+            self.apply_span_value(&mut values, option)?;
+        }
+        Ok(values)
+    }
+
+    /// Apply a value option to a span style's values, refusing a font asset the table lacks and a
+    /// size the grammar refuses. `style=` and `custom` choose a span's style, which the caller
+    /// handles; they change no value.
+    fn apply_span_value(&self, values: &mut SpanStyle, option: SpanOption) -> Result<(), String> {
+        match option {
+            SpanOption::Named(_) | SpanOption::Custom => {}
+            SpanOption::Size(size) if !(size.is_finite() && size > 0.0) => {
+                return Err("a text size is a number above 0".to_owned());
+            }
+            SpanOption::Size(size) => values.size = Some(size),
+            SpanOption::Bold(on) => values.bold = Some(on),
+            SpanOption::Italic(on) => values.italic = Some(on),
+            SpanOption::Colour(c) => values.colour = Some(c),
+            SpanOption::Font(None) => values.font = Some(FontRef::Builtin("sans".to_owned())),
+            SpanOption::Font(Some(asset)) => {
+                self.existing_asset(asset)?;
+                values.font = Some(FontRef::Asset(asset));
+            }
+            SpanOption::Inherit(SpanField::Font) => values.font = None,
+            SpanOption::Inherit(SpanField::Size) => values.size = None,
+            SpanOption::Inherit(SpanField::Bold) => values.bold = None,
+            SpanOption::Inherit(SpanField::Italic) => values.italic = None,
+            SpanOption::Inherit(SpanField::Colour) => values.colour = None,
+        }
+        Ok(())
+    }
+
+    /// Refuse a span style a span would name and draw with a stand-in: one the table lacks, or
+    /// whose font is an asset the table lacks or a family the binary does not carry,
+    /// `design@rootpoint-protocol@no-new-breach`.
+    fn usable_span_style(&self, name: &str) -> Result<(), String> {
+        let style = self
+            .doc
+            .span_styles
+            .get(name)
+            .ok_or_else(|| no_span_style(name))?;
+        match &style.font {
+            Some(FontRef::Asset(asset)) => self.existing_asset(*asset),
+            Some(FontRef::Builtin(family)) if !BUILTIN_FAMILIES.contains(&family.as_str()) => Err(
+                format!("{} names no built-in family {family}", quote_always(name)),
+            ),
+            _ => Ok(()),
+        }
     }
 
     /// Refuse a command that names an asset the table lacks, so that no command creates a cosmetic
@@ -1566,8 +1857,9 @@ impl Session {
     }
 
     /// The ids an operation created, as its reply states them: a new slide and its root; or the
-    /// new area of a split, and the new split when the node was wrapped; or a new asset.
-    fn created(&self, before: &BTreeSet<Id>, inverse: &Op) -> String {
+    /// new area of a split, and the new split when the node was wrapped; or the new spans, in the
+    /// order of the text; or a new asset.
+    fn created(&self, before: &BTreeSet<Id>, inverse: Option<&Op>) -> String {
         let new: Vec<Id> = ids(&self.doc).difference(before).copied().collect();
         if let Some(slide) = new.iter().find_map(|i| match i {
             Id::Slide(s) => self.doc.slide(*s),
@@ -1580,10 +1872,11 @@ impl Session {
             match id {
                 Id::Area(n) => words.insert(0, format!("new={n}")),
                 Id::Split(n) => words.push(format!("split={n}")),
+                Id::Span(t) => words.push(t.to_string()),
                 Id::Slide(_) => {}
             }
         }
-        if let Op::RemoveAsset { id } = inverse {
+        if let Some(Op::RemoveAsset { id }) = inverse {
             words.push(id.to_string());
         }
         words.join(" ")
@@ -1596,6 +1889,7 @@ enum Id {
     Slide(SlideId),
     Split(NodeId),
     Area(NodeId),
+    Span(SpanId),
 }
 
 fn ids(doc: &Document) -> BTreeSet<Id> {
@@ -1603,6 +1897,9 @@ fn ids(doc: &Document) -> BTreeSet<Id> {
         match node {
             Node::Area(a) => {
                 out.insert(Id::Area(a.id));
+                if let Content::Text(text) = &a.content {
+                    out.extend(text.root.spans().iter().map(|s| Id::Span(s.id)));
+                }
             }
             Node::Split(s) => {
                 out.insert(Id::Split(s.id));
@@ -1619,7 +1916,8 @@ fn ids(doc: &Document) -> BTreeSet<Id> {
 }
 
 /// A render's report, as its reply states it: the text areas whose font fell back, the image
-/// assets with no image, and the text areas with a character no font has.
+/// assets with no image, the text areas with a character no font has, the text areas naming a
+/// style the table lacks, and the spans naming a span style the table lacks.
 fn report_words(report: &Report) -> String {
     fn list<T: fmt::Display>(items: &[T]) -> String {
         if items.is_empty() {
@@ -1637,18 +1935,29 @@ fn report_words(report: &Report) -> String {
         .iter()
         .map(|(area, name)| format!("{area}:{}", quote(name)))
         .collect();
+    let span_styles: Vec<String> = report
+        .missing_span_styles
+        .iter()
+        .map(|(_, span, name)| format!("{span}:{}", quote(name)))
+        .collect();
     format!(
-        "fallback={} missing={} glyphs={} styles={}",
+        "fallback={} missing={} glyphs={} styles={} span-styles={}",
         list(&report.font_fallbacks),
         list(&report.missing_images),
         list(&report.missing_glyphs),
-        list(&styles)
+        list(&styles),
+        list(&span_styles)
     )
 }
 
 /// The refusal of a style the table lacks.
 fn no_style(name: &str) -> String {
     format!("no style {}", quote_always(name))
+}
+
+/// The refusal of a span style the table lacks.
+fn no_span_style(name: &str) -> String {
+    format!("no span style {}", quote_always(name))
 }
 
 /// A style's every value, as the options `style add` takes, in a fixed order. A built-in family the

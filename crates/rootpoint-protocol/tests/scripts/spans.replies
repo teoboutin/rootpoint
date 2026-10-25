@@ -1,0 +1,21 @@
+ok s1 root=n2
+ok
+ok t3
+ok s1 n2 text ["Let x be a ", {t3 bold "prime"}, " number"] style="Body"
+ok t4
+ok
+ok
+ok t5
+ok
+ok
+ok s1 n2 text ["et x be a ", {t3 size=60 bold "ve"}, {t5 size=60 bold "ry prime"}, " number"] style="Body"
+ok t6 t7
+ok
+ok s1 n2 text ["a", {t6 bold "b", {t7 italic "c"}}, "d"] custom
+ok "Term" italic colour=#336699
+ok
+ok
+ok t8
+ok
+ok
+ok s1 n2 text ["a", {t6 bold "b", {t7 italic {t8 italic colour=#336699 "c"}}}, "d"] custom

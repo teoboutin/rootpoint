@@ -1,0 +1,23 @@
+# The commands of a text tree and of the span style table, as an agent types them.
+add-slide
+span-style add "Term" italic colour=#336699
+text n2 ["Let x be a ", {bold "prime"}, " number"] style="Body"
+tree
+wrap n2 0..3 style="Term"
+insert t3 0 "very "
+span t3 italic=inherit size=60
+split-span t3 2
+unwrap t4
+delete n2 0..1
+tree
+# Spaces around the brackets, braces and commas are free; the id `tree` prints is ignored.
+text n2 [ "a" ,{t9 bold "b",{ italic "c" }} , "d" ]
+text n2 bold
+tree
+span-styles
+span-style set "Term" bold=inherit
+span-style rename "Term" "Key term"
+wrap t7 0..1 style="Key term"
+span-style remove "Key term" into=custom
+span-styles
+tree

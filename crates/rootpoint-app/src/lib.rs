@@ -592,6 +592,14 @@ impl App {
                 .collect(),
         );
         list(
+            "missing span styles, drawn with their parent's values",
+            report
+                .missing_span_styles
+                .iter()
+                .map(|(_, span, name)| format!("{span} {name}"))
+                .collect(),
+        );
+        list(
             "text not drawn",
             report.undrawn_text.iter().map(|n| n.to_string()).collect(),
         );

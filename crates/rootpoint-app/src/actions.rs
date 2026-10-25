@@ -405,7 +405,7 @@ impl App {
         if let Some(area) = self.selected_area() {
             self.run(Command::Text {
                 area,
-                text: String::new(),
+                root: Some(Vec::new()),
                 style: Vec::new(),
             });
         }
@@ -426,19 +426,16 @@ impl App {
         self.send_text_option(StyleOption::Custom);
     }
 
-    /// Send the selected text again with one style option.
+    /// Change the selected text's style by one option, its tree and its spans' ids kept.
     fn send_text_option(&mut self, option: StyleOption) {
         if self.socket_holds() {
             return;
         }
         self.end_gestures();
-        if let (Some(area), Some(C::Text(content))) =
-            (self.selected_area(), self.selected_content())
-        {
-            let text = content.plain_text();
+        if let (Some(area), Some(C::Text(_))) = (self.selected_area(), self.selected_content()) {
             self.run(Command::Text {
                 area,
-                text,
+                root: None,
                 style: vec![option],
             });
         }

@@ -290,11 +290,23 @@ impl App {
         let Some(the_slide) = doc.slide(slide) else {
             return;
         };
+        // A text naming a style the table lacks, or holding a span naming a span style the table
+        // lacks, with the span's id: the row marks each, as `render`'s reply names them.
         let missing: Vec<(NodeId, String)> = doc
             .breaches()
             .into_iter()
             .filter_map(|b| match b {
                 Breach::MissingStyle { area, name } => Some((area, name)),
+                _ => None,
+            })
+            .collect();
+        let missing_spans: Vec<(NodeId, String)> = doc
+            .breaches()
+            .into_iter()
+            .filter_map(|b| match b {
+                Breach::MissingSpanStyle { area, span, name } => {
+                    Some((area, format!("{span} {name}")))
+                }
                 _ => None,
             })
             .collect();
@@ -304,6 +316,7 @@ impl App {
             depth: usize,
             doc: &rootpoint_model::Document,
             missing: &[(NodeId, String)],
+            missing_spans: &[(NodeId, String)],
             rows: &mut Vec<(Option<NodeId>, usize, String)>,
         ) {
             let label = match node {
@@ -331,7 +344,11 @@ impl App {
                             .chars()
                             .take(40)
                             .collect();
-                        format!("T  {}  {style}  \"{start}\"", a.id)
+                        let mut label = format!("T  {}  {style}  \"{start}\"", a.id);
+                        for (_, span) in missing_spans.iter().filter(|m| m.0 == a.id) {
+                            label.push_str(&format!("  \u{26a0} {span}"));
+                        }
+                        label
                     }
                     Content::Image(i) => {
                         let name = match doc.assets.get(&i.asset) {
@@ -345,11 +362,11 @@ impl App {
             rows.push((Some(node.id()), depth, label));
             if let Node::Split(s) = node {
                 for child in &s.children {
-                    walk(child, depth + 1, doc, missing, rows);
+                    walk(child, depth + 1, doc, missing, missing_spans, rows);
                 }
             }
         }
-        walk(&the_slide.root, 1, doc, &missing, &mut rows);
+        walk(&the_slide.root, 1, doc, &missing, &missing_spans, &mut rows);
         let selected = self.session.view().selected;
         let visuals = ui.visuals().clone();
         let mut clicked = None;

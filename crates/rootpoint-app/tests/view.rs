@@ -264,7 +264,64 @@ fn a_file_naming_a_missing_style_opens_and_the_status_names_it() {
         .expect("n2 has a row");
     assert!(row.label.contains("\u{26a0} Heading"), "{}", row.label);
     match app.run(parse_command("render s1 out.png 160 90").unwrap()) {
-        Reply::Ok(reply) => assert!(reply.ends_with("styles=n2:Heading"), "{reply}"),
+        Reply::Ok(reply) => assert!(
+            reply.ends_with("styles=n2:Heading span-styles=-"),
+            "{reply}"
+        ),
+        other => panic!("render gave {other}"),
+    }
+}
+
+/// A file whose span names a span style the table lacks opens, and the status line, the outline's
+/// row of the area and the reply of `render` name the span and the span style, as they name a
+/// missing style.
+#[test]
+fn a_file_naming_a_missing_span_style_opens_and_the_status_names_it() {
+    let files = MemoryFiles::default();
+    let mut app = App::new(Box::new(files.clone()));
+    ok(&mut app, "sample");
+    ok(&mut app, "span-style add \"Term\" bold");
+    ok(&mut app, "text n2 [\"a \", {style=\"Term\" \"word\"}]");
+    let span = match app.run(parse_command("tree s1").unwrap()) {
+        Reply::Ok(tree) => {
+            let at = tree.find("{t").expect("the span is printed with its id");
+            tree[at + 1..].split(' ').next().unwrap().to_owned()
+        }
+        other => panic!("tree gave {other}"),
+    };
+    write_presentation(&app, &files, "deck");
+    let saved = String::from_utf8(files.0.borrow()["deck/presentation.ron"].clone()).unwrap();
+    let edited = saved.replacen("Named(\"Term\")", "Named(\"Gone\")", 1);
+    assert_ne!(edited, saved, "the saved span changed shape");
+    files
+        .0
+        .borrow_mut()
+        .insert("deck/presentation.ron".into(), edited.into_bytes());
+    ok(&mut app, "open deck");
+    let ctx = Context::default();
+    frame(&ctx, &mut app);
+    assert_eq!(
+        app.status(),
+        [format!(
+            "missing span styles, drawn with their parent's values: {span} Gone"
+        )]
+    );
+    frame(&ctx, &mut app);
+    let row = app
+        .outline_rows()
+        .iter()
+        .find(|r| r.node == Some(rootpoint_model::NodeId(2)))
+        .expect("n2 has a row");
+    assert!(
+        row.label.contains(&format!("\u{26a0} {span} Gone")),
+        "{}",
+        row.label
+    );
+    match app.run(parse_command("render s1 out.png 160 90").unwrap()) {
+        Reply::Ok(reply) => assert!(
+            reply.ends_with(&format!("span-styles={span}:Gone")),
+            "{reply}"
+        ),
         other => panic!("render gave {other}"),
     }
 }
