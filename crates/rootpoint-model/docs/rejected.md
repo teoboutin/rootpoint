@@ -172,3 +172,14 @@ name a text style from an area that holds no text.
 `live`. ron's default writes each backslash as `\\`, so a formula reads `"\\frac{a}{b}"` in the
 file, and a person editing it by hand writes every backslash of the LaTeX twice.
 
+### A number for each row of an equation `##number-per-row`
+
+`live`. As LaTeX's `align` numbers each row, a numbered thing would be smaller than an area, so the
+numbers, the file and a reference to an equation would need a row's identity inside the formula,
+which `Formula` does not give a row. A reference to a row stays a later consequence of the milestone
+on math, if the owner's talks need it.
+
+### A size mode that holds an equation at a size and lets it overflow its area `##overflowing-size-mode`
+
+`live`. It would differ from `EquationSize::AtMost` only where the size does not fit, and there it
+would draw past the area's edge, over the areas beside it.

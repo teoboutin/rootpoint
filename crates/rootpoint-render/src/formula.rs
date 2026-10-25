@@ -118,7 +118,8 @@ pub(crate) fn lay_out_equation(
         top + scale * layout.ascent,
     );
     // A number stands beside the formula as a whole, so it is centred on the rows when there are
-    // several, and on the one row's axis otherwise.
+    // several, and on the one row's axis otherwise. It does not scale with the formula, so the
+    // numbers of a presentation are all at the Body style's size.
     let middle = if equation.formula.rows.len() > 1 {
         top + scale * height / 2.0
     } else {

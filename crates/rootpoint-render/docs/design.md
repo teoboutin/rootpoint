@@ -61,15 +61,12 @@ right, and may adjust it later.
 style, at the Body style's size for `Fit` and at its size for `AtMost`, and draws it at the largest
 scale at which it fits the area less the padding of `design@rootpoint-render@typeset-padding`, with
 room kept for the number on both sides, a scale no greater than 1 for `AtMost`,
-`design@rootpoint-model@equation-fit`. `area_formula` gives that layout, the point where its origin
-is drawn and the scale, as `render_slide` draws them, for the window's caret. One layout and one
-multiplication suffice, since a layout at `k` times a size is the layout at that size scaled by `k`,
-`design@rootpoint-math@layout-scales-exactly`; the rival, a layout at each size tried, would lay the
-formula out again on every frame of a divider's drag. The number `(n)` of
-`design@rootpoint-model@equation-one-number` is drawn once, at the area's right edge, in the
-built-in sans at the Body style's size, upright and regular, in the equation's colour, and does not
-scale; it is centred on the formula's axis when the formula has one row, and on its rows when it has
-several.
+`design@rootpoint-model@equation-fit`. `area_formula`, a public function of the crate, gives that
+layout, the point where its origin is drawn and the scale, as `render_slide` draws them. One layout
+and one multiplication suffice, since a layout at `k` times a size is the layout at that size scaled
+by `k`, `design@rootpoint-math@layout-scales-exactly`; the rival, a search over sizes, lays the
+formula out once for each size it tries, several times on every frame of a divider's drag where one
+suffices.
 
 ### A render is limited to 16384 pixels a side `##size-limit`
 

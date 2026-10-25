@@ -111,6 +111,6 @@ a text by one operation per command.
 ### A formula written as a quoted string in a command `##formula-in-quoted-string`
 
 `live`. A formula would be a text of the command grammar, `"\\frac{a}{b}"`, every backslash of its
-LaTeX written twice, since the quoted string reads `\` as the start of an escape; `"\frac{a}{b}"`
-is refused, `\f` being no escape of it. An agent copies LaTeX between `$` signs from a document or
-from Markdown as it is.
+LaTeX written twice, since the quoted string reads `\` as the start of an escape; `"\frac{a}{b}"` is
+refused, `\f` being no escape of it, and `"\neq"` reads as a newline then `eq`. An agent copies
+LaTeX between `$` signs from a document or from Markdown as it is.

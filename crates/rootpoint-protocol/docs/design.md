@@ -43,8 +43,10 @@ so and `tree` prints one so, and the printer quotes a path that starts with `$`,
 `design@rootpoint-math@math-storage-form` reads, written as an agent or a person writes LaTeX
 between `$` signs in a document or in Markdown. The nearest rival, a formula in a quoted string,
 `rejected@rootpoint-protocol@formula-in-quoted-string`, writes every backslash of the LaTeX twice,
-`"\\frac{a}{b}"`, where a single one is refused as an unknown escape of the quoted string. Whether
-agents write the literal well is watched by
+`"\\frac{a}{b}"`, where a single one starts an escape of the quoted string: `\frac` is refused,
+`\f` being no escape, and `\neq` reads as a newline then `eq`, with no error. It serves
+`goal@rootpoint-protocol@commands-drive-everything`, an agent writing each formula of a talk in its
+commands. Whether agents write the literal well is watched by
 `tripwire@rootpoint-protocol@formula-literal-written-badly`.
 
 ### A command names what the model stores by its stored id, never by a position `##protocol-addressing`

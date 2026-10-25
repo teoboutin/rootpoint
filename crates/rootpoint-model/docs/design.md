@@ -316,10 +316,10 @@ for a kind of node holding a numbered equation.
 ### An equation is numbered as a whole, whatever the rows of its formula `##equation-one-number`
 
 `Document::equation_numbers` gives an equation area one number, whatever the rows of its formula,
-`design@rootpoint-math@equation-rows`, and the renderer draws it once beside the formula,
-`design@rootpoint-render@equation-one-layout`. The nearest rival, a number per row, as LaTeX's
-`align` gives, makes a numbered thing smaller than an area, so a number, and anything that names
-one, would need a row's identity inside the formula.
+`design@rootpoint-math@equation-rows`, and the renderer draws it once beside the formula. The
+nearest rival, a number per row, as LaTeX's `align` gives,
+`rejected@rootpoint-model@number-per-row`, makes a numbered thing smaller than an area, so a number,
+and anything that names one, would need a row's identity inside the formula.
 
 ### An equation is numbered by its place in the order of the slides, then of each slide's tree `##equation-numbering`
 
@@ -331,29 +331,31 @@ renumbers nothing. The nearest rival, the order of the areas' places on the slid
 drag moves one area above another. The count runs over the whole presentation, as LyX's counter of
 equations runs over a whole document, defined with no `Within` in
 `path@elsewhere@lib/layouts/stdcounters.inc`, read in
-`path@rootpoint@docs/grounding/math-typesetting.md`.
+`path@rootpoint@docs/grounding/math-typesetting.md`. A new equation is numbered, since the owner
+asked for the kind as a numbered equation, where LyX's new display formula is unnumbered.
 
 ### An equation's options are its own, and unnamed `##equation-options`
 
 `EquationContent` holds `numbered`, `size` and `colour`, set per area; a new equation is in the Body
-style's colour, or black when the table has no Body, and sized by
-`design@rootpoint-model@equation-fit`. An equation names no style,
-`design@rootpoint-model@style-kinds`: a text style named by the equation,
+style's colour, or black when the table has no Body, numbered by
+`design@rootpoint-model@equation-numbering` and sized by `design@rootpoint-model@equation-fit`. An
+equation names no style, `design@rootpoint-model@style-kinds`: a text style named by the equation,
 `rejected@rootpoint-model@equation-named-style`, carries a font, a weight, a slant and an alignment
 that have no meaning for it, which `goal@rootpoint@minimal-content-set` rules out, and three options
-shared by name would save one click per area. On the owner's word: a new equation is numbered, since
-the owner asked for the kind as a numbered equation, where LyX's new display formula is unnumbered.
+shared by name would save one click per area.
 
 ### An equation is fitted to its area, or held at most at a size `##equation-fit`
 
 `EquationSize::Fit` sets the formula at the largest size at which it fits its area, and
 `EquationSize::AtMost(size)` at `size`, or at that largest size when `size` does not fit; the
 renderer draws both from one layout, `design@rootpoint-render@equation-one-layout`. `Fit` is the
-default of a new equation, which `tripwire@rootpoint-model@at-most-for-most-equations` watches. On
+default of a new equation, since the area then sizes the formula, and an author resizes an equation
+by a divider's drag with no option to set; its cost, two equations on adjacent slides drawn at
+different sizes, is watched by `tripwire@rootpoint-model@at-most-for-most-equations`. On
 the owner's word: the owner asked whether an equation could fit its area automatically, which would
 be convenient, and, offered fitting both ways or shrinking only, chose that both modes be offered,
-if both could be, over one mode alone. A third mode, a fixed size that overflows its area, would
-differ from `AtMost` only by overflowing.
+if both could be, over one mode alone. A third mode, a fixed size that overflows its area,
+`rejected@rootpoint-model@overflowing-size-mode`, would differ from `AtMost` only by overflowing.
 
 ### An unknown command of a formula is no breach of the document `##unknown-command-no-breach`
 
