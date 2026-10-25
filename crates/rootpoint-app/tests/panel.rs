@@ -223,11 +223,34 @@ fn the_side_panel_s_width_is_the_same_in_every_state_of_its_content() {
     }
     ok(&mut app, &format!("select {node}"));
     widths.push(("a tree 9 levels deep", width(&ctx, &mut app)));
+    // A text edited with the caret in a nested span: the ancestor row and the controls at the
+    // caret.
+    ok(&mut app, "select n26");
+    frame(&ctx, &mut app);
+    let layout = app.layout().unwrap().clone();
+    let at = layout.rect(rootpoint_model::NodeId(26)).unwrap().center();
+    app.edit_at(rootpoint_model::NodeId(26), at, &layout);
+    app.set_caret_pos(rootpoint_model::CaretPos {
+        node: rootpoint_model::TextNodeRef::Span(rootpoint_model::SpanId(32)),
+        offset: 1,
+    });
+    widths.push(("a text edited in a nested span", width(&ctx, &mut app)));
+    assert!(
+        app.button_rect("t32").is_some(),
+        "the ancestor row lists t32"
+    );
+    app.stop_editing();
     frame(&ctx, &mut app);
     click(&ctx, &mut app, "Styles");
     click(&ctx, &mut app, "style Subtitle");
     assert_eq!(app.selected_style(), Some("Subtitle"));
     widths.push(("the Styles tab, a style selected", width(&ctx, &mut app)));
+    click(&ctx, &mut app, "span style Key");
+    assert_eq!(app.selected_span_style(), Some("Key"));
+    widths.push((
+        "the Styles tab, a span style selected",
+        width(&ctx, &mut app),
+    ));
     // The Assets tab, an asset of a long path selected, its thumbnail drawn.
     ok(
         &mut app,
@@ -266,6 +289,25 @@ fn a_use_s_button_selects_its_node_and_shows_its_slide() {
         .unwrap()
         .id;
     assert_eq!(app.shown_slide(), Some(slide));
+}
+
+/// A span style's use of an asset is a button of the Assets tab that shows the Styles tab with
+/// the span style selected, as a style's use does.
+#[test]
+fn a_span_style_s_use_selects_it_in_the_styles_tab() {
+    let mut app = App::new(Box::new(MemoryFiles::default()));
+    let ctx = Context::default();
+    ok(&mut app, "sample");
+    ok(&mut app, "span-style set \"Key\" font=a19");
+    frame(&ctx, &mut app);
+    click(&ctx, &mut app, "Assets");
+    click(&ctx, &mut app, "asset a19");
+    click(&ctx, &mut app, "use span style Key");
+    assert_eq!(app.selected_span_style(), Some("Key"));
+    assert!(
+        app.button_rect("span style Key").is_some(),
+        "the Styles tab lists the span style"
+    );
 }
 
 /// A drag of an asset's row onto a folder's row moves the asset into that folder, by

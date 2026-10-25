@@ -398,10 +398,11 @@ impl App {
                             self.select_style(name);
                         }
                     }
-                    // The Styles tab lists no span style before the slice that adds them,
-                    // `spec@rich-text@span-styling`, so the use is named and leads nowhere.
                     AssetUse::SpanStyle(name) => {
-                        ui.label(format!("span style {name}"));
+                        if self.tab_button(ui, &format!("use span style {name}"), true) {
+                            self.show_tab(crate::SideTab::Styles);
+                            self.select_span_style(name);
+                        }
                     }
                 }
             }

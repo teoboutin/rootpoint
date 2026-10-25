@@ -1,14 +1,15 @@
 //! The panels around the slide view: the toolbar, the slide list, and the side panel, whose
 //! Selection tab holds the outline of the shown slide's tree, the actions on the selection and the
-//! selected area's content and style, and whose Styles tab edits the table of styles, with the
-//! dialog of a style's removal.
+//! selected area's content and style, or, while a text is edited, the ancestor row and the
+//! controls at the caret; and whose Styles tab edits the tables of styles and of span styles, with
+//! the dialog of a removal.
 
 use eframe::egui::{self, Align2, Color32, FontId, Sense, Stroke, Ui, Vec2};
 use rootpoint_model::{
     AssetId, Axis, Breach, Content, FontRef, HAlign, ImageFit, Node, NodeId, Rgba, SlideId,
-    StyleChoice, VAlign,
+    SpanChoice, SpanStyle, StyleChoice, VAlign,
 };
-use rootpoint_protocol::StyleOption;
+use rootpoint_protocol::{SpanField, SpanOption, StyleOption};
 
 use crate::hit::Edge;
 use crate::{App, OutlineRow, SideTab};
@@ -231,7 +232,10 @@ impl App {
         ui.separator();
         match self.tab {
             SideTab::Selection => self.selection_tab(ui),
-            SideTab::Styles => self.styles_tab(ui),
+            SideTab::Styles => {
+                self.styles_tab(ui);
+                self.span_styles_section(ui);
+            }
             SideTab::Assets => self.assets_tab(ui),
         }
     }
@@ -267,9 +271,104 @@ impl App {
         if ui.button("Remove").clicked() {
             self.remove_selection();
         }
-        if let Some(content) = self.selected_content().cloned() {
+        if self.editing().is_some() && self.editing() == self.selected_area() {
+            ui.separator();
+            self.editing_controls(ui);
+        } else if let Some(content) = self.selected_content().cloned() {
             ui.separator();
             self.content(ui, &content);
+        }
+    }
+
+    /// The Selection tab while a text is edited: the ancestor row, then the controls as style
+    /// actions at the caret or over the selection. The row lists the text, then each span that
+    /// holds the caret, outer first, with its style; a click on a span selects it whole, so the
+    /// controls show and change its style, and a click on the text leaves editing, where the
+    /// controls change the area's style. "Split here" cuts the caret's span. The controls send
+    /// their commands in the stay's group, and never change a named style, which only the Styles
+    /// tab changes, `design@rootpoint-app@styles-tab-edits-styles`.
+    fn editing_controls(&mut self, ui: &mut Ui) {
+        let Some(text) = self.edited_text() else {
+            return;
+        };
+        let spans = self.caret_spans();
+        let selected = self.selected_span();
+        ui.label("At the caret:");
+        let mut chosen_span = None;
+        let mut leave = false;
+        ui.horizontal_wrapped(|ui| {
+            leave = self.button(ui, "text", true);
+            for id in &spans {
+                let style = text
+                    .root
+                    .spans()
+                    .into_iter()
+                    .find(|s| s.id == *id)
+                    .map(|s| match &s.style {
+                        SpanChoice::Named(name) => name.clone(),
+                        SpanChoice::Custom(_) => "custom".to_owned(),
+                    })
+                    .unwrap_or_default();
+                ui.label("\u{203a}");
+                let label = format!("{id} {style}");
+                let on = selected == Some(*id);
+                let response = ui.selectable_label(on, &label);
+                self.view.buttons.push((id.to_string(), response.rect));
+                if response.clicked() {
+                    chosen_span = Some(*id);
+                }
+            }
+        });
+        if self.button(ui, "Split here", !spans.is_empty()) {
+            self.split_here();
+        }
+        if leave {
+            self.stop_editing();
+            return;
+        }
+        if let Some(span) = chosen_span {
+            self.select_span(span);
+        }
+        // The span style a whole selected span names, or custom; at the caret, none yet.
+        let choice = selected.and_then(|id| {
+            text.root
+                .spans()
+                .into_iter()
+                .find(|s| s.id == id)
+                .map(|s| s.style.clone())
+        });
+        let shown = match &choice {
+            Some(SpanChoice::Named(name)) => name.clone(),
+            Some(SpanChoice::Custom(_)) => "custom".to_owned(),
+            None => "\u{2014}".to_owned(),
+        };
+        let names = self.usable_span_styles();
+        let mut option = None;
+        egui::ComboBox::from_label("span style")
+            .selected_text(shown)
+            .show_ui(ui, |ui| {
+                for name in names {
+                    let on = choice == Some(SpanChoice::Named(name.clone()));
+                    if ui.selectable_label(on, &name).clicked() && !on {
+                        option = Some(StyleOption::Named(name));
+                    }
+                }
+                if let Some(SpanChoice::Named(_)) = choice
+                    && ui.selectable_label(false, "custom").clicked()
+                {
+                    option = Some(StyleOption::Custom);
+                }
+            });
+        let Some(mut values) = self.caret_values() else {
+            return;
+        };
+        let area = self.session.document().resolve_style(&text.style);
+        (values.h_align, values.v_align) = (area.h_align, area.v_align);
+        if let Some(changed) = self.style(ui, &values) {
+            option = Some(changed);
+        }
+        if let Some(option) = option {
+            self.edit_control(option);
         }
     }
 
@@ -571,16 +670,202 @@ impl App {
         });
     }
 
-    /// The dialog of the removal of a style that texts name: what they take instead, a custom
-    /// copy first, then each other style a text may name, since the command refuses any other,
-    /// `design@rootpoint-protocol@no-new-breach`. It is a choice the removal needs, not a
-    /// confirmation, `design@rootpoint-model@style-removal`.
+    /// The Styles tab's section of span styles, below the styles: each with the number of spans
+    /// that name it, a click selecting one, and the selected one's name and values, each of which
+    /// may be set or not, `<key>=inherit`; with New, Duplicate and Remove, they are the only
+    /// controls of the window that change the table of span styles,
+    /// `design@rootpoint-app@styles-tab-edits-styles`.
+    fn span_styles_section(&mut self, ui: &mut Ui) {
+        ui.separator();
+        ui.heading("Span styles");
+        let styles: Vec<(String, usize)> = self
+            .session
+            .document()
+            .span_styles
+            .keys()
+            .map(|name| (name.clone(), self.span_style_users(name)))
+            .collect();
+        if let Some(selected) = &self.styles_tab.selected_span
+            && !styles.iter().any(|(name, _)| name == selected)
+        {
+            self.styles_tab.selected_span = None;
+        }
+        for (name, users) in &styles {
+            let label = match users {
+                1 => format!("{name}   1 span"),
+                n => format!("{name}   {n} spans"),
+            };
+            let on = self.styles_tab.selected_span.as_ref() == Some(name);
+            let response = ui.selectable_label(on, label);
+            self.view
+                .buttons
+                .push((format!("span style {name}"), response.rect));
+            if response.clicked() {
+                self.select_span_style(name);
+            }
+        }
+        let editable = !self.socket_holds();
+        ui.horizontal_wrapped(|ui| {
+            if self.button(ui, "New span style", editable) {
+                self.add_span_style();
+            }
+            let any = self.styles_tab.selected_span.is_some();
+            if self.button(ui, "Duplicate span style", editable && any) {
+                self.duplicate_span_style();
+            }
+            if self.button(ui, "Remove span style", editable && any) {
+                self.remove_span_style();
+            }
+        });
+        let Some(name) = self.styles_tab.selected_span.clone() else {
+            return;
+        };
+        let Some(values) = self.session.document().span_styles.get(&name).cloned() else {
+            return;
+        };
+        ui.add_enabled_ui(editable, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("name");
+                let mut text = self
+                    .styles_tab
+                    .span_name_edit
+                    .clone()
+                    .unwrap_or_else(|| name.clone());
+                let response = ui.add(egui::TextEdit::singleline(&mut text).desired_width(140.0));
+                if response.changed() {
+                    self.styles_tab.span_name_edit = Some(text.clone());
+                }
+                // Sent once, as a style's rename is, so that typing a name is one undo step.
+                if response.lost_focus() {
+                    self.styles_tab.span_name_edit = None;
+                    self.rename_span_style(text);
+                }
+            });
+            if let Some(option) = self.span_style_values(ui, &values) {
+                self.set_selected_span_style(option);
+            }
+        });
+    }
+
+    /// The values of a span style, each set or not: a choice "\u{2014}" sets none, so a span
+    /// naming the style draws with its parent's value there. Each control returns the one option
+    /// it changes, which its caller sends.
+    fn span_style_values(&mut self, ui: &mut Ui, style: &SpanStyle) -> Option<SpanOption> {
+        const UNSET: &str = "\u{2014}";
+        let mut chosen = None;
+        ui.horizontal_wrapped(|ui| {
+            egui::ComboBox::from_label("span size")
+                .selected_text(style.size.map_or(UNSET.to_owned(), |s| format!("{s}")))
+                .show_ui(ui, |ui| {
+                    if ui.selectable_label(style.size.is_none(), UNSET).clicked() {
+                        chosen = Some(SpanOption::Inherit(SpanField::Size));
+                    }
+                    for size in SIZES {
+                        if ui
+                            .selectable_label(style.size == Some(size), format!("{size}"))
+                            .clicked()
+                        {
+                            chosen = Some(SpanOption::Size(size));
+                        }
+                    }
+                });
+            for (field, value, label) in [
+                (SpanField::Bold, style.bold, "bold"),
+                (SpanField::Italic, style.italic, "italic"),
+            ] {
+                let text = match value {
+                    None => UNSET,
+                    Some(true) => "yes",
+                    Some(false) => "no",
+                };
+                egui::ComboBox::from_label(label)
+                    .selected_text(text)
+                    .show_ui(ui, |ui| {
+                        for (v, t) in [(None, UNSET), (Some(true), "yes"), (Some(false), "no")] {
+                            if ui.selectable_label(value == v, t).clicked() && value != v {
+                                chosen = Some(match (field, v) {
+                                    (f, None) => SpanOption::Inherit(f),
+                                    (SpanField::Bold, Some(on)) => SpanOption::Bold(on),
+                                    (_, Some(on)) => SpanOption::Italic(on),
+                                });
+                            }
+                        }
+                    });
+            }
+        });
+        ui.horizontal_wrapped(|ui| {
+            if ui.selectable_label(style.colour.is_none(), UNSET).clicked() {
+                chosen = Some(SpanOption::Inherit(SpanField::Colour));
+            }
+            for (r, g, b) in COLOURS {
+                let colour = Rgba { r, g, b, a: 255 };
+                let (rect, response) = ui.allocate_exact_size(Vec2::splat(18.0), Sense::click());
+                ui.painter()
+                    .rect_filled(rect, 2.0, Color32::from_rgb(r, g, b));
+                if style.colour == Some(colour) {
+                    ui.painter().rect_stroke(
+                        rect,
+                        2.0,
+                        Stroke::new(2.0, ui.visuals().selection.stroke.color),
+                        egui::StrokeKind::Outside,
+                    );
+                }
+                if response.clicked() {
+                    chosen = Some(SpanOption::Colour(colour));
+                }
+            }
+        });
+        let fonts = self.font_assets();
+        if !fonts.is_empty() {
+            let current = match &style.font {
+                None => UNSET.to_owned(),
+                Some(FontRef::Asset(id)) => id.to_string(),
+                Some(FontRef::Builtin(name)) => name.clone(),
+            };
+            egui::ComboBox::from_label("span font")
+                .selected_text(current)
+                .show_ui(ui, |ui| {
+                    if ui.selectable_label(style.font.is_none(), UNSET).clicked() {
+                        chosen = Some(SpanOption::Inherit(SpanField::Font));
+                    }
+                    let sans = matches!(style.font, Some(FontRef::Builtin(_)));
+                    if ui.selectable_label(sans, "sans").clicked() {
+                        chosen = Some(SpanOption::Font(None));
+                    }
+                    for (id, name) in fonts {
+                        let on = style.font == Some(FontRef::Asset(id));
+                        if ui.selectable_label(on, format!("{id} {name}")).clicked() {
+                            chosen = Some(SpanOption::Font(Some(id)));
+                        }
+                    }
+                });
+        }
+        chosen
+    }
+
+    /// The dialog of the removal of a style that texts name, or of a span style that spans name:
+    /// what they take instead, a custom copy first, then each other style of its table they may
+    /// name, since the command refuses any other, `design@rootpoint-protocol@no-new-breach`. It is
+    /// a choice the removal needs, not a confirmation, `design@rootpoint-model@style-removal`.
     pub(crate) fn removal_dialog(&mut self, ctx: &egui::Context) {
         let Some(removal) = self.styles_tab.removal.clone() else {
             return;
         };
-        let others = self.replacements(&removal.name);
-        let users = self.style_users(&removal.name);
+        let (others, users, unit) = if removal.span {
+            let n = self.span_style_users(&removal.name);
+            (
+                self.span_replacements(&removal.name),
+                n,
+                if n == 1 { "span" } else { "spans" },
+            )
+        } else {
+            let n = self.style_users(&removal.name);
+            (
+                self.replacements(&removal.name),
+                n,
+                if n == 1 { "area" } else { "areas" },
+            )
+        };
         let mut choice = None;
         let mut confirm = false;
         let mut cancel = false;
@@ -590,9 +875,8 @@ impl App {
             .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
             .show(ctx, |ui| {
                 ui.label(format!(
-                    "Remove \"{}\", used by {users} {}?",
-                    removal.name,
-                    if users == 1 { "area" } else { "areas" }
+                    "Remove \"{}\", used by {users} {unit}?",
+                    removal.name
                 ));
                 if ui.radio(removal.into.is_none(), "a custom copy").clicked() {
                     choice = Some(None);

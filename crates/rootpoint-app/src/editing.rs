@@ -508,16 +508,36 @@ impl App {
     pub fn caret_values(&self) -> Option<TextStyle> {
         let edit = self.edit.as_ref()?;
         let content = self.edited_text()?;
-        let node = match edit.selected(&content) {
-            Some((node, r)) if r.len() == 1 => match items(text_node(&content, node)?).get(r.start)
-            {
-                Some(Item::Span(s)) => TextNodeRef::Span(s.id),
-                _ => node,
-            },
-            Some((node, _)) => node,
-            None => edit.caret.node,
+        let node = match (self.selected_span(), edit.selected(&content)) {
+            (Some(span), _) => TextNodeRef::Span(span),
+            (None, Some((node, _))) => node,
+            (None, None) => edit.caret.node,
         };
         Some(node_values(self.session.document(), &content, node))
+    }
+
+    /// The spans that hold the caret, outer first, as the ancestor row lists them after the text.
+    pub fn caret_spans(&self) -> Vec<SpanId> {
+        let (Some(edit), Some(content)) = (self.edit.as_ref(), self.edited_text()) else {
+            return Vec::new();
+        };
+        let mut spans = spans_holding(&content, edit.focus(&content));
+        spans.reverse();
+        spans
+    }
+
+    /// The span the selection is the whole of, if it is one span.
+    pub fn selected_span(&self) -> Option<SpanId> {
+        let edit = self.edit.as_ref()?;
+        let content = self.edited_text()?;
+        let (node, r) = edit.selected(&content)?;
+        if r.len() != 1 {
+            return None;
+        }
+        match items(text_node(&content, node)?).get(r.start)? {
+            Item::Span(s) => Some(s.id),
+            Item::Char(_) => None,
+        }
     }
 
     /// The frames of the spans that hold the caret, inner first, each its span's lines in the

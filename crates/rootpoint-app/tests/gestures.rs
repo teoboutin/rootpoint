@@ -1024,3 +1024,88 @@ fn the_two_positions_at_an_edge_show_different_marks() {
         }
     }
 }
+
+/// While a text is edited, the Selection tab's controls act at the caret and keep the stay: the
+/// bold checkbox opens a bold span there; a span of the ancestor row is selected whole by a click,
+/// and "Split here" cuts the caret's span; a click on the row's text leaves editing, the area
+/// still selected. The stay is one undo step.
+#[test]
+fn the_selection_tab_acts_at_the_caret_while_editing() {
+    use rootpoint_model::{CaretPos, Content, TextNodeRef};
+    let mut d = Driver::new();
+    let area = NodeId(26);
+    d.app.show_slide(rootpoint_model::SlideId(24));
+    d.frame(vec![], Modifiers::NONE);
+    d.app.select_node(area);
+    d.frame(vec![], Modifiers::NONE);
+    let before = d.doc();
+    let layout = d.app.layout().unwrap().clone();
+    d.app
+        .edit_at(area, layout.rect(area).unwrap().center(), &layout);
+    let spans = |d: &Driver| match d.doc().node(area).cloned() {
+        Some(Node::Area(a)) => match a.content {
+            Content::Text(t) => t
+                .root
+                .spans()
+                .iter()
+                .map(|s| (s.id, s.style.clone()))
+                .collect::<Vec<_>>(),
+            _ => panic!("n26 holds a text"),
+        },
+        _ => panic!("n26 is an area"),
+    };
+    let count = spans(&d).len();
+    d.app.set_caret_pos(CaretPos {
+        node: TextNodeRef::Root,
+        offset: 0,
+    });
+    d.frame(vec![], Modifiers::NONE);
+    d.click(
+        d.app
+            .button_rect("bold")
+            .expect("the bold checkbox")
+            .center(),
+    );
+    assert_eq!(d.app.editing(), Some(area), "the control ended the stay");
+    assert_eq!(spans(&d).len(), count + 1, "no span opened at the caret");
+    let caret = d.app.caret().unwrap();
+    assert_ne!(
+        caret.node,
+        TextNodeRef::Root,
+        "the caret is not in the new span"
+    );
+    // The row lists the caret's span; a click selects it whole, once it holds a letter, since an
+    // empty span the caret leaves is unwrapped.
+    d.frame(vec![Event::Text("X".into())], Modifiers::NONE);
+    let TextNodeRef::Span(new) = caret.node else {
+        unreachable!()
+    };
+    d.frame(vec![], Modifiers::NONE);
+    d.click(
+        d.app
+            .button_rect(&new.to_string())
+            .expect("the row lists the span")
+            .center(),
+    );
+    assert_eq!(d.app.selected_span(), Some(new));
+    // In the bold span t28, "Split here" cuts it at the caret.
+    let t28 = rootpoint_model::SpanId(28);
+    d.app.set_caret_pos(CaretPos {
+        node: TextNodeRef::Span(t28),
+        offset: 2,
+    });
+    d.frame(vec![], Modifiers::NONE);
+    let count = spans(&d).len();
+    d.click(d.app.button_rect("Split here").unwrap().center());
+    assert_eq!(spans(&d).len(), count + 1, "the span was not cut");
+    assert_eq!(d.app.editing(), Some(area));
+    d.frame(vec![], Modifiers::NONE);
+    d.click(d.app.button_rect("text").unwrap().center());
+    assert_eq!(d.app.editing(), None);
+    assert_eq!(d.selected(), Some(area));
+    assert!(matches!(d.app.run(Command::Undo), Reply::Ok(_)));
+    assert!(
+        d.doc().same_content(&before),
+        "the stay is more than one undo step"
+    );
+}

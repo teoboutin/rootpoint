@@ -144,21 +144,25 @@ pub enum SideTab {
     Assets,
 }
 
-/// The state of the Styles tab: the style selected in its list, the name field's text while it is
-/// edited, and the dialog of a removal, if open. It is the window's own state, a widget's, which no
-/// command sets.
+/// The state of the Styles tab: the style and the span style selected in its lists, the name
+/// fields' text while one is edited, and the dialog of a removal, if open. It is the window's own
+/// state, a widget's, which no command sets.
 #[derive(Clone, Debug, Default, PartialEq)]
 struct StylesTab {
     selected: Option<String>,
     name_edit: Option<String>,
+    selected_span: Option<String>,
+    span_name_edit: Option<String>,
     removal: Option<Removal>,
 }
 
-/// The dialog of the removal of a style that texts name: the style, and the replacement chosen,
-/// another style, or `None` for a custom copy.
+/// The dialog of the removal of a style that texts name, or of a span style that spans name: the
+/// style, whether it is a span style, and the replacement chosen, another style of its table, or
+/// `None` for a custom copy.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Removal {
     pub name: String,
+    pub span: bool,
     pub into: Option<String>,
 }
 
@@ -370,6 +374,20 @@ impl App {
             self.styles_tab.name_edit = None;
         }
         self.styles_tab.selected = Some(name.to_owned());
+    }
+
+    /// The span style selected in the Styles tab's list of span styles.
+    pub fn selected_span_style(&self) -> Option<&str> {
+        self.styles_tab.selected_span.as_deref()
+    }
+
+    /// Select a span style in the Styles tab's list, the window's own state, as
+    /// [`App::select_style`] selects a style.
+    pub fn select_span_style(&mut self, name: &str) {
+        if self.styles_tab.selected_span.as_deref() != Some(name) {
+            self.styles_tab.span_name_edit = None;
+        }
+        self.styles_tab.selected_span = Some(name.to_owned());
     }
 
     /// The dialog of a style's removal, while it is open.

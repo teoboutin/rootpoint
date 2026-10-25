@@ -21,7 +21,7 @@ use rootpoint_model::{
     AssetId, Axis, CaretPos, Content, ImageFit, Node, NodeId, Side, SlideId, SpanId, TextNodeRef,
 };
 use rootpoint_protocol::{
-    Command, Files, Reply, Session, StyleCommand, StyleOption, parse_command,
+    Command, Files, Reply, Session, SpanField, SpanOption, StyleCommand, StyleOption, parse_command,
 };
 
 /// Files held in memory, by path, shared so that the test reads what a save wrote.
@@ -537,6 +537,79 @@ fn the_style_actions_issue_their_commands() {
             a.confirm_removal();
         },
         |_| vec![c("style remove \"Body\" into=custom")],
+    );
+}
+
+/// The span style actions of the Styles tab, on the sample's span style "Key", which the span
+/// `t30` names.
+#[test]
+fn the_span_style_table_actions_issue_their_commands() {
+    check("add a span style", &[], App::add_span_style, |_| {
+        vec![c("span-style add \"Span style 1\"")]
+    });
+    check(
+        "duplicate a span style",
+        &[],
+        |a| {
+            a.select_span_style("Key");
+            a.duplicate_span_style();
+        },
+        |_| vec![c("span-style add \"Span style 1\" bold colour=#2a9d8f")],
+    );
+    check(
+        "rename a span style a span names",
+        &[],
+        |a| {
+            a.select_span_style("Key");
+            a.rename_span_style("Shortcut".to_owned());
+        },
+        |_| vec![c("span-style rename \"Key\" \"Shortcut\"")],
+    );
+    check(
+        "set a value of a span style, and set none",
+        &[],
+        |a| {
+            a.select_span_style("Key");
+            a.set_selected_span_style(SpanOption::Size(64.0));
+            a.set_selected_span_style(SpanOption::Inherit(SpanField::Bold));
+        },
+        |_| {
+            vec![
+                c("span-style set \"Key\" size=64"),
+                c("span-style set \"Key\" bold=inherit"),
+            ]
+        },
+    );
+    check(
+        "remove a span style no span names",
+        &["span-style add \"Term\" italic"],
+        |a| {
+            a.select_span_style("Term");
+            a.remove_span_style();
+        },
+        |_| vec![c("span-style remove \"Term\"")],
+    );
+    check(
+        "remove a span style a span names, into another",
+        &["span-style add \"Term\" italic"],
+        |a| {
+            a.select_span_style("Key");
+            a.remove_span_style();
+            assert!(a.removal().is_some_and(|r| r.span), "the dialog opens");
+            a.choose_replacement(Some("Term".to_owned()));
+            a.confirm_removal();
+        },
+        |_| vec![c("span-style remove \"Key\" into=\"Term\"")],
+    );
+    check(
+        "remove a span style a span names, into a custom copy",
+        &[],
+        |a| {
+            a.select_span_style("Key");
+            a.remove_span_style();
+            a.confirm_removal();
+        },
+        |_| vec![c("span-style remove \"Key\" into=custom")],
     );
 }
 

@@ -9,8 +9,10 @@ use eframe::egui::Pos2;
 use parley::{Affinity, Selection};
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, SlideId, node_rects};
 use rootpoint_model::{CaretPos, SpanId, TextNodeRef};
-use rootpoint_model::{Content as C, Replacement, StyleChoice, TextContent};
-use rootpoint_protocol::{Command, Reply, SpanOption, StyleCommand, StyleOption, TextTarget};
+use rootpoint_model::{Content as C, FontRef, Replacement, StyleChoice, TextContent};
+use rootpoint_protocol::{
+    Command, Reply, SpanOption, SpanStyleCommand, StyleCommand, StyleOption, TextTarget,
+};
 
 use crate::editing::{
     CaretMove, Editing, Item, empty_spans, from_byte, items, items_len, layout_point, left, parent,
@@ -543,7 +545,11 @@ impl App {
                 self.styles_tab.selected = None;
             }
         } else {
-            self.styles_tab.removal = Some(Removal { name, into: None });
+            self.styles_tab.removal = Some(Removal {
+                name,
+                span: false,
+                into: None,
+            });
         }
     }
 
@@ -555,7 +561,7 @@ impl App {
         }
     }
 
-    /// Remove the style of the open dialog, with the replacement chosen.
+    /// Remove the style or the span style of the open dialog, with the replacement chosen.
     pub fn confirm_removal(&mut self) {
         if self.socket_holds() {
             return;
@@ -568,10 +574,14 @@ impl App {
             Some(other) => Replacement::Named(other),
             None => Replacement::Custom,
         });
-        if let Reply::Ok(_) = self.run(Command::Style(StyleCommand::Remove {
-            name: removal.name,
-            into,
-        })) {
+        let name = removal.name;
+        if removal.span {
+            if let Reply::Ok(_) =
+                self.run(Command::SpanStyle(SpanStyleCommand::Remove { name, into }))
+            {
+                self.styles_tab.selected_span = None;
+            }
+        } else if let Reply::Ok(_) = self.run(Command::Style(StyleCommand::Remove { name, into })) {
             self.styles_tab.selected = None;
         }
     }
@@ -586,6 +596,138 @@ impl App {
             .filter(|(other, style)| *other != name && doc.draws_as_asked(style))
             .map(|(other, _)| other.clone())
             .collect()
+    }
+
+    /// The span styles a span may name: those whose font draws with no stand-in, the built-in
+    /// sans or an asset of the table, since a command naming another is refused,
+    /// `design@rootpoint-protocol@no-new-breach`.
+    pub fn usable_span_styles(&self) -> Vec<String> {
+        let doc = self.session.document();
+        doc.span_styles
+            .iter()
+            .filter(|(_, style)| match &style.font {
+                None => true,
+                Some(FontRef::Asset(id)) => doc.assets.contains_key(id),
+                Some(FontRef::Builtin(family)) => family == "sans",
+            })
+            .map(|(name, _)| name.clone())
+            .collect()
+    }
+
+    /// The span styles the spans naming `name` may take instead, when it is removed.
+    pub fn span_replacements(&self, name: &str) -> Vec<String> {
+        self.usable_span_styles()
+            .into_iter()
+            .filter(|other| other != name)
+            .collect()
+    }
+
+    /// How many spans, over every slide, name the span style `name`.
+    pub(crate) fn span_style_users(&self, name: &str) -> usize {
+        rootpoint_model::span_style_users(self.session.document(), name).len()
+    }
+
+    /// The first name of the series "Span style 1", "Span style 2", … that the table does not hold.
+    fn free_span_style_name(&self) -> String {
+        let styles = &self.session.document().span_styles;
+        (1..)
+            .map(|n| format!("Span style {n}"))
+            .find(|name| !styles.contains_key(name))
+            .expect("a table holds finitely many span styles")
+    }
+
+    /// Add a span style that sets no value, under a free name, and select it in the Styles tab.
+    pub fn add_span_style(&mut self) {
+        self.add_span_style_with(Vec::new());
+    }
+
+    /// Add a copy of the span style selected in the Styles tab, under a free name, and select it.
+    pub fn duplicate_span_style(&mut self) {
+        let Some(values) = self
+            .styles_tab
+            .selected_span
+            .as_ref()
+            .and_then(|name| self.session.document().span_styles.get(name))
+        else {
+            return;
+        };
+        let options = SpanOption::values_of(values);
+        self.add_span_style_with(options);
+    }
+
+    fn add_span_style_with(&mut self, options: Vec<SpanOption>) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        let name = self.free_span_style_name();
+        if let Reply::Ok(_) = self.run(Command::SpanStyle(SpanStyleCommand::Add {
+            name: name.clone(),
+            options,
+        })) {
+            self.select_span_style(&name);
+        }
+    }
+
+    /// Rename the span style selected in the Styles tab, and keep it selected.
+    pub fn rename_span_style(&mut self, to: String) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        let Some(from) = self.styles_tab.selected_span.clone() else {
+            return;
+        };
+        if to.is_empty() || to == from {
+            return;
+        }
+        if let Reply::Ok(_) = self.run(Command::SpanStyle(SpanStyleCommand::Rename {
+            from,
+            to: to.clone(),
+        })) {
+            self.select_span_style(&to);
+        }
+    }
+
+    /// Change one value of the span style selected in the Styles tab, or set none of it with
+    /// `<key>=inherit`; every span naming it then draws with it.
+    pub fn set_selected_span_style(&mut self, option: SpanOption) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        if let Some(name) = self.styles_tab.selected_span.clone() {
+            self.run(Command::SpanStyle(SpanStyleCommand::Set {
+                name,
+                options: vec![option],
+            }));
+        }
+    }
+
+    /// Remove the span style selected in the Styles tab: at once when no span names it, and
+    /// otherwise by the dialog that asks what its spans take instead, a custom copy first.
+    pub fn remove_span_style(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        let Some(name) = self.styles_tab.selected_span.clone() else {
+            return;
+        };
+        if self.span_style_users(&name) == 0 {
+            if let Reply::Ok(_) = self.run(Command::SpanStyle(SpanStyleCommand::Remove {
+                name,
+                into: None,
+            })) {
+                self.styles_tab.selected_span = None;
+            }
+        } else {
+            self.styles_tab.removal = Some(Removal {
+                name,
+                span: true,
+                into: None,
+            });
+        }
     }
 
     /// Close the dialog of a removal, removing nothing.
