@@ -145,7 +145,7 @@ pub fn generate(
         table.insert(name.to_owned(), code);
     }
     // The commands of a character the font lacks are read, and drawn as the font's missing glyph,
-    // but the table the palette lists holds none of them.
+    // apart from the table that `commands` lists, which holds none of them.
     let (present, absent): (BTreeMap<String, u32>, BTreeMap<String, u32>) =
         table.into_iter().partition(|(_, code)| has(*code));
     classes.retain(|code, _| has(*code) || absent.values().any(|c| c == code));

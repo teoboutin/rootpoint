@@ -127,8 +127,8 @@ its scripts to 60 and 50 per cent, has no math kerning and one weight, as measur
 ### No fallback math font is built in: a character the math font lacks is drawn as its missing glyph `##no-fallback-math-font`
 
 A formula holding a character Libertinus Math has no glyph for draws the font's glyph 0, and
-`draw_formula` returns it to its caller, as a text's missing glyph is returned. Such a
-command is read as its character, `design@rootpoint-math@absent-commands-read`. The rival, a second math font for those
+`draw_formula` returns it to its caller, as a text's missing glyph is returned. A command of
+such a character is read as that character, `design@rootpoint-math@absent-commands-read`. The rival, a second math font for those
 characters alone, is `rejected@rootpoint-render@stix-math-fallback`; the owner judged the absence of
 the 44 commands not much of a problem, by `design@rootpoint-render@builtin-libertinus-math`.
 Whether a real talk needs one of them is watched by

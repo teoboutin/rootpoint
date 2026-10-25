@@ -195,7 +195,12 @@ fn atom(depth: u32) -> BoxedStrategy<Atom> {
         )
             .prop_map(|(font, body)| Atom::FontChange { font, body }),
         1 => (
-            prop::sample::select(vec![Environment::Matrix, Environment::PMatrix, Environment::Cases]),
+            prop::sample::select(vec![
+                Environment::Matrix,
+                Environment::PMatrix,
+                Environment::BMatrix,
+                Environment::Cases
+            ]),
             prop::collection::vec(prop::collection::vec(l(), 1..3), 1..3)
         )
             .prop_map(|(env, rows)| Atom::Matrix { env, rows }),

@@ -646,7 +646,9 @@ round 2: "math-editing-model agreed". Harvested into the app's design home, at #
 Raised by the owner in round 2, #arg-34; proposed by the session in round 2, #arg-41. Its shape
 approved in round 3: "latex-command-set agreed on shape". The source of its table, W3C `unicode.xml`,
 closed on its argument in round 4, after the owner's choice of licence, #arg-61; LyX's
-autocorrection left out, #arg-62. Harvested into the math crate's design home, at #math-layout.
+autocorrection left out, #arg-62. Harvested into the math crate's design home at #math-layout, but
+for the table's limit to the font's characters, whose reason, a palette that offers no command the
+font draws as a box, #arg-68, is harvested with the palette, at #math-editing.
 
 ### While a formula is edited, the Selection tab shows a palette of symbols and structures `##math-symbol-palette`
 

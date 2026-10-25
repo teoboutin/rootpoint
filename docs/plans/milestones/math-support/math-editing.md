@@ -107,5 +107,8 @@ The fifth and last slice of `milestone@plans@math-support`. It lands
   `design@rootpoint-app@editor-overlay` and `design@rootpoint-app@editor-keys-kept-from-browser` for
   their new members; `design@rootpoint-model@no-empty-kind`, whose sentence that the editor has one
   kind to enter for typing stops being true.
+- Into `register@rootpoint-math@design`: a head for the limit of `commands` to the characters the
+  math font has, its reason the palette that lists it, #arg-68, which #math-layout built and left
+  to this slice's harvest.
 - T3, into the app's tripwires home, guarding the head of #math-keys.
 - Report on AC3 and AC6.

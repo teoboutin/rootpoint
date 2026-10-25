@@ -44,18 +44,19 @@ relations of a derivation under one another.
 
 On the owner's word: the owner's talks need aligned rows often.
 
-### A matrix is an atom of its own, holding a grid and an environment of amsmath `##matrix-atom`
+### A matrix is an atom of its own, in the matrix, pmatrix, bmatrix and cases environments `##matrix-atom`
 
 `Atom::Matrix` holds a grid of cells and its environment, written `\begin{…}…\end{…}`, which sets
-its delimiters. Its cells are in text style, as LaTeX's arrays set them, and it is centred on the
-axis. A matrix stands inside a formula, between other atoms, so it is an atom with a grid of its
-own: the rival, the formula's own grid, holds the formula's rows and cannot stand inside
-parentheses beside `R(\theta) =`. The environments read today are matrix, pmatrix, bmatrix and
-cases: no delimiter, parentheses, brackets, or a brace on the left. amsmath's Bmatrix, vmatrix,
-Vmatrix and smallmatrix are not read yet, and an environment not read does not parse, since its
-delimiters and its alignment are unknown.
+its delimiters: none, parentheses, brackets, or a brace on the left. Its cells are in text style,
+as LaTeX's arrays set them, and it is centred on the axis. A matrix stands inside a formula, between
+other atoms, so it is an atom with a grid of its own: the rival, the formula's own grid, holds the
+formula's rows and cannot stand inside parentheses beside `R(\theta) =`. The four environments set
+a matrix or a case analysis with no specification of their columns; the rival, LaTeX's `array`,
+would add the grammar of a column specification. An environment outside the four does not parse,
+since its delimiters and its alignment are unknown.
 
-On the owner's word: the owner's talks need matrices occasionally.
+On the owner's word: the owner's talks need matrices occasionally, and the owner thinks matrix,
+pmatrix and cases cover them.
 
 ## Layout
 
@@ -152,3 +153,11 @@ characters whose class `path@elsewhere@base/fontdef.dtx` declares otherwise: `.`
 character, so a formula is spaced as a reader of TeX expects, `goal@rootpoint-math@tex-quality`.
 The rival, the type alone, types `.` a punctuation, so `3.14` would take a thin space after its
 point, and `-` an ordinary character, so `a - b` would be set as `a-b`.
+
+### `-` and `*` are drawn as the minus sign and the asterisk operator `##latex-ascii-glyphs`
+
+A `-` of a formula is drawn as − U+2212 and a `*` as ∗ U+2217, which `drawn` of
+`path@rootpoint-math@src/table.rs` gives, as LaTeX's `path@elsewhere@base/fontdef.dtx` takes them
+from its symbols font, so `a - b` shows a minus, as a reader of TeX expects,
+`goal@rootpoint-math@tex-quality`. The rival, the hyphen and the asterisk of the text, draws a
+minus shorter than the plus beside it, and an asterisk raised as a footnote mark.
