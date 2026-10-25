@@ -9,7 +9,8 @@ fn parse(text: &str) -> Formula {
     Formula::parse(text).unwrap_or_else(|e| panic!("{text}: {e}"))
 }
 
-/// The reference formulas of the slice #math-layout, which AC1 and AC2 lay out.
+/// The reference formulas of the milestone of math, as `REFERENCE` of
+/// `path@rootpoint-math@tests/layout.rs` holds them.
 pub const REFERENCE: [&str; 5] = [
     r"\frac{\partial f_i}{\partial t} + \mathbf{c}_i \cdot \nabla_{\mathbf{x}} f_i = \Omega(f_i)",
     r"\int_{-\infty}^{\infty} P_n(x)\,\bar{\omega}(x)\,\mathrm{d}x = \sum_{i=1}^{N} w_i P_n(x_i)",

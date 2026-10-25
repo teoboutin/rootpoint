@@ -41,6 +41,18 @@ counted in `path@rootpoint@docs/grounding/math-typesetting.md`, section 2.
 
 ### Names taken from unicode-math's column first, else from `<latex>` `##unicode-math-names-first`
 
-`live`. Read in `unicode.xml` at efed20d: that rule names α `\mupalpha` and ≤ `\leq` alone, so
-`\alpha`, `\le` and `\dots` would be unknown commands, and the `<latex>` column names ε
-`\epsilon`, where TeX's `\epsilon` is ϵ, as the `<AMS>` column gives it.
+`live`. Read in `unicode.xml` at efed20d: that rule names α `\mupalpha`, ε `\mupvarepsilon`, ≤
+`\leq` alone and … `\unicodeellipsis`, so `\alpha`, `\epsilon`, `\le` and `\dots` would be unknown
+commands.
+
+### The LaTeX string as the model of a formula, edited as source `##latex-string-model`
+
+`live`. `Formula` is a public type the renderer lays out; a string in its place makes LaTeX the way
+to write math in the window, which `goal@rootpoint@no-language-no-build` rules out, and gives an
+editor no cell to place a caret in.
+
+### A formula's tree written out in the file, as atoms of RON `##written-out-tree`
+
+`live`. It would replace the text grammar of `parse` and `to_latex`, and it is about ten times
+longer than LaTeX for `\frac{a}{b}`, a text nobody writes by hand, against
+`goal@rootpoint-math@latex-text`.

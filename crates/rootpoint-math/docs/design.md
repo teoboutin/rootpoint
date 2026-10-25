@@ -12,7 +12,7 @@ rootpoint-math is for is in `register@rootpoint-math@goal`.
 fraction, holds lists of its own. An editor changes a formula cell by cell, and a layout gives each
 atom and each cell its box, `goal@rootpoint-math@editable-in-place`. The rival, the LaTeX string as
 the model, edited as source, makes LaTeX the way to write math in the window, which
-`goal@rootpoint@no-language-no-build` rules out.
+`goal@rootpoint@no-language-no-build` rules out, `rejected@rootpoint-math@latex-string-model`.
 
 ### A formula's text is a closed subset of LaTeX `##math-storage-form`
 
@@ -31,7 +31,8 @@ and `draw_formula` returns it to its caller, as it returns a missing glyph, so i
 formula.
 
 A person and an agent already read and write LaTeX, `goal@rootpoint-math@latex-text`, where a tree
-of atoms written out, the rival, is about ten times longer for `\frac{a}{b}` and written by nobody.
+of atoms written out, the rival, `rejected@rootpoint-math@written-out-tree`, is about ten times
+longer for `\frac{a}{b}` and written by nobody.
 
 ### A formula's rows are aligned at `&`, right then left in turn, as amsmath's `align` sets them `##equation-rows`
 
@@ -47,8 +48,12 @@ On the owner's word: the owner's talks need aligned rows often.
 
 `Atom::Matrix` holds a grid of cells and its environment, written `\begin{…}…\end{…}`, which sets
 its delimiters: none, parentheses, brackets, or a brace on the left. Its cells are in text style,
-as LaTeX's arrays set them, and it is centred on the axis. An unknown environment does not parse,
-since its delimiters and alignment are unknown.
+as LaTeX's arrays set them, and it is centred on the axis. A matrix stands inside a formula, between
+other atoms, so it is an atom with a grid of its own: the rival, the formula's own grid, holds the
+formula's rows and cannot stand inside parentheses beside `R(\theta) =`. The four environments are
+amsmath's for a matrix and a case analysis, which need no specification of their columns; the
+rival, LaTeX's `array`, would add the grammar of a column specification, and an unknown environment
+does not parse, since its delimiters and its alignment are unknown.
 
 On the owner's word: the owner's talks need matrices occasionally.
 
@@ -104,8 +109,7 @@ display, so it is not `rejected@rootpoint-app@reserved-frame-space`, which reser
 editor alone and made the displays differ; a formula with no empty cell, as a finished one, takes
 no such space.
 
-On the owner's word: the owner believes the placeholder is needed, and that an unfinished formula
-is not expected in a real talk.
+On the owner's word: an unfinished formula is not expected in a real talk.
 
 ## The table of commands
 
@@ -119,17 +123,18 @@ under MIT OR Apache-2.0, `design@rootpoint@permissive-licence`, which rules out 
 the GPL. Its rivals are `rejected@rootpoint-math@unicode-math-table` and
 `rejected@rootpoint-math@katex-table`.
 
-### The commands an author picks from are those whose character the math font has `##commands-of-the-font`
+### The commands of the characters the math font lacks are read, kept apart from those it has `##commands-of-the-font`
 
-`commands` lists only the commands of the characters the font has, so a command an author picks or
-types from it is never drawn as missing. The generator writes the commands of the characters the
-font lacks apart, and `command` reads both, so a formula holding one, as a hand-written `\Game`,
-reads it as its character, drawn as the font's missing glyph,
-`design@rootpoint-render@no-fallback-math-font`. The rival, one table of every command, would offer
-an author commands the font draws as boxes; a table of the font's alone would read `\Game` as an
-unknown command, drawn red, where that head draws its missing glyph.
+The generator writes the commands of the characters the font has in `COMMANDS`, which `commands`
+lists, and those of the characters it lacks apart, in `ABSENT`; `command` reads both. So a formula
+holding a command of the second kind, as a hand-written `\Game`, reads it as LaTeX does,
+`goal@rootpoint-math@latex-text`, drawn as the font's missing glyph,
+`design@rootpoint-render@no-fallback-math-font`, and a list of commands offered to an author, as
+`commands`, holds none the font draws as a box, `goal@rootpoint@no-language-no-build`. The rivals
+lose one each: a single table of the font's characters reads `\Game` as an unknown command, drawn
+red; a single table of every command lists commands the font draws as boxes.
 
-### A command's name and its class mean what they mean in LaTeX's math mode `##latex-command-meanings`
+### A command's name means what it means in LaTeX's math mode `##latex-command-meanings`
 
 An author who knows LaTeX has nothing new to learn, `goal@rootpoint-math@latex-text`. The generator
 takes every name of a character's columns `<AMS>`, `<mathlatex>` without a set, `<IEEE>`,
@@ -138,9 +143,15 @@ column of that order, so `\epsilon` is ϵ and `\varepsilon` ε as in TeX; it add
 that no column gives, as `\to`, `\le` and `\neq`, each naming the command it stands for in
 `path@elsewhere@base/fontdef.dtx`, and fontdef.dtx's `\emptyset`; it leaves out unicode-math's names
 of an upright letter, as `\mupalpha`, since a letter is set italic and `\mathrm` sets one upright.
-A character takes the class its `type` gives, ord where it has none, but for the characters whose
-class fontdef.dtx declares otherwise: `.` an ord, `-` and `*` bins drawn as − and ∗, `:` a rel, `!`
-and `?` closes, and `\langle`, `\rangle`, `\lgroup`, `\rgroup`, `\lmoustache` and `\rmoustache`
-opens and closes. The test `a_command_means_what_it_means_in_latex` of
-`path@rootpoint-math@tests/font.rs` pins nine names. The rival is
-`rejected@rootpoint-math@unicode-math-names-first`.
+The test `a_command_means_what_it_means_in_latex` of `path@rootpoint-math@tests/font.rs` pins nine
+names. The rival is `rejected@rootpoint-math@unicode-math-names-first`.
+
+### A character's class is LaTeX's where LaTeX declares one other than `unicode.xml`'s type `##latex-character-classes`
+
+A character takes the class its `type` gives in `unicode.xml`, ord where it has none, but for the
+characters whose class `path@elsewhere@base/fontdef.dtx` declares otherwise: `.` an ord, `-` and
+`*` bins drawn as − and ∗, `:` a rel, `!` and `?` closes, and `\langle`, `\rangle`, `\lgroup`,
+`\rgroup`, `\lmoustache` and `\rmoustache` opens and closes. The class sets the space around a
+character, so a formula is spaced as a reader of TeX expects, `goal@rootpoint-math@tex-quality`.
+The rival, the type alone, types `.` a punctuation, so `3.14` would take a thin space after its
+point, and `-` an ordinary character, so `a - b` would be set as `a-b`.

@@ -574,8 +574,9 @@ Approved in round 2: "equation-content-kind: agreed". Harvested into the model's
 Proposed by the session in round 1, #arg-15, with Q1. Approved in round 2: "equation-rows: agreed on
 rows, I do need them", and Q1: "often aligned multi row, occasionally matrices. I think your default
 will cover my use cases." The default of Q1 named matrix, pmatrix and cases; the delta of round 2
-added bmatrix, which the table of round 7 shows and round 8's word closes. Built at #math-layout;
-harvested into the math crate's design home.
+added bmatrix, which the table of round 7 shows and round 8's word closes. Built at #math-layout,
+its rows and matrices harvested into the math crate's design home; its one number, at
+#equation-kind.
 
 ### Equations are numbered by computation, in the order of slides then of each slide's tree `##equation-numbering`
 

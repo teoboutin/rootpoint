@@ -41,8 +41,8 @@ pub const OPERATOR_NAMES: &[(&str, bool)] = &[
     ("tanh", false),
 ];
 
-/// Every command of the table, sorted by name: only the characters the math font has, which the
-/// palette lists and an author types.
+/// Every command of the table, sorted by name: only those of the characters the math font has, the
+/// ones to offer an author.
 pub fn commands() -> &'static [Command] {
     COMMANDS
 }
