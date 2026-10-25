@@ -12,12 +12,20 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
 - "Split here": Ctrl+Space, and a button of the ancestor row, sending `split-span`, or moving the
   caret out at a span's edge.
 - The frames of the caret's spans, drawn by the overlay, and the caret drawn at the height and in
-  the colour of the values it types with.
+  the colour of the values it types with. An empty span that holds the caret, as a style action
+  with no selection opens, covers no glyph: its frame is drawn around the caret, the line's height
+  and a few points wide, so the author sees the span the next letter goes into.
 - The ancestor row in the side panel's Selection tab while editing.
 - The span styles in the Styles tab, in their own section, sending `span-style add`, `set`, `rename`
-  and `remove`.
-- In the browser build, Ctrl+B, Ctrl+I and Ctrl+Space kept from the browser by the capture-phase
-  listener of `design@rootpoint-app@editor-keys-kept-from-browser`.
+  and `remove`. Each of the five values has a choice that sets none, which sends `<key>=inherit`,
+  since every field of a span style is optional, #named-span-styles; the removal of a span style a
+  span names opens the dialog of a style's removal, its replacements the other span styles and a
+  custom copy, `design@rootpoint-model@style-removal`.
+- In the Assets tab, a span style's use is a button that selects the span style in the Styles tab,
+  as a style's use selects its style, where it was a label while no tab listed span styles.
+- In the browser build, Ctrl+B, Ctrl+I and Ctrl+Space kept from the browser, while a text is
+  edited, by the capture-phase listener of `design@rootpoint-app@editor-keys-kept-from-browser`;
+  outside editing the editor does not consume them, and the browser keeps them.
 - One slide of `path@rootpoint-protocol@sample/sample.ron` with a styled text, which teaches the
   keys.
 - A styled span in `path@rootpoint-app@tests/data/mixed.ron`, so that the divider drag
@@ -28,9 +36,10 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
 
 1. The style actions and "split here", with their checks against a second session. Fails alone on:
    the actions' tests.
-2. The frames and the caret's style, with AC2. Fails alone on: AC2.
+2. The frames and the caret's style, with AC2, and the sample's slide, whose styled text AC2
+   reads. Fails alone on: AC2.
 3. The ancestor row and the span styles of the Styles tab. Fails alone on: their actions' tests.
-4. The browser's keys, and the sample's slide. Fails alone on: the browser test of the keys.
+4. The browser's keys. Fails alone on: the browser test of the keys.
 
 ## Claims
 
@@ -74,6 +83,41 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
 
 - The frames' form is the one the owner will see first; T1 watches it, and the owner said they would
   probably iterate on it once they see it live.
+
+## Defaults awaiting the owner
+
+### Q5, open at the audit: what the Selection tab's controls change while a text is edited
+
+Awaiting the owner; it stops the slice. The milestone says that a control of the side panel, with
+no selection, opens an empty span at the caret and, with one, wraps it, #style-action-target; and
+that a click on a span of the ancestor row "shows its style in the panel's controls, where it is
+changed", #ancestor-frames. It does not say how the one set of controls tells these targets apart,
+nor whether the area's own style can be changed while editing, which the controls change outside
+editing. Three shapes meet every binding criterion:
+
+- **A, the default.** While editing, the controls are the style actions: they show the values the
+  caret types with, or a selected span's, and send `wrap` at the caret or over the selection, or
+  `span t<n>` when the selection is one whole span. The style menu lists the span styles. The
+  alignment buttons send `text n<area>` with the alignment, since a span has none. A click on a
+  span of the ancestor row selects that span whole, so the controls then show and change its
+  style; a click on the row's first entry, the text itself, leaves editing, as Esc does, the area
+  still selected, where the controls change the area's style as today. One meaning for each
+  control at a time, and no new state; the cost is that changing the area's size or style name
+  while editing takes one click out of the stay.
+- **B.** The ancestor row chooses what the controls change: the caret, by default, for the style
+  actions; a span, its style by `span t<n>`; or the text, the area's style by `text n<area>`, in
+  the stay. Nothing leaves editing and no selection is made; the cost is a target the author reads
+  before each click, held by the window, and a rule for when it returns to the caret, at each move
+  of the caret.
+- **C.** Two groups of controls while editing: the area's style, as outside editing, and below it
+  the style actions at the caret, which a click on a span of the row points at that span by
+  selecting it, as in A. No mode, and the area's style is reached in the stay; the cost is the
+  panel's controls shown twice, about ten rows of the side panel in place of five.
+
+Each sends its commands inside the stay's group, `design@rootpoint-app@gesture-groups` as this
+audit rewrites it. The discriminating fact is none the record holds: each serves
+`goal@rootpoint@no-language-no-build`, and the choice weighs a click out of the stay against a mode
+or the panel's height.
 
 ## Decided design
 
