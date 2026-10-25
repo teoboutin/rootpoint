@@ -14,9 +14,11 @@ hoped, or a path to real use the owner finds too hard, means it is unmet.
 ## A presentation is made in a GUI, with no language to learn and no build step `##no-language-no-build`
 
 The author builds a presentation by direct manipulation in an interactive editor. No programming
-or markup language and no build procedure is involved. It is met when an author goes from an empty
-file to a presentation shown in presenter mode without writing code or markup and without running
-a build command.
+or markup language and no build procedure is involved in authoring through the editor; the text
+protocol of `goal@rootpoint@text-command-protocol` and the saved text file are languages for
+agents, scripts and hand edits, which an author never needs to learn. It is met when an author
+goes from an empty file to a presentation shown in presenter mode without writing code or markup
+and without running a build command.
 
 ## Any area of a slide can be divided freely and conveniently, each part holding one piece of content `##free-slide-division`
 
