@@ -324,7 +324,7 @@ impl App {
                             StyleChoice::Named(name) => name.clone(),
                         };
                         let start: String = t
-                            .text
+                            .plain_text()
                             .lines()
                             .next()
                             .unwrap_or("")
@@ -773,10 +773,10 @@ fn first_text(root: &Node) -> String {
         .areas()
         .into_iter()
         .find_map(|a| match &a.content {
-            Content::Text(t) if !t.text.trim().is_empty() => Some(t.text.as_str()),
+            Content::Text(t) => Some(t.plain_text()).filter(|s| !s.trim().is_empty()),
             _ => None,
         })
-        .unwrap_or("");
+        .unwrap_or_default();
     let line = text.lines().next().unwrap_or("");
     let mut out: String = line.chars().take(24).collect();
     if line.chars().count() > 24 {

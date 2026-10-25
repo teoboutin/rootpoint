@@ -31,6 +31,12 @@ pub enum Breach {
     UnknownFont { area: NodeId, name: String },
     /// A text names a style the table lacks; it is drawn with `TextStyle::default()`.
     MissingStyle { area: NodeId, name: String },
+    /// A span of a text names a span style the table lacks; it is drawn with its parent's values.
+    MissingSpanStyle {
+        area: NodeId,
+        span: SpanId,
+        name: String,
+    },
     /// An asset's path fails `asset_path_is_confined`: no store reads or writes it, so an image
     /// that shows it is drawn grey, and a text in its font in the built-in sans.
     UnconfinedAsset { asset: AssetId },
@@ -40,7 +46,7 @@ impl Document {
     /// Check every invariant the types state: the aspect ratio has no zero side; every id is
     /// unique and below the id counter; every split has two children or more, one divider fewer,
     /// finite, strictly increasing and strictly between 0 and 1, and no child split of its own
-    /// axis; every asset an area or a style of the table names has an id below the counter. An
+    /// axis; every asset an area, a span or a style of a table names has an id below the counter. An
     /// asset the table lacks is a cosmetic breach, which [`Document::breaches`] names, and is not
     /// checked here.
     pub fn validate(&self) -> Result<(), Invalid> {
@@ -66,8 +72,17 @@ impl Document {
         for id in self.assets.keys() {
             take(id.0)?;
         }
-        for (name, style) in &self.styles {
-            if let FontRef::Asset(id) = style.font
+        let span_fonts = self
+            .span_styles
+            .iter()
+            .filter_map(|(name, s)| Some((name, s.font.as_ref()?)));
+        for (name, font) in self
+            .styles
+            .iter()
+            .map(|(n, s)| (n, &s.font))
+            .chain(span_fonts)
+        {
+            if let FontRef::Asset(id) = font
                 && id.0 >= self.next_id
             {
                 return Err(Invalid(format!(
@@ -90,7 +105,14 @@ impl Document {
     ) -> Result<(), Invalid> {
         take(node.id().0)?;
         match node {
-            Node::Area(a) => self.validate_content(a),
+            Node::Area(a) => {
+                if let Content::Text(text) = &a.content {
+                    for span in text.root.spans() {
+                        take(span.id.0)?;
+                    }
+                }
+                self.validate_content(a)
+            }
             Node::Split(s) => {
                 let at = |what: &str| Invalid(format!("split {}: {what}", s.id.0));
                 if s.children.len() < 2 {
@@ -131,12 +153,15 @@ impl Document {
     /// `Op::AddAsset` would give that id to a new asset, which the area would then show,
     /// `design@rootpoint-model@validated-documents`.
     fn validate_content(&self, area: &Area) -> Result<(), Invalid> {
-        match asset_named(area) {
-            Some(id) if id.0 >= self.next_id => Err(Invalid(format!(
+        match assets_named(area)
+            .into_iter()
+            .find(|id| id.0 >= self.next_id)
+        {
+            Some(id) => Err(Invalid(format!(
                 "area {} names asset {}, which is not below the id counter, next_id {}",
                 area.id.0, id.0, self.next_id
             ))),
-            _ => Ok(()),
+            None => Ok(()),
         }
     }
 
@@ -167,7 +192,10 @@ impl Document {
                     });
                     continue;
                 }
-                Content::Text(text) => self.resolve_style(&text.style).font,
+                Content::Text(text) => {
+                    self.span_breaches(area.id, &text.root, &mut out);
+                    self.resolve_style(&text.style).font
+                }
             };
             match font {
                 FontRef::Asset(asset) if !self.assets.contains_key(&asset) => {
@@ -192,21 +220,63 @@ impl Document {
         }
         out
     }
+
+    /// The breaches of a text's spans: a span style the table lacks, and a font the document or
+    /// the binary lacks, in the order of the text.
+    fn span_breaches(&self, area: NodeId, root: &TextNode, out: &mut Vec<Breach>) {
+        for span in root.spans() {
+            let font = match &span.style {
+                SpanChoice::Named(name) => match self.span_styles.get(name) {
+                    Some(style) => style.font.clone(),
+                    None => {
+                        out.push(Breach::MissingSpanStyle {
+                            area,
+                            span: span.id,
+                            name: name.clone(),
+                        });
+                        continue;
+                    }
+                },
+                SpanChoice::Custom(style) => style.font.clone(),
+            };
+            match font {
+                Some(FontRef::Asset(asset)) if !self.assets.contains_key(&asset) => {
+                    out.push(Breach::MissingAsset { area, asset })
+                }
+                Some(FontRef::Builtin(name)) if !BUILTIN_FAMILIES.contains(&name.as_str()) => {
+                    out.push(Breach::UnknownFont { area, name })
+                }
+                _ => {}
+            }
+        }
+    }
 }
 
-/// The asset an area names itself: its image, or its own text values' font file. A named style's
-/// font is the table's, which `Document::validate` checks once.
-fn asset_named(area: &Area) -> Option<AssetId> {
+/// The assets an area names itself: its image, or the font files of its own text values and of its
+/// spans' own values. A named style's font is its table's, which `Document::validate` checks once.
+fn assets_named(area: &Area) -> Vec<AssetId> {
     match &area.content {
-        Content::Image(image) => Some(image.asset),
-        Content::Text(TextContent {
-            style:
+        Content::Image(image) => vec![image.asset],
+        Content::Text(text) => {
+            let own = match &text.style {
                 StyleChoice::Custom(TextStyle {
                     font: FontRef::Asset(id),
                     ..
-                }),
-            ..
-        }) => Some(*id),
-        Content::Text(_) => None,
+                }) => Some(*id),
+                _ => None,
+            };
+            let spans = text
+                .root
+                .spans()
+                .into_iter()
+                .filter_map(|span| match &span.style {
+                    SpanChoice::Custom(SpanStyle {
+                        font: Some(FontRef::Asset(id)),
+                        ..
+                    }) => Some(*id),
+                    _ => None,
+                });
+            own.into_iter().chain(spans).collect()
+        }
     }
 }

@@ -135,7 +135,7 @@ fn every_operation_is_undone_by_its_inverse() {
         Op::SetContent {
             area: top,
             content: Content::Text(TextContent {
-                text: "Hello".to_owned(),
+                root: rootpoint_model::TextNode::plain("Hello"),
                 style: StyleChoice::Custom(TextStyle::default()),
             }),
         },
@@ -248,7 +248,7 @@ fn splitting_a_child_along_its_parents_axis_merges_into_the_parent() {
         assert!(matches!(
             &s.children[new],
             Node::Area(Area { content: Content::Text(t), .. })
-                if t.text.is_empty() && t.style == StyleChoice::Named(BODY.to_owned())
+                if t.plain_text().is_empty() && t.style == StyleChoice::Named(BODY.to_owned())
         ));
         assert_ne!(s.children[new].id(), right);
         check_invariants(&doc);
@@ -525,7 +525,7 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
         7 if !areas.is_empty() => Op::SetContent {
             area: areas[pick(areas.len())],
             content: Content::Text(TextContent {
-                text: format!("text {}", s.other % 100),
+                root: rootpoint_model::TextNode::plain(format!("text {}", s.other % 100)),
                 style: StyleChoice::Custom(TextStyle::default()),
             }),
         },
@@ -559,7 +559,7 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
         12 if !areas.is_empty() && !assets.is_empty() => Op::SetContent {
             area: areas[pick(areas.len())],
             content: Content::Text(TextContent {
-                text: "in an asset font".to_owned(),
+                root: rootpoint_model::TextNode::plain("in an asset font"),
                 style: StyleChoice::Custom(TextStyle {
                     font: FontRef::Asset(assets[s.other % assets.len()]),
                     ..TextStyle::default()
@@ -592,7 +592,7 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
         17 if s.flag && !areas.is_empty() => Op::SetContent {
             area: areas[pick(areas.len())],
             content: Content::Text(TextContent {
-                text: "named".to_owned(),
+                root: rootpoint_model::TextNode::plain("named"),
                 style: StyleChoice::Named(STYLE_NAMES[s.other % STYLE_NAMES.len()].to_owned()),
             }),
         },

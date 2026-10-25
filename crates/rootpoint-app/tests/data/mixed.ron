@@ -1,6 +1,7 @@
+#![enable(implicit_some)]
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 4,
+    version: 5,
     aspect: (
         width: 16,
         height: 9,
@@ -69,6 +70,7 @@
             v_align: Middle,
         ),
     },
+    span_styles: {},
     slides: [
         (
             id: 1,
@@ -79,7 +81,9 @@
                     Area(
                         id: 2,
                         content: Text(
-                            text: "A title in the built-in sans",
+                            root: [
+                                Chars("A title in the built-in sans"),
+                            ],
                             style: Custom(
                                 font: Builtin("sans"),
                                 size: 72.0,
@@ -114,7 +118,9 @@
                                     Area(
                                         id: 5,
                                         content: Text(
-                                            text: "A paragraph long enough to wrap over several lines of its area, so that the line breaks of the layout are visible in the image.",
+                                            root: [
+                                                Chars("A paragraph long enough to wrap over several lines of its area, so that the line breaks of the layout are visible in the image."),
+                                            ],
                                             style: Custom(
                                                 font: Builtin("sans"),
                                                 size: 48.0,
@@ -134,7 +140,9 @@
                                     Area(
                                         id: 7,
                                         content: Text(
-                                            text: "An italic line in blue",
+                                            root: [
+                                                Chars("An italic line in blue"),
+                                            ],
                                             style: Custom(
                                                 font: Builtin("sans"),
                                                 size: 48.0,
@@ -154,7 +162,7 @@
                                     Area(
                                         id: 9,
                                         content: Text(
-                                            text: "",
+                                            root: [],
                                             style: Custom(
                                                 font: Builtin("sans"),
                                                 size: 48.0,

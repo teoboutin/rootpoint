@@ -22,7 +22,12 @@ pub struct NodeId(pub u64);
 #[serde(transparent)]
 pub struct AssetId(pub u64);
 
-// The printed form of an id, `s<n>`, `n<n>` or `a<n>`, as the protocol shows it; the file writes
+/// The id of a span of a text, unique in its document and never reused.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct SpanId(pub u64);
+
+// The printed form of an id, `s<n>`, `n<n>`, `a<n>` or `t<n>`, as the protocol shows it; the file writes
 // the plain number.
 impl fmt::Display for SlideId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -42,6 +47,12 @@ impl fmt::Display for AssetId {
     }
 }
 
+impl fmt::Display for SpanId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "t{}", self.0)
+    }
+}
+
 /// A presentation: its aspect ratio, its slides in order, its assets, and its named text styles.
 ///
 /// Every id of the document comes from one counter, which only grows, so a removed slide, node or
@@ -55,6 +66,8 @@ pub struct Document {
     pub assets: BTreeMap<AssetId, Asset>,
     /// The named text styles, by name. A text names one, or holds its own values.
     pub styles: BTreeMap<String, TextStyle>,
+    /// The named span styles, by name. A span names one, or holds its own values.
+    pub span_styles: BTreeMap<String, SpanStyle>,
     pub(crate) next_id: u64,
 }
 
@@ -66,6 +79,7 @@ impl Default for Document {
             slides: Vec::new(),
             assets: BTreeMap::new(),
             styles: predefined_styles(),
+            span_styles: BTreeMap::new(),
             next_id: 1,
         }
     }
@@ -128,6 +142,7 @@ impl Document {
             && self.slides == other.slides
             && self.assets == other.assets
             && self.styles == other.styles
+            && self.span_styles == other.span_styles
     }
 
     /// The values a text's style draws with: the table's entry for a name, the text's own values,
@@ -296,18 +311,156 @@ pub enum Content {
 /// the style `Document::new_area_style` or the area it was split from gives.
 impl Default for Content {
     fn default() -> Self {
-        Content::Text(TextContent {
-            text: String::new(),
-            style: StyleChoice::Custom(TextStyle::default()),
-        })
+        Content::Text(TextContent::plain(
+            "",
+            StyleChoice::Custom(TextStyle::default()),
+        ))
     }
 }
 
-/// Wrapped text, with one style for the whole area.
+/// Wrapped text: a tree of characters and spans, the root drawn in the area's style and each span
+/// in its own values over its parent's.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextContent {
-    pub text: String,
+    pub root: TextNode,
     pub style: StyleChoice,
+}
+
+impl TextContent {
+    /// A text of one run of characters, with no span.
+    pub fn plain(text: impl Into<String>, style: StyleChoice) -> Self {
+        TextContent {
+            root: TextNode::plain(text),
+            style,
+        }
+    }
+
+    /// The text's characters, the spans' included, in order.
+    pub fn plain_text(&self) -> String {
+        let mut out = String::new();
+        self.root.push_plain(&mut out);
+        out
+    }
+}
+
+/// A sequence of characters and spans: the root of a text, or a span's content. Kept in one
+/// canonical form, no run of characters empty and no two adjacent, which [`TextNode::normalise`]
+/// restores, so that two texts that read the same compare equal.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct TextNode {
+    pub items: Vec<TextItem>,
+}
+
+impl TextNode {
+    /// One run of characters, or no item for an empty text.
+    pub fn plain(text: impl Into<String>) -> Self {
+        let text = text.into();
+        TextNode {
+            items: if text.is_empty() {
+                Vec::new()
+            } else {
+                vec![TextItem::Chars(text)]
+            },
+        }
+    }
+
+    /// Merge adjacent runs of characters and drop empty ones, in this node and every span below.
+    pub fn normalise(&mut self) {
+        let mut items: Vec<TextItem> = Vec::with_capacity(self.items.len());
+        for mut item in std::mem::take(&mut self.items) {
+            match &mut item {
+                TextItem::Chars(s) if s.is_empty() => continue,
+                TextItem::Chars(s) => {
+                    if let Some(TextItem::Chars(last)) = items.last_mut() {
+                        last.push_str(s);
+                        continue;
+                    }
+                }
+                TextItem::Span(span) => span.text.normalise(),
+            }
+            items.push(item);
+        }
+        self.items = items;
+    }
+
+    fn push_plain(&self, out: &mut String) {
+        for item in &self.items {
+            match item {
+                TextItem::Chars(s) => out.push_str(s),
+                TextItem::Span(span) => span.text.push_plain(out),
+            }
+        }
+    }
+
+    /// Every span of this node and below, in the order of the text.
+    pub fn spans(&self) -> Vec<&Span> {
+        let mut out = Vec::new();
+        self.collect_spans(&mut out);
+        out
+    }
+
+    fn collect_spans<'a>(&'a self, out: &mut Vec<&'a Span>) {
+        for item in &self.items {
+            if let TextItem::Span(span) = item {
+                out.push(span);
+                span.text.collect_spans(out);
+            }
+        }
+    }
+}
+
+/// An item of a text node. Room is left for other kinds, as maths, beside the span.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum TextItem {
+    Chars(String),
+    Span(Span),
+}
+
+/// A span of a text: its id, its style, and its own sequence of characters and spans.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Span {
+    pub id: SpanId,
+    pub style: SpanChoice,
+    pub text: TextNode,
+}
+
+/// A span's style: a span style of the document's table, by its name, or the span's own values.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum SpanChoice {
+    Named(String),
+    Custom(SpanStyle),
+}
+
+/// The values a span sets over its parent's, each optional; a field left unset is the parent's.
+/// Sizes are in slide units. Alignment is the area's alone.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct SpanStyle {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub font: Option<FontRef>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bold: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub italic: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub colour: Option<Rgba>,
+}
+
+/// A text node of an area's text: its root, or one of its spans.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum TextNodeRef {
+    Root,
+    Span(SpanId),
+}
+
+/// A caret position in an area's text: a text node and an offset in its sequence, counted in
+/// characters, a span counting as one item.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct CaretPos {
+    pub node: TextNodeRef,
+    pub offset: usize,
 }
 
 /// A text's style: a style of the document's table, by its name, or the text's own values. Editing

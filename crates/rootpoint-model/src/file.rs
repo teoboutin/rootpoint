@@ -6,11 +6,11 @@ use ron::extensions::Extensions;
 use ron::ser::PrettyConfig;
 use serde::{Deserialize, Serialize};
 
-use crate::document::{AspectRatio, Asset, AssetId, Document, Slide, TextStyle};
+use crate::document::{AspectRatio, Asset, AssetId, Document, Slide, SpanStyle, TextStyle};
 
 /// The version of the file format this crate writes and reads. A file of another version is
 /// refused, per `design@rootpoint-model@save-format`.
-pub const FORMAT_VERSION: u32 = 4;
+pub const FORMAT_VERSION: u32 = 5;
 
 /// Why a file was not loaded.
 #[derive(Clone, Debug, PartialEq)]
@@ -32,6 +32,7 @@ struct FileRef<'a> {
     next_id: u64,
     assets: &'a BTreeMap<AssetId, Asset>,
     styles: &'a BTreeMap<String, TextStyle>,
+    span_styles: &'a BTreeMap<String, SpanStyle>,
     slides: &'a [Slide],
 }
 
@@ -42,6 +43,7 @@ struct File {
     next_id: u64,
     assets: BTreeMap<AssetId, Asset>,
     styles: BTreeMap<String, TextStyle>,
+    span_styles: BTreeMap<String, SpanStyle>,
     slides: Vec<Slide>,
 }
 
@@ -60,11 +62,14 @@ pub fn save_ron(doc: &Document) -> String {
         next_id: doc.next_id,
         assets: &doc.assets,
         styles: &doc.styles,
+        span_styles: &doc.span_styles,
         slides: &doc.slides,
     };
-    // `unwrap_variant_newtypes` writes `Split(id: 3, ...)` rather than `Split((id: 3, ...))`; the
-    // file declares the extension in its first line, so a reader needs no option to read it back.
-    let config = PrettyConfig::new().extensions(Extensions::UNWRAP_VARIANT_NEWTYPES);
+    // `unwrap_variant_newtypes` writes `Split(id: 3, ...)` rather than `Split((id: 3, ...))`, and
+    // `implicit_some` a span's set value as `bold: true` rather than `bold: Some(true)`; the file
+    // declares the extensions in its first lines, so a reader needs no option to read it back.
+    let config = PrettyConfig::new()
+        .extensions(Extensions::UNWRAP_VARIANT_NEWTYPES | Extensions::IMPLICIT_SOME);
     ron::ser::to_string_pretty(&file, config).expect("a document always serializes")
 }
 
@@ -78,13 +83,17 @@ pub fn load_ron(text: &str) -> Result<Document, LoadError> {
         });
     }
     let file: File = ron::from_str(text).map_err(|e| LoadError::Parse(e.to_string()))?;
-    let doc = Document {
+    let mut doc = Document {
         aspect: file.aspect,
         slides: file.slides,
         assets: file.assets,
         styles: file.styles,
+        span_styles: file.span_styles,
         next_id: file.next_id,
     };
+    // A file edited by hand may split a run of characters in two, or leave one empty; the text
+    // reads the same, so it loads in the canonical form operations keep.
+    crate::ops::normalise_texts(&mut doc);
     doc.validate()
         .map_err(|crate::validate::Invalid(reason)| LoadError::Invalid(reason))?;
     Ok(doc)

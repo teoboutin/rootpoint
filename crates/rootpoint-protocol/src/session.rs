@@ -908,10 +908,10 @@ impl Session {
                     fit: image.fit,
                 }),
                 Content::Text(TextContent {
-                    text,
+                    root,
                     style: StyleChoice::Custom(style),
                 }) if style.font == font => Content::Text(TextContent {
-                    text: text.clone(),
+                    root: root.clone(),
                     style: StyleChoice::Custom(TextStyle {
                         font: FontRef::Asset(other),
                         ..style.clone()
@@ -1240,7 +1240,7 @@ impl Session {
                 Op::SetContent {
                     area,
                     content: Content::Text(TextContent {
-                        text,
+                        root: rootpoint_model::TextNode::plain(text),
                         style: choice,
                     }),
                 }
@@ -1255,7 +1255,7 @@ impl Session {
             Command::Clear { area } => Op::SetContent {
                 area,
                 content: Content::Text(TextContent {
-                    text: String::new(),
+                    root: rootpoint_model::TextNode::plain(String::new()),
                     style: self.text_style(area),
                 }),
             },

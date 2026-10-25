@@ -330,7 +330,7 @@ impl App {
     fn edited_text(&self) -> Option<String> {
         match self.node(self.editing()?)? {
             Node::Area(a) => match &a.content {
-                Content::Text(t) => Some(t.text.clone()),
+                Content::Text(t) => Some(t.plain_text()),
                 _ => None,
             },
             Node::Split(_) => None,

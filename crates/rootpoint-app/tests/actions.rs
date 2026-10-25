@@ -71,7 +71,7 @@ fn c(line: &str) -> Command {
 fn text_of(session: &Session, area: NodeId) -> String {
     match session.document().node(area) {
         Some(Node::Area(a)) => match &a.content {
-            Content::Text(t) => t.text.clone(),
+            Content::Text(t) => t.plain_text(),
             _ => panic!("{area} holds no text"),
         },
         _ => panic!("{area} is no area"),

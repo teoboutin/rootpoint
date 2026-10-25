@@ -30,7 +30,7 @@ impl Files for NoFiles {
 fn text_of(app: &App, area: NodeId) -> String {
     match app.session().document().node(area) {
         Some(Node::Area(a)) => match &a.content {
-            Content::Text(t) => t.text.clone(),
+            Content::Text(t) => t.plain_text(),
             _ => panic!("{area} holds no text"),
         },
         _ => panic!("{area} is no area"),

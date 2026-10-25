@@ -59,7 +59,7 @@ fn fixture() -> Document {
         &mut doc,
         areas[1],
         Content::Text(TextContent {
-            text: "A title".to_owned(),
+            root: rootpoint_model::TextNode::plain("A title"),
             style: StyleChoice::Custom(TextStyle {
                 size: 72.0,
                 bold: true,
@@ -72,7 +72,7 @@ fn fixture() -> Document {
         &mut doc,
         areas[2],
         Content::Text(TextContent {
-            text: "Some wrapped text below the title.".to_owned(),
+            root: rootpoint_model::TextNode::plain("Some wrapped text below the title."),
             style: StyleChoice::Custom(TextStyle::default()),
         }),
     );
@@ -159,7 +159,7 @@ fn content() -> impl Strategy<Value = Content> {
         )
             .prop_map(|(text, size, bold, italic, [r, g, b, a], h, v)| {
                 Content::Text(TextContent {
-                    text,
+                    root: rootpoint_model::TextNode::plain(text),
                     style: StyleChoice::Custom(TextStyle {
                         font: FontRef::Builtin("sans".to_owned()),
                         size,
@@ -213,7 +213,7 @@ proptest! {
                 (4, Some(asset)) => Op::SetContent {
                     area,
                     content: Content::Text(TextContent {
-                        text: "in an asset font".to_owned(),
+                        root: rootpoint_model::TextNode::plain("in an asset font"),
                         style: StyleChoice::Custom(TextStyle { font: FontRef::Asset(asset), ..TextStyle::default() }),
                     }),
                 },
@@ -263,7 +263,7 @@ fn a_file_edited_by_an_agent_loads_with_its_edits() {
         Op::SetContent {
             area: top_right,
             content: Content::Text(TextContent {
-                text: "Edited".to_owned(),
+                root: rootpoint_model::TextNode::plain("Edited"),
                 ..old
             }),
         },

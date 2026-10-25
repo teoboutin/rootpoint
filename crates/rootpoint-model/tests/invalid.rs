@@ -364,7 +364,7 @@ fn a_text_whose_font_is_a_missing_asset_is_applied_and_undone() {
         Op::SetContent {
             area: root,
             content: Content::Text(TextContent {
-                text: "x".into(),
+                root: rootpoint_model::TextNode::plain("x"),
                 style: StyleChoice::Custom(TextStyle {
                     font: FontRef::Asset(gone),
                     ..TextStyle::default()

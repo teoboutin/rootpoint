@@ -315,7 +315,7 @@ fn each_editing_command_applies_its_operation() {
             Op::SetContent {
                 area: NodeId(2),
                 content: Content::Text(TextContent {
-                    text: "Hi".into(),
+                    root: rootpoint_model::TextNode::plain("Hi"),
                     style: StyleChoice::Custom(style),
                 }),
             },
@@ -335,7 +335,7 @@ fn each_editing_command_applies_its_operation() {
             Op::SetContent {
                 area: NodeId(3),
                 content: Content::Text(TextContent {
-                    text: String::new(),
+                    root: rootpoint_model::TextNode::plain(String::new()),
                     style: StyleChoice::Named(BODY.to_owned()),
                 }),
             },
@@ -419,7 +419,7 @@ fn clear_keeps_a_text_s_style_and_gives_an_image_area_the_default_one() {
     };
     let text = |style| {
         Content::Text(TextContent {
-            text: String::new(),
+            root: rootpoint_model::TextNode::plain(String::new()),
             style,
         })
     };

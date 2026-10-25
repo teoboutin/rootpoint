@@ -424,7 +424,7 @@ fn a_click_on_a_row_shows_its_slide_and_a_drag_moves_it() {
 fn text(d: &Driver, area: NodeId) -> String {
     match d.doc().node(area) {
         Some(Node::Area(a)) => match &a.content {
-            rootpoint_model::Content::Text(t) => t.text.clone(),
+            rootpoint_model::Content::Text(t) => t.plain_text(),
             _ => String::new(),
         },
         _ => panic!("{area} is no area"),

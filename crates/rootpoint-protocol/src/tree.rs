@@ -32,7 +32,7 @@ fn node_tree(node: &Node) -> String {
                     StyleChoice::Named(name) => format!("style={}", quote_always(name)),
                     StyleChoice::Custom(_) => "custom".to_owned(),
                 };
-                format!("{} text {} {style}", a.id, quote_always(&t.text))
+                format!("{} text {} {style}", a.id, quote_always(&t.plain_text()))
             }
             Content::Image(i) => {
                 let fit = match i.fit {

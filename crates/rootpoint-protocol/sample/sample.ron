@@ -1,6 +1,7 @@
+#![enable(implicit_some)]
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 4,
+    version: 5,
     aspect: (
         width: 16,
         height: 9,
@@ -69,6 +70,7 @@
             v_align: Middle,
         ),
     },
+    span_styles: {},
     slides: [
         (
             id: 1,
@@ -79,7 +81,9 @@
                     Area(
                         id: 2,
                         content: Text(
-                            text: "rootpoint",
+                            root: [
+                                Chars("rootpoint"),
+                            ],
                             style: Named("Title"),
                         ),
                     ),
@@ -90,14 +94,18 @@
                             Area(
                                 id: 3,
                                 content: Text(
-                                    text: "A slide is a tree of splits. Select an area and split it: the split buttons of the side panel, or Shift and an arrow, cut it at its middle. Ctrl or Shift and a click cut it where you click; hold Alt to snap.",
+                                    root: [
+                                        Chars("A slide is a tree of splits. Select an area and split it: the split buttons of the side panel, or Shift and an arrow, cut it at its middle. Ctrl or Shift and a click cut it where you click; hold Alt to snap."),
+                                    ],
                                     style: Named("Body"),
                                 ),
                             ),
                             Area(
                                 id: 5,
                                 content: Text(
-                                    text: "Click an area, or its row in the outline of the side panel, to select it. Alt+Up and Alt+Down select its siblings, Alt+Left its parent and Alt+Right a child, as the outline reads.",
+                                    root: [
+                                        Chars("Click an area, or its row in the outline of the side panel, to select it. Alt+Up and Alt+Down select its siblings, Alt+Left its parent and Alt+Right a child, as the outline reads."),
+                                    ],
                                     style: Named("Body"),
                                 ),
                             ),
@@ -121,7 +129,9 @@
                     Area(
                         id: 8,
                         content: Text(
-                            text: "Dividers and moving",
+                            root: [
+                                Chars("Dividers and moving"),
+                            ],
                             style: Custom(
                                 font: Builtin("sans"),
                                 size: 80.0,
@@ -145,14 +155,18 @@
                             Area(
                                 id: 9,
                                 content: Text(
-                                    text: "Drag a divider to resize the areas on each side; Esc cancels the drag, and a double-click puts the divider halfway.",
+                                    root: [
+                                        Chars("Drag a divider to resize the areas on each side; Esc cancels the drag, and a double-click puts the divider halfway."),
+                                    ],
                                     style: Named("Body"),
                                 ),
                             ),
                             Area(
                                 id: 11,
                                 content: Text(
-                                    text: "Drag an area\'s grip onto another area to swap them, or onto its edge to move it there. The hint says what the drop will do.",
+                                    root: [
+                                        Chars("Drag an area\'s grip onto another area to swap them, or onto its edge to move it there. The hint says what the drop will do."),
+                                    ],
                                     style: Custom(
                                         font: Builtin("sans"),
                                         size: 40.0,
@@ -212,7 +226,9 @@
                     Area(
                         id: 15,
                         content: Text(
-                            text: "The same image in fit, left, and in fill, right.",
+                            root: [
+                                Chars("The same image in fit, left, and in fill, right."),
+                            ],
                             style: Custom(
                                 font: Builtin("sans"),
                                 size: 36.0,
@@ -244,14 +260,18 @@
                     Area(
                         id: 21,
                         content: Text(
-                            text: "Where it is saved",
+                            root: [
+                                Chars("Where it is saved"),
+                            ],
                             style: Named("Title"),
                         ),
                     ),
                     Area(
                         id: 22,
                         content: Text(
-                            text: "A presentation is held in memory, or in a workspace: a directory with presentation.ron at its root and its images below it. The label at the right of the toolbar says which. In memory, Save as pack… writes one .rpk file that holds the presentation and its images, which Open pack… opens on any computer, and in the browser, a download; outside the browser, Save as workspace… writes it as a directory. A workspace saves itself after every change, and its .rootpoint/ folder holds what is the machine's and not the presentation's: its lock, its trash and the address of its window.",
+                            root: [
+                                Chars("A presentation is held in memory, or in a workspace: a directory with presentation.ron at its root and its images below it. The label at the right of the toolbar says which. In memory, Save as pack… writes one .rpk file that holds the presentation and its images, which Open pack… opens on any computer, and in the browser, a download; outside the browser, Save as workspace… writes it as a directory. A workspace saves itself after every change, and its .rootpoint/ folder holds what is the machine's and not the presentation's: its lock, its trash and the address of its window."),
+                            ],
                             style: Named("Body"),
                         ),
                     ),

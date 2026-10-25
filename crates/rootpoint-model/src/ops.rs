@@ -173,6 +173,9 @@ pub fn apply(doc: &mut Document, op: Op) -> Result<Op, OpError> {
     // Work on a copy, so that a refusal found halfway leaves `doc` as it was. Documents are small.
     let mut work = doc.clone();
     let inverse = apply_in(&mut work, op)?;
+    // A text given whole, as by `Op::SetContent`, is brought to its canonical form, so that an
+    // operation and its inverse give a document equal to the original.
+    normalise_texts(&mut work);
     // An operation whose result breaks an invariant is refused, per
     // `design@rootpoint-model@validated-documents`: a restored slide or asset whose
     // ids collide, a tree given whole, or a split whose divider positions rounding has made equal
@@ -455,10 +458,25 @@ fn set_choice(doc: &mut Document, id: NodeId, choice: StyleChoice) -> Result<(),
 
 /// An empty text in the style `style`: the content of a new area.
 fn new_text(style: StyleChoice) -> Content {
-    Content::Text(TextContent {
-        text: String::new(),
-        style,
-    })
+    Content::Text(TextContent::plain("", style))
+}
+
+/// Bring every text of the document to its canonical form, [`TextNode::normalise`].
+pub(crate) fn normalise_texts(doc: &mut Document) {
+    for slide in &mut doc.slides {
+        normalise_node(&mut slide.root);
+    }
+}
+
+fn normalise_node(node: &mut Node) {
+    match node {
+        Node::Split(s) => s.children.iter_mut().for_each(normalise_node),
+        Node::Area(Area {
+            content: Content::Text(text),
+            ..
+        }) => text.root.normalise(),
+        Node::Area(_) => {}
+    }
 }
 
 /// The style of the new area of a split of `node`: a text area's own style, so that splitting a body
@@ -533,26 +551,29 @@ fn area_mut(doc: &mut Document, id: NodeId) -> Result<&mut Area, OpError> {
     }
 }
 
-/// Whether an area or a style of the table uses the asset: an image, a text's own font, or a named
-/// style's font.
+/// Whether an area or a style of a table uses the asset: an image, a text's or a span's own font,
+/// or a named style's or span style's font.
 fn asset_in_use(doc: &Document, id: AssetId) -> bool {
     let font = FontRef::Asset(id);
+    let span_font = |s: &SpanStyle| s.font.as_ref() == Some(&font);
     doc.styles.values().any(|s| s.font == font)
+        || doc.span_styles.values().any(span_font)
         || doc
             .slides
             .iter()
             .flat_map(|s| s.root.areas())
             .any(|a| match &a.content {
                 Content::Image(image) => image.asset == id,
-                Content::Text(TextContent {
-                    style: StyleChoice::Custom(style),
-                    ..
-                }) => style.font == font,
-                Content::Text(_) => false,
+                Content::Text(text) => {
+                    matches!(&text.style, StyleChoice::Custom(style) if style.font == font)
+                        || text.root.spans().into_iter().any(
+                            |span| matches!(&span.style, SpanChoice::Custom(s) if span_font(s)),
+                        )
+                }
             })
 }
 
-/// Give every node of the subtree a new id.
+/// Give every node of the subtree, and every span of its texts, a new id.
 fn renumber(node: &mut Node, doc: &mut Document) {
     match node {
         Node::Split(s) => {
@@ -561,7 +582,22 @@ fn renumber(node: &mut Node, doc: &mut Document) {
                 renumber(child, doc);
             }
         }
-        Node::Area(a) => a.id = NodeId(doc.alloc()),
+        Node::Area(a) => {
+            a.id = NodeId(doc.alloc());
+            if let Content::Text(text) = &mut a.content {
+                renumber_spans(&mut text.root, doc);
+            }
+        }
+    }
+}
+
+/// Give every span of the text node, and of the spans below, a new id.
+pub(crate) fn renumber_spans(node: &mut TextNode, doc: &mut Document) {
+    for item in &mut node.items {
+        if let TextItem::Span(span) = item {
+            span.id = SpanId(doc.alloc());
+            renumber_spans(&mut span.text, doc);
+        }
     }
 }
 

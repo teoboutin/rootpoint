@@ -5,12 +5,14 @@
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod images;
+mod map;
 mod text;
 
 use std::ops::Range;
 use std::sync::Arc;
 
 pub use images::{DecodeError, ImageSet, decode_rgba};
+pub use map::TextMap;
 use parley::Layout;
 use rootpoint_model::{
     AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, StyleChoice,
@@ -176,12 +178,14 @@ pub fn render_slide(
     Ok(Rendered { pixmap, report })
 }
 
-/// The text of one area as `render_slide` draws it: its layout, in slide units, and the point of the
-/// slide, in slide units, where the layout's origin is drawn. An editor that places a caret or a
-/// selection on this layout, with Parley's `Selection` and `Cursor`, places it on the drawn glyphs.
+/// The text of one area as `render_slide` draws it: its layout, in slide units, the point of the
+/// slide, in slide units, where the layout's origin is drawn, and the map from the text's caret
+/// positions to the layout's byte indices. An editor that places a caret or a selection on this
+/// layout, with Parley's `Selection` and `Cursor`, places it on the drawn glyphs.
 pub struct AreaText {
     pub layout: Layout<()>,
     pub origin: (f64, f64),
+    pub map: TextMap,
 }
 
 /// The text of the area `area` of the slide `slide`, laid out as `render_slide` lays it out; `None`
@@ -208,6 +212,7 @@ pub fn area_text(
     Some(AreaText {
         layout: laid.layout,
         origin,
+        map: TextMap::new(content),
     })
 }
 
@@ -222,7 +227,7 @@ fn lay_out_area(
     area: SlideRect,
 ) -> (text::TextLayout, (f64, f64)) {
     let inner = (area.w - 2.0 * TEXT_PADDING).max(0.0);
-    let laid = text::layout_text(fonts, &content.text, style, inner as f32);
+    let laid = text::layout_text(fonts, &content.plain_text(), style, inner as f32);
     let free = area.h - 2.0 * TEXT_PADDING - f64::from(laid.layout.height());
     let dy = match style.v_align {
         VAlign::Top => 0.0,

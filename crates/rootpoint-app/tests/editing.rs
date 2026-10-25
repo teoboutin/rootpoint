@@ -134,7 +134,7 @@ impl Driver {
     fn text_of(&self, area: NodeId) -> String {
         match self.app.session().document().node(area) {
             Some(rootpoint_model::Node::Area(a)) => match &a.content {
-                rootpoint_model::Content::Text(t) => t.text.clone(),
+                rootpoint_model::Content::Text(t) => t.plain_text(),
                 _ => String::new(),
             },
             _ => panic!("{area} is no area"),

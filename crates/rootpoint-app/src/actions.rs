@@ -432,10 +432,10 @@ impl App {
             return;
         }
         self.end_gestures();
-        if let (Some(area), Some(C::Text(TextContent { text, .. }))) =
+        if let (Some(area), Some(C::Text(content))) =
             (self.selected_area(), self.selected_content())
         {
-            let text = text.clone();
+            let text = content.plain_text();
             self.run(Command::Text {
                 area,
                 text,

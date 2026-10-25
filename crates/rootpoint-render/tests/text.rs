@@ -168,7 +168,7 @@ fn area_text_gives_the_layout_render_slide_draws() {
         else {
             panic!("{area} is not a text area");
         };
-        let len = t.text.len();
+        let len = t.plain_text().len();
         let got: Vec<_> = text
             .layout
             .lines()
@@ -195,7 +195,7 @@ fn a_named_style_draws_as_its_table_entry() {
             &mut doc,
             root,
             Content::Text(TextContent {
-                text: "A title in its style".to_owned(),
+                root: rootpoint_model::TextNode::plain("A title in its style"),
                 style,
             }),
         );
