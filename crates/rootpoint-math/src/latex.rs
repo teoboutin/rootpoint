@@ -30,8 +30,8 @@ impl Formula {
     /// second superscript or subscript on one nucleus, an `\end` that closes no `\begin`, a
     /// `\right` with no `\left`, a missing argument, an `&` or a `\\` outside the formula's grid
     /// or a matrix, an environment the subset does not know, a delimiter that is no open, close,
-    /// bar or slash, or atoms nested deeper than `MAX_DEPTH`. An unknown command is an atom of its
-    /// own.
+    /// bar or slash, a `$` in a text, or atoms nested deeper than `MAX_DEPTH`. An unknown command
+    /// is an atom of its own.
     pub fn parse(text: &str) -> Result<Formula, ParseError> {
         let mut p = Parser {
             text,
@@ -277,6 +277,15 @@ impl Parser<'_> {
                     return Ok(self.text[start + 1..at].to_owned());
                 }
                 Token::Char('}') => depth -= 1,
+                // A `$` would switch LaTeX to math, which a group read as written does not read;
+                // it would also end the `$…$` of the protocol that holds the formula. `\$` writes
+                // a dollar.
+                Token::Char('$') => {
+                    return Err(ParseError {
+                        message: "a `$` in a text, where `\\$` writes a dollar".to_owned(),
+                        at,
+                    });
+                }
                 _ => {}
             }
         }

@@ -67,6 +67,7 @@ fn what_does_not_parse() {
         "{a & b}",
         r"\sqrt{a \\ b}",
         r"a \",
+        r"\text{a $ b}",
     ] {
         assert!(Formula::parse(text).is_err(), "{text} parsed");
     }
@@ -110,6 +111,9 @@ fn a_text_run_keeps_its_characters() {
     let f = parse(r"\text{if } x");
     assert_eq!(f.rows[0][0][0], Atom::Text("if ".to_owned()));
     assert_eq!(f.to_latex(), r"\text{if } x");
+    let f = parse(r"\text{\$5 \{a\}}");
+    assert_eq!(f.rows[0][0][0], Atom::Text(r"\$5 \{a\}".to_owned()));
+    assert_eq!(f.to_latex(), r"\text{\$5 \{a\}}");
 }
 
 fn sym(ch: char) -> Atom {

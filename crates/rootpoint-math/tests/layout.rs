@@ -164,6 +164,20 @@ fn a_command_the_font_lacks_is_drawn_missing() {
     assert_eq!(l.glyphs[0].glyph, 0);
 }
 
+/// A `\text` run draws an escaped special character as the character, and any other backslash as
+/// written.
+#[test]
+fn a_text_run_draws_an_escaped_character_as_itself() {
+    let font = common::font();
+    let drawn = |text: &str| -> Vec<u16> {
+        let l = lay_out(&Formula::parse(text).unwrap(), &font, Style::Text, 10.0);
+        l.glyphs.iter().map(|g| g.glyph).collect()
+    };
+    let of = |chars: &str| -> Vec<u16> { chars.chars().map(|c| font.glyph(c).unwrap()).collect() };
+    assert_eq!(drawn(r"\text{\$5\%\{\}\&\#\_}"), of("$5%{}&#_"));
+    assert_eq!(drawn(r"\text{a\b}"), of(r"a\b"));
+}
+
 /// An empty group takes no width, as TeX gives it none, while an empty cell of a structure is a
 /// placeholder.
 #[test]

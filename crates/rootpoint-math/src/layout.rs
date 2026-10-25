@@ -594,7 +594,7 @@ impl Ctx<'_, '_> {
                 &cell(0),
                 None,
             ),
-            Atom::Text(text) => self.upright(text, env.st, false),
+            Atom::Text(text) => self.upright(&text_characters(text), env.st, false),
             Atom::Matrix { env: kind, rows } => self.matrix(*kind, rows, env, at),
             Atom::Space(_) => Bx::default(),
             Atom::Group(list) => self.list_or_nothing(list, env, &cell(0)),
@@ -1321,4 +1321,28 @@ pub(crate) fn font_change(ch: char, variant: Option<MathVariant>) -> char {
         .or_else(|| digit(0x1D7D8)),
     };
     mapped.unwrap_or(ch)
+}
+
+/// The characters a `\text` run draws: each of LaTeX's escaped special characters, as `\$` or
+/// `\{`, as the character itself, the rest as written.
+fn text_characters(text: &str) -> String {
+    let mut out = String::new();
+    let mut chars = text.chars().peekable();
+    while let Some(ch) = chars.next() {
+        match chars.peek() {
+            Some(&next) if ch == '\\' && "$%&#_{}".contains(next) => {
+                out.push(next);
+                chars.next();
+            }
+            // Any other backslash keeps the character after it, so `\\` is read as the parser
+            // reads it, one token.
+            Some(&next) if ch == '\\' => {
+                out.push(ch);
+                out.push(next);
+                chars.next();
+            }
+            _ => out.push(ch),
+        }
+    }
+    out
 }
