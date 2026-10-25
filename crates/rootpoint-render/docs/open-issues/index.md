@@ -1,3 +1,7 @@
 **Generated — do not edit.** `cargo klarch index`
 
-0 entries
+1 entry
+
+| kind | title |
+| --- | --- |
+| deferred | [The MATH table is parsed by ttf-parser, beside the read-fonts that parley links](read-fonts-math-table.md) |

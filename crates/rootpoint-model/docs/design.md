@@ -226,9 +226,9 @@ to name a style.
 `TextItem` is `Chars` or `Span`, and the file, the operations and a caret position name an item by
 its kind, so a kind added later, maths, or a reference to an equation, joins the enumeration with
 no change of what a text is. No kind but these two exists, and an equation's design is
-`issue@rootpoint@more-content-kinds`'s. It serves `goal@rootpoint@real-presentations`, whose talks
+`milestone@plans@math-support`'s. It serves `goal@rootpoint@real-presentations`, whose talks
 need mathematics; on the owner's word, the owner wants maths inside a sentence, and is
-considering, as an intuition, an equation kind of its own beside it, `issue@rootpoint@more-content-kinds`.
+considering, as an intuition, an equation kind of its own beside it, `milestone@plans@math-support`.
 
 ### A text names a style of the document's table, or holds its own values `##named-styles`
 

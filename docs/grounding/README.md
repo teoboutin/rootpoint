@@ -8,3 +8,4 @@ decision; the decisions it informed are in the design homes and cite their own g
 - [Rust GUI toolkits and slide renderers](toolkits.md)
 - [Editing a split layout, and grouping undo steps](split-editing.md)
 - [How LyX represents, navigates and decorates nested text](lyx-nested-text.md)
+- [Math in LyX, Rust math typesetters, math fonts and command tables](math-typesetting.md)
