@@ -356,7 +356,7 @@ fn every_scripted_line_prints_back_as_a_line_that_parses_to_it() {
     assert!(parsed > 0);
 }
 
-/// Each editing command applies the operation the mapping table gives: the document after the
+/// Each editing command applies one operation, the one listed beside it: the document after the
 /// command equals the document after `apply` of that operation.
 #[test]
 fn each_editing_command_applies_its_operation() {
