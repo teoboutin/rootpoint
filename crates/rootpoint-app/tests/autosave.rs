@@ -1,7 +1,8 @@
 //! The native window's workspace saves itself after every undo step, on a thread of its own, and
 //! writes only the newest of a burst; its guard writes nothing over a `presentation.ron` changed
 //! outside rootpoint, and asks; the watcher decodes an asset again when its file changes, and
-//! nothing when `.git/` does. The benchmark of AC1 times the GUI thread's share of an autosave.
+//! nothing when `.git/` does. The benchmark `autosave_gui_cost` times the GUI thread's share of an
+//! autosave, the measurement of `design@rootpoint-app@workspace-autosave`.
 
 #![cfg(not(target_arch = "wasm32"))]
 
