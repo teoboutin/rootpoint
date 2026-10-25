@@ -34,5 +34,5 @@ among the kinds the owner named as needed.
 A design session per kind, or one for several, and its work built. Each new kind is read against
 `tripwire@rootpoint-render@render-within-bounds` at its design audit, and video, whose files the
 browser build holds in memory, against `tripwire@rootpoint-app@browser-pack-too-large`, and decides whether its
-options earn named styles, which the style table holds for text alone,
+options earn named styles, which the style tables hold for text alone, its areas and its spans,
 `design@rootpoint-model@style-kinds`.

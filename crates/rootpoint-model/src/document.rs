@@ -342,7 +342,7 @@ impl Default for Content {
 }
 
 /// Wrapped text: a tree of characters and spans, the root drawn in the area's style and each span
-/// in its own values over its parent's.
+/// in its own values over its parent's, `design@rootpoint-model@text-node-tree`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextContent {
     pub root: TextNode,
@@ -497,8 +497,9 @@ pub enum SpanChoice {
     Custom(SpanStyle),
 }
 
-/// The values a span sets over its parent's, each optional; a field left unset is the parent's.
-/// Sizes are in slide units. Alignment is the area's alone.
+/// The values a span sets over its parent's, each optional; a field left unset is the parent's,
+/// `design@rootpoint-model@span-style-overrides`. Sizes are in slide units. Alignment is the
+/// area's alone.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct SpanStyle {
     #[serde(default, skip_serializing_if = "Option::is_none")]

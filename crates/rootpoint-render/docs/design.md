@@ -32,8 +32,12 @@ knows. The two sets are part of the crate's public interface.
 ### A text area's layout comes from one function, which drawing and `area_text` both call `##area-text-layout`
 
 `render_slide` lays each text area out, and places it, through one private function, which
-`area_text` also calls: it gives the area's Parley `Layout`, in slide units, and the point of the
-slide where its origin is drawn. An editor that places a caret or a selection on that layout, with
+`area_text` also calls: it gives the area's Parley `Layout`, in slide units, each run carrying its
+colour as the brush `TextBrush`, and the point of the slide where its origin is drawn. The text's
+tree, `design@rootpoint-model@text-node-tree`, is laid out as one string with `ranged_builder`,
+each span's values set over its byte range, and `AreaText` carries the `TextMap` from each caret
+position of the tree to its byte index in that string, and each span's byte range; the ranged
+builder collapses no whitespace, so those byte indices are the stored text's. An editor that places a caret or a selection on that layout, with
 Parley's `Selection` and `Cursor`, places it on the drawn glyphs, which
 `goal@rootpoint-render@same-slide-everywhere` asks of every display. `area_text` and its `AreaText` are part
 of the crate's public interface; the app's editing in place, `design@rootpoint-app@edit-in-place`,

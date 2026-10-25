@@ -23,3 +23,14 @@ styled area, as when a Title is split to add a logo.
 **Response:** reopen `design@rootpoint-model@new-area-style`, toward a new area that always takes
 Body.
 **Re-entry:** the standing-state review before every merge.
+
+## Guarding `design@rootpoint-model@stable-ids`: a span's id or syntax gets in the way of editing a file by hand `##span-ids-in-the-way`
+
+T3 of the premortem of `milestone@plans@rich-text`, recorded on the owner's word.
+
+**Fires when:** the owner, or an agent the owner asked, edits a saved text tree by hand and reports
+once that the spans' ids or their syntax got in the way.
+**Response:** reopen `design@rootpoint-model@stable-ids` for spans, toward an id a hand-written span
+may leave out and the loader gives.
+**Re-entry:** the next design work on the save format; and the standing-state review before every
+merge.

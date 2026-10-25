@@ -177,15 +177,18 @@ before the next begins, D2.
 
 What exists today, at each site the work touches:
 
-- **The model.** A text is one string and one `StyleChoice`; `Op::SetContent` replaces an area's
-  whole content, and `Op::AddStyle`, `Op::SetStyle`, `Op::RenameStyle`, `Op::RemoveStyle` and its
-  inverse `Op::RestoreStyle` act on the one style table, `path@rootpoint-model@src/ops.rs`. Ids come
-  from `Document::next_id`, one counter, for slides, nodes and assets,
-  `design@rootpoint-model@stable-ids`.
-- **The file.** RON, `FORMAT_VERSION` 4; a text is written `Text(text: "…", style: …)`.
-- **The renderer.** `layout_text` lays one string out with one style through `ranged_builder`, and
-  the colour is applied per area at drawing; no `InlineBox` is used.
-- **The protocol.** `text <area> "<string>" [options]` sets an area's whole text, and `tree` prints
+- **The model**, as #text-tree landed it. A text is a tree of runs of characters and spans,
+  `design@rootpoint-model@text-node-tree`, with its `StyleChoice`; the operations of the tree and
+  of the span style table are built, each undone by the area's former content or by its table
+  inverse, `path@rootpoint-model@src/ops.rs`; ids come from `Document::next_id`, one counter, for
+  slides, nodes, assets and spans, `design@rootpoint-model@stable-ids`.
+- **The file**, as #text-tree landed it. RON, `FORMAT_VERSION` 5; a text is written
+  `Text(root: [Chars("…"), Span(…)], style: …)`, and `span_styles` follows `styles`.
+- **The renderer**, as #text-tree landed it. `layout_text` lays a text's string out through
+  `ranged_builder`, each span's values over its byte range, and each run carries its colour, the
+  brush `TextBrush`; `AreaText` carries the `TextMap`; no `InlineBox` is used.
+- **The protocol**, before #span-commands. `text <area> "<string>" [options]` sets an area's whole
+  text, as one run, and `tree` prints
   `n<n> text "<string>" style="<name>"` or `custom`, `path@rootpoint-protocol@src/tree.rs`.
 - **The editor.** Every change of a text is one `text` command with the area's whole text,
   `design@rootpoint-app@edit-in-place`; the caret is a Parley `Selection`, placed again by byte
@@ -240,7 +243,7 @@ lists as referencing each, and the slice whose harvest judges or updates it:
 
 | decision | change | referencing texts | judged at |
 | --- | --- | --- | --- |
-| `design@rootpoint-model@text-style-per-area` | reversed: a text is a tree with spans over the area's style; its ground was the owner's word that one style per area was enough "for the first prototype" | the issue `rich-text-spans`, closed by this milestone's branch; the doc comment of `TextContent`, `path@rootpoint-model@src/document.rs` line 306, which states the incumbent without naming it | #text-tree |
+| `text-style-per-area`, now `design@rootpoint-model@text-node-tree` | reversed: a text is a tree with spans over the area's style; its ground was the owner's word that one style per area was enough "for the first prototype" | the issue `rich-text-spans`, closed by this milestone's branch; the doc comment of `TextContent`, `path@rootpoint-model@src/document.rs` line 306, which states the incumbent without naming it | #text-tree |
 | `design@rootpoint-model@named-styles` | rewritten: the area's style stays one full style, named or custom; per-field overrides are rejected for areas and are the shape of a span, whose cascade is its purpose, #span-style-overrides; spans name a second table, #named-span-styles | `register@rootpoint-app@design` line 203, `register@rootpoint-model@design` line 77, `register@rootpoint-model@design` line 154, `path@rootpoint-protocol@src/session.rs` line 1231, the issue `rich-text-spans`, closed | #text-tree, the comment of `session.rs` at #span-commands |
 | `design@rootpoint-model@inline-content-assets` | rewritten: "a text with its style" becomes a text tree with its style, and the style table is no longer "the one part of a content shared by name", the span style table being another | referenced by nothing | #text-tree |
 | `design@rootpoint-model@style-kinds` | rewritten: its body's one style table of text styles becomes two, the text styles and the span styles, both for text | `issue@rootpoint@more-content-kinds`, its section "What would close it" | #text-tree |
@@ -957,9 +960,9 @@ reopens #text-edit-commands.
 
 ## Implementation sequence
 
-1. [#text-tree](text-tree.md): the tree in the model, its operations, the span style table, the
-   file at version 5, and the renderer drawing spans; `area_text`'s map. Fails alone on: the
-   fixture's round trip and a golden image of a styled text.
+1. #text-tree, landed, its spec deleted with its harvest: the tree in the model, its operations, the
+   span style table, the file at version 5, and the renderer drawing spans; `area_text`'s map. Fails
+   alone on: the fixture's round trip and a golden image of a styled text.
 2. [#span-commands](span-commands.md): the commands of the tree and of the span style table, `tree`
    printing the tree, `text` taking one. Fails alone on: the parse of every printed command, and
    the property test of `design@rootpoint-protocol@no-new-breach`.

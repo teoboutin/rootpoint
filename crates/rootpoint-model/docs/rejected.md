@@ -111,3 +111,38 @@ the disk's state and is met only at a read, so a refusal at load is a second mec
 the file names. It would refuse a file whose layout and node ids are defined, which the structural
 class of `design@rootpoint-model@validated-documents` does not cover; and a repair at load, copying
 the outside file in, would read outside the root.
+
+### One style for the whole of an area's text `##one-style-per-area`
+
+`live`. No word of a text can be bold or coloured apart from the rest, which a talk's text often
+needs, as `goal@rootpoint@minimal-content-set` names bold and colour among the options of text. It
+was the first prototype's design, which avoided an editor of rich text.
+
+### Flat runs of styles over one string `##flat-style-runs`
+
+`live`. A style's edge has one caret position, so the style of what is typed there is chosen by a
+rule, as LyX's `Cursor::setCurrentFont` does for its flat fonts, read in
+`path@rootpoint@docs/grounding/lyx-nested-text.md`; and a list of runs cannot hold a fraction's two
+cells, which maths needs.
+
+### Flat runs of styles beside nested spans, as LyX keeps both `##runs-beside-spans`
+
+`live`. Two styling models meet at a seam: LyX's tickets 1973 and 6919 are a change of font that
+did not reach the text inside an inset, and its own source wishes the two implementations
+unified, read in `path@rootpoint@docs/grounding/lyx-nested-text.md`.
+
+### A full text style in every span `##full-style-per-span`
+
+`live`. A span holding every value copies its area's, so a bold word in a Body text keeps the old
+size when Body's size changes later, which is the change named styles exist to spread.
+
+### A span naming a full text style of the text style table `##span-names-text-style`
+
+`live`. The span takes every field of the style, its font, size and alignment included, so a term
+named inside a title leaves the title's size, and alignment means nothing inside a line.
+
+### One table of styles whose fields are all optional, for areas and spans alike `##one-table-of-optional-styles`
+
+`live`. Every area style becomes a set of optional fields with a fallback for each, the cascade
+`design@rootpoint-model@named-styles` keeps out of the area. Kept open by the doubt that two tables
+confuse authors, the response of the tripwire guarding `design@rootpoint-model@named-span-styles`.

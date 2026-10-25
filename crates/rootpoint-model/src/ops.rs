@@ -705,7 +705,7 @@ fn edit_text(
 }
 
 /// Refuse a custom span style that sets no field: such a span changes nothing, so its caller
-/// unwraps it instead. A named span is never refused, whatever its values, so that a span keeps its
+/// unwraps it instead, `design@rootpoint-model@text-tree-normal-form`. A named span is never refused, whatever its values, so that a span keeps its
 /// name when its style's values come to equal its parent's.
 fn check_span_style(style: &SpanChoice) -> Result<(), OpError> {
     match style {
