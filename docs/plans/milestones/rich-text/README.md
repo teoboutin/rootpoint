@@ -1017,14 +1017,15 @@ reopens #text-edit-commands.
   narrows it: the model dissolves no span, an operation that would leave a custom span setting no
   field is refused, and a named span is never dissolved, as "Decided design" says. It narrows a
   ruling of the owner, so it blocks the merge of this milestone's branch.
-- **D7**, on #text-node-tree and #span-style-overrides: the review before the merge of #text-tree
-  found that the two heads' titles, taken from the thread titles the owner approved, each state a
-  decision another head holds: "each span with its own values over its parent's" in the tree's
-  title is #span-style-overrides, and "the area keeps one full style" in the overrides' title is the
-  rival argument of `design@rootpoint-model@named-styles`. The default, built: the titles drop
-  those clauses, "An area's text is a tree of characters and spans" and "A span sets each text
-  option it changes, each optional, over its parent's values", the decisions unchanged. It narrows
-  titles the owner approved, so it blocks the merge of #text-tree.
+- **D7**, ruled: accepted by the owner, "D7 accepted". Its text, on #text-node-tree and
+  #span-style-overrides: the review before the merge of #text-tree found that the two heads' titles,
+  taken from the thread titles the owner approved, each state a decision another head holds: "each
+  span with its own values over its parent's" in the tree's title is #span-style-overrides, and "the
+  area keeps one full style" in the overrides' title is the rival argument of
+  `design@rootpoint-model@named-styles`. The default, built: the titles drop those clauses, "An
+  area's text is a tree of characters and spans" and "A span sets each text option it changes, each
+  optional, over its parent's values", the decisions unchanged. It narrows titles the owner
+  approved, so it blocks the merge of #text-tree.
 
 ## Harvest
 
