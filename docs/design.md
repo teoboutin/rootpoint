@@ -90,9 +90,10 @@ The dependencies already meet it: `cargo metadata` over the 513 packages the wor
 registry finds no licence that forces a copyleft one, three offering a GPL or LGPL branch only as an
 alternative to MIT or Apache-2.0, as measured in `path@rootpoint@docs/grounding/math-typesetting.md`,
 section 4. MIT lets nearly any other licence combine with the code, GPLv2 included; Apache-2.0 adds
-an explicit grant of patents. The rival, a copyleft licence such as GPL-3.0 or MPL-2.0, keeps derived
-versions open, and keeps companies and permissively licensed projects from building on rootpoint.
+an explicit grant of patents. The rival, a copyleft licence, keeps derived versions open at a cost to
+who builds on rootpoint: GPL-3.0 binds every program that links the code to its own terms, which
+companies and permissively licensed projects avoid, and MPL-2.0 binds every changed file of the
+code itself to stay under it.
 
 On the owner's word: the owner plans to make the project open source, ultimately and probably
-soon, wants it as widely available as possible, for everyone and everywhere, and chose the dual
-licence MIT OR Apache-2.0, which the session recommended for that purpose.
+soon, and wants it as widely available as possible, for everyone and everywhere.

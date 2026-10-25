@@ -150,9 +150,10 @@ R(\theta) = \begin{pmatrix} \cos\theta & -\sin\theta \\ \sin\theta & \cos\theta 
   `skill@knowledge-architect-goal-setting` and ruled by the owner, goal by goal, before the harvest
   merges. Heads, by `skill@knowledge-architect-decision-recording`: #math-storage-form's tree and
   LaTeX subset; #math-layout-engine, with its rivals in `rejected` entries where they pass the tests;
-  #latex-command-set's table and its source, citing `design@rootpoint@permissive-licence`, with
-  unicode-math's table and KaTeX's in `rejected` entries, refused on a reading of a licence and on a
-  measured count; #equation-rows; #empty-cell-placeholder.
+  #latex-command-set's table and its source, citing `design@rootpoint@permissive-licence` for the GPL
+  table it rules out, with unicode-math's table and KaTeX's in `rejected` entries, each carrying its
+  own reason: the renaming condition LPPL 1.3c would add to the binary, which that head does not rule
+  out, and the measured count of KaTeX's entries; #equation-rows; #empty-cell-placeholder.
 - `issue@rootpoint-render@read-fonts-math-table` moved to the math crate's issue home, and its text to
   what the slice built.
 - Into `register@rootpoint-render@design`: a head for #math-font, which carries the 44 commands

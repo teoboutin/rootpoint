@@ -118,6 +118,11 @@ Mid-turn:
 > You can proceed with planning, under the milestone shape.
 > We will merge the milestone work with the dual licensing work, as the same branch. The missing set can be recorded as you proposed
 
+**Round 9**, after the reviews of this document, on its defaults D1 to D5:
+
+> D1 agreed, this is what i meant
+> agreed on the other defaults
+
 The owner's "Q2:" of round 7 answers Q12 of round 6, the text font, by its content; Q2 of round 1
 asked whether the math should be serif or sans. The owner's hedge of round 6 on Libertinus Math is
 answered by the owner's words of round 7, the missing set "not much of a problem" and Open Sans
@@ -187,9 +192,9 @@ Before each slice, read `skill@knowledge-architect-planning@working-a-slice` who
 The slices are built in the order of "Implementation sequence".
 
 - **Branches.** This document, its slice specs, the survey, the issues it opens and the licence of
-  the project, `design@rootpoint@permissive-licence`, are on the branch math-milestone. How the
-  slices' work shares that branch is D1. Until the owner rules on D1, #math-layout may start on a
-  branch made from math-milestone's tip; nothing merges into the main branch before the ruling.
+  the project, `design@rootpoint@permissive-licence`, are on the branch math-milestone. By D1,
+  that branch merges on its own, after its review, before #math-layout begins; each slice then has a
+  branch of its own, reviewed and merged before the next begins.
 - **Grounding of the first slice.** #math-layout touches the root, the render crate and the
   maintenance tool, and creates the math crate: point 1 of the slice's procedure reads the
   `CLAUDE.md`, the design home and the rejected home of each of the root, `path@rootpoint@crates/rootpoint-render/`
@@ -213,9 +218,10 @@ The slices are built in the order of "Implementation sequence".
   `find crates -name '*.ron'` lists: today `path@rootpoint-protocol@sample/sample.ron`,
   `path@rootpoint-app@tests/data/mixed.ron`, `path@rootpoint-model@tests/data/fixture.ron` and
   `path@rootpoint-model@tests/data/fixture-edited-by-agent.ron`.
-- **Licences of what is built in.** Every font and every data file built into a binary keeps its own
-  licence text beside it, as `path@rootpoint-render@fonts/OFL.txt` sits beside Noto Sans today, by
-  `design@rootpoint@permissive-licence`.
+- **Licences of what is built in.** A font or a data file built into a binary whose licence has
+  conditions of its own keeps its licence text beside it, as `path@rootpoint-render@fonts/OFL.txt` sits
+  beside Noto Sans today, by `design@rootpoint@permissive-licence`: the fonts' OFL, and the W3C
+  notice of the table of commands.
 
 ## Names
 
@@ -1658,7 +1664,7 @@ the fallback member is dropped and the owner told.
 
 ## Defaults awaiting the owner
 
-### D1, awaiting: how the slices' work shares the branch of the licence
+### D1, ruled: how the slices' work shares the branch of the licence
 
 Bears on the branch of "How the work is done". The owner, round 8: "We will merge the milestone work
 with the dual licensing work, as the same branch." The default: the branch math-milestone carries
@@ -1669,7 +1675,9 @@ every slice built on math-milestone and one merge at the end, puts five slices b
 where `skill@knowledge-architect-planning@cutting-steps-and-slices` asks one branch and one merge per
 slice.
 
-### D2, awaiting: the keys of LyX's that the milestone binds beyond those shown in round 1
+Ruled by the owner on the default, round 9: "D1 agreed, this is what i meant".
+
+### D2, ruled: the keys of LyX's that the milestone binds beyond those shown in round 1
 
 Bears on #math-keys. The owner, round 2: "math-keys: agreed on copying the keys from lyx exactly."
 Round 1 left LyX's sub-tables T, C and W out "unless #equation-rows admits matrices", which it does;
@@ -1681,7 +1689,9 @@ the keys of C and W for rules and alignment, Shift+N, and M, D, L and O. The key
 `&` and Ctrl+Return, which LyX handles in `InsetMathNest::interpretChar` and its newline action, are
 in the mapping table "A key in a formula, to what it does" as LyX has them, and need no ruling.
 
-### D3, awaiting: every action a key runs has a control too
+Ruled by the owner on the default, round 9: "agreed on the other defaults".
+
+### D3, ruled: every action a key runs has a control too
 
 Bears on #math-keys and #math-symbol-palette, against `goal@rootpoint-app@browser-window`, which asks
 the browser build the same actions as the native window, while the owner allowed it, in round 2, to
@@ -1693,7 +1703,9 @@ symbol and structure, the Greek letters, the accents, the delimiters, and the ro
 matrix. The palette and the menu entry were approved; "Insert formula" and the palette's matrix
 controls are what the default adds.
 
-### D4, awaiting: a moved equation keeps its references
+Ruled by the owner on the default, round 9: "agreed on the other defaults".
+
+### D4, ruled: a moved equation keeps its references
 
 Bears on #equation-reference-target, closed by the owner in round 2 on ids, and on C6, "a reference
 survives every edit but its equation's removal", which that closure claimed to meet. A finding of
@@ -1707,7 +1719,10 @@ content, which a swap carries by itself, at the cost of a fifth kind of id besid
 `design@rootpoint-model@stable-ids`. #inline-math, which builds the references, is held until the
 owner's word; the slices before it do not rest on it.
 
-### D5, awaiting: whether "as widely available as possible" is a goal of the project
+Ruled by the owner on the default, round 9: "agreed on the other defaults". #inline-math no longer
+waits.
+
+### D5, ruled: whether "as widely available as possible" is a goal of the project
 
 Bears on `design@rootpoint@permissive-licence`, written by the reviews of this document since the
 licence had landed with no head. The owner's words of round 4, "I plan to make the project open
@@ -1715,6 +1730,8 @@ source ultimately. probably soon", and "Iwant it as widely available as possible
 everywhere", state what the project is for, which a goal records,
 `skill@knowledge-architect-goal-setting`. The default: no goal is written; the head attributes the
 purpose to the owner. A goal would be drafted under that skill and ruled by the owner.
+
+Ruled by the owner on the default, round 9: "agreed on the other defaults". No goal is written.
 
 ## Harvest
 
