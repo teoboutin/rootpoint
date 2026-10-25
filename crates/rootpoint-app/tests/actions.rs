@@ -602,6 +602,134 @@ fn the_asset_actions_issue_their_commands() {
     );
 }
 
+/// The ids of n3's spans the action made: those of `after` that `before` lacks, in the order of
+/// the text.
+fn made(before: &[SpanId], after: &[SpanId]) -> Vec<SpanId> {
+    after
+        .iter()
+        .filter(|t| !before.contains(t))
+        .copied()
+        .collect()
+}
+
+/// The style actions while a text is edited: Ctrl+B and Ctrl+I, the Selection tab's controls,
+/// "split here" and a span of the ancestor row, each the commands of the stay's one group.
+#[test]
+fn the_span_style_actions_issue_their_commands() {
+    let tree = r#"text n3 ["abc", {bold "de"}, "f"]"#;
+    let at = |node, offset| CaretPos { node, offset };
+    let root = TextNodeRef::Root;
+    // With no selection, a style action opens an empty span at the caret, which typing goes into.
+    let new = Rc::new(RefCell::new(Vec::new()));
+    let seen = new.clone();
+    check(
+        "Ctrl+B at the caret, then typing",
+        &["select n3", tree],
+        move |a| {
+            let before = spans_of(a.session());
+            edit_n3(a);
+            a.set_caret_pos(at(root, 1));
+            a.bold();
+            a.type_str("X");
+            *seen.borrow_mut() = made(&before, &spans_of(a.session()));
+            a.stop_editing();
+        },
+        move |_| {
+            let t = new.borrow()[0];
+            vec![
+                c("begin"),
+                c("wrap n3 1..1 bold"),
+                c(&format!("insert {t} 0 \"X\"")),
+                c("end"),
+            ]
+        },
+    );
+    // With a selection, a style action wraps it and selects the new span, so that a second one
+    // changes that span's style.
+    let new = Rc::new(RefCell::new(Vec::new()));
+    let seen = new.clone();
+    check(
+        "Ctrl+I over a selection, then Ctrl+B on its span",
+        &["select n3", tree],
+        move |a| {
+            let before = spans_of(a.session());
+            edit_n3(a);
+            a.set_caret_pos(at(root, 0));
+            a.move_caret(rootpoint_app::editing::CaretMove::Right, true);
+            a.italic();
+            a.bold();
+            *seen.borrow_mut() = made(&before, &spans_of(a.session()));
+            a.stop_editing();
+        },
+        move |_| {
+            let t = new.borrow()[0];
+            vec![
+                c("begin"),
+                c("wrap n3 0..1 italic"),
+                c(&format!("span {t} bold")),
+                c("end"),
+            ]
+        },
+    );
+    // Inside a span, "split here" cuts it, the caret between the halves; at its start it sends
+    // nothing and moves the caret before it.
+    check(
+        "split here, inside a span and at its start",
+        &["select n3", tree],
+        |a| {
+            let span = TextNodeRef::Span(spans_of(a.session())[0]);
+            edit_n3(a);
+            a.set_caret_pos(at(span, 1));
+            a.split_here();
+            a.type_str("Y");
+            a.set_caret_pos(at(span, 0));
+            a.split_here();
+            a.type_str("Z");
+            a.stop_editing();
+        },
+        |s| {
+            let t = spans_of(s)[0];
+            vec![
+                c("begin"),
+                c(&format!("split-span {t} 1")),
+                c("insert n3 4 \"Y\""),
+                c("insert n3 3 \"Z\""),
+                c("end"),
+            ]
+        },
+    );
+    // A span of the ancestor row selected, a control changes its style; an alignment changes the
+    // area's; at the caret, a control opens a span, which the stay's end unwraps while empty.
+    let new = Rc::new(RefCell::new(Vec::new()));
+    let seen = new.clone();
+    check(
+        "the Selection tab's controls while editing",
+        &["select n3", tree],
+        move |a| {
+            let before = spans_of(a.session());
+            edit_n3(a);
+            a.select_span(before[0]);
+            a.edit_control(StyleOption::Size(80.0));
+            a.edit_control(StyleOption::Align(rootpoint_model::HAlign::Right));
+            a.set_caret_pos(at(root, 0));
+            a.edit_control(StyleOption::Italic(true));
+            *seen.borrow_mut() = made(&before, &spans_of(a.session()));
+            a.stop_editing();
+        },
+        move |s| {
+            let (old, t) = (spans_of(s)[0], new.borrow()[0]);
+            vec![
+                c("begin"),
+                c(&format!("span {old} size=80")),
+                c("text n3 align=right"),
+                c("wrap n3 0..0 italic"),
+                c(&format!("unwrap {t}")),
+                c("end"),
+            ]
+        },
+    );
+}
+
 /// A control of the selection never changes a named style: a size on a text naming Body makes the
 /// text custom at that size, and Body keeps its own.
 #[test]

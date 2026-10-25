@@ -1068,7 +1068,8 @@ impl App {
 
     /// The input while a text is edited in place, taken in the order it came: typed text, the IME,
     /// the clipboard, and the keys that move the caret, extend the selection with Shift, delete,
-    /// undo and redo, or leave with Esc. The editor's other shortcuts do not act, so Delete and
+    /// undo and redo, set bold or italic by a style action with Ctrl+B and Ctrl+I, split the
+    /// caret's span with Ctrl+Space, or leave with Esc. The editor's other shortcuts do not act, so Delete and
     /// Shift with an arrow reach the text.
     fn editing_keys(&mut self, ui: &mut Ui) {
         use editing::CaretMove;
@@ -1120,6 +1121,9 @@ impl App {
                         (None, Key::Delete) => self.delete_forward(),
                         (None, Key::Enter) => self.type_str("\n"),
                         (None, Key::A) if word => self.select_all(),
+                        (None, Key::B) if word => self.bold(),
+                        (None, Key::I) if word => self.italic(),
+                        (None, Key::Space) if modifiers.ctrl => self.split_here(),
                         (None, Key::Z) if word && shift => self.redo(),
                         (None, Key::Z) if word => self.undo(),
                         (None, Key::Y) if word => self.redo(),

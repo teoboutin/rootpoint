@@ -1051,3 +1051,24 @@ fn a_commit_after_the_caret_moved_replaces_the_composing_text() {
     d.app.commit_ime("Z");
     assert_eq!(shape(&d, NodeId(3)), "Zab{cd}ef");
 }
+
+/// While a text is edited, Ctrl+B opens a bold span at the caret, Ctrl+I wraps the selection in
+/// an italic one, and Ctrl+Space cuts the caret's span, the caret between its halves, each read
+/// from the frame's keys.
+#[test]
+fn ctrl_b_ctrl_i_and_ctrl_space_style_and_split_at_the_caret() {
+    let mut d = edit_tree(r#"["ab", {bold "cd"}, "ef"]"#);
+    d.app.set_caret_pos(at(ROOT, 1));
+    d.key_with(Key::B, Modifiers::COMMAND);
+    d.frame(vec![Event::Text("X".into())]);
+    assert_eq!(shape(&d, NodeId(3)), "a{X}b{cd}ef");
+    d.app.set_caret_pos(at(ROOT, 4));
+    d.key_with(Key::ArrowRight, Modifiers::SHIFT);
+    d.key_with(Key::I, Modifiers::COMMAND);
+    assert_eq!(shape(&d, NodeId(3)), "a{X}b{cd}{e}f");
+    let s = span(&d, 1);
+    d.app.set_caret_pos(at(s, 1));
+    d.key_with(Key::Space, Modifiers::CTRL);
+    d.frame(vec![Event::Text("Y".into())]);
+    assert_eq!(shape(&d, NodeId(3)), "a{X}b{c}Y{d}{e}f");
+}

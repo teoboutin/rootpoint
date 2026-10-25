@@ -10,7 +10,7 @@ use parley::{Affinity, Selection};
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, SlideId, node_rects};
 use rootpoint_model::{CaretPos, SpanId, TextNodeRef};
 use rootpoint_model::{Content as C, Replacement, StyleChoice, TextContent};
-use rootpoint_protocol::{Command, Reply, StyleCommand, StyleOption, TextTarget};
+use rootpoint_protocol::{Command, Reply, SpanOption, StyleCommand, StyleOption, TextTarget};
 
 use crate::editing::{
     CaretMove, Editing, Item, empty_spans, from_byte, items, items_len, layout_point, left, parent,
@@ -1542,6 +1542,163 @@ impl App {
         self.replace(caret.node, range, "", None);
     }
 
+    /// A style action: with no selection, a `wrap` of the
+    /// empty range at the caret, the caret then put in the new span; with a selection, a `wrap` of
+    /// it, the new span then selected whole, so that a second action changes that span; and a
+    /// selection that is one whole span, a `span` that changes its style. Its commands join the
+    /// stay's group, `design@rootpoint-app@gesture-groups`.
+    pub fn style_action(&mut self, style: Vec<SpanOption>) {
+        if self.socket_holds() || style.is_empty() {
+            return;
+        }
+        let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
+            return;
+        };
+        let (node, range) = edit
+            .selected(&content)
+            .unwrap_or((edit.caret.node, edit.caret.offset..edit.caret.offset));
+        if let Some(span) = whole_span(&content, node, range.clone()) {
+            self.run(Command::Span { span, style });
+            return;
+        }
+        let reply = self.run(Command::Wrap {
+            node: text_target(edit.area, node),
+            range: range.clone(),
+            style,
+        });
+        if !matches!(reply, Reply::Ok(_)) {
+            return;
+        }
+        let at = CaretPos {
+            node,
+            offset: range.start,
+        };
+        if range.is_empty() {
+            let Some(span) = self
+                .edited_text()
+                .and_then(|t| whole_span(&t, node, range.start..range.start + 1))
+            else {
+                return;
+            };
+            let inside = CaretPos {
+                node: TextNodeRef::Span(span),
+                offset: 0,
+            };
+            self.put_caret(inside, None, Affinity::Downstream, None);
+        } else {
+            let end = CaretPos {
+                offset: range.start + 1,
+                ..at
+            };
+            self.put_caret(end, Some(at), Affinity::Upstream, None);
+        }
+    }
+
+    /// Ctrl+B: a style action that sets bold.
+    pub fn bold(&mut self) {
+        self.style_action(vec![SpanOption::Bold(true)]);
+    }
+
+    /// Ctrl+I: a style action that sets italic.
+    pub fn italic(&mut self) {
+        self.style_action(vec![SpanOption::Italic(true)]);
+    }
+
+    /// A control of the Selection tab while a text is edited: a value of the text's style is a style action; an alignment, which no span has, changes the
+    /// area's style, by `text` with no tree, in the stay's group.
+    pub fn edit_control(&mut self, option: StyleOption) {
+        if self.socket_holds() {
+            return;
+        }
+        let Some(area) = self.editing() else {
+            return;
+        };
+        let span = match option {
+            StyleOption::Align(_) | StyleOption::VAlign(_) => {
+                self.run(Command::Text {
+                    area,
+                    root: None,
+                    style: vec![option],
+                });
+                return;
+            }
+            StyleOption::Named(name) => SpanOption::Named(name),
+            StyleOption::Custom => SpanOption::Custom,
+            StyleOption::Size(v) => SpanOption::Size(v),
+            StyleOption::Bold(v) => SpanOption::Bold(v),
+            StyleOption::Italic(v) => SpanOption::Italic(v),
+            StyleOption::Colour(v) => SpanOption::Colour(v),
+            StyleOption::Font(v) => SpanOption::Font(v),
+        };
+        self.style_action(vec![span]);
+    }
+
+    /// "Split here", Ctrl+Space or the button of the ancestor row: the span that holds the caret is cut at the caret by `split-span`, the caret put between the
+    /// two halves, in their parent; at the span's start or end nothing is sent, and the caret moves
+    /// out of the span, before or after it. In the root, nothing.
+    pub fn split_here(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
+            return;
+        };
+        let caret = edit.focus(&content);
+        let TextNodeRef::Span(span) = caret.node else {
+            return;
+        };
+        let (Some((up, at)), Some(node)) =
+            (parent(&content, span), text_node(&content, caret.node))
+        else {
+            return;
+        };
+        let out = if caret.offset == 0 {
+            at
+        } else {
+            if caret.offset < items_len(node)
+                && !matches!(
+                    self.run(Command::SplitSpan {
+                        span,
+                        offset: caret.offset,
+                    }),
+                    Reply::Ok(_)
+                )
+            {
+                return;
+            }
+            at + 1
+        };
+        self.put_caret(
+            CaretPos {
+                node: up,
+                offset: out,
+            },
+            None,
+            Affinity::Downstream,
+            None,
+        );
+    }
+
+    /// A click on a span of the ancestor row: the span is selected whole, in its parent, so the
+    /// controls show and change its style.
+    pub fn select_span(&mut self, span: SpanId) {
+        let Some(content) = self.edited_text() else {
+            return;
+        };
+        let Some((up, at)) = parent(&content, span) else {
+            return;
+        };
+        let start = CaretPos {
+            node: up,
+            offset: at,
+        };
+        let end = CaretPos {
+            offset: at + 1,
+            ..start
+        };
+        self.put_caret(end, Some(start), Affinity::Upstream, None);
+    }
+
     /// The caret position under the point `p` of the slide view, and its affinity: in the deepest
     /// text node that owns the glyph under it, on the side of the glyph clicked,
     /// `design@rootpoint-app@boundary-caret-positions`.
@@ -1632,6 +1789,21 @@ fn text_target(area: NodeId, node: TextNodeRef) -> TextTarget {
     match node {
         TextNodeRef::Root => TextTarget::Root(area),
         TextNodeRef::Span(span) => TextTarget::Span(span),
+    }
+}
+
+/// The span that is the whole of the offsets `range` of a text node, if they are one span.
+fn whole_span(
+    text: &TextContent,
+    node: TextNodeRef,
+    range: std::ops::Range<usize>,
+) -> Option<SpanId> {
+    if range.len() != 1 {
+        return None;
+    }
+    match items(text_node(text, node)?).get(range.start)? {
+        Item::Span(s) => Some(s.id),
+        Item::Char(_) => None,
     }
 }
 
