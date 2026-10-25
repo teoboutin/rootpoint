@@ -6,9 +6,9 @@ kind: todo
 ## Summary
 
 Property tests exist in rootpoint-model, one in rootpoint-protocol drives the commands at random,
-one in rootpoint-app walks the caret, and one in rootpoint-math writes and reads formulas. Nothing
-is fuzzed, and the window's actions are tested only with fixed inputs written by
-hand. A systematic approach to testing, chosen for the whole project, is not set up.
+one in rootpoint-app walks the caret, and two in rootpoint-math write and read formulas and edit
+them. Nothing is fuzzed, and the window's actions are tested only with fixed inputs written by hand.
+A systematic approach to testing, chosen for the whole project, is not set up.
 
 ## Details
 
@@ -27,13 +27,15 @@ What exists, read in the tree:
   on a headless `Session`: after each command the document is valid, holds no cosmetic breach, a
   missing style among them, and saves to a text that loads back equal. It does not check that an
   undo restores the document as it was before;
-- `path@rootpoint-app@tests/editing.rs` holds a proptest of the caret over random text trees, each
-  position visited once each way and drawn on its glyph;
+- `path@rootpoint-app@tests/editing.rs` holds a proptest of the caret over random text trees with
+  formulas, each position visited once each way and drawn on its glyph or its cell;
 - `path@rootpoint-math@tests/latex.rs` holds a proptest that a random formula written as LaTeX
   reads back equal;
+- `path@rootpoint-math@tests/edit.rs` holds a proptest that random edits at random positions of a
+  formula keep a formula whose LaTeX reads back, with the caret inside it;
 - every other test of the project is written by hand, with fixed inputs. A search of every
   `Cargo.toml` and `.rs` file for `proptest`, `quickcheck`, `arbitrary` and `libfuzzer` finds only
-  these six test files, and the dev-dependencies of rootpoint-app, rootpoint-math, rootpoint-model
+  these seven test files, and the dev-dependencies of rootpoint-app, rootpoint-math, rootpoint-model
   and rootpoint-protocol.
 
 Approaches to weigh, as open leads, none chosen:

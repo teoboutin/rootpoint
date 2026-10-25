@@ -6,11 +6,13 @@
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
 mod commands;
+mod edit;
 mod font;
 mod latex;
 mod layout;
 mod table;
 
+pub use edit::*;
 pub use font::{FontError, MathFont, VerticalConstruction};
 pub use latex::{MAX_DEPTH, ParseError};
 pub use layout::{AtomBox, CellBox, FormulaLayout, PlacedGlyph, Rule, Style, lay_out};
@@ -194,6 +196,27 @@ fn list_has_unknown(list: &List) -> bool {
 }
 
 impl Atom {
+    /// The cells of the atom, mutable, in the order of [`Atom::cells`].
+    pub fn cells_mut(&mut self) -> Vec<&mut List> {
+        match self {
+            Atom::Fraction { num, den } => vec![num, den],
+            Atom::Radical { index, body } => std::iter::once(body).chain(index).collect(),
+            Atom::Scripts { nucleus, sub, sup } => {
+                std::iter::once(nucleus).chain(sub).chain(sup).collect()
+            }
+            Atom::Delimited { body, .. }
+            | Atom::Accent { body, .. }
+            | Atom::FontChange { body, .. }
+            | Atom::Group(body) => vec![body],
+            Atom::Matrix { rows, .. } => rows.iter_mut().flatten().collect(),
+            Atom::Symbol { .. }
+            | Atom::OperatorName(_)
+            | Atom::Text(_)
+            | Atom::Space(_)
+            | Atom::Unknown(_) => Vec::new(),
+        }
+    }
+
     /// The cells of the atom, in the order a `CellPath` numbers them: a fraction's numerator then
     /// its denominator; a radical's body then its index; a script's nucleus, subscript and
     /// superscript, those present; a matrix's cells row by row; the body of any other atom with

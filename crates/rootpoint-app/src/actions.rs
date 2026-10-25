@@ -8,7 +8,7 @@ use std::path::Path;
 use eframe::egui::Pos2;
 use parley::{Affinity, Selection};
 use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, SlideId, node_rects};
-use rootpoint_model::{CaretPos, SpanId, TextNodeRef};
+use rootpoint_model::{CaretPos, SpanId, TextItem, TextNodeRef};
 use rootpoint_model::{Content as C, FontRef, Replacement, StyleChoice, TextContent};
 use rootpoint_protocol::{
     Command, EquationOption, Reply, SpanOption, SpanStyleCommand, StyleCommand, StyleOption,
@@ -1372,9 +1372,14 @@ impl App {
     /// the selected text area, so a first click selects and a second edits. The stay opens an undo
     /// group, after closing any group still open.
     pub fn edit_at(&mut self, area: NodeId, p: Pos2, layout: &Layout) {
-        if self.socket_holds() || !self.is_text_area(area) {
+        if self.socket_holds() || !self.is_editable_area(area) {
             return;
         }
+        if self.is_equation_area(area) {
+            self.edit_equation_at(area, p, layout);
+            return;
+        }
+        let in_formula = self.formula_at_point(area, p, layout);
         let (Some(text), Some(content)) = (self.area_text(area), self.text_content(area)) else {
             return;
         };
@@ -1389,7 +1394,13 @@ impl App {
                 affinity: cursor.affinity(),
                 column: None,
                 preedit: None,
+                math: None,
             });
+            if let Some((caret, path)) = in_formula {
+                self.put_caret(caret, None, Affinity::Downstream, None);
+                self.enter_formula(false);
+                self.set_math_caret(path);
+            }
         }
     }
 
@@ -1397,6 +1408,9 @@ impl App {
     /// selected. A composition still open is dropped from the text first, and every empty span of
     /// the text is unwrapped, `design@rootpoint-app@empty-span-unwrapped`, inside the group.
     pub fn stop_editing(&mut self) {
+        if self.math_caret().is_some() {
+            self.leave_formula(false);
+        }
         let Some(edit) = self.edit.clone() else {
             return;
         };
@@ -1417,8 +1431,39 @@ impl App {
         self.run(Command::End);
     }
 
-    /// Place the caret of the text being edited at the point `p` of the slide view.
+    /// Place the caret of the text being edited at the point `p` of the slide view. In an equation
+    /// area the point gives a position of its formula; in a text, a point in a formula's box gives
+    /// a position of that formula, and any other point leaves the formula being edited.
     pub fn place_caret(&mut self, p: Pos2, layout: &Layout) {
+        let Some(area) = self.editing() else {
+            return;
+        };
+        if self.is_equation_area(area) {
+            if let Some(path) = self.math_path_at(p, layout) {
+                self.close_math_command();
+                self.set_math_caret(path);
+            }
+            return;
+        }
+        let in_formula = self.formula_at_point(area, p, layout);
+        if self.math_caret().is_some() {
+            let caret = self.edit.as_ref().map(|e| e.caret);
+            if let Some((at, path)) = &in_formula
+                && Some(*at) == caret
+            {
+                self.close_math_command();
+                self.set_math_caret(path.clone());
+                return;
+            }
+            self.leave_formula(false);
+        }
+        // The formula's place in the text is read again, since leaving one can remove it.
+        if let Some((caret, path)) = self.formula_at_point(area, p, layout) {
+            self.put_caret(caret, None, Affinity::Downstream, None);
+            self.enter_formula(false);
+            self.set_math_caret(path);
+            return;
+        }
         if let Some((caret, affinity)) = self.caret_at_point(p, layout) {
             self.put_caret(caret, None, affinity, None);
         }
@@ -1446,9 +1491,35 @@ impl App {
     /// with `extend` pass a span whole; the moves by words and lines are Parley's on the byte index,
     /// mapped back by `editing::from_byte`.
     pub fn move_caret(&mut self, m: CaretMove, extend: bool) {
+        if self.math_caret().is_some() {
+            self.math_move(m);
+            return;
+        }
         let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
             return;
         };
+        // Right before a formula, or Left after one, enters it, as LyX's caret enters an inset.
+        if !extend && edit.anchor.is_none() && matches!(m, CaretMove::Right | CaretMove::Left) {
+            let here = text_node(&content, edit.caret.node)
+                .map(items)
+                .unwrap_or_default();
+            let i = edit.caret.offset;
+            let next = match m {
+                CaretMove::Right => here.get(i),
+                _ => i.checked_sub(1).and_then(|j| here.get(j)),
+            };
+            if let Some(Item::Object(TextItem::Math(_))) = next {
+                if m == CaretMove::Left {
+                    let caret = CaretPos {
+                        offset: i - 1,
+                        ..edit.caret
+                    };
+                    self.put_caret(caret, None, Affinity::Downstream, None);
+                }
+                self.enter_formula(m == CaretMove::Left);
+                return;
+            }
+        }
         let Some(text) = self.area_text(edit.area) else {
             return;
         };
@@ -1539,6 +1610,12 @@ impl App {
 
     /// Type a string: it replaces the selection, and the caret follows it. Enter types a new line.
     pub fn type_str(&mut self, s: &str) {
+        if self.math_caret().is_some() {
+            for ch in s.chars() {
+                self.math_type(ch);
+            }
+            return;
+        }
         let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
             return;
         };
@@ -1707,6 +1784,10 @@ impl App {
     /// and would delete nothing. Backspace deletes one character of a cluster, or a whole line
     /// break or emoji, and Delete the cluster after the caret.
     fn delete(&mut self, forward: bool) {
+        if self.math_caret().is_some() {
+            self.math_delete(forward);
+            return;
+        }
         let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
             return;
         };
@@ -1746,8 +1827,10 @@ impl App {
                 self.put_caret(CaretPos { node: up, offset }, None, edit.affinity, None);
                 return;
             }
-            // A span with items is selected whole, so that a second press deletes it.
-            Some(Item::Span(s)) if !s.text.items.is_empty() => {
+            // A span with items, or a formula, is selected whole, so that a second press deletes
+            // it.
+            Some(item @ (Item::Span(_) | Item::Object(TextItem::Math(_)))) if !matches!(item, Item::Span(s) if s.text.items.is_empty()) =>
+            {
                 let other = if forward { i + 1 } else { i - 1 };
                 let anchor = Some(caret);
                 self.put_caret(

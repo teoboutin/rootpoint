@@ -174,7 +174,7 @@ impl App {
             // A click on the selected text area enters editing at the click; a first click on an
             // area only selects it, so a double-click on a text area does both.
             self.edit_on_click =
-                matches!(press, Press::Area(a) if Some(a) == selected && self.is_text_area(a))
+                matches!(press, Press::Area(a) if Some(a) == selected && self.is_editable_area(a))
                     .then_some(origin);
             match press {
                 Press::Grip(area) => self.grab_grip(area),
@@ -378,6 +378,40 @@ impl App {
             for r in self.preedit_rects(layout) {
                 ui.painter()
                     .hline(r.x_range(), r.max.y, Stroke::new(1.5, accent));
+            }
+            if let Some(marks) = self.math_marks(layout) {
+                let thin = Color32::from_rgba_unmultiplied(accent.r(), accent.g(), accent.b(), 150);
+                for r in marks.empty_cells {
+                    ui.painter()
+                        .rect_stroke(r, 0.0, Stroke::new(1.0, thin), StrokeKind::Inside);
+                }
+                for (depth, r) in marks.frames.into_iter().enumerate() {
+                    let alpha = 230u8.saturating_sub(60 * depth.min(3) as u8);
+                    let colour =
+                        Color32::from_rgba_unmultiplied(accent.r(), accent.g(), accent.b(), alpha);
+                    ui.painter().rect_stroke(
+                        r.expand(FRAME_GAP * depth as f32),
+                        0.0,
+                        Stroke::new(1.0, colour),
+                        StrokeKind::Outside,
+                    );
+                }
+                if let Some(r) = marks.selected {
+                    ui.painter().rect_filled(r, 0.0, tint);
+                }
+                if let (Some(name), Some(caret)) = (marks.command, self.caret_rect(layout)) {
+                    let font = egui::FontId::monospace(caret.height().clamp(10.0, 24.0));
+                    let at = Pos2::new(caret.max.x + 2.0, caret.min.y);
+                    let r = ui
+                        .painter()
+                        .text(at, egui::Align2::LEFT_TOP, name, font, accent);
+                    ui.painter().rect_stroke(
+                        r.expand(1.0),
+                        2.0,
+                        Stroke::new(1.0, thin),
+                        StrokeKind::Outside,
+                    );
+                }
             }
             if let Some(caret) = self.caret_rect(layout) {
                 // In the colour the caret types with, so that the two positions at the edge of a

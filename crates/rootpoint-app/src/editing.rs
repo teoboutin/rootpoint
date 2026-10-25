@@ -50,6 +50,19 @@ pub(crate) struct Editing {
     /// it, so that a run of moves by lines keeps the caret's column.
     pub column: Option<Selection>,
     pub preedit: Option<(TextNodeRef, Range<usize>)>,
+    /// The caret in a formula: in the math item after `caret` of a text, or in an equation area's
+    /// formula, where `caret` names nothing; `None` while the caret is in the text.
+    pub math: Option<MathCaret>,
+}
+
+/// The caret in a formula, the editor's state alone, `design@rootpoint-app@caret-editor-state`: its
+/// place, the atom a first press of Backspace or Delete selected, and the name of the command being
+/// typed after `\`, which the overlay shows at the caret and the formula holds once it closes.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct MathCaret {
+    pub path: rootpoint_math::CellPath,
+    pub selected: Option<rootpoint_math::CellPath>,
+    pub command: Option<String>,
 }
 
 /// A move of the caret.
@@ -508,7 +521,11 @@ impl App {
     /// as tall as the size the caret types with, from the ascent to the descent of the line's
     /// first run, scaled to that size; so the two caret positions at the edge of a span of
     /// another size are drawn at two heights.
+    /// In a formula, the caret is the formula's, `App::math_caret_rect`.
     pub fn caret_rect(&mut self, layout: &Layout) -> Option<Rect> {
+        if self.math_caret().is_some() {
+            return self.math_caret_rect(layout);
+        }
         let area = self.editing()?;
         let text = self.area_text(area)?;
         let edit = self.edit.as_ref()?;
@@ -533,6 +550,13 @@ impl App {
             let baseline = f64::from(line.metrics().baseline);
             b.y0 = baseline - f64::from(m.ascent) * scale;
             b.y1 = baseline + f64::from(m.descent) * scale;
+        }
+        // Parley places a cursor by clusters, and a formula's inline box is none: at the byte of
+        // the mark after the box, it would draw the caret before the formula after the box, where
+        // the caret after it stands.
+        if let Some(f) = text.formulas.iter().find(|f| f.range.start == index) {
+            b.x0 = f.origin.0;
+            b.x1 = f.origin.0 + f64::from(width);
         }
         Some(to_view(&text, layout, b))
     }

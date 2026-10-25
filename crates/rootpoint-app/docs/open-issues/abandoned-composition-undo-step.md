@@ -33,6 +33,12 @@ pushes a step of two inverses that cancel out. Reproduction, a probe test that i
 run `text n5 "Z"`; select n3 and edit it, `App::edit_at`; call `App::bold`, then
 `App::stop_editing`; run `undo`. The undo replies `Ok("")`, and n5 is still `"Z"`.
 
+A formula inserted and left empty reaches it too. Ctrl+M, `App::insert_formula`, sends `insert` of
+an empty math item at the caret, and leaving the formula empty, `App::leave_formula`, sends
+`delete` of the item, inside the same group. The check "a formula left empty is removed" of
+`path@rootpoint-app@tests/actions.rs` runs the two commands; assumption, not run: an `undo` after
+the stay then undoes the step of the two, which changes nothing.
+
 Not established: whether a stay that types a character and deletes it should leave a step. Text
 editors commonly keep one, and this entry does not claim it is a defect.
 
@@ -50,6 +56,6 @@ that changed nothing; and, in a workspace, the step costs one autosave write tha
 
 A stay whose group leaves the text as it found it pushes no step: either `Session::end_group`
 drops a group whose net effect is none, or the app skips the commands of a composition abandoned
-with nothing committed and of a span opened and left empty. A test in
+with nothing committed, of a span opened and left empty and of a formula inserted and left empty. A test in
 `path@rootpoint-app@tests/editing.rs` runs each reproduction above and asserts that the first
 Ctrl+Z undoes `text n5 "Z"`.

@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc cffacfad3b9ad9404c20c01f462c4e0cb1db2d83c004dfdec2caa1702e427fd2 # shrinks to tree = "[{bold {bold \" \", {bold $x$}}}]"
+cc e0deadd169d1a0d5cf34051a7f80bbe2f1a92868c883c6a940c7123640b20d10 # shrinks to tree = "[$x$]"

@@ -69,7 +69,8 @@ The fifth and last slice of `milestone@plans@math-support`. It lands
 - **Each key of the table runs its action**: a test per binding, through `App::frame` with a
   synthetic key; shown to fail by a table with one binding swapped.
 - **A typed command becomes its atom**: typing `\frac` then Space gives a fraction with the caret in
-  its numerator, and `\leq` then a letter gives ≤ followed by that letter; shown to fail by a macro
+  its numerator, and `\leq` then a digit gives ≤ followed by that digit, since a letter extends the
+  name, as the milestone's table "A key in a formula, to what it does" says; shown to fail by a macro
   mode that closes on Space alone.
 
 ## Audit subjects

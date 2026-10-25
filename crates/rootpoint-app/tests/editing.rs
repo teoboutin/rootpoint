@@ -830,13 +830,24 @@ fn backspace_and_delete_at_an_edge_select_a_span_or_unwrap_it() {
 /// a caret position, no character carrying a mark; "ff" is a ligature of the built-in Open Sans,
 /// and `the_walk_crosses_a_ligature` walks one each time.
 /// The spans hold one item or more, nested three deep at most, since the walk unwraps an empty span
-/// it leaves.
+/// it leaves. The trees hold formulas too, and the walk goes through each of a formula's positions,
+/// between the positions before it and after it: each is drawn at its cell's left edge or after its
+/// atom, as tall as its cell, within the same half pixel.
 mod caret_walk {
     use super::*;
     use proptest::prelude::*;
+    use rootpoint_math::CellPath;
+
+    /// A caret position: in the text, and, inside a formula, in the formula.
+    type Position = (CaretPos, Option<CellPath>);
+
+    const FORMULAS: [&str; 4] = [r"$x$", r"$\frac{a}{b}$", r"$x_i^2$", r"$\sqrt{y}+1$"];
 
     fn tree(depth: u32) -> BoxedStrategy<String> {
-        let chars = "[a-z ]{1,4}".prop_map(|s| format!("{s:?}"));
+        let chars = prop_oneof![
+            4 => "[a-z ]{1,4}".prop_map(|s| format!("{s:?}")),
+            1 => prop::sample::select(FORMULAS.to_vec()).prop_map(str::to_owned),
+        ];
         if depth == 0 {
             return chars.boxed();
         }
@@ -852,38 +863,100 @@ mod caret_walk {
         prop::collection::vec(tree(3), 1..6).prop_map(|items| format!("[{}]", items.join(", ")))
     }
 
-    /// Every caret position of a text node and of the spans below it.
-    fn positions(node: TextNodeRef, text: &TextNode, out: &mut Vec<CaretPos>) {
+    /// Every caret position of a text node and of the spans and formulas below it.
+    fn positions(node: TextNodeRef, text: &TextNode, out: &mut Vec<Position>) {
         let mut offset = 0;
-        out.push(at(node, 0));
+        out.push((at(node, 0), None));
         for item in &text.items {
             match item {
                 TextItem::Chars(s) => {
                     for _ in s.chars() {
                         offset += 1;
-                        out.push(at(node, offset));
+                        out.push((at(node, offset), None));
                     }
                 }
                 TextItem::Span(span) => {
                     positions(TextNodeRef::Span(span.id), &span.text, out);
                     offset += 1;
-                    out.push(at(node, offset));
+                    out.push((at(node, offset), None));
                 }
-                TextItem::Math(_) | TextItem::Ref(_) => {
+                TextItem::Math(f) => {
+                    let mut p = Some(rootpoint_math::start());
+                    while let Some(here) = p {
+                        p = rootpoint_math::right(f, &here);
+                        out.push((at(node, offset), Some(here)));
+                    }
                     offset += 1;
-                    out.push(at(node, offset));
+                    out.push((at(node, offset), None));
+                }
+                TextItem::Ref(_) => {
+                    offset += 1;
+                    out.push((at(node, offset), None));
                 }
             }
         }
     }
 
+    /// Where the caret at `path` of the formula that starts at the byte `index` of n3's laid-out
+    /// string is drawn, by the render's layout, in slide units of the slide: its x, at the left
+    /// edge of the atom after it, or the right edge of the atom before it, or its cell's left edge
+    /// in an empty cell; and the top and the bottom of its cell.
+    fn cell_place(d: &Driver, index: usize, path: &CellPath) -> (f64, f64, f64) {
+        let doc = d.app.session().document();
+        let slide = d.app.shown_slide().unwrap();
+        let text = area_text(doc, slide, NodeId(3), &mut FontSet::new()).unwrap();
+        let f = text
+            .formulas
+            .iter()
+            .find(|f| f.range.start == index)
+            .unwrap();
+        let l = &f.layout;
+        let in_cell =
+            |c: &CellPath| c.steps == path.steps && (c.row, c.column) == (path.row, path.column);
+        let cell = l.cells.iter().find(|c| in_cell(&c.path)).unwrap();
+        let atom = |offset: usize| {
+            l.atoms
+                .iter()
+                .find(|a| in_cell(&a.path) && a.path.offset == offset)
+        };
+        let x = match (atom(path.offset), path.offset.checked_sub(1).and_then(atom)) {
+            (Some(a), _) => a.x,
+            (None, Some(a)) => a.x + a.width,
+            (None, None) => cell.x,
+        };
+        let (u, v) = (text.origin.0 + f.origin.0, text.origin.1 + f.origin.1);
+        (u + x, v + cell.y - cell.ascent, v + cell.y + cell.descent)
+    }
+
     /// Walk the caret with `m` until it stops, from where it is, checking each position's drawing.
-    fn walk(d: &mut Driver, layout: &Layout, ppp: f32, m: CaretMove) -> Vec<CaretPos> {
+    fn walk(d: &mut Driver, layout: &Layout, ppp: f32, m: CaretMove) -> Vec<Position> {
         let glyphs = glyph_edges(d);
-        let mut seen = vec![d.app.caret().unwrap()];
+        let here = |d: &Driver| (d.app.caret().unwrap(), d.app.math_caret());
+        let mut seen = vec![here(d)];
         loop {
             let index = d.app.caret_index().unwrap();
             let caret = d.app.caret_rect(layout).unwrap();
+            if let Some(path) = d.app.math_caret() {
+                let (x, top, bottom) = cell_place(d, index, &path);
+                let off = (caret.min.x - layout.to_points(x, 0.0).x).abs() * ppp;
+                assert!(off <= 0.5, "byte {index}, {path:?}: {off} px");
+                // A cell lower than two points draws its caret at the formula's axis instead.
+                let (top, bottom) = (
+                    layout.to_points(0.0, top).y,
+                    layout.to_points(0.0, bottom).y,
+                );
+                if bottom - top >= 2.0 {
+                    let off = (caret.min.y - top).abs().max((caret.max.y - bottom).abs()) * ppp;
+                    assert!(off <= 0.5, "byte {index}, {path:?}: {off} px off its cell");
+                }
+                d.app.move_caret(m, false);
+                let now = here(d);
+                if Some(&now) == seen.last() {
+                    return seen;
+                }
+                seen.push(now);
+                continue;
+            }
             // The left edge of the cluster that starts at the caret's byte index, or, at the text's
             // end, the last one's right edge; a caret at a soft line break stands before the next
             // line's first cluster. Inside a ligature, no glyph boundary is there to check.
@@ -897,7 +970,7 @@ mod caret_walk {
                 assert!(off <= 0.5, "byte {index}: {off} px");
             }
             d.app.move_caret(m, false);
-            let now = d.app.caret().unwrap();
+            let now = here(d);
             if Some(&now) == seen.last() {
                 return seen;
             }
@@ -908,7 +981,9 @@ mod caret_walk {
     /// Each cluster the render lays out for n3: the byte it starts at, its left and right x in
     /// slide units, the byte it ends at, and whether it is a character of a ligature after its
     /// first, which has no glyph boundary of its own: Parley 0.12.0 gives each character of a
-    /// ligature a cluster, with a share of the ligature's advance.
+    /// ligature a cluster, with a share of the ligature's advance. A formula's box stands first at
+    /// the byte of the mark after it, which covers no byte, so a caret before the formula is drawn
+    /// at its left edge.
     fn glyph_edges(d: &Driver) -> Vec<(usize, f64, f64, usize, bool)> {
         let doc = d.app.session().document();
         let slide = d.app.shown_slide().unwrap();
@@ -916,6 +991,11 @@ mod caret_walk {
         let mut out = Vec::new();
         for line in text.layout.lines() {
             for item in line.items() {
+                if let PositionedLayoutItem::InlineBox(b) = &item {
+                    let start = text.formulas[b.id as usize].range.start;
+                    let x = text.origin.0 + f64::from(b.x);
+                    out.push((start, x, x + f64::from(b.width), start, false));
+                }
                 if let PositionedLayoutItem::GlyphRun(run) = item {
                     let mut x = text.origin.0 + f64::from(run.offset());
                     for c in run.run().visual_clusters() {
@@ -978,8 +1058,8 @@ mod caret_walk {
                 d.app.move_caret(CaretMove::TextStart, false);
                 let right = walk(&mut d, &layout, ppp, CaretMove::Right);
                 let left = walk(&mut d, &layout, ppp, CaretMove::Left);
-                let sorted = |mut v: Vec<CaretPos>| {
-                    v.sort_by_key(|p| (format!("{:?}", p.node), p.offset));
+                let sorted = |mut v: Vec<Position>| {
+                    v.sort_by_key(|p| format!("{p:?}"));
                     v
                 };
                 prop_assert_eq!(right.len(), all.len(), "Right visits each once: {}", tree);

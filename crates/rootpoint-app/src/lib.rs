@@ -12,6 +12,7 @@ pub mod autosave;
 #[cfg(unix)]
 pub mod control;
 pub mod editing;
+pub mod formula_editing;
 pub mod hit;
 mod memory;
 mod menu;
@@ -1203,6 +1204,12 @@ impl App {
                     match (moved, key) {
                         (Some(m), _) => self.move_caret(m, shift),
                         (None, Key::Escape) => self.stop_editing(),
+                        (None, Key::Tab) if self.math_caret().is_some() => self.math_tab(),
+                        (None, Key::Enter) if word && self.math_caret().is_some() => {
+                            self.math_new_row()
+                        }
+                        (None, Key::Enter) if self.math_caret().is_some() => {}
+                        (None, Key::M) if word && !shift => self.insert_formula(),
                         (None, Key::Backspace) => self.delete_backward(),
                         (None, Key::Delete) => self.delete_forward(),
                         (None, Key::Enter) => self.type_str("\n"),

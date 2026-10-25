@@ -1071,6 +1071,159 @@ fn the_node_menu_entries_issue_their_commands() {
     );
 }
 
+/// Enter editing n3 with its caret at `offset` of the root, with no window.
+fn edit_n3_at(a: &mut App, offset: usize) {
+    edit_n3(a);
+    a.set_caret_pos(CaretPos {
+        node: TextNodeRef::Root,
+        offset,
+    });
+}
+
+/// The editing of a formula, `design@rootpoint-protocol@math-edit-commands`: each change sends the
+/// whole formula, by `math` in a text and `equation` in an equation area, inside the stay's group.
+#[test]
+fn the_formula_actions_issue_their_commands() {
+    use rootpoint_app::editing::CaretMove;
+    check(
+        "Ctrl+M then a script",
+        &["select n3", r#"text n3 ["ab"]"#],
+        |a| {
+            edit_n3_at(a, 2);
+            a.insert_formula();
+            a.type_str("x^2");
+            a.stop_editing();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c("insert n3 2 $$"),
+                c("math n3 2 $x$"),
+                c("math n3 2 $x^{}$"),
+                c("math n3 2 $x^2$"),
+                c("end"),
+            ]
+        },
+    );
+    check(
+        "Ctrl+M over a selection that reads as a formula",
+        &["select n3", r#"text n3 ["x+1"]"#],
+        |a| {
+            edit_n3(a);
+            a.select_all();
+            a.insert_formula();
+            a.stop_editing();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c("delete n3 0..3"),
+                c("insert n3 0 $x+1$"),
+                c("end"),
+            ]
+        },
+    );
+    check(
+        "a formula left empty is removed",
+        &["select n3", r#"text n3 ["ab"]"#],
+        |a| {
+            edit_n3_at(a, 1);
+            a.insert_formula();
+            a.move_caret(CaretMove::Right, false);
+            a.stop_editing();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c("insert n3 1 $$"),
+                c("delete n3 1..2"),
+                c("end"),
+            ]
+        },
+    );
+    // A typed command is shown by its name while it is typed, and becomes its atom when a
+    // character that is no letter closes it: Space, swallowed, or the character, which then acts.
+    check(
+        r"\frac then Space, \leq then a digit",
+        &["select n3", r#"text n3 [$$]"#],
+        |a| {
+            edit_n3_at(a, 0);
+            a.move_caret(CaretMove::Right, false);
+            assert!(a.math_caret().is_some(), "in the formula");
+            a.type_str(r"\frac ");
+            assert_eq!(
+                a.math_caret().map(|p| p.steps),
+                Some(vec![(0, 0)]),
+                "the numerator"
+            );
+            a.type_str("1");
+            a.move_caret(CaretMove::TextEnd, false);
+            a.type_str(r"\leq2");
+            assert_eq!(a.typed_command(), None, "the digit closed the command");
+            a.stop_editing();
+        },
+        |_| vec![c("begin"), c(r"math n3 0 $\frac{1}{} \leq 2$"), c("end")],
+    );
+    check(
+        "Tab completes a typed command",
+        &["select n3", r#"text n3 [$$]"#],
+        |a| {
+            edit_n3_at(a, 0);
+            a.move_caret(CaretMove::Right, false);
+            a.type_str(r"\lefta");
+            a.math_tab();
+            a.type_str(" ");
+            a.stop_editing();
+        },
+        |_| vec![c("begin"), c(r"math n3 0 $\leftarrow$"), c("end")],
+    );
+    // A first Backspace selects an atom with cells, a second deletes it; in the text, a first
+    // Backspace after a formula selects it, a second deletes it.
+    check(
+        "Backspace selects, then deletes",
+        &["select n3", r#"text n3 ["x", $a\frac{b}{c}$, "z"]"#],
+        |a| {
+            edit_n3_at(a, 1);
+            a.move_caret(CaretMove::Right, false);
+            a.move_caret(CaretMove::TextEnd, false);
+            a.delete_backward();
+            assert!(a.selected_atom().is_some());
+            a.delete_backward();
+            a.move_caret(CaretMove::Right, false);
+            assert_eq!(a.math_caret(), None, "Right at the formula's end leaves it");
+            a.delete_backward();
+            a.delete_backward();
+            a.stop_editing();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c("math n3 1 $a$"),
+                c("delete n3 1..2"),
+                c("end"),
+            ]
+        },
+    );
+    check(
+        "typing in an equation area",
+        &["select n3", r"equation n3 $\alpha$"],
+        |a| {
+            edit_n3(a);
+            a.move_caret(CaretMove::TextEnd, false);
+            a.type_str("+1");
+            a.stop_editing();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c(r"equation n3 $\alpha+$"),
+                c(r"equation n3 $\alpha+1$"),
+                c("end"),
+            ]
+        },
+    );
+}
+
 #[test]
 fn the_final_view_actions_issue_their_commands() {
     check(

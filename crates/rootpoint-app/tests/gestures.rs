@@ -555,10 +555,11 @@ fn edit_n3(d: &mut Driver) {
     assert_eq!(d.app.editing(), Some(n3));
 }
 
-/// A click on the selected equation area enters no editing: it holds no text, and Delete then
-/// removes the area, as a node key does.
+/// A click on the selected equation area enters editing its formula, with the caret in it, and
+/// typing changes the formula; after Esc, the area stays selected and Delete removes it, as a node
+/// key does.
 #[test]
-fn a_second_click_on_an_equation_area_enters_no_editing() {
+fn a_second_click_on_an_equation_area_edits_its_formula() {
     let mut d = Driver::new();
     let n3 = NodeId(3);
     assert!(matches!(
@@ -572,6 +573,16 @@ fn a_second_click_on_an_equation_area_enters_no_editing() {
         r.right() - 0.05 * r.width(),
         r.bottom() - 0.05 * r.height(),
     ));
+    assert_eq!(d.app.editing(), Some(n3));
+    assert!(d.app.math_caret().is_some());
+    d.app
+        .move_caret(rootpoint_app::editing::CaretMove::TextEnd, false);
+    d.frame(vec![Event::Text("+1".to_owned())], Modifiers::NONE);
+    assert_eq!(
+        d.app.edited_formula().map(|f| f.to_latex()),
+        Some(r"\alpha + 1".to_owned())
+    );
+    d.key(Key::Escape, Modifiers::NONE);
     assert_eq!(d.app.editing(), None);
     assert_eq!(d.selected(), Some(n3));
     d.key(Key::Delete, Modifiers::NONE);
