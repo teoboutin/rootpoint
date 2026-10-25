@@ -561,7 +561,7 @@ Its shape is in "Decided design"; its harvest is the math crate's design home, a
 
 Proposed by the session in round 1, from the owner's request for inline math, on #arg-1, #arg-10 and
 #arg-11. Approved in round 2: "math-text-item: agreed". Harvested into
-`design@rootpoint-model@text-node-kinds` and `design@rootpoint-render@area-text-layout`, at
+`design@rootpoint-model@text-node-kinds` and `design@rootpoint-render@formula-mark`, at
 #inline-math.
 
 ### A displayed equation is a kind of content of its own, one per area `##equation-content-kind`
@@ -591,8 +591,9 @@ Proposed by the session in round 1 as a fork against labels, #arg-18 and #arg-19
 in round 2 on ids, for a first shape: "Maybe we can go for the simpler shape you propose at first, a
 leave a todo issue with leads for the equation labelling", with the owner's lead "Name would be a
 property of the node kind, set at the same place text styles and image format are setup, in the
-right sidebar", #arg-32; the issue is `issue@rootpoint-model@equation-names`. Harvested into the
-model's design home, at #inline-math.
+right sidebar", #arg-32; the issue is `issue@rootpoint-model@equation-names`. Harvested into
+`design@rootpoint-model@equation-reference-target`, `design@rootpoint-model@swap-carries-references`
+and `design@rootpoint-model@duplicate-redirects-references`, at #inline-math.
 
 ### Removing or converting a referenced equation is refused, and the refusal names the references `##removed-equation-references`
 

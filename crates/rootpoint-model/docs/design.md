@@ -150,7 +150,7 @@ that fails it, `design@rootpoint-protocol@no-new-breach`. The model checks nothi
 file is at the path, and where a symlink leads, are the store's to check. A file that names another
 path loads, a cosmetic breach, `design@rootpoint-model@cosmetic-fallbacks`.
 
-### An area's text is a tree whose nodes are spans, each carrying its style `##text-node-tree`
+### An area's text is a tree, each span of which carries its style `##text-node-tree`
 
 A text is a root `TextNode`, a sequence of runs of characters, spans, formulas and references,
 `design@rootpoint-model@text-node-kinds`; a span has an id, a span's style and a `TextNode` of its
@@ -226,7 +226,7 @@ to name a style.
 
 `TextItem` is `Chars`, `Span`, `Math` or `Ref`, and the file, the operations and a caret position
 name an item by its kind, so a kind added later joins the enumeration with no change of what a text
-is, and a formula and a reference joined it so. `TextItem::Math` holds a formula,
+is. `TextItem::Math` holds a formula,
 `design@rootpoint-math@formula-tree`, written in the file as its LaTeX,
 `design@rootpoint-math@math-storage-form`: one offset of its text node, laid out as one inline box,
 `design@rootpoint-render@formula-mark`, at the size and in the colour its node resolves to, bold and
@@ -382,7 +382,7 @@ number, `design@rootpoint-model@stable-ids`; it draws `(n)`, the number
 `(??)` where the area has no number. A name the author gives an equation would need a namespace, a
 rule that names are unique, and a rename that rewrites every reference, where an id needs none, and
 the author picks the equation from a list in the window, so no name is needed to insert one. On the
-owner's word: the owner chose, with a "maybe", ids over names for a first shape, and kept names
+owner's word: the owner chose, tentatively, ids over names for a first shape, and kept names
 open in `issue@rootpoint-model@equation-names`.
 
 ### A swap carries the references of its two areas with their contents, a reference naming an area's id `##swap-carries-references`

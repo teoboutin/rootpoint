@@ -96,10 +96,10 @@ tree set whole is renumbered. The commands are the crate's interface to every pr
 styled text, as `goal@rootpoint-protocol@commands-drive-everything` asks.
 `tripwire@rootpoint-protocol@one-line-tree-written-badly` watches agents writing `text`'s tree.
 
-
 `retarget` replies the number of references it moved, and refuses a target that holds no equation
 and a source that is its target; its source may hold none, so that the references a file brought to
 an area that holds no equation can be moved to one.
+
 ### `text` with options and no tree changes the area's style alone, its spans and their ids kept `##text-style-alone`
 
 `text <area> <options>` changes the style of an area's text by `Op::SetContent` of its current

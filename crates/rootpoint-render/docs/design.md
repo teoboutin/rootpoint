@@ -51,8 +51,9 @@ Parley's own editor.
 
 ### A formula of a text is an inline box, on a word joiner of the laid-out string `##formula-mark`
 
-Each formula of a text is laid out by the math crate, in text style, at the size and in the colour
-its text node resolves to, and placed in the text's one Parley layout as an inline box of its width,
+Each formula of a text is laid out by the math crate, in text style, as
+`design@rootpoint-model@text-node-kinds` sizes and colours it, and placed in the text's one Parley
+layout as an inline box of its width,
 its height and its baseline, at the byte index of a U+2060, the word joiner, that the laid-out
 string holds for it. The caret's positions before and after the formula are then two byte indices,
 either side of the box. The nearest rival, the box at an index with no character of its own,

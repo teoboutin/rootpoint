@@ -440,15 +440,24 @@ mod tests {
                 .x0
         };
         let bare = lay("abcd");
-        let box_right = x(&bare, 2) + 100.0;
-        // After the box, the next position is past the `c`.
-        assert!(x(&bare, 3) > box_right + 1.0, "{} {box_right}", x(&bare, 3));
         let marked = lay("ab\u{2060}cd");
-        assert!((x(&marked, 2) - x(&bare, 2)).abs() < 1e-3);
+        // The box stands after the `b`, at byte 2 in both layouts.
+        let box_left = x(&bare, 2);
+        let box_right = box_left + 100.0;
+        assert!((x(&marked, 2) - box_left).abs() < 1e-3);
+        // With the mark, byte 5 stands right after the box, and byte 6 after the `c`; with none,
+        // byte 3 stands after the `c`, so no position is between the box and the `c`.
         assert!(
             (x(&marked, 5) - box_right).abs() < 1e-3,
             "{} {box_right}",
             x(&marked, 5)
+        );
+        let after_c = x(&marked, 6);
+        assert!(after_c > box_right + 1.0);
+        assert!(
+            (x(&bare, 3) - after_c).abs() < 1e-3,
+            "{} {after_c}",
+            x(&bare, 3)
         );
         // The mark's glyph is the font's own, not the missing glyph, and has no advance.
         let mut glyphs = Vec::new();
