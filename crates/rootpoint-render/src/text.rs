@@ -15,6 +15,9 @@ use vello_cpu::kurbo::{Affine, Diagonal2};
 /// The family of the built-in sans, which `FontRef::Builtin("sans")` names.
 const BUILTIN_SANS: &str = "Open Sans";
 
+/// The family of the built-in math font, which ends the font stack of every text.
+const BUILTIN_MATH_FAMILY: &str = "Libertinus Math";
+
 const BUILTIN_FONTS: [&[u8]; 4] = [
     include_bytes!("../fonts/open-sans/OpenSans-Regular.ttf"),
     include_bytes!("../fonts/open-sans/OpenSans-Bold.ttf"),
@@ -146,13 +149,19 @@ pub(crate) fn layout_text(
     spans: &[(Range<usize>, SpanStyle)],
     width: f32,
 ) -> TextLayout {
-    // The built-in sans ends each stack, so a character the chosen font lacks is drawn in it.
+    // The built-in sans follows the chosen font, so a character the chosen font lacks is drawn in
+    // it, and the math font ends each stack, so one the sans lacks too, as an arrow, is drawn from
+    // the math font rather than as a box.
     let mut fell_back = false;
     let mut stack = |fonts: &FontSet, font: &FontRef| {
         let resolved = fonts.family(font);
         fell_back |= resolved.is_none();
         let family = resolved.unwrap_or_else(|| BUILTIN_SANS.to_owned());
-        vec![family, BUILTIN_SANS.to_owned()]
+        vec![
+            family,
+            BUILTIN_SANS.to_owned(),
+            BUILTIN_MATH_FAMILY.to_owned(),
+        ]
     };
     let area_stack = stack(fonts, &style.font);
     let span_stacks: Vec<Option<Vec<String>>> = spans
@@ -319,6 +328,26 @@ mod tests {
             names,
             vec!["Libertinus Math".to_owned(), BUILTIN_SANS.to_owned()]
         );
+    }
+
+    /// An arrow, which neither the text's font nor Open Sans has, is drawn from Libertinus Math,
+    /// and is no missing glyph: AC7 of the milestone of math.
+    #[test]
+    fn an_arrow_typed_in_a_text_is_drawn_from_the_math_font() {
+        let mut set = FontSet::new();
+        let laid = layout_text(&mut set, "a → b", &TextStyle::default(), &[], 1000.0);
+        assert!(!laid.missing_glyph);
+        let mut math_runs = 0;
+        for line in laid.layout.lines() {
+            for item in line.items() {
+                if let PositionedLayoutItem::GlyphRun(run) = item
+                    && run.run().font().data.len() == crate::formula::BUILTIN_MATH.len()
+                {
+                    math_runs += 1;
+                }
+            }
+        }
+        assert_eq!(math_runs, 1, "the arrow alone is drawn from the math font");
     }
 
     /// The binary carries one text family, so `family` resolves every built-in name to it: a second
