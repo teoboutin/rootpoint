@@ -188,11 +188,14 @@ What exists today, at each site the work touches:
 - **The renderer**, as #text-tree landed it. `layout_text` lays a text's string out through
   `ranged_builder`, each span's values over its byte range, and each run carries its colour, the
   brush `TextBrush`; `AreaText` carries the `TextMap`; no `InlineBox` is used.
-- **The protocol**, before #span-commands. `text <area> "<string>" [options]` sets an area's whole
-  text, as one run, and `tree` prints
-  `n<n> text "<string>" style="<name>"` or `custom`, `path@rootpoint-protocol@src/tree.rs`.
+- **The protocol**, as #span-commands landed it. `insert`, `delete`, `wrap`, `unwrap`, `span` and
+  `split-span` change a text by one operation each, `design@rootpoint-protocol@text-edit-commands`;
+  `text` takes a whole tree on one line, and `tree` prints one,
+  `design@rootpoint-protocol@protocol-transport`; `text` with options and no tree changes the area's
+  style alone, `design@rootpoint-protocol@text-style-alone`; the `span-style` commands and the
+  query `span-styles` change and list the span style table.
 - **The editor**, before #tree-caret. Every change of a text is one `text` command with the area's
-  whole text, which drops the spans of a text loaded with them, until #tree-caret sends the small
+  whole text as a tree of one run, which drops the spans of a text loaded with them, until #tree-caret sends the small
   commands; no release is made between the slices. Every change of a text is so sent,
   `design@rootpoint-app@edit-in-place`; the caret is a Parley `Selection`, placed again by byte
   index after each command; the caret, the selection and the composing range are editor state,
@@ -757,7 +760,8 @@ The editor sends one small command per change, each one operation: `insert`, `de
 rival: a whole-text replacement at each change; defeated by #arg-9.
 
 `text` sets a whole tree, given on one line, `Op::SetText`, which gives its spans new ids; `tree`
-prints a text in the same form. An illustration, not the grammar, which #span-commands fixes:
+prints a text in the same form. An illustration, not the grammar, which #span-commands fixed in
+`design@rootpoint-protocol@protocol-transport`:
 
 ```text
 text n3 ["Let x be a ", {bold "prime"}, " number"]
@@ -970,8 +974,8 @@ reopens #text-edit-commands.
 1. #text-tree, landed, its spec deleted with its harvest: the tree in the model, its operations, the
    span style table, the file at version 5, and the renderer drawing spans; `area_text`'s map. Fails
    alone on: the fixture's round trip and a golden image of a styled text.
-2. [#span-commands](span-commands.md): the commands of the tree and of the span style table, `tree`
-   printing the tree, `text` taking one. Fails alone on: the parse of every printed command, and
+2. #span-commands, landed, its spec deleted with its harvest: the commands of the tree and of the
+   span style table, `tree` printing the tree, `text` taking one. Fails alone on: the parse of every printed command, and
    the property test of `design@rootpoint-protocol@no-new-breach`.
 3. [#tree-caret](tree-caret.md): the editor's caret over the tree, typing, deletion and composition
    by the small commands, the selection of one node. Fails alone on: AC1 and AC3.
@@ -1028,8 +1032,8 @@ reopens #text-edit-commands.
   approved, so it blocked the merge of #text-tree.
 - **Q3** and **Q4**, ruled: accepted by the owner, "q3 and q4 accepted". Open at the design audit
   of #span-commands, on how an area's style changes with its spans kept and how a span's value is
-  cleared, each written with its default in that slice's "Decided design" and as a thread of that
-  slice. They blocked the merge of #span-commands.
+  cleared, harvested as `design@rootpoint-protocol@text-style-alone` and
+  `design@rootpoint-protocol@span-value-inherit`. They blocked the merge of #span-commands.
 
 ## Harvest
 

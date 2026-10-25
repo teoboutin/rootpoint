@@ -34,3 +34,14 @@ its `.png`, packs, unpacks elsewhere, finds the file missing, and expected it ke
 **Response:** an option of `pack` that packs the untracked files too.
 **Re-entry:** at its firing, as the session proposed and the owner approved; and the
 standing-state review before every merge, the home's standing re-entry.
+
+## Guarding `design@rootpoint-protocol@text-edit-commands` and `design@rootpoint-protocol@protocol-transport`: agents write the one-line tree badly `##one-line-tree-written-badly`
+
+T2 of the premortem of the milestone on rich text, recorded on the owner's word.
+
+**Fires when:** in one session of the owner's, an agent has `text` with a tree refused for its
+grammar three times or more.
+**Response:** reopen the grammar of `text`'s tree in
+`design@rootpoint-protocol@protocol-transport`, toward a flatter form.
+**Re-entry:** the design audit of the next work on the protocol; and the standing-state review
+before every merge.

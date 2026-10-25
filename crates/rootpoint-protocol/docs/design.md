@@ -9,9 +9,16 @@ rootpoint-protocol is for is in `register@rootpoint-protocol@goal`.
 ### Commands and their replies are text lines, and the headless binary reads them from stdin `##protocol-transport`
 
 A command is one line: a verb, then words separated by spaces. A text is a double-quoted string,
-with `\"`, `\\` and `\n` escapes; a path is one too where it holds a space, a quote or a backslash;
-a named option is `key=value`, its value bare or a quoted string, as a style's name with a space is.
-A blank line and a line starting with `#` are no command, so a script carries comments. Each command
+with `\"`, `\\` and `\n` escapes; a path is one too where it holds a space, a quote, a backslash or
+a word of a tree; a named option is `key=value`, its value bare or a quoted string, as a style's
+name with a space is. A text tree is given on one line, in brackets, braces and commas, which are
+words of their own outside a quoted string: `["Let x be a ", {t41 bold "prime"}, " number"]`, a
+tree its items separated by commas, each a quoted text or a span, and a span `{` its id, its
+options, then its items `}`. `text` takes a tree so and `tree` prints one so, so that an agent
+writes and reads a styled text as one line; the nearest rival, a tree as a JSON payload,
+`rejected@rootpoint-protocol@json-rpc-commands`, is easier to parse and harder to type.
+`tripwire@rootpoint-protocol@one-line-tree-written-badly` watches agents writing the tree. A blank
+line and a line starting with `#` are no command, so a script carries comments. Each command
 gets one reply line, `ok` or `err` followed by its result or its reason; a command that creates ids
 names them, and `render` names what it could not draw. A printed `Command` is a line that parses
 back to it, so a session can be written out as a script and run again. The binary
@@ -24,22 +31,63 @@ and reads one line per reply. The rival, JSON-RPC, `rejected@rootpoint-protocol@
 is easier to parse and harder to type. The grammar and the replies are this crate's interface to
 every program that drives rootpoint.
 
-### Commands name slides, nodes and assets by their stored ids `##protocol-addressing`
+### Commands name slides, nodes, assets and spans by their stored ids `##protocol-addressing`
 
-Every argument that names a slide, a node or an asset is its id, `s<n>`, `n<n>` or `a<n>`, as the
-model stores it and `tree` prints it, never a position. An id names the same slide, node or asset
-after every later edit, and across a save and a load, since the model stores ids in the file and
-never reuses one, `design@rootpoint-model@stable-ids`. A position shifts at every split or
-removal, so a script's later command would name another area,
-`rejected@rootpoint-model@addressing-by-position`. A style is named by its name instead,
-`design@rootpoint-model@style-key`.
+Every argument that names a slide, a node, an asset or a span is its id, `s<n>`, `n<n>`, `a<n>` or
+`t<n>`, as the model stores it and `tree` prints it, never a position. An id names the same slide,
+node, asset or span after every later edit, and across a save and a load, since the model stores
+ids in the file and never reuses one, `design@rootpoint-model@stable-ids`. A position shifts at
+every split or removal, and an offset at every edit before it, so a script's later command would
+name another area or another span, `rejected@rootpoint-model@addressing-by-position`. A command
+that makes a span or changes characters names a text node, the root of an area's text by the
+area's id or a span by its own, and takes an offset or a range in it, read at that moment and
+valid at that moment only; a `t<n>` finds its area, since a span's id is unique in the document. A
+style is named by its name instead, `design@rootpoint-model@style-key`.
+
+### A text is changed by commands of one operation each, so its spans keep their ids `##text-edit-commands`
+
+`insert <n|t> <offset> "<text>"`, `delete <n|t> <a>..<b>`, `wrap <n|t> <a>..<b> <options>`,
+`unwrap t<n>`, `span t<n> <options>` and `split-span t<n> <offset>` each apply one operation of
+the model's text tree, `design@rootpoint-model@edit-operation-core`, and change no span they do not
+name, so every span keeps its id, `design@rootpoint-model@stable-ids`, and a script styles a span
+again by its id after any edit before it. `wrap` and `split-span` reply the id of the span they
+make. `split-span` is not `split`, which splits a node of a slide. `text <area> <tree> [options]`
+sets a whole tree, every span with a new id, and replies the new ids. A span's options are
+`text`'s but alignment, the area's alone, and apply in order over the span's current style,
+`design@rootpoint-model@named-span-styles`. The nearest rival, a whole-text replacement at each
+change, `rejected@rootpoint-protocol@whole-text-replacement`, gives every span a new id at each
+key, since a tree set whole is renumbered. The commands
+are the crate's interface to every program that edits a styled text, as
+`goal@rootpoint-protocol@commands-drive-everything` asks.
+`tripwire@rootpoint-protocol@one-line-tree-written-badly` watches agents writing `text`'s tree.
+
+### `text` with options and no tree changes the area's style alone, its spans and their ids kept `##text-style-alone`
+
+`text <area> <options>` changes the style of an area's text by `Op::SetContent` of its current
+tree, so its spans keep their ids, `design@rootpoint-model@stable-ids`, where `text` with a tree
+gives each span a new one; it is refused on an image area, which has no text style to change. The
+window's controls of a text's style send that form. The rival, a verb of its own for the area's
+style, `rejected@rootpoint-protocol@area-style-verb`, takes the options `text` already takes under
+a second name.
+
+### `<key>=inherit` clears a value a span's style sets, one option for each value `##span-value-inherit`
+
+In every list of a span's options, `font=inherit`, `size=inherit`, `bold=inherit`,
+`italic=inherit` and `colour=inherit` each leave a value unset, so the span draws with its
+parent's, `design@rootpoint-model@span-style-overrides`: one option for each value, as every other
+option sets one. The rival, an option naming the values to clear,
+`rejected@rootpoint-protocol@clear-values-option`, holds a list in its value, a comma separating
+its values, which outside a quoted string is a word of a text tree,
+`design@rootpoint-protocol@protocol-transport`.
 
 ### A command refuses what would put a cosmetic breach in the document, so no command creates one `##no-new-breach`
 
 A command that names a target the document lacks is refused before any operation: `image` and the
 `font` option of `text`, `style add` and `style set` reply `err no asset a<n>` for an asset the
 table does not hold, `text … style="<name>"` and `style remove … into="<name>"` refuse a style
-the table lacks, or one whose font is a missing target, and `import` refuses an asset path that
+the table lacks, or one whose font is a missing target, and so do the span commands for a span
+style and a span's font, `wrap`, `span`, a span of `text`, `span-style add`, `span-style set` and
+`span-style remove … into="<name>"`, and `import` refuses an asset path that
 fails `asset_path_is_confined`, `design@rootpoint-protocol@store-confines-access`, as `asset-move`
 and `asset-relink` refuse one, and `asset-remove … into=` an asset the table lacks. The refusal is
 the command's, since the operations accept a reference to a missing target but for the exceptions
@@ -47,7 +95,8 @@ the command's, since the operations accept a reference to a missing target but f
 file: a command that copies or moves an area, as `duplicate-slide` and `swap` do, carries the breach
 a file brought, and creates none in a document that has none. The property test of
 `path@rootpoint-protocol@tests/properties.rs` runs random sequences of commands from an empty
-document, `undo`, `redo` and the groups included, and checks that none leaves a breach. The nearest
+document, `undo`, `redo`, the groups and the commands of a text tree and of the span style table
+included, and checks that none leaves a breach. The nearest
 rival, a command that passes the target through and leaves the breach to the fallback, would hide an
 editor's bug behind a warning; the refusal makes that bug a test's failure. It is a reason respected
 at every command that names a target.
@@ -297,7 +346,8 @@ save. Each other command is one undo step, its file moves in it,
 `design@rootpoint-protocol@asset-trash`. The query `assets [all|unused|missing|untracked]` replies
 one line, as every reply does, its entries separated by `; `, each `a<id> <path> <bytes|missing>
 uses=<uses|->`, its uses the areas, by an image or a font of their text or of its spans, the named
-styles and the named span styles that name it, `missing` an asset whose file
+styles and the named span styles that name it, a span style written `span:"<name>"` apart from a
+text style of one name, `missing` an asset whose file
 the store cannot read, one whose path fails confinement included; `assets untracked` replies the
 paths of the store's files no asset names, `design@rootpoint-protocol@table-of-added-assets`.
 

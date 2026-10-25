@@ -87,3 +87,22 @@ unzip tool opens a zip into the layout of a workspace.
 
 `live`. A tar has no index, so a reader reads the whole file to find one asset, where a zip's central
 index names the place of each entry.
+
+### A verb of its own for an area's style, beside `text` `##area-style-verb`
+
+`live`. It takes the options `text` already takes for the area's style under a second name, so a
+script or a host has two commands for one change, while `text` with options and no tree changes
+the style alone, keeping the text's spans and their ids, `design@rootpoint-protocol@text-style-alone`.
+
+### An option naming the values a span's style clears, `clear=bold,size` `##clear-values-option`
+
+`live`. Its value is a list, the one option of the grammar holding a comma, which outside a quoted
+string is a word of a text tree, `design@rootpoint-protocol@protocol-transport`; `<key>=inherit`
+clears one value as every other option sets one, `design@rootpoint-protocol@span-value-inherit`.
+
+### Every change of a text sent as its whole tree, by `text` `##whole-text-replacement`
+
+`live`. `text` with a tree gives every span of it a new id, `design@rootpoint-model@stable-ids`, so
+a text changed whole at each key would lose its spans' ids at each key, and a script could not name
+a span after an edit; `design@rootpoint-protocol@text-edit-commands` changes a text by one
+operation per command.

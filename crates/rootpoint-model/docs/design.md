@@ -208,7 +208,11 @@ none. The rules of the text styles hold for it: a rename rewrites every span nam
 `design@rootpoint-model@style-key`; a removal gives its users another span style or a copy of the
 removed values each, or leaves them naming it, `design@rootpoint-model@style-removal`; a span naming
 a style the table lacks draws with its parent's values, `design@rootpoint-model@cosmetic-fallbacks`.
-A span style changes only what it sets, so a term in a title stays at the title's size. The rivals:
+A span style changes only what it sets, so a term in a title stays at the title's size. A value
+given to a named span alone makes it custom, with the named values and that change, as
+`design@rootpoint-model@named-styles` says of a text, so that only `span-style set` changes a
+shared span style; a copy of a named span's style takes the values its style sets, not its
+parent's, which would keep their old values when the parent's style changes later. The rivals:
 a span naming a full text style, `rejected@rootpoint-model@span-names-text-style`, sets every field
 of it, alignment included; one table of styles whose fields are all optional, for areas and spans,
 `rejected@rootpoint-model@one-table-of-optional-styles`, makes every area style a cascade with a
