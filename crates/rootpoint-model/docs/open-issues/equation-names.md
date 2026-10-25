@@ -13,10 +13,10 @@ believes naming would help, as LyX labels equations, with the name set in the si
 
 ### What
 
-`milestone@plans@math-support` builds references to equations by area id: a text's reference item
+A reference to an equation names it by its area's id: a text's reference item
 reads `Ref(7)` in the file, where an id is a plain number, and `{ref n7}` in commands, and draws as
 the equation's number, `design@rootpoint-model@equation-reference-target`. The design
-discussion of that milestone weighed names, as LyX's `\label{eq:energy}` and `reference "eq:red"`
+discussion of the milestone on math weighed names, as LyX's `\label{eq:energy}` and `reference "eq:red"`
 are, against ids, and the owner chose, tentatively, ids for a first shape, and asked that naming
 stay open as this entry.
 

@@ -6,7 +6,7 @@ kind: todo
 ## Summary
 
 An area holds a text, an image or an equation, and a text holds formulas and references to equations
-inline, built by `milestone@plans@math-support`. The other kinds
+inline. The other kinds
 `goal@rootpoint@minimal-content-set` lists, bullet lists, code snippets and video, do not exist.
 
 ## Details

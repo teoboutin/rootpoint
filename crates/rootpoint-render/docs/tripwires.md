@@ -31,7 +31,7 @@ the standing-state review before every merge.
 
 ## Guarding `design@rootpoint-render@no-fallback-math-font`: a real slide needs a character the math font lacks `##math-glyph-needed`
 
-T4 of the premortem of `milestone@plans@math-support`, recorded on the owner's word.
+T4 of the premortem of the milestone on math, recorded on the owner's word.
 
 **Fires when:** a real slide needs a command of the missing set that
 `design@rootpoint-render@builtin-libertinus-math` lists, and drawing it as missing is not

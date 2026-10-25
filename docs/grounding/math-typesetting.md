@@ -1,5 +1,5 @@
 <!-- The reports of the agents that grounded the design discussion on math, run on 2026-10-25 for
-the milestone `milestone@plans@math-support`, verbatim but for their headings, moved down two
+the milestone on math, `math-support`, verbatim but for their headings, moved down two
 levels, and for paths written as references; then the measurements the session took itself.
 Their scratchpad paths no longer exist. -->
 

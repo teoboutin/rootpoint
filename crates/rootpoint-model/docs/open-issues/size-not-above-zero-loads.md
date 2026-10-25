@@ -18,8 +18,8 @@ a style of the table, a text's own values, a span's values or an equation's
 `EquationSize::AtMost` whose size is 0, below 0, or not finite. Reproduced in a probe test of the
 protocol crate, not committed: a document whose Body style has size 0, saved and opened, gives
 `styles` the line `"Body" size=0 ...`, and `parse_command("style set \"Body\" size=0")` replies
-`` `size=0` is not a style option ``. The review of the slice #equation-kind of
-`milestone@plans@math-support` found the same for an equation: a file holding
+`` `size=0` is not a style option ``. The review of the slice of the milestone on math that
+built the equation found the same for an equation: a file holding
 `size: AtMost(0.0)` loads, and `tree` prints `size=0`, which `parse_command` refuses for
 `equation`.
 
