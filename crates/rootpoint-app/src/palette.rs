@@ -103,6 +103,7 @@ pub fn structures() -> Vec<(&'static str, Action)> {
         ("{ }", r"\left\{\right\}"),
         ("| |", r"\left|\right|"),
         ("⟨ ⟩", r"\left\langle\right\rangle"),
+        ("⟩ ⟨", r"\left\rangle\right\langle"),
         ("matrix", r"\begin{matrix} & \\ & \end{matrix}"),
         ("pmatrix", r"\begin{pmatrix} & \\ & \end{pmatrix}"),
         ("bmatrix", r"\begin{bmatrix} & \\ & \end{bmatrix}"),

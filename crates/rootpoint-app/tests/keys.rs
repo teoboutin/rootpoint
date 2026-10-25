@@ -311,3 +311,106 @@ fn ctrl_shift_m_and_ctrl_alt_n_make_an_equation() {
         }
     }
 }
+
+/// While a sequence waits, the status line names it; a key that types no text, as Backspace or an
+/// arrow, drops it and is dropped with it; and leaving editing drops it, so it acts in no later
+/// stay.
+#[test]
+fn a_waiting_sequence_is_shown_and_dropped_by_a_key_with_no_text_or_by_leaving() {
+    let (mut app, ctx, caret) = editing_matrix();
+    alt_m(&ctx, &mut app, "");
+    assert!(
+        app.status().iter().any(|l| l == "Alt+M …"),
+        "{:?}",
+        app.status()
+    );
+    alt_m(&ctx, &mut app, "g");
+    assert!(
+        app.status().iter().any(|l| l == "Alt+M G …"),
+        "{:?}",
+        app.status()
+    );
+    frame(
+        &ctx,
+        &mut app,
+        key(Key::Backspace, Modifiers::NONE),
+        Modifiers::NONE,
+    );
+    assert!(app.status().iter().all(|l| !l.ends_with('…')));
+    assert_eq!(
+        formula_of(&app).to_latex(),
+        Formula::parse(MATRIX).unwrap().to_latex(),
+        "Backspace dropped"
+    );
+    let (events, modifiers) = typed('f');
+    frame(&ctx, &mut app, events, modifiers);
+    assert_eq!(
+        formula_of(&app).to_latex(),
+        expected(&Expect::Insert("f"), &caret)
+    );
+    alt_m(&ctx, &mut app, "");
+    app.stop_editing();
+    let layout = app.layout().unwrap().clone();
+    let at = layout.rect(NodeId(3)).unwrap().center();
+    app.edit_at(NodeId(3), at, &layout);
+    assert!(
+        app.status().iter().all(|l| !l.ends_with('…')),
+        "the sequence left with the stay"
+    );
+}
+
+/// Ctrl+Shift+M and Ctrl+Alt+N are matched with their modifiers exactly: with Alt or Shift more,
+/// they make no equation.
+#[test]
+fn ctrl_shift_m_and_ctrl_alt_n_take_no_extra_modifier() {
+    for (modifiers, k) in [
+        (
+            Modifiers::COMMAND | Modifiers::SHIFT | Modifiers::ALT,
+            Key::M,
+        ),
+        (
+            Modifiers::COMMAND | Modifiers::ALT | Modifiers::SHIFT,
+            Key::N,
+        ),
+    ] {
+        let mut app = App::new(Box::new(MemoryFiles::default()));
+        let ctx = Context::default();
+        ok(&mut app, "sample");
+        ok(&mut app, "select n3");
+        frame(&ctx, &mut app, Vec::new(), Modifiers::NONE);
+        frame(&ctx, &mut app, key(k, modifiers), modifiers);
+        assert!(
+            matches!(app.session().document().node(NodeId(3)), Some(Node::Area(a)) if matches!(a.content, Content::Text(_))),
+            "{k:?} with {modifiers:?}"
+        );
+    }
+}
+
+/// Down from the bottom row of a formula in a text is the text's Down, as LyX passes a move it
+/// cannot make in the formula to the text.
+#[test]
+fn down_at_a_formula_s_bottom_moves_in_the_text() {
+    let mut app = App::new(Box::new(MemoryFiles::default()));
+    let ctx = Context::default();
+    ok(&mut app, "sample");
+    ok(&mut app, "select n3");
+    ok(&mut app, r#"text n3 ["ab ", $x$, " cd\nef"]"#);
+    frame(&ctx, &mut app, Vec::new(), Modifiers::NONE);
+    let layout = app.layout().unwrap().clone();
+    let at = layout.rect(NodeId(3)).unwrap().center();
+    app.edit_at(NodeId(3), at, &layout);
+    app.set_caret_pos(rootpoint_model::CaretPos {
+        node: rootpoint_model::TextNodeRef::Root,
+        offset: 3,
+    });
+    app.move_caret(rootpoint_app::editing::CaretMove::Right, false);
+    assert!(app.math_caret().is_some());
+    frame(
+        &ctx,
+        &mut app,
+        key(Key::ArrowDown, Modifiers::NONE),
+        Modifiers::NONE,
+    );
+    assert_eq!(app.math_caret(), None);
+    assert!(app.caret().unwrap().offset > 4, "{:?}", app.caret());
+}

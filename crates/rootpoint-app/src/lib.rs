@@ -132,6 +132,10 @@ pub struct App {
     /// editing from the browser, `web::keep_editor_keys`.
     #[cfg(target_arch = "wasm32")]
     editing_keys: std::rc::Rc<std::cell::Cell<bool>>,
+    /// Whether an area is selected and not edited, at the end of the last frame, so that the page
+    /// keeps from the browser the math keys that act on it, `web::keep_editor_keys`.
+    #[cfg(target_arch = "wasm32")]
+    area_keys: std::rc::Rc<std::cell::Cell<bool>>,
     /// The tab the side panel shows.
     tab: SideTab,
     /// The Styles tab's own state, the window's and not the session's.
@@ -301,6 +305,8 @@ impl App {
             unload_warning: std::rc::Rc::default(),
             #[cfg(target_arch = "wasm32")]
             editing_keys: std::rc::Rc::default(),
+            #[cfg(target_arch = "wasm32")]
+            area_keys: std::rc::Rc::default(),
             tab: SideTab::default(),
             styles_tab: StylesTab::default(),
             asset_tab: asset_tab::AssetTab::default(),
@@ -334,7 +340,10 @@ impl App {
         // No key of the editor reaches a browser action the author did not ask for,
         // `design@rootpoint-app@editor-keys-kept-from-browser`.
         #[cfg(target_arch = "wasm32")]
-        web::keep_editor_keys(std::rc::Rc::downgrade(&app.editing_keys));
+        web::keep_editor_keys(
+            std::rc::Rc::downgrade(&app.editing_keys),
+            std::rc::Rc::downgrade(&app.area_keys),
+        );
         app
     }
 
@@ -626,6 +635,9 @@ impl App {
     /// `Report::missing_glyphs`.
     pub fn status(&self) -> Vec<String> {
         let mut lines: Vec<String> = self.error.iter().cloned().collect();
+        if !self.key_sequence.is_empty() {
+            lines.push(format!("{} …", keymap::name(&self.key_sequence)));
+        }
         #[cfg(unix)]
         lines.extend(self.socket_error.iter().cloned());
         let report = &self.view.report;
@@ -989,6 +1001,9 @@ impl App {
         }
         #[cfg(target_arch = "wasm32")]
         self.editing_keys.set(self.edit.is_some());
+        #[cfg(target_arch = "wasm32")]
+        self.area_keys
+            .set(self.edit.is_none() && self.selected_area().is_some());
         // Presenter mode is full screen, and the editor is not.
         let presenting = self.session.view().presenting.is_some();
         if presenting != self.fullscreen {
@@ -1175,8 +1190,15 @@ impl App {
         }
         // The math keys that act on a selected area, Ctrl+Shift+M and Ctrl+Alt+N.
         for binding in keymap::bindings() {
+            // Matched exactly, since `consume_key` takes a key with an extra Shift or Alt.
             if let (keymap::Scope::Selected, [keymap::Stroke::Chord(modifiers, key)]) =
                 (binding.action.scope(), &binding.keys[..])
+                && ui.input(|i| {
+                    i.events.iter().any(|e| {
+                        matches!(e, egui::Event::Key { key: k, pressed: true, modifiers: m, .. }
+                            if k == key && m.matches_exact(*modifiers))
+                    })
+                })
                 && ui.input_mut(|i| i.consume_key(*modifiers, *key))
             {
                 self.run_key_action(binding.action);
@@ -1228,9 +1250,10 @@ impl App {
                         continue;
                     }
                     // The keys typed after a chord of a sequence come as text too, which the
-                    // sequence takes; Esc drops the sequence.
+                    // sequence takes; a key that types no text, as Esc, an arrow or Backspace,
+                    // drops the sequence, and is dropped with it.
                     if !self.key_sequence.is_empty() {
-                        if key == Key::Escape {
+                        if keymap::types_no_text(key) {
                             self.key_sequence.clear();
                         }
                         continue;

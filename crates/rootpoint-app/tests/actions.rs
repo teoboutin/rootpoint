@@ -1123,6 +1123,66 @@ fn the_formula_actions_issue_their_commands() {
             ]
         },
     );
+    // A sentence is no formula, which would drop its spaces: it becomes a text of the formula; a
+    // selection neither keeps stays, and the formula goes after it.
+    check(
+        "Ctrl+M over a sentence",
+        &["select n3", r#"text n3 ["hello world"]"#],
+        |a| {
+            edit_n3(a);
+            a.select_all();
+            a.insert_formula();
+            a.stop_editing();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c("delete n3 0..11"),
+                c(r"insert n3 0 $\text{hello world}$"),
+                c("end"),
+            ]
+        },
+    );
+    check(
+        "Ctrl+M over a selection neither a formula nor a text keeps",
+        &["select n3", r#"text n3 ["x}"]"#],
+        |a| {
+            edit_n3(a);
+            a.select_all();
+            a.insert_formula();
+            assert!(a.math_caret().is_some());
+            a.type_str("y");
+            a.stop_editing();
+        },
+        |_| {
+            vec![
+                c("begin"),
+                c("insert n3 2 $$"),
+                c("math n3 2 $y$"),
+                c("end"),
+            ]
+        },
+    );
+    check(
+        "Ctrl+Shift+M on a sentence",
+        &["select n3", r#"text n3 ["hello world"]"#],
+        |a| a.make_equation(false),
+        |_| vec![c(r"equation n3 $\text{hello world}$ numbered=no")],
+    );
+    check(
+        r"a typed \left, which reads as no formula alone, is dropped",
+        &["select n3", r#"text n3 [$x$]"#],
+        |a| {
+            edit_n3_at(a, 0);
+            a.move_caret(CaretMove::Right, false);
+            a.move_caret(CaretMove::TextEnd, false);
+            a.type_str(r"\left ");
+            assert!(a.status().is_empty(), "{:?}", a.status());
+            a.type_str("y");
+            a.stop_editing();
+        },
+        |_| vec![c("begin"), c("math n3 0 $xy$"), c("end")],
+    );
     check(
         "a formula left empty is removed",
         &["select n3", r#"text n3 ["ab"]"#],

@@ -189,6 +189,52 @@ pub fn bindings() -> Vec<Binding> {
     out
 }
 
+/// A sequence as the status line names it while it waits, as `Alt+M G`.
+pub fn name(keys: &[Stroke]) -> String {
+    keys.iter()
+        .map(|k| match k {
+            Stroke::Chord(m, key) => {
+                let mut out = String::new();
+                if m.ctrl || m.command {
+                    out.push_str("Ctrl+");
+                }
+                if m.alt {
+                    out.push_str("Alt+");
+                }
+                if m.shift {
+                    out.push_str("Shift+");
+                }
+                out.push_str(key.name());
+                out
+            }
+            Stroke::Char(c) => c.to_uppercase().to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Whether a key types no text, so that it drops a sequence that waits: egui gives a text event
+/// for every other key.
+pub fn types_no_text(key: Key) -> bool {
+    matches!(
+        key,
+        Key::Escape
+            | Key::Backspace
+            | Key::Delete
+            | Key::Enter
+            | Key::Tab
+            | Key::ArrowLeft
+            | Key::ArrowRight
+            | Key::ArrowUp
+            | Key::ArrowDown
+            | Key::Home
+            | Key::End
+            | Key::PageUp
+            | Key::PageDown
+            | Key::Insert
+    )
+}
+
 /// What a sequence of keys typed so far is in the table.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Lookup {

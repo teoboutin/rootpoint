@@ -830,9 +830,11 @@ fn backspace_and_delete_at_an_edge_select_a_span_or_unwrap_it() {
 /// a caret position, no character carrying a mark; "ff" is a ligature of the built-in Open Sans,
 /// and `the_walk_crosses_a_ligature` walks one each time.
 /// The spans hold one item or more, nested three deep at most, since the walk unwraps an empty span
-/// it leaves. The trees hold formulas too, and the walk goes through each of a formula's positions,
-/// between the positions before it and after it: each is drawn at its cell's left edge or after its
-/// atom, as tall as its cell, within the same half pixel.
+/// it leaves. The trees hold formulas too: Right and Left enter each at the position after the one
+/// before it, and move in it as LyX's caret does, visiting none of its positions twice, but not all
+/// of them, since Right leaves a fraction at its numerator's end; then the caret is put at every
+/// position of every formula, each drawn at its cell's left edge or after its atom, as tall as its
+/// cell, within the same half pixel.
 mod caret_walk {
     use super::*;
     use proptest::prelude::*;
@@ -863,7 +865,7 @@ mod caret_walk {
         prop::collection::vec(tree(3), 1..6).prop_map(|items| format!("[{}]", items.join(", ")))
     }
 
-    /// Every caret position of a text node and of the spans and formulas below it.
+    /// Every caret position of a text node and of the spans below it, outside formulas.
     fn positions(node: TextNodeRef, text: &TextNode, out: &mut Vec<Position>) {
         let mut offset = 0;
         out.push((at(node, 0), None));
@@ -880,16 +882,7 @@ mod caret_walk {
                     offset += 1;
                     out.push((at(node, offset), None));
                 }
-                TextItem::Math(f) => {
-                    let mut p = Some(rootpoint_math::start());
-                    while let Some(here) = p {
-                        p = rootpoint_math::right(f, &here);
-                        out.push((at(node, offset), Some(here)));
-                    }
-                    offset += 1;
-                    out.push((at(node, offset), None));
-                }
-                TextItem::Ref(_) => {
+                TextItem::Math(_) | TextItem::Ref(_) => {
                     offset += 1;
                     out.push((at(node, offset), None));
                 }
@@ -928,6 +921,64 @@ mod caret_walk {
         (u + x, v + cell.y - cell.ascent, v + cell.y + cell.descent)
     }
 
+    /// Check that the caret, in a formula, is drawn on its cell, within half a pixel.
+    fn check_in_formula(d: &mut Driver, layout: &Layout, ppp: f32, path: &CellPath) {
+        let index = d.app.caret_index().unwrap();
+        let caret = d.app.caret_rect(layout).unwrap();
+        let (x, top, bottom) = cell_place(d, index, path);
+        let off = (caret.min.x - layout.to_points(x, 0.0).x).abs() * ppp;
+        assert!(off <= 0.5, "byte {index}, {path:?}: {off} px");
+        // A cell lower than two points draws its caret at the formula's axis instead.
+        let (top, bottom) = (
+            layout.to_points(0.0, top).y,
+            layout.to_points(0.0, bottom).y,
+        );
+        if bottom - top >= 2.0 {
+            let off = (caret.min.y - top).abs().max((caret.max.y - bottom).abs()) * ppp;
+            assert!(off <= 0.5, "byte {index}, {path:?}: {off} px off its cell");
+        }
+    }
+
+    /// Put the caret at every position of every formula of n3's text, by entering each formula
+    /// from the position before it, and check each drawn on its cell.
+    fn every_formula_position(d: &mut Driver, layout: &Layout, ppp: f32) {
+        fn formulas(
+            node: TextNodeRef,
+            text: &TextNode,
+            out: &mut Vec<(CaretPos, rootpoint_math::Formula)>,
+        ) {
+            for (offset, item) in text
+                .items
+                .iter()
+                .flat_map(|i| match i {
+                    TextItem::Chars(s) => vec![None; s.chars().count()],
+                    other => vec![Some(other)],
+                })
+                .enumerate()
+            {
+                match item {
+                    Some(TextItem::Math(f)) => out.push((at(node, offset), f.clone())),
+                    Some(TextItem::Span(span)) => {
+                        formulas(TextNodeRef::Span(span.id), &span.text, out)
+                    }
+                    _ => {}
+                }
+            }
+        }
+        let mut all = Vec::new();
+        formulas(ROOT, &content(d, NodeId(3)).root, &mut all);
+        for (before, f) in all {
+            d.app.set_caret_pos(before);
+            d.app.move_caret(CaretMove::Right, false);
+            for path in rootpoint_math::positions(&f) {
+                d.app.set_math_caret(path.clone());
+                assert_eq!(d.app.math_caret(), Some(path.clone()));
+                check_in_formula(d, layout, ppp, &path);
+            }
+            d.app.leave_formula(false);
+        }
+    }
+
     /// Walk the caret with `m` until it stops, from where it is, checking each position's drawing.
     fn walk(d: &mut Driver, layout: &Layout, ppp: f32, m: CaretMove) -> Vec<Position> {
         let glyphs = glyph_edges(d);
@@ -937,18 +988,7 @@ mod caret_walk {
             let index = d.app.caret_index().unwrap();
             let caret = d.app.caret_rect(layout).unwrap();
             if let Some(path) = d.app.math_caret() {
-                let (x, top, bottom) = cell_place(d, index, &path);
-                let off = (caret.min.x - layout.to_points(x, 0.0).x).abs() * ppp;
-                assert!(off <= 0.5, "byte {index}, {path:?}: {off} px");
-                // A cell lower than two points draws its caret at the formula's axis instead.
-                let (top, bottom) = (
-                    layout.to_points(0.0, top).y,
-                    layout.to_points(0.0, bottom).y,
-                );
-                if bottom - top >= 2.0 {
-                    let off = (caret.min.y - top).abs().max((caret.max.y - bottom).abs()) * ppp;
-                    assert!(off <= 0.5, "byte {index}, {path:?}: {off} px off its cell");
-                }
+                check_in_formula(d, layout, ppp, &path);
                 d.app.move_caret(m, false);
                 let now = here(d);
                 if Some(&now) == seen.last() {
@@ -1037,6 +1077,47 @@ mod caret_walk {
         assert_eq!(right, all);
     }
 
+    /// The positions of a walk outside formulas, in order.
+    fn in_text(walk: &[Position]) -> Vec<Position> {
+        walk.iter().filter(|p| p.1.is_none()).cloned().collect()
+    }
+
+    /// A walk visits no position of a formula twice, and each is one of that formula's.
+    fn formula_positions_once(d: &Driver, walk: &[Position]) -> bool {
+        let inside: Vec<&Position> = walk.iter().filter(|p| p.1.is_some()).collect();
+        let unique: std::collections::HashSet<String> =
+            inside.iter().map(|p| format!("{p:?}")).collect();
+        let text = content(d, NodeId(3));
+        unique.len() == inside.len()
+            && inside.iter().all(|(caret, path)| {
+                matches!(
+                    text_node_items(&text, caret.node).get(caret.offset),
+                    Some(Some(TextItem::Math(f))) if rootpoint_math::positions(f).contains(path.as_ref().unwrap())
+                )
+            })
+    }
+
+    /// The items of a text node, one per caret offset: a character as `None`.
+    fn text_node_items(text: &TextContent, node: TextNodeRef) -> Vec<Option<TextItem>> {
+        fn find(n: &TextNode, here: TextNodeRef, want: TextNodeRef) -> Option<&TextNode> {
+            if here == want {
+                return Some(n);
+            }
+            n.items.iter().find_map(|i| match i {
+                TextItem::Span(s) => find(&s.text, TextNodeRef::Span(s.id), want),
+                _ => None,
+            })
+        }
+        let n = find(&text.root, ROOT, node).unwrap();
+        n.items
+            .iter()
+            .flat_map(|i| match i {
+                TextItem::Chars(s) => vec![None; s.chars().count()],
+                other => vec![Some(other.clone())],
+            })
+            .collect()
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(24))]
 
@@ -1058,18 +1139,14 @@ mod caret_walk {
                 d.app.move_caret(CaretMove::TextStart, false);
                 let right = walk(&mut d, &layout, ppp, CaretMove::Right);
                 let left = walk(&mut d, &layout, ppp, CaretMove::Left);
-                let sorted = |mut v: Vec<Position>| {
-                    v.sort_by_key(|p| format!("{p:?}"));
-                    v
-                };
-                prop_assert_eq!(right.len(), all.len(), "Right visits each once: {}", tree);
-                prop_assert_eq!(left.len(), all.len(), "Left visits each once: {}", tree);
-                let all = sorted(all);
-                prop_assert_eq!(sorted(right.clone()), all.clone());
-                prop_assert_eq!(sorted(left.clone()), all);
+                prop_assert!(formula_positions_once(&d, &right), "Right in a formula: {}", tree);
+                prop_assert!(formula_positions_once(&d, &left), "Left in a formula: {}", tree);
+                let (right, left) = (in_text(&right), in_text(&left));
+                prop_assert_eq!(&right, &all, "Right visits each once, in order: {}", tree);
                 let mut back = left;
                 back.reverse();
                 prop_assert_eq!(right, back, "Left walks Right's path back");
+                every_formula_position(&mut d, &layout, ppp);
             }
         }
     }

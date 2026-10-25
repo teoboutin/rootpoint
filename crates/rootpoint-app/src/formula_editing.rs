@@ -267,7 +267,7 @@ impl App {
     /// stands before the math item, or after it (`after`), and an empty item is removed, as an
     /// empty span is unwrapped; an equation area keeps its formula, empty or not, and the caret
     /// stays in it.
-    pub(crate) fn leave_formula(&mut self, after: bool) {
+    pub fn leave_formula(&mut self, after: bool) {
         self.close_math_command();
         let Some(Place::Item { area, node, offset }) = self.place() else {
             return;
@@ -305,8 +305,15 @@ impl App {
         else {
             return;
         };
-        if !name.is_empty() {
-            let atom = command_atom(&name).unwrap_or(Atom::Unknown(name));
+        // An unknown name the subset reads as no formula alone, as `\left`, is dropped, since the
+        // session would refuse the formula that holds it.
+        let atom = match command_atom(&name) {
+            Some(atom) => Some(atom),
+            None => Formula::parse(&format!("\\{name}"))
+                .is_ok()
+                .then_some(Atom::Unknown(name)),
+        };
+        if let Some(atom) = atom {
             self.insert_math_atom(atom);
         }
     }
@@ -322,8 +329,20 @@ impl App {
         let moved = match m {
             CaretMove::Right => right(&f, &path),
             CaretMove::Left => left(&f, &path),
-            CaretMove::Up => Some(vertical_move(&f, &path, true).unwrap_or(path.clone())),
-            CaretMove::Down => Some(vertical_move(&f, &path, false).unwrap_or(path.clone())),
+            CaretMove::Up | CaretMove::Down => {
+                let up = m == CaretMove::Up;
+                match vertical_move(&f, &path, up) {
+                    Some(p) => Some(p),
+                    // With no cell above or below, the move is the text's, as LyX's undispatched
+                    // Up and Down; an equation area keeps its caret.
+                    None if matches!(self.place(), Some(Place::Item { .. })) => {
+                        self.leave_formula(false);
+                        self.move_caret(m, false);
+                        return;
+                    }
+                    None => Some(path.clone()),
+                }
+            }
             CaretMove::LineStart | CaretMove::TextStart | CaretMove::WordLeft => Some(start()),
             CaretMove::LineEnd | CaretMove::TextEnd | CaretMove::WordRight => Some(end(&f)),
         };
@@ -628,13 +647,17 @@ impl App {
             None => (edit.caret.node, edit.caret.offset..edit.caret.offset),
         };
         let selected = self.selected_text().unwrap_or_default();
-        // The selection is the formula's content only where its LaTeX writes the selection back,
-        // spaces aside, which the printer sets: a sentence parsed as math would lose its spaces.
-        let bare = |s: &str| s.chars().filter(|c| !c.is_whitespace()).collect::<String>();
-        let formula = Formula::parse(&selected)
-            .ok()
-            .filter(|f| !selected.is_empty() && bare(&f.to_latex()) == bare(&selected))
-            .unwrap_or_else(Formula::empty);
+        let formula = if selected.is_empty() {
+            Some(Formula::empty())
+        } else {
+            formula_of_text(&selected)
+        };
+        // A selection that is no formula and no text one holds stays, and the formula, empty, goes
+        // after it.
+        let (formula, range) = match formula {
+            Some(f) => (f, range),
+            None => (Formula::empty(), range.end..range.end),
+        };
         let at = target(edit.area, node);
         if !range.is_empty()
             && !matches!(
@@ -684,7 +707,7 @@ impl App {
         let formula = match self.node(area) {
             Some(Node::Area(a)) => match &a.content {
                 Content::Equation(e) => e.formula.clone(),
-                _ => Formula::parse(&text).unwrap_or_else(|_| Formula::empty()),
+                _ => formula_of_text(&text).unwrap_or_else(Formula::empty),
             },
             _ => return,
         };
@@ -695,6 +718,56 @@ impl App {
             options: vec![EquationOption::Numbered(numbered)],
         });
     }
+}
+
+/// The formula a text becomes, by Ctrl+M over it or Ctrl+Shift+M on its area: the formula its
+/// characters read as, where its LaTeX writes them back, spaces aside, and no space it drops stood
+/// between two letters or digits, as in a sentence, but after a command's name; else a `\text` of
+/// them, where its LaTeX reads back to it; `None` for a text neither keeps.
+pub(crate) fn formula_of_text(text: &str) -> Option<Formula> {
+    let bare = |s: &str| s.chars().filter(|c| !c.is_whitespace()).collect::<String>();
+    let as_math = Formula::parse(text)
+        .ok()
+        .filter(|f| bare(&f.to_latex()) == bare(text) && !spaces_matter(text));
+    as_math.or_else(|| {
+        let f = Formula {
+            rows: vec![vec![vec![Atom::Text(text.to_owned())]]],
+        };
+        (Formula::parse(&f.to_latex()).ok() == Some(f.clone())).then_some(f)
+    })
+}
+
+/// Whether a space of `text` stands between two letters or digits, so that math, which drops it,
+/// would join two words; a space after a command's name, as in `\alpha x`, ends the name and
+/// does not count.
+fn spaces_matter(text: &str) -> bool {
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        if chars[i].is_whitespace() {
+            let start = i;
+            while i < chars.len() && chars[i].is_whitespace() {
+                i += 1;
+            }
+            let (before, after) = (start.checked_sub(1).map(|j| chars[j]), chars.get(i));
+            if let (Some(b), Some(a)) = (before, after)
+                && b.is_alphanumeric()
+                && a.is_alphanumeric()
+            {
+                let mut j = start;
+                while j > 0 && chars[j - 1].is_ascii_alphabetic() {
+                    j -= 1;
+                }
+                let command = j > 0 && chars[j - 1] == '\\' && j < start;
+                if !command {
+                    return true;
+                }
+            }
+        } else {
+            i += 1;
+        }
+    }
+    false
 }
 
 /// The text node a command names.

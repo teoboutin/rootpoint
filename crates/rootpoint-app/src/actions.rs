@@ -1408,6 +1408,8 @@ impl App {
     /// selected. A composition still open is dropped from the text first, and every empty span of
     /// the text is unwrapped, `design@rootpoint-app@empty-span-unwrapped`, inside the group.
     pub fn stop_editing(&mut self) {
+        // A sequence of the math keys waiting acts in no later stay.
+        self.key_sequence.clear();
         if self.math_caret().is_some() {
             self.leave_formula(false);
         }

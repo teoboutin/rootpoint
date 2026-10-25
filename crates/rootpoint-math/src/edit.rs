@@ -117,56 +117,147 @@ fn previous_grid(f: &Formula, row: usize, column: usize) -> Option<(usize, usize
     }
 }
 
-/// The position Right gives: past a symbol, into an atom with cells at the start of its first
-/// cell, to the next cell of an atom at a cell's end, out of an atom after its last cell, and to
-/// the next cell of the grid; `None` at the formula's end, where the caret leaves it.
+/// The cell Right enters an atom by, as LyX's `idxFirst`: a root's index where it has one, else
+/// the first cell.
+fn first_cell(atom: &Atom) -> usize {
+    match atom {
+        Atom::Radical { index: Some(_), .. } => 1,
+        _ => 0,
+    }
+}
+
+/// The cell Left enters an atom by, as LyX's `idxLast`: a root's body, else the last cell.
+fn last_cell(atom: &Atom) -> usize {
+    match atom {
+        Atom::Radical { .. } => 0,
+        _ => atom.cells().len() - 1,
+    }
+}
+
+/// The cell Right goes to from the end of the cell `c` of an atom, as LyX's `idxForward`: a
+/// matrix's next column in the same row, a root's body from its index; `None` for every other
+/// atom, which Right leaves, so a fraction's denominator and a script are reached by Up, Down or
+/// Tab.
+fn cell_forward(atom: &Atom, c: usize) -> Option<usize> {
+    match atom {
+        Atom::Matrix { rows, .. } => {
+            let (r, k) = grid_place(rows, c)?;
+            (k + 1 < rows[r].len()).then(|| grid_index(rows, r, k + 1))
+        }
+        Atom::Radical { index: Some(_), .. } => (c == 1).then_some(0),
+        _ => None,
+    }
+}
+
+/// The cell Left goes to from the start of the cell `c` of an atom, as LyX's `idxBackward`, the
+/// mirror of [`cell_forward`].
+fn cell_backward(atom: &Atom, c: usize) -> Option<usize> {
+    match atom {
+        Atom::Matrix { rows, .. } => {
+            let (r, k) = grid_place(rows, c)?;
+            (k > 0).then(|| grid_index(rows, r, k - 1))
+        }
+        Atom::Radical { index: Some(_), .. } => (c == 0).then_some(1),
+        _ => None,
+    }
+}
+
+/// The row and the column of the cell `c` of a matrix, as `Atom::cells` numbers its cells, row by
+/// row, rows of unequal length counted as they are.
+fn grid_place(rows: &[Vec<List>], c: usize) -> Option<(usize, usize)> {
+    let mut c = c;
+    for (r, row) in rows.iter().enumerate() {
+        if c < row.len() {
+            return Some((r, c));
+        }
+        c -= row.len();
+    }
+    None
+}
+
+/// The index, as `Atom::cells` numbers them, of the cell at row `r` and column `k` of a matrix.
+fn grid_index(rows: &[Vec<List>], r: usize, k: usize) -> usize {
+    rows[..r].iter().map(Vec::len).sum::<usize>() + k
+}
+
+/// The position Right gives, as LyX's `Cursor::mathForward`: past a symbol; into an atom with cells
+/// at the start of the cell [`first_cell`] names; at a cell's end, to the cell
+/// [`cell_forward`] names, or out of the atom; at the end of a cell of the formula's grid, to the
+/// next column of its row; `None` at the end of a row's last cell, where the caret leaves the
+/// formula, as LyX's leaves a formula's grid.
 pub fn right(f: &Formula, p: &CellPath) -> Option<CellPath> {
     let list = cell(f, p)?;
     if let Some(atom) = list.get(p.offset) {
         return Some(if atom.cells().is_empty() {
             with_offset(p, p.offset + 1)
         } else {
-            child(p, 0, 0)
+            child(p, first_cell(atom), 0)
         });
     }
     match parent(p) {
-        Some((up, c)) => {
-            let n = atom_at(f, &up)?.cells().len();
-            Some(if c + 1 < n {
-                child(&up, c + 1, 0)
-            } else {
-                with_offset(&up, up.offset + 1)
-            })
-        }
-        None => next_grid(f, p.row, p.column).map(|(r, c)| top(r, c, 0)),
+        Some((up, c)) => Some(match cell_forward(atom_at(f, &up)?, c) {
+            Some(next) => child(&up, next, 0),
+            None => with_offset(&up, up.offset + 1),
+        }),
+        None => (p.column + 1 < f.rows[p.row].len()).then(|| top(p.row, p.column + 1, 0)),
     }
 }
 
-/// The position Left gives, the mirror of [`right`].
+/// The position Left gives, the mirror of [`right`]: into an atom with cells at the end of the
+/// cell [`last_cell`] names, and at a cell's start to the cell [`cell_backward`] names, or before
+/// the atom.
 pub fn left(f: &Formula, p: &CellPath) -> Option<CellPath> {
     if p.offset > 0 {
         let at = with_offset(p, p.offset - 1);
         let atom = atom_at(f, &at)?;
-        let cells = atom.cells();
-        return Some(match cells.last() {
-            None => at,
-            Some(last) => child(&at, cells.len() - 1, last.len()),
-        });
+        if atom.cells().is_empty() {
+            return Some(at);
+        }
+        let c = last_cell(atom);
+        return Some(child(&at, c, atom.cells()[c].len()));
     }
     match parent(p) {
-        Some((up, c)) => Some(if c > 0 {
-            let len = atom_at(f, &up)?.cells()[c - 1].len();
-            child(&up, c - 1, len)
-        } else {
-            up
-        }),
-        None => previous_grid(f, p.row, p.column).map(|(r, c)| top(r, c, f.rows[r][c].len())),
+        Some((up, c)) => {
+            let atom = atom_at(f, &up)?;
+            Some(match cell_backward(atom, c) {
+                Some(previous) => child(&up, previous, atom.cells()[previous].len()),
+                None => up,
+            })
+        }
+        None => p
+            .column
+            .checked_sub(1)
+            .map(|k| top(p.row, k, f.rows[p.row][k].len())),
     }
 }
 
+/// Every position of a formula, cell by cell in the order of `Atom::cells`, row by row of the grid:
+/// the positions Right and Left reach, and those they pass by, as a fraction's denominator.
+pub fn positions(f: &Formula) -> Vec<CellPath> {
+    fn walk(list: &List, at: &CellPath, out: &mut Vec<CellPath>) {
+        for offset in 0..=list.len() {
+            out.push(with_offset(at, offset));
+        }
+        for (i, atom) in list.iter().enumerate() {
+            for (c, inner) in atom.cells().into_iter().enumerate() {
+                walk(inner, &child(&with_offset(at, i), c, 0), out);
+            }
+        }
+    }
+    let mut out = Vec::new();
+    for (r, row) in f.rows.iter().enumerate() {
+        for (k, list) in row.iter().enumerate() {
+            walk(list, &top(r, k, 0), &mut out);
+        }
+    }
+    out
+}
+
 /// The cell above (`up`) or below the cell `c` of an atom, if the atom has one there: a fraction's
-/// numerator and denominator, a script and its nucleus, the rows of a matrix.
-fn vertical(atom: &Atom, c: usize, up: bool) -> Option<usize> {
+/// numerator and denominator; a script from its nucleus, only from the nucleus's end (`at_end`),
+/// as LyX's `InsetMathScript::idxUpDown`, and the nucleus from a script; the rows of a matrix, in
+/// the nearest column of a shorter row.
+fn vertical(atom: &Atom, c: usize, up: bool, at_end: bool) -> Option<usize> {
     match atom {
         Atom::Fraction { .. } => match (c, up) {
             (1, true) => Some(0),
@@ -177,21 +268,18 @@ fn vertical(atom: &Atom, c: usize, up: bool) -> Option<usize> {
             let sub_at = sub.as_ref().map(|_| 1);
             let sup_at = sup.as_ref().map(|_| 1 + usize::from(sub.is_some()));
             match (Some(c), up) {
-                (Some(0), true) => sup_at,
-                (Some(0), false) => sub_at,
+                (Some(0), true) if at_end => sup_at,
+                (Some(0), false) if at_end => sub_at,
                 (s, true) if s == sub_at => Some(0),
                 (s, false) if s == sup_at => Some(0),
                 _ => None,
             }
         }
         Atom::Matrix { rows, .. } => {
-            let columns = rows.first().map_or(1, Vec::len).max(1);
-            let (r, k) = (c / columns, c % columns);
-            match up {
-                true if r > 0 => Some((r - 1) * columns + k),
-                false if r + 1 < rows.len() => Some((r + 1) * columns + k),
-                _ => None,
-            }
+            let (r, k) = grid_place(rows, c)?;
+            let r2 = if up { r.checked_sub(1)? } else { r + 1 };
+            let row = rows.get(r2).filter(|row| !row.is_empty())?;
+            Some(grid_index(rows, r2, k.min(row.len() - 1)))
         }
         _ => None,
     }
@@ -207,9 +295,16 @@ pub fn vertical_move(f: &Formula, p: &CellPath, up: bool) -> Option<CellPath> {
             ..p.clone()
         };
         let atom = atom_at(f, &at)?;
-        if let Some(c) = vertical(atom, p.steps[k].1, up) {
+        let (from, innermost) = (p.steps[k].1, k + 1 == p.steps.len());
+        let at_end = innermost && p.offset == atom.cells()[from].len();
+        if let Some(c) = vertical(atom, from, up, at_end) {
             let len = atom.cells()[c].len();
-            let offset = if k + 1 == p.steps.len() { p.offset } else { 0 };
+            // From a script back to its nucleus, at the nucleus's end.
+            let offset = match atom {
+                Atom::Scripts { .. } if c == 0 => len,
+                _ if innermost => p.offset,
+                _ => 0,
+            };
             return Some(child(&at, c, offset.min(len)));
         }
     }
@@ -340,8 +435,8 @@ pub fn new_row(f: &mut Formula, p: &CellPath) -> Option<CellPath> {
         let Some(Atom::Matrix { rows, .. }) = cell_mut(f, &at)?.get_mut(at.offset) else {
             return None;
         };
-        let columns = rows.first().map_or(1, Vec::len).max(1);
-        let r = c / columns;
+        let (r, _) = grid_place(rows, c)?;
+        let columns = pad(rows);
         rows.insert(r + 1, vec![Vec::new(); columns]);
         return Some(child(&at, (r + 1) * columns, 0));
     }
@@ -378,8 +473,8 @@ pub fn edit_matrix(
     let Some(Atom::Matrix { rows, .. }) = cell_mut(f, &at)?.get_mut(at.offset) else {
         return None;
     };
-    let columns = rows.first().map_or(1, Vec::len).max(1);
-    let (r, k) = (c / columns, c % columns);
+    let (r, k) = grid_place(rows, c)?;
+    let columns = pad(rows);
     let (mut r2, mut k2) = (r, k);
     if rows_not_columns {
         match edit {
@@ -417,6 +512,17 @@ pub fn edit_matrix(
     let index = r2 * columns + k2;
     let offset = rows[r2][k2].len().min(p.offset);
     Some(child(&at, index, offset))
+}
+
+/// Give every row of a matrix as many cells as its longest, the new ones empty, as LaTeX reads a
+/// row with fewer `&`, so an edit of its rows and columns can index each row alike; the number of
+/// columns.
+fn pad(rows: &mut [Vec<List>]) -> usize {
+    let columns = rows.iter().map(Vec::len).max().unwrap_or(1).max(1);
+    for row in rows.iter_mut() {
+        row.resize(columns, Vec::new());
+    }
+    columns
 }
 
 /// What a press of Backspace or Delete does at a caret.

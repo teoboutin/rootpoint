@@ -373,7 +373,7 @@ fn f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation() {
     use wasm_bindgen::JsCast;
     use wasm_bindgen::prelude::Closure;
 
-    rootpoint_app::keep_editor_keys(std::rc::Weak::new());
+    rootpoint_app::keep_editor_keys(std::rc::Weak::new(), std::rc::Weak::new());
     let document = web_sys::window().unwrap().document().unwrap();
     let canvas = document.create_element("canvas").unwrap();
     document.body().unwrap().append_child(&canvas).unwrap();
@@ -406,7 +406,7 @@ fn the_keys_of_editing_are_kept_from_the_browser_only_while_editing() {
     use wasm_bindgen::prelude::Closure;
 
     let editing = std::rc::Rc::new(std::cell::Cell::new(false));
-    rootpoint_app::keep_editor_keys(std::rc::Rc::downgrade(&editing));
+    rootpoint_app::keep_editor_keys(std::rc::Rc::downgrade(&editing), std::rc::Weak::new());
     let document = web_sys::window().unwrap().document().unwrap();
     let canvas = document.create_element("canvas").unwrap();
     document.body().unwrap().append_child(&canvas).unwrap();
@@ -503,7 +503,8 @@ fn frame_with(app: &mut App, events: Vec<eframe::egui::Event>, modifiers: eframe
 /// The math keys reach the editor, natively and in the browser: while a text is edited, Alt+M
 /// then F inserts a formula holding a fraction, given as the events egui gives for them; and, in a
 /// browser, the window's listener prevents the default of Ctrl+M and of Alt+M while a text is
-/// edited, and of Ctrl+Shift+M and Ctrl+Alt+N always.
+/// edited, and of Ctrl+Shift+M and Ctrl+Alt+N while an area is selected and not edited, each
+/// with its modifiers exactly, so AltGr+M, Ctrl and Alt, reaches the page.
 #[test]
 fn the_math_keys_reach_the_editor() {
     use eframe::egui::{Event, Key, Modifiers};
@@ -564,6 +565,14 @@ fn the_math_keys_reach_the_editor() {
             prevented("m", false, false, true),
             "Alt+M reached the browser"
         );
+        assert!(
+            !prevented("µ", true, false, true),
+            "AltGr+M kept while editing"
+        );
+        assert!(
+            !prevented("M", true, true, false),
+            "Ctrl+Shift+M kept while editing"
+        );
         app.stop_editing();
         frame_with(&mut app, Vec::new(), Modifiers::NONE);
         assert!(
@@ -577,6 +586,13 @@ fn the_math_keys_reach_the_editor() {
         assert!(
             prevented("n", true, false, true),
             "Ctrl+Alt+N reached the browser"
+        );
+        assert!(!prevented("N", true, true, true), "Ctrl+Alt+Shift+N kept");
+        app.run(rootpoint_protocol::parse_command("select s1").unwrap());
+        frame_with(&mut app, Vec::new(), Modifiers::NONE);
+        assert!(
+            !prevented("M", true, true, false),
+            "Ctrl+Shift+M kept with no area selected"
         );
         stop.forget();
     }

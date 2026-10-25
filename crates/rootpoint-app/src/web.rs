@@ -270,10 +270,13 @@ pub(crate) fn warn_before_unload(unsaved: std::rc::Weak<std::cell::Cell<bool>>) 
 
 /// Keep the editor's keys from the browser's own actions, the keys
 /// `design@rootpoint-app@editor-keys-kept-from-browser` names: a listener of the window, in the
-/// capture phase, prevents the default of F5, Ctrl+Shift+M and Ctrl+Alt+N always, and of the keys
-/// of editing while `editing` holds. It holds the flag weakly, so an app dropped keeps those three
-/// alone.
-pub fn keep_editor_keys(editing: std::rc::Weak<std::cell::Cell<bool>>) {
+/// capture phase, prevents the default of F5 always, of the keys of editing while `editing` holds,
+/// and of the math keys that act on a selected area while `area` holds. It holds the flags weakly,
+/// so an app dropped keeps F5 alone.
+pub fn keep_editor_keys(
+    editing: std::rc::Weak<std::cell::Cell<bool>>,
+    area: std::rc::Weak<std::cell::Cell<bool>>,
+) {
     let Some(window) = web_sys::window() else {
         return;
     };
@@ -284,19 +287,29 @@ pub fn keep_editor_keys(editing: std::rc::Weak<std::cell::Cell<bool>>) {
             // a text is edited; and Ctrl+Space, from Ctrl alone, while editing too.
             let command = e.ctrl_key() || e.meta_key();
             let edited = || editing.upgrade().is_some_and(|flag| flag.get());
-            // The math keys, `crate::keymap`: Ctrl+M and the prefix Alt+M while a text or a
-            // formula is edited, and Ctrl+Shift+M and Ctrl+Alt+N, which act on a selected area,
-            // always, as F5. Alt+M is read by its physical key too, since Option+M gives "µ".
+            let selected = || area.upgrade().is_some_and(|flag| flag.get());
+            // The math keys of `crate::keymap`, each with its modifiers exactly, as the table
+            // matches them: Ctrl+M and the prefix Alt+M while a text or a formula is edited, and
+            // Ctrl+Shift+M and Ctrl+Alt+N while an area is selected and not edited. M is read by
+            // its physical key too, since Option+M gives "µ"; AltGr+M, Ctrl and Alt on Windows,
+            // matches none and types its character.
             let key = e.key().to_lowercase();
             let m = key == "m" || e.code() == "KeyM";
+            let (shift, alt) = (e.shift_key(), e.alt_key());
             let kept = match key.as_str() {
                 "f5" => true,
                 "z" | "y" => command,
                 "a" | "b" | "i" => command && edited(),
                 " " => e.ctrl_key() && edited(),
-                "n" => command && e.alt_key(),
-                _ if m && command && (e.shift_key() || edited()) => true,
-                _ if m && e.alt_key() => edited(),
+                "n" => command && alt && !shift && selected(),
+                _ if m && command && !alt => {
+                    if shift {
+                        selected()
+                    } else {
+                        edited()
+                    }
+                }
+                _ if m && alt && !command && !shift => edited(),
                 _ => false,
             };
             if kept {
