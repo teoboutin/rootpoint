@@ -22,8 +22,8 @@ radicals, scripts, `\left…\right`, twelve accents, five font changes, `\text`,
 bmatrix and cases environments, six spaces, groups, and the 32 operator names LaTeX defines in
 `path@elsewhere@base/ltmath.dtx`; `'` reads as LaTeX reads it, a prime in a superscript. Its
 environments set a matrix or a case analysis with no specification of their columns, where the
-rival, LaTeX's `array`, adds the grammar of one; on the owner's word, the owner thinks matrix,
-pmatrix and cases cover the owner's talks, and bmatrix is the bracketed form of the first. A text
+rival, LaTeX's `array`, adds the grammar of one. On the owner's word, the owner thinks matrix,
+pmatrix and cases cover the owner's talks; bmatrix is the bracketed form of the first. A text
 `to_latex` wrote reads back equal, which the proptest of `path@rootpoint-math@tests/latex.rs`
 checks, and so does every formula that keeps the invariants the doc comment of `Formula` states.
 A text that does not parse is refused, for the reasons the doc comment of `Formula::parse` lists,

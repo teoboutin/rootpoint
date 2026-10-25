@@ -1612,10 +1612,11 @@ owner's word of round 8, "you can keep all tripwires and AC.", rules on every la
 ### The project's layout of the reference formulas is acceptable to the owner beside the browser's `##ac-layout-looks-right`
 
 AC1. Guards #math-layout-engine. Judged at #math-layout. Observable: the reference formulas, drawn by the renderer in Libertinus Math into PNG files, and set by
-the owner beside the browser's rendering of the same formulas in the same font on the font sample
-page the session published for the discussion,
-https://claude.ai/artifact/AWzepf7P1m4S7T27EiRrMd, are judged acceptable by the owner before the
-slice merges. Response: the layout is
+the owner beside the browser's rendering of the same formulas in the same font, on a comparison
+page the session publishes, are judged acceptable by the owner before the slice merges. Reworded at
+#math-layout, where the owner judged on such a page, https://claude.ai/artifact/BUDsoxR7rZqDrWpdXjExmK,
+in place of the font sample page of the discussion,
+https://claude.ai/artifact/AWzepf7P1m4S7T27EiRrMd. Response: the layout is
 fixed in the slice; a construct the owner judges wrong that the MATH data cannot place reopens
 #math-layout-engine.
 
