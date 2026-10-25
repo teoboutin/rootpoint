@@ -195,7 +195,7 @@ pub enum Op {
     },
 }
 
-/// What the texts naming a removed style name instead.
+/// What the texts naming a removed style, or the spans naming a removed span style, name instead.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Replacement {
     /// Another style of the table.
@@ -225,7 +225,7 @@ pub enum OpError {
     PositionOutOfRange(f64),
     AssetInUse(AssetId),
     UnknownStyle(String),
-    /// The name is taken, by a style of the table.
+    /// The name is taken, by a style of the table the operation acts on.
     StyleExists(String),
     /// A span names the span style a rename would give its name to.
     SpanStyleNamed {
@@ -238,7 +238,7 @@ pub enum OpError {
         area: NodeId,
     },
     EmptyStyleName,
-    /// A text a style's restoration names is not a text area.
+    /// The area a text operation, or a style's restoration, names is not a text area.
     NotAText(NodeId),
     /// A span the area's text lacks.
     UnknownSpan(SpanId),
@@ -611,6 +611,13 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
                 Some(Replacement::Named(other)) => Some(SpanChoice::Named(other.clone())),
                 Some(Replacement::Custom) => Some(SpanChoice::Custom(style.clone())),
             };
+            // A copy of a span style that sets nothing would leave its users custom spans that
+            // set nothing, which no operation leaves.
+            if let Some(choice) = &replacement
+                && !users.is_empty()
+            {
+                check_span_style(choice)?;
+            }
             if let Some(choice) = replacement {
                 for &(area, span) in &users {
                     set_span_choice(doc, area, span, choice.clone())?;
@@ -817,7 +824,7 @@ impl Seq {
         if range.start > range.end {
             return Err(OpError::OffsetOutOfRange {
                 offset: range.start,
-                len: range.end,
+                len: self.0.len(),
             });
         }
         Ok(())

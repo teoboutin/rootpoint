@@ -32,6 +32,11 @@ of `thread@rich-text@text-node-ids`, `thread@rich-text@inline-math-node`, the mo
 - The fonts a span names are loaded with the area's: `Assets::refresh` of
   `path@rootpoint-app@src/assets.rs` and the headless render of
   `path@rootpoint-protocol@src/session.rs` fill the `FontSet` from each span's font too.
+- A span's and a span style's font count as uses of their asset wherever the model's
+  `asset_in_use` counts them: the session's `asset_uses` and `renaming_ops`, so `assets uses=`,
+  `asset-remove` and `asset-remove … into=`, and the Assets tab's `App::asset_uses`; a file edited
+  by hand holds such a span before any command makes one. Brought into this slice by its review,
+  from #span-commands.
 - The protocol and the app keep compiling: every reader of `TextContent::text`, and the app's
   readers of `parley::Layout<()>` in `path@rootpoint-app@src/editing.rs`. The `text` command and the
   editor keep sending a whole string, read as a root with no span, until #span-commands and
@@ -60,15 +65,16 @@ of `thread@rich-text@text-node-ids`, `thread@rich-text@inline-math-node`, the mo
   fail by a writer that drops a span's id.
 - **Every tree operation's inverse restores the document**: a property test over random trees and
   random operations, in `path@rootpoint-model@tests/ops.rs`, which applies each and its inverse and
-  compares with `PartialEq`; shown to fail by an `Op::SplitSpan` whose inverse snapshot is taken
-  after the split.
+  compares with `Document::same_content`, since an operation moves the counter; shown to fail by an
+  inverse snapshot taken after the edit, for every operation or for `Op::SplitSpan` alone.
 - **The normal form holds after every operation**: the same property test checks that no custom
-  span sets no field, that no two runs of characters are adjacent and none is empty, and that equal
-  sibling spans are kept; a test checks that a named span whose values equal its parent's is kept.
+  span sets no field, and that no two runs of characters are adjacent and none is empty; unit tests
+  check that equal sibling spans are kept through an edit, and that a named span whose values equal
+  its parent's is kept.
 - **A styled text draws as its spans say**: a golden image of a text with a bold span and a
   coloured span, through `render_slide`, under `design@rootpoint-render@portable-precision`.
-- **The map places every caret position on its byte index**: a test over a nested tree, each span's
-  byte range checked too.
+- **The map places every caret position on its byte index**: a test that walks every caret
+  position of a nested tree against an independent count, and checks each span's byte range.
 - **A span's missing style and font are named**: a test of `Document::breaches` and of the render's
   report.
 
@@ -130,6 +136,10 @@ None is judged at this slice.
 - Record the new members of `design@rootpoint-model@cosmetic-fallbacks` and
   `design@rootpoint-model@validated-documents`, which their arguments cover, directly.
 - Rewrite `design@rootpoint-render@area-text-layout` for the map and the colour per run.
+- Add to `design@rootpoint-model@save-format` the extension `implicit_some` the file declares
+  beside `unwrap_variant_newtypes`.
+- Amend in place the milestone's "What the work is" for what this slice changed: a text is a
+  tree, the file is format 5, and the colour is carried per run.
 - The losing alternatives of these threads, judged under
   `skill@knowledge-architect-decision-recording@losing-alternatives`.
 - Write T3, guarding the rewritten `design@rootpoint-model@stable-ids`.

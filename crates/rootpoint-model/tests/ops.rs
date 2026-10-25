@@ -748,8 +748,8 @@ fn first_span(doc: &Document, area: NodeId) -> SpanId {
     text_of(doc, area).root.spans()[0].id
 }
 
-/// Every text of the document is in its canonical form: no run of characters empty, no two
-/// adjacent, and no custom span that sets no field.
+/// A text node, and every span below it, is in its canonical form: no run of characters empty, no
+/// two adjacent, and no custom span that sets no field.
 fn check_canonical(node: &TextNode) {
     let mut last_chars = false;
     for item in &node.items {
@@ -1200,4 +1200,203 @@ fn a_span_font_asset_cannot_be_removed_and_one_above_the_counter_is_refused() {
         ),
         Err(OpError::Invalid(_))
     ));
+}
+
+/// A text whose named style the table lacks still has its spans' breaches named, as the renderer
+/// reports them.
+#[test]
+fn the_spans_of_a_text_whose_style_is_missing_are_named_too() {
+    let (mut doc, area) = one_text("abc");
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 0..1,
+            style: SpanChoice::Named("Ghost".to_owned()),
+        },
+    )
+    .unwrap();
+    let span = first_span(&doc, area);
+    let Some(Node::Area(a)) = doc.node(area).cloned() else {
+        panic!("no area")
+    };
+    let Content::Text(mut text) = a.content else {
+        panic!("no text")
+    };
+    text.style = StyleChoice::Named("Gone".to_owned());
+    apply(
+        &mut doc,
+        Op::SetContent {
+            area,
+            content: Content::Text(text),
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        doc.breaches(),
+        vec![
+            Breach::MissingStyle {
+                area,
+                name: "Gone".to_owned()
+            },
+            Breach::MissingSpanStyle {
+                area,
+                span,
+                name: "Ghost".to_owned()
+            },
+        ]
+    );
+}
+
+/// Removing a span style that sets nothing into a copy is refused while a span names it, since it
+/// would leave custom spans that set nothing.
+#[test]
+fn a_span_style_that_sets_nothing_cannot_be_removed_into_a_copy() {
+    let (mut doc, area) = one_text("abc");
+    apply(
+        &mut doc,
+        Op::AddSpanStyle {
+            name: "Empty".to_owned(),
+            style: SpanStyle::default(),
+        },
+    )
+    .unwrap();
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 0..1,
+            style: SpanChoice::Named("Empty".to_owned()),
+        },
+    )
+    .unwrap();
+    let before = doc.clone();
+    assert_eq!(
+        apply(
+            &mut doc,
+            Op::RemoveSpanStyle {
+                name: "Empty".to_owned(),
+                into: Some(Replacement::Custom),
+            },
+        ),
+        Err(OpError::EmptySpanStyle)
+    );
+    assert_eq!(doc, before);
+}
+
+/// Two adjacent spans of one style stay two spans through an edit of the text around them.
+#[test]
+fn equal_sibling_spans_stay_apart() {
+    let (mut doc, area) = one_text("prime number");
+    for range in [0..5, 1..8] {
+        apply(
+            &mut doc,
+            Op::WrapSpan {
+                area,
+                node: TextNodeRef::Root,
+                range,
+                style: bold(),
+            },
+        )
+        .unwrap();
+    }
+    // The root is now: span "prime", span " number".
+    apply(
+        &mut doc,
+        Op::InsertText {
+            area,
+            node: TextNodeRef::Root,
+            offset: 2,
+            text: "!".to_owned(),
+        },
+    )
+    .unwrap();
+    let t = text_of(&doc, area);
+    assert_eq!(t.plain_text(), "prime number!");
+    let spans = t.root.spans();
+    assert_eq!(spans.len(), 2);
+    assert_eq!(spans[0].style, spans[1].style);
+}
+
+/// A span naming a style of the table whose values equal its parent's is kept.
+#[test]
+fn a_named_span_equal_to_its_parent_is_kept() {
+    let (mut doc, area) = one_text("bold");
+    apply(
+        &mut doc,
+        Op::AddSpanStyle {
+            name: "Strong".to_owned(),
+            style: SpanStyle {
+                bold: Some(true),
+                ..SpanStyle::default()
+            },
+        },
+    )
+    .unwrap();
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 0..4,
+            style: bold(),
+        },
+    )
+    .unwrap();
+    let outer = first_span(&doc, area);
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Span(outer),
+            range: 0..4,
+            style: SpanChoice::Named("Strong".to_owned()),
+        },
+    )
+    .unwrap();
+    assert_eq!(text_of(&doc, area).root.spans().len(), 2);
+}
+
+/// A span's font asset the table lacks, and a built-in family the binary lacks, are named by
+/// `Document::breaches`.
+#[test]
+fn a_span_font_the_document_lacks_is_a_breach() {
+    let (mut doc, area) = one_text("abc");
+    let missing = AssetId(next_id(&doc) - 1);
+    let font = |font| {
+        SpanChoice::Custom(SpanStyle {
+            font: Some(font),
+            ..SpanStyle::default()
+        })
+    };
+    for (range, f) in [
+        (0..1, FontRef::Asset(missing)),
+        (1..2, FontRef::Builtin("serif".to_owned())),
+    ] {
+        apply(
+            &mut doc,
+            Op::WrapSpan {
+                area,
+                node: TextNodeRef::Root,
+                range,
+                style: font(f),
+            },
+        )
+        .unwrap();
+    }
+    assert_eq!(
+        doc.breaches(),
+        vec![
+            Breach::MissingAsset {
+                area,
+                asset: missing
+            },
+            Breach::UnknownFont {
+                area,
+                name: "serif".to_owned()
+            },
+        ]
+    );
 }

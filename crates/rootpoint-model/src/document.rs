@@ -53,12 +53,13 @@ impl fmt::Display for SpanId {
     }
 }
 
-/// A presentation: its aspect ratio, its slides in order, its assets, and its named text styles.
+/// A presentation: its aspect ratio, its slides in order, its assets, its named text styles and its
+/// named span styles.
 ///
-/// Every id of the document comes from one counter, which only grows, so a removed slide, node or
-/// asset never lends its id to another (`design@rootpoint-model@stable-ids`). Change a document only
-/// through [`crate::apply`], which keeps the invariants [`Document::validate`] checks, per
-/// `design@rootpoint-model@edit-operation-core`; a loaded file is checked by it too.
+/// Every id of the document comes from one counter, which only grows, so a removed slide, node,
+/// asset or span never lends its id to another (`design@rootpoint-model@stable-ids`). Change a
+/// document only through [`crate::apply`], which keeps the invariants [`Document::validate`]
+/// checks, per `design@rootpoint-model@edit-operation-core`; a loaded file is checked by it too.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
     pub aspect: AspectRatio,
@@ -361,6 +362,48 @@ impl TextContent {
     pub fn plain_text(&self) -> String {
         let mut out = String::new();
         self.root.push_plain(&mut out);
+        out
+    }
+
+    /// The fonts the text's own values set: its custom style's, then each custom span's, in the
+    /// order of the text. A named style's font is its table's.
+    pub fn own_fonts(&self) -> Vec<&FontRef> {
+        let own = match &self.style {
+            StyleChoice::Custom(style) => Some(&style.font),
+            StyleChoice::Named(_) => None,
+        };
+        let spans = self
+            .root
+            .spans()
+            .into_iter()
+            .filter_map(|span| match &span.style {
+                SpanChoice::Custom(style) => style.font.as_ref(),
+                SpanChoice::Named(_) => None,
+            });
+        own.into_iter().chain(spans).collect()
+    }
+
+    /// The text with every font its own values set to `from` set to `to` instead.
+    pub fn with_font(&self, from: &FontRef, to: &FontRef) -> TextContent {
+        fn rename(node: &mut TextNode, from: &FontRef, to: &FontRef) {
+            for item in &mut node.items {
+                if let TextItem::Span(span) = item {
+                    if let SpanChoice::Custom(style) = &mut span.style
+                        && style.font.as_ref() == Some(from)
+                    {
+                        style.font = Some(to.clone());
+                    }
+                    rename(&mut span.text, from, to);
+                }
+            }
+        }
+        let mut out = self.clone();
+        if let StyleChoice::Custom(style) = &mut out.style
+            && &style.font == from
+        {
+            style.font = to.clone();
+        }
+        rename(&mut out.root, from, to);
         out
     }
 }

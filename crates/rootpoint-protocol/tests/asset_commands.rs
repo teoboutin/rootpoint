@@ -638,3 +638,61 @@ fn in_a_workspace_an_import_below_a_file_is_refused_and_leaves_no_trash() {
     assert!(matches!(got, Reply::Err(_)), "{got}");
     assert_eq!(trash(&root), Vec::<String>::new(), "{got}");
 }
+
+/// A font a span sets is a use of its asset, as the model counts it: `assets` names its area, a
+/// removal is refused with its use, `asset-remove-unused` leaves it, and a removal into another
+/// asset makes the span name the other. A file holds such a span before any command makes one.
+#[test]
+fn a_font_a_span_sets_is_a_use_of_its_asset() {
+    let mut files = MemoryFiles::holding(&["font.ttf", "other.ttf", "spare.ttf"]);
+    let mut s = Session::new();
+    run(
+        &mut s,
+        &mut files,
+        "add-slide\ntext n2 \"abc\"\nimport font.ttf\nimport other.ttf\nimport spare.ttf",
+    );
+    write_presentation(&s, &mut files, "deck");
+    for name in ["font.ttf", "other.ttf", "spare.ttf"] {
+        files
+            .files
+            .insert(format!("deck/{name}"), b"bytes".to_vec());
+    }
+    let saved = String::from_utf8(files.files["deck/presentation.ron"].clone()).unwrap();
+    let mut doc = load_ron(&saved).unwrap();
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area: NodeId(2),
+            node: TextNodeRef::Root,
+            range: 0..1,
+            style: SpanChoice::Custom(SpanStyle {
+                font: Some(FontRef::Asset(AssetId(3))),
+                ..SpanStyle::default()
+            }),
+        },
+    )
+    .unwrap();
+    files
+        .files
+        .insert("deck/presentation.ron".into(), save_ron(&doc).into_bytes());
+    let mut s = Session::new();
+    run_ok(&mut s, &mut files, "open deck");
+    let assets = run_ok(&mut s, &mut files, "assets");
+    assert!(assets.contains("a3 font.ttf 5 uses=n2"), "{assets}");
+    assert_eq!(
+        refused(&mut s, &mut files, "asset-remove a3"),
+        "a3 is used by n2"
+    );
+    assert_eq!(run_ok(&mut s, &mut files, "asset-remove-unused"), "a4 a5");
+    run_ok(&mut s, &mut files, "undo");
+    run_ok(&mut s, &mut files, "asset-remove a3 into=a4");
+    let Some(Node::Area(Area {
+        content: Content::Text(text),
+        ..
+    })) = s.document().node(NodeId(2))
+    else {
+        panic!("n2 holds no text")
+    };
+    // The text names Body, so the span's font is its one own font.
+    assert_eq!(text.own_fonts(), vec![&FontRef::Asset(AssetId(4))]);
+}

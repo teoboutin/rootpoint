@@ -190,6 +190,10 @@ impl Document {
                         area: area.id,
                         name: name.clone(),
                     });
+                    // The spans are drawn over the stand-in, and named as the renderer names them.
+                    if let Content::Text(text) = &area.content {
+                        self.span_breaches(area.id, &text.root, &mut out);
+                    }
                     continue;
                 }
                 Content::Text(text) => {

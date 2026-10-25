@@ -435,3 +435,101 @@ fn a_span_with_a_missing_style_or_font_is_reported() {
     );
     assert_eq!(out.report.font_fallbacks, vec![root]);
 }
+
+/// An empty span in the middle of a text, as a style action with no selection opens, draws the
+/// text as if it were not there.
+#[test]
+fn an_empty_span_draws_nothing_and_moves_nothing() {
+    let (mut doc, root) = one_slide();
+    set(&mut doc, root, text("two words", TextStyle::default()));
+    let plain = render_small(&doc);
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area: root,
+            node: TextNodeRef::Root,
+            range: 4..4,
+            style: SpanChoice::Custom(SpanStyle {
+                size: Some(90.0),
+                ..SpanStyle::default()
+            }),
+        },
+    )
+    .unwrap();
+    assert_eq!(text_spans(&doc, root).len(), 1);
+    let spanned = render_small(&doc);
+    assert!(plain.pixmap.data_as_u8_slice() == spanned.pixmap.data_as_u8_slice());
+    assert_eq!(plain.report.lines, spanned.report.lines);
+}
+
+/// Every caret position of every text node stands where an independent count puts it: the node's
+/// first byte, plus the bytes of the items before the offset, a span counting its whole text.
+#[test]
+fn every_caret_position_stands_on_its_counted_byte() {
+    fn len(node: &TextNode) -> usize {
+        node.items
+            .iter()
+            .map(|i| match i {
+                TextItem::Chars(s) => s.len(),
+                TextItem::Span(s) => len(&s.text),
+            })
+            .sum()
+    }
+    fn check(map: &rootpoint_render::TextMap, node: TextNodeRef, text: &TextNode, start: usize) {
+        let mut at = start;
+        let mut offset = 0;
+        let expect = |offset: usize, at: usize| {
+            assert_eq!(
+                map.byte_index(CaretPos { node, offset }),
+                Some(at),
+                "{node:?} {offset}"
+            );
+        };
+        expect(0, at);
+        for item in &text.items {
+            match item {
+                TextItem::Chars(s) => {
+                    for c in s.chars() {
+                        at += c.len_utf8();
+                        offset += 1;
+                        expect(offset, at);
+                    }
+                }
+                TextItem::Span(span) => {
+                    check(map, TextNodeRef::Span(span.id), &span.text, at);
+                    at += len(&span.text);
+                    offset += 1;
+                    expect(offset, at);
+                }
+            }
+        }
+        assert_eq!(map.positions(node), Some(offset + 1));
+    }
+    let mut doc = styled();
+    let root = doc.slides[0].root.id();
+    // A character of more than one byte inside a span, so that offsets and bytes differ there.
+    let bold = text_spans(&doc, root)[0];
+    apply(
+        &mut doc,
+        Op::InsertText {
+            area: root,
+            node: TextNodeRef::Span(bold),
+            offset: 1,
+            text: "é".to_owned(),
+        },
+    )
+    .unwrap();
+    let Some(Node::Area(Area {
+        content: Content::Text(t),
+        ..
+    })) = doc.node(root)
+    else {
+        panic!("no text")
+    };
+    check(
+        &rootpoint_render::TextMap::new(t),
+        TextNodeRef::Root,
+        &t.root,
+        0,
+    );
+}

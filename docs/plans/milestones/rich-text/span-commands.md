@@ -15,8 +15,9 @@ The second slice of `milestone@plans@rich-text`. It lands the protocol's half of
   `text`, each span with its `t<n>`.
 - In `path@rootpoint-protocol@src/session.rs`: each command run as its operation; a command that
   names a span style or a font asset the document lacks refused, per
-  `design@rootpoint-protocol@no-new-breach`; `assets uses=` and `asset-remove … into=` counting a
-  span's and a span style's font; the `render` reply naming a span's missing span style.
+  `design@rootpoint-protocol@no-new-breach`, which #text-tree's slice already made count a span's
+  and a span style's font as uses of an asset; the `render` reply naming a span's missing span
+  style.
 - In `path@rootpoint-protocol@README.md`: the new commands.
 
 ## Steps

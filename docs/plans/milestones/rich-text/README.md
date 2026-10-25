@@ -680,11 +680,14 @@ Text(
 Characters are kept in one canonical form: `apply` and `load_ron` merge two adjacent runs of
 characters and drop an empty run, so a document and its round trip through an operation and its
 inverse compare equal. The renderer lays the tree out in one Parley layout with `ranged_builder`,
-the area's values as defaults and each span's resolved values pushed for its byte range, outer spans
-before inner, since a later push wins over an earlier one where they overlap; `TreeBuilder`
-collapses whitespace, per its doc comment in Parley 0.12.0's `builder.rs`, which would move the
-drawn text's byte indices off the stored text's. The layout carries each run's colour, a brush type
-in place of `()`. Nearest rival: flat runs over one string. Defeated by #arg-2 and #arg-3.
+as it laid out one string before, the area's values as defaults and each span's resolved values
+pushed for its byte range, outer spans before inner, since a later push wins over an earlier one
+where they overlap. `ranged_builder` does not collapse whitespace, per its doc comment in Parley
+0.12.0's `builder.rs`, so the drawn text's byte indices are the stored text's; `TreeBuilder`
+collapses it by default, `WhiteSpaceCollapse::Collapse`, and would need
+`WhiteSpaceCollapse::Preserve` set to keep them, so it is no rival a fact defeats, and the builder
+the code had is kept. The layout carries each run's colour, a brush type in place of `()`. Nearest
+rival: flat runs over one string. Defeated by #arg-2 and #arg-3.
 
 ### #text-tree-normal-form
 
@@ -693,10 +696,11 @@ setting no field is refused, and its caller unwraps the span instead; a named sp
 dissolved, whatever its values, and a span that sets a value equal to its parent's is kept, so that
 a bold word inside a bold span stays bold when the outer span changes. A file that holds a custom
 span setting no field loads, the span drawn with its parent's values, and an operation that leaves
-it as it is is not refused. The model accepts an empty span, in an operation and in a file; the
-editor sends `unwrap` for the empty span the caret was in when the caret leaves it, and for each
-empty span of the text when the stay ends. Adjacent spans with equal styles stay apart. Nearest
-rival: merging equal siblings; defeated by #arg-5.
+it as it is is not refused; `Op::SetText`, which makes every span of its tree anew with a new id,
+refuses it as any operation refuses a span it makes. The model accepts an empty span, in an
+operation and in a file; the editor sends `unwrap` for the empty span the caret was in when the
+caret leaves it, and for each empty span of the text when the stay ends. Adjacent spans with equal
+styles stay apart. Nearest rival: merging equal siblings; defeated by #arg-5.
 
 ### #span-style-overrides
 

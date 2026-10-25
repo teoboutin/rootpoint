@@ -869,9 +869,9 @@ impl Session {
         Ok(moves)
     }
 
-    /// What names the asset, as `assets` lists it: the areas whose image is it or whose own
-    /// font is it, in the order of the slides and their trees, then the named styles whose font
-    /// is it.
+    /// What names the asset, as `assets` lists it: the areas whose image is it or whose text's
+    /// own values or spans' own values set it as font, in the order of the slides and their trees,
+    /// then the named styles, then the named span styles, whose font is it.
     fn asset_uses(&self, asset: AssetId) -> Vec<String> {
         let font = FontRef::Asset(asset);
         let mut uses: Vec<String> = self
@@ -881,11 +881,7 @@ impl Session {
             .flat_map(|s| s.root.areas())
             .filter(|a| match &a.content {
                 Content::Image(image) => image.asset == asset,
-                Content::Text(TextContent {
-                    style: StyleChoice::Custom(style),
-                    ..
-                }) => style.font == font,
-                Content::Text(_) => false,
+                Content::Text(text) => text.own_fonts().contains(&&font),
             })
             .map(|a| a.id.to_string())
             .collect();
@@ -894,6 +890,13 @@ impl Session {
                 .styles
                 .iter()
                 .filter(|(_, s)| s.font == font)
+                .map(|(name, _)| quote_always(name)),
+        );
+        uses.extend(
+            self.doc
+                .span_styles
+                .iter()
+                .filter(|(_, s)| s.font.as_ref() == Some(&font))
                 .map(|(name, _)| quote_always(name)),
         );
         uses
@@ -909,16 +912,9 @@ impl Session {
                     asset: other,
                     fit: image.fit,
                 }),
-                Content::Text(TextContent {
-                    root,
-                    style: StyleChoice::Custom(style),
-                }) if style.font == font => Content::Text(TextContent {
-                    root: root.clone(),
-                    style: StyleChoice::Custom(TextStyle {
-                        font: FontRef::Asset(other),
-                        ..style.clone()
-                    }),
-                }),
+                Content::Text(text) if text.own_fonts().contains(&&font) => {
+                    Content::Text(text.with_font(&font, &FontRef::Asset(other)))
+                }
                 _ => continue,
             };
             ops.push(Op::SetContent {
@@ -932,6 +928,17 @@ impl Session {
                     name: name.clone(),
                     style: TextStyle {
                         font: FontRef::Asset(other),
+                        ..style.clone()
+                    },
+                });
+            }
+        }
+        for (name, style) in &self.doc.span_styles {
+            if style.font.as_ref() == Some(&font) {
+                ops.push(Op::SetSpanStyleValues {
+                    name: name.clone(),
+                    style: rootpoint_model::SpanStyle {
+                        font: Some(FontRef::Asset(other)),
                         ..style.clone()
                     },
                 });

@@ -9,7 +9,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use eframe::egui::{self, Color32, ColorImage, Sense, TextureHandle, TextureOptions, Ui};
-use rootpoint_model::{AssetId, Content, FontRef, NodeId, StyleChoice, TextContent};
+use rootpoint_model::{AssetId, Content, FontRef, NodeId};
 use rootpoint_protocol::{AssetFilter, Store};
 
 use crate::App;
@@ -80,11 +80,13 @@ pub(crate) struct Listing {
     pub(crate) untracked: Vec<String>,
 }
 
-/// What names an asset: an area, by its image or its own font, or a named style.
+/// What names an asset: an area, by its image or its text's or spans' own font, a named style or
+/// a named span style.
 #[derive(Clone, Debug, PartialEq)]
 pub enum AssetUse {
     Area(NodeId),
     Style(String),
+    SpanStyle(String),
 }
 
 /// A size in bytes as the tab writes it.
@@ -112,11 +114,7 @@ impl App {
             .flat_map(|s| s.root.areas())
             .filter(|a| match &a.content {
                 Content::Image(image) => image.asset == asset,
-                Content::Text(TextContent {
-                    style: StyleChoice::Custom(style),
-                    ..
-                }) => style.font == font,
-                Content::Text(_) => false,
+                Content::Text(text) => text.own_fonts().contains(&&font),
             })
             .map(|a| AssetUse::Area(a.id))
             .collect();
@@ -125,6 +123,12 @@ impl App {
                 .iter()
                 .filter(|(_, s)| s.font == font)
                 .map(|(name, _)| AssetUse::Style(name.clone())),
+        );
+        uses.extend(
+            doc.span_styles
+                .iter()
+                .filter(|(_, s)| s.font.as_ref() == Some(&font))
+                .map(|(name, _)| AssetUse::SpanStyle(name.clone())),
         );
         uses
     }
@@ -393,6 +397,11 @@ impl App {
                             self.show_tab(crate::SideTab::Styles);
                             self.select_style(name);
                         }
+                    }
+                    // The Styles tab lists no span style before the slice that adds them,
+                    // `spec@rich-text@span-styling`, so the use is named and leads nowhere.
+                    AssetUse::SpanStyle(name) => {
+                        ui.label(format!("span style {name}"));
                     }
                 }
             }
