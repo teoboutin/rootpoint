@@ -6,7 +6,7 @@
         width: 16,
         height: 9,
     ),
-    next_id: 8,
+    next_id: 10,
     assets: {
         7: (
             path: "images/cat.png",
@@ -70,7 +70,11 @@
             v_align: Middle,
         ),
     },
-    span_styles: {},
+    span_styles: {
+        "Term": (
+            italic: true,
+        ),
+    },
     slides: [
         (
             id: 1,
@@ -115,7 +119,24 @@
                                 id: 5,
                                 content: Text(
                                     root: [
-                                        Chars("Some wrapped text below the title."),
+                                        Chars("Some "),
+                                        Span(
+                                            id: 8,
+                                            style: Custom(
+                                                bold: true,
+                                            ),
+                                            text: [
+                                                Span(
+                                                    id: 9,
+                                                    style: Named("Term"),
+                                                    text: [
+                                                        Chars("w"),
+                                                    ],
+                                                ),
+                                                Chars("rapped"),
+                                            ],
+                                        ),
+                                        Chars(" text below the title."),
                                     ],
                                     style: Custom(
                                         font: Builtin("sans"),

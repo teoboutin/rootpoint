@@ -12,7 +12,8 @@ fn data(name: &str) -> PathBuf {
 }
 
 /// One slide: a side-by-side split of an image area on the left and, on the right, a stacked split
-/// of two text areas. The image is a file beside the presentation.
+/// of two text areas, the second holding a nested span and a named span. The image is a file
+/// beside the presentation.
 fn fixture() -> Document {
     let mut doc = Document::default();
     apply(&mut doc, Op::AddSlide { at: 0 }).unwrap();
@@ -76,6 +77,50 @@ fn fixture() -> Document {
             style: StyleChoice::Custom(TextStyle::default()),
         }),
     );
+    // A styled text: "wrapped" in a bold span, whose first letter is in a span naming the span
+    // style "Term".
+    apply(
+        &mut doc,
+        Op::AddSpanStyle {
+            name: "Term".to_owned(),
+            style: SpanStyle {
+                italic: Some(true),
+                ..SpanStyle::default()
+            },
+        },
+    )
+    .unwrap();
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area: areas[2],
+            node: TextNodeRef::Root,
+            range: 5..12,
+            style: SpanChoice::Custom(SpanStyle {
+                bold: Some(true),
+                ..SpanStyle::default()
+            }),
+        },
+    )
+    .unwrap();
+    let Some(Node::Area(Area {
+        content: Content::Text(text),
+        ..
+    })) = doc.node(areas[2])
+    else {
+        panic!("the third area holds a text");
+    };
+    let bold = text.root.spans()[0].id;
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area: areas[2],
+            node: TextNodeRef::Span(bold),
+            range: 0..1,
+            style: SpanChoice::Named("Term".to_owned()),
+        },
+    )
+    .unwrap();
     doc
 }
 
