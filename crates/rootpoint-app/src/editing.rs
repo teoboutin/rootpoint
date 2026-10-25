@@ -275,7 +275,7 @@ pub(crate) fn from_byte(text: &TextContent, index: usize, affinity: Affinity) ->
 }
 
 /// The selection between `anchor` and `caret`, lifted to their nearest common text node, as
-/// #selection-one-level of `milestone@plans@rich-text` says: an end inside a span of that node
+/// `design@rootpoint-app@selection-one-level` says: an end inside a span of that node
 /// takes the span whole. The text node, the selected range of its offsets, and the caret's end.
 pub(crate) fn selection(
     text: &TextContent,

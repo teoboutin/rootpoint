@@ -23,12 +23,24 @@ the layout `render_slide` draws: its caret would sit on a second layout that has
 drawn one, from styles set again by hand, which `design@rootpoint-render@area-text-layout` exists
 to avoid. Its `Selection` and `Cursor` take any layout.
 
+### One caret position at a span's edge, with a rule that guesses the typing style `##one-position-per-edge`
+
+`live`. LyX stores bold, colour and size as flat runs over a paragraph's characters, so between a
+plain `a` and a bold `b` there is one caret position, and `Cursor::setCurrentFont` picks the font a
+typed letter takes by a rule, read in LyX's source by the survey
+`path@rootpoint@docs/grounding/lyx-nested-text.md`. The author then cannot choose, at the edge,
+whether a letter joins the bold run, which the owner asked for; the choice needs the span as an
+item of its parent's sequence, `design@rootpoint-app@boundary-caret-positions`. Doubt remains
+whether an author tells the two caret positions of an edge apart, while both are drawn at one byte
+index.
+
 ### A protocol command that places or reads the caret and the selection of an edited text `##caret-command`
 
 `live`. On the owner's word, the caret and the selection of a text being edited are the editor's
 state, not a view `goal@rootpoint-protocol@commands-drive-everything` asks a command for, so the
 protocol carries no command for them, `design@rootpoint-app@caret-editor-state`. A script changes a
-text with `text`, and needs no caret to do so.
+text with `text` or the commands of one operation each, which name a text node and an offset, and
+needs no caret to do so.
 
 ### The authority to edit held by one connection of the control socket `##control-per-connection`
 

@@ -194,11 +194,12 @@ What exists today, at each site the work touches:
   `design@rootpoint-protocol@protocol-transport`; `text` with options and no tree changes the area's
   style alone, `design@rootpoint-protocol@text-style-alone`; the `span-style` commands and the
   query `span-styles` change and list the span style table.
-- **The editor**, before #tree-caret. Every change of a text is one `text` command with the area's
-  whole text as a tree of one run, a style changed from the side panel aside, which drops the
-  spans of a text loaded with them, until #tree-caret sends the small commands; no release is made
-  between the slices. Every change of a text is so sent, `design@rootpoint-app@edit-in-place`; the caret is a Parley `Selection`, placed again by byte
-  index after each command; the caret, the selection and the composing range are editor state,
+- **The editor**, as #tree-caret landed it. The caret and the selection's anchor are caret
+  positions of the tree, `design@rootpoint-app@boundary-caret-positions`, mapped to Parley's byte
+  index, `design@rootpoint-app@edit-in-place`; a selection is a range of one text node,
+  `design@rootpoint-app@selection-one-level`; every change of a text is an `insert`, a `delete` or
+  an `unwrap`, `design@rootpoint-app@empty-span-unwrapped`, a style changed from the side panel
+  aside; the caret, the selection and the composing range are editor state,
   `design@rootpoint-app@caret-editor-state`.
 
 **Outside the work, and why:**
@@ -996,8 +997,9 @@ reopens #text-edit-commands.
 2. #span-commands, landed, its spec deleted with its harvest: the commands of the tree and of the
    span style table, `tree` printing the tree, `text` taking one. Fails alone on: the parse of every printed command, and
    the property test of `design@rootpoint-protocol@no-new-breach`.
-3. [#tree-caret](tree-caret.md): the editor's caret over the tree, typing, deletion and composition
-   by the small commands, the selection of one node. Fails alone on: AC1 and AC3.
+3. #tree-caret, landed, its spec deleted with its harvest: the editor's caret over the tree, typing,
+   deletion and composition by the small commands, the selection of one node. Fails alone on: AC1
+   and AC3.
 4. [#span-styling](span-styling.md): the style actions, "split here", the frames, the ancestor row,
    the span styles in the Styles tab, the browser's keys. Fails alone on: AC2, and the actions
    checked against a second session.
@@ -1094,7 +1096,7 @@ last slice:
 - **Maths**: a `Math` variant of `TextItem`, laid out by the project and placed with Parley's
   `InlineBox`, and a maths font, #arg-11; with the equation kind and its references,
   `issue@rootpoint@more-content-kinds`.
-- **Styled copy and paste**, D3: a `todo` issue opened at the harvest of #tree-caret.
+- **Styled copy and paste**, D3: `issue@rootpoint-app@styled-copy-paste`.
 - **The frames, revised on the owner's live use**: T1, written at #span-styling.
 - **Span styles in a new document**: none today, #named-span-styles; no later work is planned, and
   the head of #named-span-styles states it.

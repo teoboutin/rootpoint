@@ -81,7 +81,12 @@ document lacks, and text not drawn.
   Ctrl for words and with Shift to select, Home and End, a drag or a Shift+click to select, Ctrl+A,
   copy, cut and paste, and IME composition and dead keys edit the text; Esc leaves editing, the
   area still selected, and a click outside the area leaves editing and acts as it does outside
-  it. The edits of one stay in editing are one undo step.
+  it. The edits of one stay in editing are one undo step. In a styled text, each edge of a span is
+  two caret positions, inside the span and outside it, both drawn at one place, and the arrows step
+  through both, so typing goes inside or outside as the caret stands; a selection stays in one
+  span, or takes a span whole. Backspace or Delete next to a span selects it, and a second press
+  deletes it; at a span's own start, Backspace, or its end, Delete, removes the span's style and
+  keeps its text.
 - Preview, in the toolbar, shows the shown slide as it will be presented, inside the editor: no
   mark is drawn over it, no area is selected, and a press on it starts no gesture. A click on an
   area selects it and leaves the preview, a double-click acting as that one click, and Esc or the

@@ -591,8 +591,8 @@ fn edit_tree(tree: &str) -> Driver {
 }
 
 /// Each edge of a span is two caret positions, and typing goes into the caret's text node, per
-/// #boundary-caret-positions of `milestone@plans@rich-text`: before the span and
-/// at its start, at its end and after it.
+/// `design@rootpoint-app@boundary-caret-positions`: before the span and at its start, at its end
+/// and after it.
 #[test]
 fn typing_at_each_position_of_an_edge_goes_into_the_caret_s_text_node() {
     let mut d = edit_tree(r#"["ab", {bold "cd"}, "ef"]"#);
@@ -643,7 +643,7 @@ fn the_arrows_enter_and_leave_a_span_at_its_edges() {
 }
 
 /// A click puts the caret in the deepest text node that owns the clicked glyph, on the side of
-/// the glyph clicked, #boundary-caret-positions of `milestone@plans@rich-text`: the left half of
+/// the glyph clicked, `design@rootpoint-app@boundary-caret-positions`: the left half of
 /// the span's first glyph is inside the span, the right half of the glyph before it outside.
 #[test]
 fn a_click_goes_into_the_text_node_of_the_glyph_on_its_side() {
@@ -676,7 +676,7 @@ fn a_click_goes_into_the_text_node_of_the_glyph_on_its_side() {
 
 /// A selection is a range of one text node: Shift with an arrow passes a span whole, and a
 /// selection begun inside a span and extended past its end rises to its parent and takes the span
-/// whole, #selection-one-level of `milestone@plans@rich-text`; typing then replaces the span.
+/// whole, `design@rootpoint-app@selection-one-level`; typing then replaces the span.
 #[test]
 fn a_selection_stays_in_one_text_node_and_takes_a_span_whole() {
     let mut d = edit_tree(r#"["ab", {bold "cd"}, "ef"]"#);
@@ -720,8 +720,8 @@ fn a_selection_stays_in_one_text_node_and_takes_a_span_whole() {
     assert_eq!(d.app.caret(), Some(at(ROOT, 3)));
 }
 
-/// A cut takes a span inside the selection whole, and the clipboard its characters alone, D3 of
-/// `milestone@plans@rich-text`; a paste inserts plain text into the caret's text node.
+/// A cut takes a span inside the selection whole, and the clipboard its characters alone,
+/// `issue@rootpoint-app@styled-copy-paste`; a paste inserts plain text into the caret's text node.
 #[test]
 fn a_cut_takes_a_span_whole_and_a_paste_inserts_plain_text_at_the_caret() {
     let mut d = edit_tree(r#"["ab", {bold "cd"}, "ef"]"#);
@@ -739,8 +739,7 @@ fn a_cut_takes_a_span_whole_and_a_paste_inserts_plain_text_at_the_caret() {
 }
 
 /// The editor unwraps the empty span the caret leaves, and each empty span of the text when the
-/// stay ends, #text-tree-normal-form of `milestone@plans@rich-text`, inside the stay's one undo
-/// step.
+/// stay ends, `design@rootpoint-app@empty-span-unwrapped`, inside the stay's one undo step.
 #[test]
 fn an_empty_span_is_unwrapped_when_the_caret_leaves_it_and_at_the_stay_s_end() {
     let mut d = edit_tree(r#"["ab", {bold "c"}, "d"]"#);
@@ -821,14 +820,15 @@ fn backspace_and_delete_at_an_edge_select_a_span_or_unwrap_it() {
     assert_eq!(shape(&d, NodeId(3)), "abcdef");
 }
 
-/// AC1, #ac-caret-walk of `milestone@plans@rich-text`: over generated trees, Right walks from the
-/// text's start to its end and Left back, each caret position on a cluster's boundary visited once
-/// each way, and each drawn on its glyph's boundary within half a pixel at three sizes of the view,
-/// but inside a ligature, which has no glyph boundary between its characters. The trees hold runs
-/// of ASCII letters and spaces, so each character is a cluster of its own and every offset is a
-/// caret position; "ff" is a ligature of the built-in Noto Sans, which the first run of this test
-/// met, and `the_walk_crosses_a_ligature` walks one each time. The spans hold one item or more, nested three deep at most, since the
-/// walk unwraps an empty span it leaves.
+/// The caret positions of `design@rootpoint-app@boundary-caret-positions`, mapped to the layout
+/// as `design@rootpoint-app@edit-in-place` says: over generated trees, Right walks from the text's
+/// start to its end and Left back, each caret position visited once each way, and each drawn on its
+/// glyph's boundary within half a pixel at three sizes of the view, but inside a ligature, which has
+/// none between its characters. The trees hold runs of ASCII letters and spaces, so every offset is
+/// a caret position, no character carrying a mark; "ff" is a ligature of the built-in Noto Sans,
+/// which the first run of this test met, and `the_walk_crosses_a_ligature` walks one each time.
+/// The spans hold one item or more, nested three deep at most, since the walk unwraps an empty span
+/// it leaves.
 mod caret_walk {
     use super::*;
     use proptest::prelude::*;
@@ -989,8 +989,9 @@ mod caret_walk {
     }
 }
 
-/// AC3, #ac-composition-in-span of `milestone@plans@rich-text`: a composition begun with the caret
-/// inside a nested span commits into that span, and one `undo` removes the stay's whole change.
+/// The small commands of `design@rootpoint-protocol@text-edit-commands`, for a composition: one
+/// begun with the caret inside a nested span commits into that span, and one `undo` removes the
+/// stay's whole change.
 #[test]
 fn a_composition_inside_a_nested_span_commits_there_in_one_undo_step() {
     let mut d = edit_tree(r#"["ab", {bold "c", {italic "de"}, "f"}, "g"]"#);

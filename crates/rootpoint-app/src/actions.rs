@@ -1175,8 +1175,7 @@ impl App {
 
     /// Leave editing, closing the stay's group, so its edits are one undo step; the area stays
     /// selected. A composition still open is dropped from the text first, and every empty span of
-    /// the text is unwrapped, #text-tree-normal-form of
-    /// `milestone@plans@rich-text`, inside the group.
+    /// the text is unwrapped, `design@rootpoint-app@empty-span-unwrapped`, inside the group.
     pub fn stop_editing(&mut self) {
         let Some(edit) = self.edit.clone() else {
             return;
@@ -1339,7 +1338,7 @@ impl App {
     }
 
     /// Cut: the selected text, deleted, for the clipboard. A span in the selection goes whole, and
-    /// the clipboard carries its characters alone, D3 of `milestone@plans@rich-text`.
+    /// the clipboard carries its characters alone, `issue@rootpoint-app@styled-copy-paste`.
     pub fn cut(&mut self) -> Option<String> {
         let edit = self.edit.clone()?;
         let content = self.edited_text()?;
@@ -1557,8 +1556,7 @@ impl App {
     }
 
     /// The one place the caret moves. Each empty span the caret was in and has left is unwrapped,
-    /// the inner first, #text-tree-normal-form of `milestone@plans@rich-text`; the caret, the
-    /// anchor and the composing text are carried to where they stand after it, an anchor left in
+    /// the inner first, `design@rootpoint-app@empty-span-unwrapped`; the caret, the anchor and the composing text are carried to where they stand after it, an anchor left in
     /// the span to the span's place in its parent, as Shift with an arrow out of it leaves one.
     fn put_caret(
         &mut self,

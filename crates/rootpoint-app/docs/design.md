@@ -350,27 +350,80 @@ be meaningful here.
 
 ## Editing text
 
-### An area's text is edited on the slide, with Parley's `Selection` on the layout the render draws `##edit-in-place`
+### An area's text is edited on the slide, its caret placed by Parley's `Cursor` on the layout the render draws `##edit-in-place`
 
-The caret and the selection of a text being edited are Parley's `Selection`, placed and moved by
-its methods on the layout `rootpoint_render::area_text` gives,
-`design@rootpoint-render@area-text-layout`,
-which is the layout `render_slide` draws. Every change of the text, a typed string, a deletion, a
-cut, a paste, an IME composition and its commit, is one `text` command with the area's whole text,
-per `design@rootpoint-app@actions-are-commands`; the render lays the new text out, and the caret is
-placed again on it by byte index. The composing text
-stands in the area's text, by commands, so the renderer draws it where it will stand; the overlay
-draws the caret, the selection and the composition's underline, per
-`design@rootpoint-app@editor-overlay`. While editing, the app sets `PlatformOutput::ime` every
-frame, since egui-winit 0.37.0 allows IME input only in a frame that sets it.
+The caret and the selection's anchor of a text being edited are caret positions of the text's tree,
+`design@rootpoint-app@boundary-caret-positions`, which the `TextMap` of `rootpoint_render::area_text`
+maps to the byte index of the layout `render_slide` draws, `design@rootpoint-render@area-text-layout`;
+Parley's `Cursor` and `Selection` place, draw and move the caret there, from that byte index and the
+affinity of the last move or click. Every change of the text, a typed string, a deletion, a cut, a
+paste, an IME composition and its commit, is an `insert` or a `delete` in one text node, the small
+commands of `design@rootpoint-protocol@text-edit-commands`, per
+`design@rootpoint-app@actions-are-commands`, so every span keeps its id; the render lays the new text
+out, and the caret keeps its caret position. A move past a character passes one cluster as Parley
+0.12.0 cuts the layout: a character with the marks drawn on it is one cluster, so the caret stays on
+a glyph's boundary; each character of a ligature is a cluster too, with an even share of its advance
+by `Cluster::advance`, where Parley's own moves stop as well. Backspace deletes one character of the
+cluster before the caret, or a whole line break or emoji, and Delete the cluster after it, as
+Parley's `PlainEditor` does. The composing text stands in the text node it was typed into, by
+commands, so the renderer draws it where it will stand; the overlay draws the caret, the selection
+and the composition's underline, per `design@rootpoint-app@editor-overlay`. While editing, the app
+sets `PlatformOutput::ime` every frame, since egui-winit 0.37.0 allows IME input only in a frame
+that sets it.
 
 So the caret sits on the drawn glyphs at every size of the view, as
 `goal@rootpoint-render@same-slide-everywhere` asks of every display: a test over every character
 of the sample's area n3 puts it on the drawn glyph at three window sizes, within half a pixel, a
-tolerance for rounding that the session chose, by `cargo test -p rootpoint-app --test editing`. A
+tolerance for rounding that the session chose, and a property test walks the caret through
+generated trees of spans at the same sizes, by `cargo test -p rootpoint-app --test editing`. A
 toolkit text field over the slide would break lines differently and let the caret drift, as
 `rejected@rootpoint-render@toolkit-painter` says, and Parley's `PlainEditor` lays its own copy of
 the text out, `rejected@rootpoint-app@plain-editor`.
+
+### A span's edge is two caret positions, and typing goes into the caret's text node `##boundary-caret-positions`
+
+A caret position is a text node of the text's tree, its root or a span, and an offset in its
+sequence, a span counting as one item, `design@rootpoint-model@text-node-tree`. Right at an offset
+before a span enters it at offset 0, and at its last offset leaves it, after it in its parent; Left
+is the mirror; both positions of an edge stand at one byte index of the layout. Typing inserts into
+the caret's text node, so the author chooses, by an arrow, whether a typed letter joins a span. A
+byte index goes back to a caret position, after a click or a move by Parley, in the deepest text
+node that owns the glyph on the side the cursor's affinity names, the glyph after the index for
+`Downstream` and before it for `Upstream`, which is the side of the glyph a click took, as Parley
+0.12.0's `Cursor::from_point` sets it; with no glyph on that side, at the text's start or end, the
+other side is taken. However many edges meet at an index, one glyph owns each side, so the rule
+never has to choose among them.
+
+The rival, one caret position per edge and a rule that guesses the typing style, is how LyX types
+into its flat runs of fonts, by `Cursor::setCurrentFont`, in the survey of LyX,
+`path@rootpoint@docs/grounding/lyx-nested-text.md`: the two positions the author asks for exist only
+where the span is an item of the sequence, `rejected@rootpoint-app@one-position-per-edge`. On the
+owner's word: the owner proposed the edge as an invisible character the caret enters, and judged
+the explicit choice the key feature, and that in practice no place has many edges meeting, since
+these trees rarely go deep, maths aside.
+
+### A selection is a range of one text node, a span inside it taken whole `##selection-one-level`
+
+A selection's anchor and caret are lifted to their nearest common text node: an end inside a span of
+that node takes the span whole, so a selection begun in a span and extended past its end rises to
+the span's parent. Shift with an arrow at a span's edge passes the span whole. The anchor is kept
+where it was set and lifted when the selection is read, as LyX's `CursorData::normalAnchor` lifts
+its anchor, in the survey of LyX, so a selection dragged back inside the span selects in it again. A cut, typing over a selection, and the style
+actions of a selection are then each one command over one node's range, `delete` or `wrap`, never a
+cut through a span. The rival, a free selection across nodes, makes each of them a cut of several
+nodes at once. On the owner's word: the owner counted the rule, in the owner's opinion, a feature
+more than a cost, found LyX's selection model convenient, and judged that cutting a span in half
+is practically never needed.
+
+### The editor unwraps an empty span when the caret leaves it, and every empty span when the stay ends `##empty-span-unwrapped`
+
+The model accepts an empty span, `design@rootpoint-model@text-tree-normal-form`, so that a style
+chosen with nothing selected opens one at the caret, which stays while the caret is in it. When the
+caret leaves an empty span, the editor sends `unwrap` for it, and when a stay ends, for every empty
+span of the text, the inner first, inside the stay's group, so the stay is still one undo step. A
+position inside the unwrapped span, an anchor left there by Shift with an arrow, stands at the span's
+place in its parent. An empty span the caret has left draws nothing, and would remain an item the
+arrows step into and a file keeps, with nothing to show the author where it is.
 
 ### A first click on a text area selects it, and a click on the selected text area edits it `##edit-entry`
 
@@ -409,7 +462,10 @@ final view.
 
 While a text is edited, its caret, its selection and its composing range live in the app, as a
 drag's position does, and the protocol has no command that places or reads them; every change of
-the text they lead to is a `text` command, per `design@rootpoint-app@edit-in-place`. On the
+the text they lead to is a command of `design@rootpoint-protocol@text-edit-commands`, per
+`design@rootpoint-app@edit-in-place`. The caret is a caret position, a text node and an offset,
+`design@rootpoint-app@boundary-caret-positions`, so its text node is part of the caret, which the
+owner's ruling below covers as it stands. On the
 owner's word, they are not among the views `goal@rootpoint-protocol@commands-drive-everything`
 makes commands of: the owner chose editor state alone over a protocol command for the caret and
 the selection, `rejected@rootpoint-app@caret-command`, and approved the same for the composing
