@@ -296,12 +296,12 @@ fn the_grip_actions_issue_their_commands() {
             a.grab_grip(NodeId(3));
             a.drop_grip(Some((NodeId(2), Zone::Move(Edge::Down))));
         },
-        // The sample's next id is 24, so the split's new area is n24.
+        // The sample's next id is 33, so the split's new area is n33.
         |_| {
             vec![
                 c("begin"),
                 c("split n2 stacked 0.5 after"),
-                c("swap n3 n24"),
+                c("swap n3 n33"),
                 c("remove n3"),
                 c("end"),
             ]
@@ -541,7 +541,7 @@ fn the_style_actions_issue_their_commands() {
 }
 
 /// The Assets tab's actions, on the sample's image `a19`, shown by `n14` and `n17`, and `cat.png`
-/// imported as `a24`, which nothing names.
+/// imported as `a33`, which nothing names.
 #[test]
 fn the_asset_actions_issue_their_commands() {
     let imported = &["import cat.png"];
@@ -554,32 +554,32 @@ fn the_asset_actions_issue_their_commands() {
     check(
         "drop an asset on a folder",
         &["import cat.png", "asset-move a19 img/splits.png"],
-        |a| a.move_asset_to_folder(AssetId(24), "img"),
-        |_| vec![c("asset-move a24 img/cat.png")],
+        |a| a.move_asset_to_folder(AssetId(33), "img"),
+        |_| vec![c("asset-move a33 img/cat.png")],
     );
     check(
         "drop an asset on the root",
-        &["import cat.png", "asset-move a24 img/cat.png"],
-        |a| a.move_asset_to_folder(AssetId(24), ""),
-        |_| vec![c("asset-move a24 cat.png")],
+        &["import cat.png", "asset-move a33 img/cat.png"],
+        |a| a.move_asset_to_folder(AssetId(33), ""),
+        |_| vec![c("asset-move a33 cat.png")],
     );
     check(
         "replace an asset",
         imported,
-        |a| a.replace_asset(AssetId(24), "other.png".to_owned()),
-        |_| vec![c("asset-replace a24 other.png")],
+        |a| a.replace_asset(AssetId(33), "other.png".to_owned()),
+        |_| vec![c("asset-replace a33 other.png")],
     );
     check(
         "remove an asset",
         imported,
-        |a| a.remove_asset(AssetId(24)),
-        |_| vec![c("asset-remove a24")],
+        |a| a.remove_asset(AssetId(33)),
+        |_| vec![c("asset-remove a33")],
     );
     check(
         "remove an asset into another",
         imported,
-        |a| a.remove_asset_into(AssetId(19), AssetId(24)),
-        |_| vec![c("asset-remove a19 into=a24")],
+        |a| a.remove_asset_into(AssetId(19), AssetId(33)),
+        |_| vec![c("asset-remove a19 into=a33")],
     );
     check(
         "remove the unused assets",
@@ -597,8 +597,8 @@ fn the_asset_actions_issue_their_commands() {
     check(
         "relink an asset",
         imported,
-        |a| a.relink_asset(AssetId(24), "cat.png".to_owned()),
-        |_| vec![c("asset-relink a24 cat.png")],
+        |a| a.relink_asset(AssetId(33), "cat.png".to_owned()),
+        |_| vec![c("asset-relink a33 cat.png")],
     );
 }
 
@@ -847,8 +847,8 @@ fn the_node_menu_entries_issue_their_commands() {
     check(
         "menu: another image keeps the fit",
         &["import other.png", "image n3 a19 fill"],
-        menu(3, MenuEntry::Image(AssetId(24))),
-        |_| vec![c("select n3"), c("image n3 a24 fill")],
+        menu(3, MenuEntry::Image(AssetId(33))),
+        |_| vec![c("select n3"), c("image n3 a33 fill")],
     );
     check(
         "menu: name a style",
@@ -879,7 +879,7 @@ fn the_node_menu_entries_issue_their_commands() {
     // panel's button does; the menu's own entries are read, not built by the test.
     check(
         "menu: image on an image area",
-        &["import other.png", "image n3 a24 fill"],
+        &["import other.png", "image n3 a33 fill"],
         |a| {
             a.open_node_menu(NodeId(3), Pos2::ZERO);
             let item = a.menu_items().into_iter().find(|i| i.label == "image");

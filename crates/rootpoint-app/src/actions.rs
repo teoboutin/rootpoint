@@ -14,7 +14,7 @@ use rootpoint_protocol::{Command, Reply, SpanOption, StyleCommand, StyleOption, 
 
 use crate::editing::{
     CaretMove, Editing, Item, empty_spans, from_byte, items, items_len, layout_point, left, parent,
-    range_text, right, text_node,
+    range_text, right, spans_holding, text_node,
 };
 
 use crate::hit::{Edge, Layout, MIN_PART, Preview, Zone};
@@ -1805,20 +1805,6 @@ fn whole_span(
         Item::Span(s) => Some(s.id),
         Item::Char(_) => None,
     }
-}
-
-/// The spans that hold a caret position, from its own text node up.
-fn spans_holding(text: &TextContent, pos: CaretPos) -> Vec<SpanId> {
-    let mut out = Vec::new();
-    let mut node = pos.node;
-    while let TextNodeRef::Span(id) = node {
-        out.push(id);
-        match parent(text, id) {
-            Some((up, _)) => node = up,
-            None => break,
-        }
-    }
-    out
 }
 
 /// The new area a `split` reply names, as `new=n12`.

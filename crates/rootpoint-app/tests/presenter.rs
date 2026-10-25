@@ -175,6 +175,51 @@ fn the_presenter_shows_the_image_the_editor_hands_its_texture() {
     assert!(editor == presenter, "the two images differ");
 }
 
+/// The frames of the spans that hold the caret are marks over the texture: with the caret in a
+/// nested span the editor's image is the one it drew before editing, which presenter mode shows.
+#[test]
+fn the_frames_of_the_caret_s_spans_reach_no_slide_image() {
+    let mut d = Driver::new(sample(), Vec2::new(1000.0, 700.0));
+    d.settle();
+    d.app.show_slide(SlideId(24));
+    d.app.select_node(NodeId(26));
+    let (size, editor) = d.settle().expect("the shown slide is drawn");
+    let marks = d.marks();
+    let layout = d.app.layout().unwrap().clone();
+    let at = layout.rect(NodeId(26)).unwrap().center();
+    d.app.edit_at(NodeId(26), at, &layout);
+    let inner = d
+        .app
+        .session()
+        .document()
+        .slide(SlideId(24))
+        .unwrap()
+        .root
+        .areas()
+        .into_iter()
+        .find(|a| a.id == NodeId(26))
+        .and_then(|a| match &a.content {
+            rootpoint_model::Content::Text(t) => t.root.spans().last().map(|s| s.id),
+            _ => None,
+        })
+        .expect("n26 holds a span");
+    d.app.set_caret_pos(rootpoint_model::CaretPos {
+        node: rootpoint_model::TextNodeRef::Span(inner),
+        offset: 1,
+    });
+    // The stay's `begin` marks the texture stale, so the slide is drawn again, as it was.
+    if let Some((again, editing)) = d.settle() {
+        assert_eq!(again, size);
+        assert!(editing == editor, "the image drawn while editing differs");
+    }
+    assert!(d.marks() > marks, "no frame is painted over the slide");
+    d.size = Vec2::new(size[0] as f32, size[1] as f32);
+    d.app.present();
+    let (presented, presenter) = d.settle().expect("the presenter draws the slide");
+    assert_eq!(presented, size);
+    assert!(editor == presenter, "the two images differ");
+}
+
 /// The final view, the session's preview, hands its texture the image presenter mode shows, and
 /// paints nothing over it, where the editor paints its marks.
 #[test]
@@ -208,8 +253,12 @@ fn the_presenter_keys_move_through_the_slides_and_esc_leaves_full_screen() {
     assert_eq!(d.presenting(), Some(SlideId(13)));
     d.key(Key::PageDown);
     assert_eq!(d.presenting(), Some(SlideId(20)));
+    d.key(Key::PageDown);
+    assert_eq!(d.presenting(), Some(SlideId(24)));
     // At the last slide, the next key stays there.
     d.key(Key::PageDown);
+    assert_eq!(d.presenting(), Some(SlideId(24)));
+    d.key(Key::PageUp);
     assert_eq!(d.presenting(), Some(SlideId(20)));
     d.key(Key::PageUp);
     assert_eq!(d.presenting(), Some(SlideId(13)));

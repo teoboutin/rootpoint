@@ -10,6 +10,10 @@ use rootpoint_model::Axis;
 use crate::hit::{Layout, Press, Zone};
 use crate::{App, Gesture, texture_size};
 
+/// How much further out each outer frame of the caret's spans is drawn than the one inside it, in
+/// points.
+const FRAME_GAP: f32 = 2.0;
+
 impl App {
     /// The shown slide, scaled uniformly to the largest size that fits the view, letterboxed:
     /// `render_slide` draws it so, at the view's size in physical pixels. The pointer's presses
@@ -348,8 +352,25 @@ impl App {
             }
         }
         // The selection, the composing text's underline and the caret of a text edited in place,
-        // and the caret's place for the IME, per `design@rootpoint-app@edit-in-place`.
+        // and the caret's place for the IME, per `design@rootpoint-app@edit-in-place`; and a thin
+        // frame around each span that holds the caret, which takes no space in the slide: each
+        // outer frame lighter, and set one point further out, so that frames meeting at an edge
+        // stay apart.
         if self.edit.is_some() {
+            for frame in self.span_frames(layout) {
+                let alpha = 230u8.saturating_sub(60 * frame.depth.min(3) as u8);
+                let colour =
+                    Color32::from_rgba_unmultiplied(accent.r(), accent.g(), accent.b(), alpha);
+                let out = FRAME_GAP * frame.depth as f32;
+                for r in frame.rects {
+                    ui.painter().rect_stroke(
+                        r.expand(out),
+                        0.0,
+                        Stroke::new(1.0, colour),
+                        StrokeKind::Outside,
+                    );
+                }
+            }
             let tint = Color32::from_rgba_unmultiplied(accent.r(), accent.g(), accent.b(), 70);
             for r in self.selection_rects(layout) {
                 ui.painter().rect_filled(r, 0.0, tint);
@@ -359,7 +380,12 @@ impl App {
                     .hline(r.x_range(), r.max.y, Stroke::new(1.5, accent));
             }
             if let Some(caret) = self.caret_rect(layout) {
-                ui.painter().rect_filled(caret, 0.0, accent);
+                // In the colour the caret types with, so that the two positions at the edge of a
+                // span of another colour are told apart.
+                let colour = self.caret_values().map_or(accent, |v| {
+                    Color32::from_rgba_unmultiplied(v.colour.r, v.colour.g, v.colour.b, 255)
+                });
+                ui.painter().rect_filled(caret, 0.0, colour);
                 let area = self.editing().and_then(|a| layout.rect(a)).unwrap_or(caret);
                 ui.ctx().output_mut(|o| {
                     o.ime = Some(egui::output::IMEOutput {

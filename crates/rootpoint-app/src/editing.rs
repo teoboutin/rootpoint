@@ -9,7 +9,8 @@ use std::ops::Range;
 use eframe::egui::{Pos2, Rect};
 use parley::{Affinity, Cluster, Layout as TextLayout, Selection};
 use rootpoint_model::{
-    CaretPos, Content, Node, NodeId, Span, SpanId, TextContent, TextItem, TextNode, TextNodeRef,
+    CaretPos, Content, Document, Node, NodeId, Span, SpanId, TextContent, TextItem, TextNode,
+    TextNodeRef, TextStyle,
 };
 use rootpoint_render::{AreaText, TextBrush, TextMap, area_text};
 
@@ -18,6 +19,19 @@ use crate::hit::Layout;
 
 /// The width of the drawn caret, in points.
 pub const CARET_WIDTH: f32 = 2.0;
+
+/// The half width of the frame of an empty span, which covers no glyph, around the caret, in
+/// points.
+pub const EMPTY_FRAME_HALF_WIDTH: f32 = 3.0;
+
+/// The frame of a span that holds the caret, as the overlay draws it: one rectangle per line the
+/// span covers, in points, and its depth among the frames, 0 for the innermost.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SpanFrame {
+    pub span: SpanId,
+    pub depth: usize,
+    pub rects: Vec<Rect>,
+}
 
 /// The text being edited in place: its area, the caret and the selection's anchor as caret
 /// positions of its tree, and the IME's composing text, which stands in the area's text while
@@ -276,6 +290,54 @@ pub(crate) fn from_byte(text: &TextContent, index: usize, affinity: Affinity) ->
         })
 }
 
+/// The spans that hold a caret position, from its own text node up.
+pub(crate) fn spans_holding(text: &TextContent, pos: CaretPos) -> Vec<SpanId> {
+    let mut out = Vec::new();
+    let mut node = pos.node;
+    while let TextNodeRef::Span(id) = node {
+        out.push(id);
+        match parent(text, id) {
+            Some((up, _)) => node = up,
+            None => break,
+        }
+    }
+    out
+}
+
+/// The values a text node draws with: the area's style, then each span from the root down to the
+/// node, each value it sets over its parent's, a span naming a style the table lacks setting none.
+pub(crate) fn node_values(doc: &Document, text: &TextContent, node: TextNodeRef) -> TextStyle {
+    let mut values = doc.resolve_style(&text.style);
+    let mut spans = spans_holding(text, CaretPos { node, offset: 0 });
+    spans.reverse();
+    let all = text.root.spans();
+    for id in spans {
+        let Some(set) = all
+            .iter()
+            .find(|s| s.id == id)
+            .and_then(|s| doc.resolve_span(&s.style))
+        else {
+            continue;
+        };
+        if let Some(font) = set.font {
+            values.font = font;
+        }
+        if let Some(size) = set.size {
+            values.size = size;
+        }
+        if let Some(bold) = set.bold {
+            values.bold = bold;
+        }
+        if let Some(italic) = set.italic {
+            values.italic = italic;
+        }
+        if let Some(colour) = set.colour {
+            values.colour = colour;
+        }
+    }
+    values
+}
+
 /// The selection between `anchor` and `caret`, lifted to their nearest common text node, as
 /// `design@rootpoint-app@selection-one-level` says: an end inside a span of that node
 /// takes the span whole. The text node, the selected range of its offsets, and the caret's end.
@@ -408,16 +470,89 @@ impl App {
     }
 
     /// The caret's rectangle in the slide view, in points, `CARET_WIDTH` wide, placed through the
-    /// area's layout and its origin as `render_slide` draws them.
+    /// area's layout and its origin as `render_slide` draws them. It stands on the line's baseline,
+    /// as tall as the size the caret types with, from the ascent to the descent of the line's
+    /// first run, scaled to that size; so the two caret positions at the edge of a span of
+    /// another size are drawn at two heights.
     pub fn caret_rect(&mut self, layout: &Layout) -> Option<Rect> {
         let area = self.editing()?;
         let text = self.area_text(area)?;
         let edit = self.edit.as_ref()?;
         let content = self.edited_text()?;
-        let index = text.map.byte_index(edit.focus(&content))?;
+        let focus = edit.focus(&content);
+        let index = text.map.byte_index(focus)?;
         let cursor = Selection::from_byte_index(&text.layout, index, edit.affinity).focus();
         let width = CARET_WIDTH / layout.points_per_unit();
-        Some(to_view(&text, layout, cursor.geometry(&text.layout, width)))
+        let mut b = cursor.geometry(&text.layout, width);
+        let size = node_values(self.session.document(), &content, focus.node).size;
+        let line = text.layout.lines().find(|l| {
+            let m = l.metrics();
+            f64::from(m.block_min_coord.min(m.content_block_min_coord)) <= b.y0 + 1e-3
+                && b.y1 <= f64::from(m.block_max_coord.max(m.content_block_max_coord)) + 1e-3
+        });
+        if let Some(line) = line
+            && let Some(run) = line.runs().next()
+            && run.font_size() > 0.0
+        {
+            let m = run.font_metrics();
+            let scale = size / f64::from(run.font_size());
+            let baseline = f64::from(line.metrics().baseline);
+            b.y0 = baseline - f64::from(m.ascent) * scale;
+            b.y1 = baseline + f64::from(m.descent) * scale;
+        }
+        Some(to_view(&text, layout, b))
+    }
+
+    /// The values the caret types with: those of the caret's text node, or, when the selection is
+    /// one whole span, that span's, which the Selection tab's controls show while editing.
+    pub fn caret_values(&self) -> Option<TextStyle> {
+        let edit = self.edit.as_ref()?;
+        let content = self.edited_text()?;
+        let node = match edit.selected(&content) {
+            Some((node, r)) if r.len() == 1 => match items(text_node(&content, node)?).get(r.start)
+            {
+                Some(Item::Span(s)) => TextNodeRef::Span(s.id),
+                _ => node,
+            },
+            Some((node, _)) => node,
+            None => edit.caret.node,
+        };
+        Some(node_values(self.session.document(), &content, node))
+    }
+
+    /// The frames of the spans that hold the caret, inner first, each its span's lines in the
+    /// slide view. An empty span covers no glyph, so its frame stands around the caret,
+    /// `EMPTY_FRAME_HALF_WIDTH` on each side.
+    pub fn span_frames(&mut self, layout: &Layout) -> Vec<SpanFrame> {
+        let Some(content) = self.edited_text() else {
+            return Vec::new();
+        };
+        let Some(edit) = self.edit.clone() else {
+            return Vec::new();
+        };
+        let Some(text) = self.area_text(edit.area) else {
+            return Vec::new();
+        };
+        let spans = spans_holding(&content, edit.focus(&content));
+        let mut out = Vec::new();
+        for (depth, span) in spans.into_iter().enumerate() {
+            let Some(range) = text.map.span_range(span) else {
+                continue;
+            };
+            let rects = if range.is_empty() {
+                let Some(caret) = self.caret_rect(layout) else {
+                    continue;
+                };
+                vec![Rect::from_min_max(
+                    caret.min - eframe::egui::vec2(EMPTY_FRAME_HALF_WIDTH, 0.0),
+                    caret.max + eframe::egui::vec2(EMPTY_FRAME_HALF_WIDTH, 0.0),
+                )]
+            } else {
+                self.range_rects(layout, range)
+            };
+            out.push(SpanFrame { span, depth, rects });
+        }
+        out
     }
 
     /// The selection's rectangles in the slide view, in points, one per line it covers.

@@ -59,7 +59,7 @@ fn the_sample_names_title_and_body() {
     let mut files = MemoryFiles::default();
     let s = sample(&mut files);
     assert_eq!(text_of(&s, 2).style, named("Title"));
-    for id in [3, 5, 9, 22] {
+    for id in [3, 5, 9, 22, 26] {
         assert_eq!(text_of(&s, id).style, named("Body"), "n{id}");
     }
     assert!(matches!(text_of(&s, 11).style, StyleChoice::Custom(_)));
@@ -81,7 +81,7 @@ fn a_style_edit_changes_every_area_naming_it() {
         &mut files,
         "style set \"Body\" size=50 colour=#204060",
     );
-    for id in [3, 5, 9, 22] {
+    for id in [3, 5, 9, 22, 26] {
         let drawn = s.document().resolve_style(&text_of(&s, id).style);
         assert_eq!(drawn.size, 50.0, "n{id}");
         assert_eq!(
@@ -111,7 +111,7 @@ fn a_rename_rewrites_the_references_and_its_undo_restores_them() {
     let mut s = sample(&mut files);
     let before = s.document().clone();
     ok(&mut s, &mut files, "style rename \"Body\" \"Text\"");
-    for id in [3, 5, 9, 22] {
+    for id in [3, 5, 9, 22, 26] {
         assert_eq!(text_of(&s, id).style, named("Text"), "n{id}");
     }
     assert!(!s.document().styles.contains_key("Body"));
@@ -127,10 +127,10 @@ fn a_removal_in_use_takes_a_replacement() {
     let before = s.document().clone();
     assert_eq!(
         refused(&mut s, &mut files, "style remove \"Body\""),
-        "\"Body\" is used by n3 n5 n9 n22"
+        "\"Body\" is used by n3 n5 n9 n22 n26"
     );
     ok(&mut s, &mut files, "style remove \"Body\" into=\"Title\"");
-    for id in [3, 5, 9, 22] {
+    for id in [3, 5, 9, 22, 26] {
         assert_eq!(text_of(&s, id).style, named("Title"), "n{id}");
     }
     ok(&mut s, &mut files, "undo");
@@ -138,7 +138,7 @@ fn a_removal_in_use_takes_a_replacement() {
     ok(&mut s, &mut files, "render s1 before.png");
     let body = before.styles["Body"].clone();
     ok(&mut s, &mut files, "style remove \"Body\" into=custom");
-    for id in [3, 5, 9, 22] {
+    for id in [3, 5, 9, 22, 26] {
         assert_eq!(
             text_of(&s, id).style,
             StyleChoice::Custom(body.clone()),

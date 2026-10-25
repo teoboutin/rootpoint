@@ -288,7 +288,7 @@ fn the_window_holds_control_at_start_and_the_queries_need_none() {
     assert!(one(&mut app, &path, "tree").starts_with("ok s1"));
     assert!(one(&mut app, &path, "view").starts_with("ok selected="));
     assert!(one(&mut app, &path, "styles").starts_with("ok \""));
-    assert_eq!(one(&mut app, &path, "span-styles"), "ok");
+    assert!(one(&mut app, &path, "span-styles").starts_with("ok \"Key\""));
     assert!(one(&mut app, &path, "render s1 s1.png 192 108").starts_with("ok"));
     assert!(dir.join("s1.png").exists());
 }
@@ -390,7 +390,7 @@ fn the_take_over_closes_the_socket_group_and_its_agent_is_told_to_wait() {
     assert_eq!(app.session().document(), &before);
     assert_eq!(one(&mut app, &path, "control"), "ok");
     assert_eq!(one(&mut app, &path, "text n3 \"c\""), "ok");
-    assert!(matches!(app.session().document().slides.len(), 4));
+    assert!(matches!(app.session().document().slides.len(), 5));
     let _ = Reply::Ok(String::new());
 }
 

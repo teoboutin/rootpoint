@@ -6,7 +6,7 @@
         width: 16,
         height: 9,
     ),
-    next_id: 24,
+    next_id: 33,
     assets: {
         19: (
             path: "splits.png",
@@ -70,7 +70,17 @@
             v_align: Middle,
         ),
     },
-    span_styles: {},
+    span_styles: {
+        "Key": (
+            bold: true,
+            colour: (
+                r: 42,
+                g: 157,
+                b: 143,
+                a: 255,
+            ),
+        ),
+    },
     slides: [
         (
             id: 1,
@@ -271,6 +281,88 @@
                         content: Text(
                             root: [
                                 Chars("A presentation is held in memory, or in a workspace: a directory with presentation.ron at its root and its images below it. The label at the right of the toolbar says which. In memory, Save as pack… writes one .rpk file that holds the presentation and its images, which Open pack… opens on any computer, and in the browser, a download; outside the browser, Save as workspace… writes it as a directory. A workspace saves itself after every change, and its .rootpoint/ folder holds what is the machine's and not the presentation's: its lock, its trash and the address of its window."),
+                            ],
+                            style: Named("Body"),
+                        ),
+                    ),
+                ],
+                dividers: [
+                    0.25,
+                ],
+            ),
+        ),
+        (
+            id: 24,
+            root: Split(
+                id: 27,
+                axis: TopToBottom,
+                children: [
+                    Area(
+                        id: 25,
+                        content: Text(
+                            root: [
+                                Chars("Styling text"),
+                            ],
+                            style: Named("Title"),
+                        ),
+                    ),
+                    Area(
+                        id: 26,
+                        content: Text(
+                            root: [
+                                Chars("While a text is edited, Ctrl+B makes what you type next "),
+                                Span(
+                                    id: 28,
+                                    style: Custom(
+                                        bold: true,
+                                    ),
+                                    text: [
+                                        Chars("bold"),
+                                    ],
+                                ),
+                                Chars(", Ctrl+I "),
+                                Span(
+                                    id: 29,
+                                    style: Custom(
+                                        italic: true,
+                                    ),
+                                    text: [
+                                        Chars("italic"),
+                                    ],
+                                ),
+                                Chars(", and the side panel sets a size, a colour or a "),
+                                Span(
+                                    id: 30,
+                                    style: Named("Key"),
+                                    text: [
+                                        Chars("span style"),
+                                    ],
+                                ),
+                                Chars(", over the selection when there is one. A frame shows "),
+                                Span(
+                                    id: 31,
+                                    style: Custom(
+                                        colour: (
+                                            r: 200,
+                                            g: 30,
+                                            b: 30,
+                                            a: 255,
+                                        ),
+                                    ),
+                                    text: [
+                                        Chars("each style that holds the caret, as "),
+                                        Span(
+                                            id: 32,
+                                            style: Custom(
+                                                size: 56.0,
+                                            ),
+                                            text: [
+                                                Chars("here"),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                                Chars(". The arrows enter a style at its edge and leave it; Ctrl+Space leaves the style the caret is in, or cuts it in two at the caret."),
                             ],
                             style: Named("Body"),
                         ),

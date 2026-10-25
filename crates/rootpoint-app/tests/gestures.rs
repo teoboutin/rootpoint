@@ -404,7 +404,7 @@ fn a_click_on_a_row_shows_its_slide_and_a_drag_moves_it() {
     let mut d = Driver::new();
     let rows = d.app.slide_rows().to_vec();
     let ids: Vec<_> = rows.iter().map(|r| r.0).collect();
-    assert_eq!(ids.len(), 4);
+    assert_eq!(ids.len(), 5);
     d.click(rows[1].1.center());
     assert_eq!(d.app.shown_slide(), Some(ids[1]));
     // Drag the first row onto the third.
@@ -415,7 +415,7 @@ fn a_click_on_a_row_shows_its_slide_and_a_drag_moves_it() {
     }
     d.button(to, false);
     let after: Vec<_> = d.doc().slides.iter().map(|s| s.id).collect();
-    assert_eq!(after, [ids[1], ids[2], ids[0], ids[3]]);
+    assert_eq!(after, [ids[1], ids[2], ids[0], ids[3], ids[4]]);
     // The drag showed no slide of its own.
     assert_eq!(d.app.shown_slide(), Some(ids[1]));
 }
@@ -920,4 +920,107 @@ fn esc_leaves_the_final_view_with_no_slide_shown() {
     assert!(d.app.final_view());
     d.key(Key::Escape, Modifiers::NONE);
     assert!(!d.app.final_view());
+}
+
+/// The marks the overlay drew over an area, read from the last frame's shapes: each rectangle
+/// within `around`, with its fill and its stroke.
+fn marks_over(d: &Driver, around: Rect) -> Vec<String> {
+    d.shapes
+        .iter()
+        .filter_map(|c| match &c.shape {
+            eframe::egui::Shape::Rect(s) if around.contains_rect(s.rect) => {
+                Some(format!("{:?} {:?} {:?}", s.rect, s.fill, s.stroke))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// AC2 of `milestone@plans@rich-text`: the two caret positions at each edge of a span of the
+/// sample's styled text show different marks, a frame at one and not at the other, or a caret of
+/// another height or colour, as the overlay draws them with no window.
+#[test]
+fn the_two_positions_at_an_edge_show_different_marks() {
+    use rootpoint_model::{CaretPos, Content, TextNodeRef};
+    let mut d = Driver::new();
+    let area = NodeId(26);
+    d.app.show_slide(rootpoint_model::SlideId(24));
+    d.frame(vec![], Modifiers::NONE);
+    d.app.select_node(area);
+    d.frame(vec![], Modifiers::NONE);
+    let layout = d.app.layout().unwrap().clone();
+    let rect = layout.rect(area).unwrap();
+    d.app.edit_at(area, rect.center(), &layout);
+    assert_eq!(d.app.editing(), Some(area));
+    let Some(Node::Area(a)) = d.doc().node(area).cloned() else {
+        panic!("n26 is an area");
+    };
+    let Content::Text(text) = a.content else {
+        panic!("n26 holds a text");
+    };
+    let spans = text.root.spans();
+    assert!(spans.len() >= 4, "the sample's styled text holds spans");
+    // The node and the offset in it of each span, found from the root down.
+    fn place(
+        node: &rootpoint_model::TextNode,
+        here: TextNodeRef,
+        out: &mut Vec<(rootpoint_model::SpanId, TextNodeRef, usize, usize)>,
+    ) {
+        let mut offset = 0;
+        for item in &node.items {
+            match item {
+                rootpoint_model::TextItem::Chars(s) => offset += s.chars().count(),
+                rootpoint_model::TextItem::Span(s) => {
+                    let len = s
+                        .text
+                        .items
+                        .iter()
+                        .map(|i| match i {
+                            rootpoint_model::TextItem::Chars(c) => c.chars().count(),
+                            rootpoint_model::TextItem::Span(_) => 1,
+                        })
+                        .sum();
+                    out.push((s.id, here, offset, len));
+                    place(&s.text, TextNodeRef::Span(s.id), out);
+                    offset += 1;
+                }
+            }
+        }
+    }
+    let mut places = Vec::new();
+    place(&text.root, TextNodeRef::Root, &mut places);
+    let around = rect.expand(20.0);
+    let marks = |d: &mut Driver, pos: CaretPos| {
+        d.app.set_caret_pos(pos);
+        d.frame(vec![], Modifiers::NONE);
+        marks_over(d, around)
+    };
+    for (span, parent, at, len) in places {
+        let inside = TextNodeRef::Span(span);
+        for (outer, inner) in [
+            (
+                CaretPos {
+                    node: parent,
+                    offset: at,
+                },
+                CaretPos {
+                    node: inside,
+                    offset: 0,
+                },
+            ),
+            (
+                CaretPos {
+                    node: inside,
+                    offset: len,
+                },
+                CaretPos {
+                    node: parent,
+                    offset: at + 1,
+                },
+            ),
+        ] {
+            let (a, b) = (marks(&mut d, outer), marks(&mut d, inner));
+            assert_ne!(a, b, "{outer:?} and {inner:?} show the same marks");
+        }
+    }
 }
