@@ -55,9 +55,10 @@ document lacks, and text not drawn.
 - The selected area shows a grip in its top-left corner, except while its text is edited. Dragged onto the middle third of another
   area it swaps the two; dragged onto the rest it moves the area to the nearest edge of the
   target. A tint and a label show what the drop will do; the drop is one undo step.
-- The side panel's Selection tab sets the selected area's content, text or an image, the text's
-  named style or "custom", its size, weight, slant, colour, alignment and font, and the image's
-  fit, and adds an image asset: a file below a workspace's root is added at its path there, and any
+- The side panel's Selection tab sets the selected area's content, text, an image or an equation,
+  the text's named style or "custom", its size, weight, slant, colour, alignment and font, the
+  image's fit, and whether the equation is numbered, its size, fitted or at most a size, and its
+  colour, and adds an image asset: a file below a workspace's root is added at its path there, and any
   other file is copied into the presentation, as the protocol's `import` does. A change of a value of a text that names a style makes the text
   custom: the Selection tab changes no named style. While a text is edited, the tab shows the
   ancestor row, "text" then each span that holds the caret, and its controls style the text at the
@@ -66,8 +67,8 @@ document lacks, and text not drawn.
   the controls then change its style; "text" leaves editing; "Split here" cuts the caret's span.
   The alignment changes the area's.
 - A right-click on an area, or on a row of the outline, selects that node and opens the node menu
-  on it: "Select" selects the node or one of its ancestors, "Content" makes an area a text or an
-  image, "Style" names a text's style or makes it custom, and "Remove" removes the node, as the side
+  on it: "Select" selects the node or one of its ancestors, "Content" makes an area a text, an
+  image or an equation, "Style" names a text's style or makes it custom, and "Remove" removes the node, as the side
   panel's controls and Delete do. A right-click while editing a text leaves editing first. Esc, or
   any click, on an entry, elsewhere in the menu or outside it, closes it.
 - The side panel's Styles tab lists the named styles, each with the number of areas that name it,

@@ -148,6 +148,18 @@ it sets, separated by `; `. A command naming a span style or a font asset the do
 a missing span style loads, its span drawn with its parent's values, and `render` names the span and
 the style after `span-styles=`.
 
+An equation area holds a formula, written in LaTeX, and its number. `equation <area> $<formula>$`
+makes an area an equation, or changes the formula of one, `equation n3 $\frac{a}{b}$`: the formula
+is read between `$` signs with no escape, up to the first `$` after an even number of `\`, so `\$`
+writes a dollar and `\\` just before the closing `$` is a row break. Its options apply over the
+equation's own: `numbered=yes|no`; `size=fit`, the formula at the largest size its area holds, or
+`size=<n>`, at `n` slide units, shrunk only where that does not fit; and `colour=#rrggbb[aa]`. A new equation is
+numbered, fitted, and in the Body style's colour, or black with no Body style. `tree` prints an equation as `equation` takes it,
+with all its options, then its number, `(2)`: the numbered equations count from 1 in the order of
+the slides, then of each slide's tree, so moving a slide renumbers and dragging a divider does not.
+A command the math subset does not know is drawn red, and `render` names its area after
+`commands=`.
+
 `sample` opens the built-in sample in memory, a presentation of six slides that says how the
 editor's gestures work, how a text is styled, where a presentation is saved and what an equation
 area draws; the crate holds its RON text and its image, in `sample/`, so it opens in

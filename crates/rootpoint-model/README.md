@@ -9,7 +9,9 @@ Its public API: the types of `Document`, `apply` with the operations of `Op`, `a
 and `load_ron` for the RON save file. A text is a tree, `TextContent::root`, of runs of characters
 and spans, each span with an id from the document's counter and its own values over its parent's;
 an offset in a text node counts characters, a span counting as one, and `TextContent::plain_text`
-gives the characters in order. A text's style names a style of the document's table, which a new
+gives the characters in order. An area holds a text, an image or an equation, `EquationContent`: a
+formula of `rootpoint-math`, written in the file as its LaTeX, whether it is numbered, its size
+mode and its colour; `Document::equation_numbers` numbers the numbered ones. A text's style names a style of the document's table, which a new
 document holds four of, Title, Subtitle, Body and Legend, or holds its own values;
 `Document::resolve_style` gives the values it draws with. A span's style names a style of the span
 style table, `Document::span_styles`, empty in a new document, or holds its own values, each
