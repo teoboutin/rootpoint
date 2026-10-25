@@ -1026,6 +1026,10 @@ reopens #text-edit-commands.
   area's text is a tree of characters and spans" and "A span sets each text option it changes, each
   optional, over its parent's values", the decisions unchanged. It narrows titles the owner
   approved, so it blocked the merge of #text-tree.
+- **Q3** and **Q4**, awaiting the owner: open at the design audit of #span-commands, on how an
+  area's style changes with its spans kept and how a span's value is cleared, each written with its
+  default in that slice's "Decided design". The defaults are built; they block the merge of
+  #span-commands.
 
 ## Harvest
 

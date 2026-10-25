@@ -103,7 +103,59 @@ added by `span-style add`. No fixture needs a form the slice does not add.
 ## Decided design
 
 The milestone's "Decided design" of #text-edit-commands, #text-node-ids, #split-at-caret and
-#named-span-styles holds the shape.
+#named-span-styles holds the shape. The slice's design audit settled the points below, each the one
+answer those decisions imply, but for Q3 and Q4, open at the audit and built as their defaults.
+
+**The grammar of a tree.** Outside a quoted string, `[`, `]`, `{`, `}` and `,` are words of their
+own, whatever spaces stand around them, and the printer quotes a text, a path included, that holds
+one, so a printed command parses back. A tree is `[` its items separated by commas `]`, `[]` when
+empty; a quoted string alone is a tree of one run, the empty string an empty tree. An item is a
+quoted string or a span. A span is `{`, its id `t<n>` if given, its style's options, then its items
+separated by commas, `}`: `{t41 bold "prime"}`, `{style="Term" "x"}`, `{bold}` an empty span,
+`{italic "a ", {bold "b"}}` a nested one. `tree` prints the id first, then `style="<name>"` for a
+named span or the values a custom span sets, in the order size, bold, italic, colour, font, then the
+items; the parser takes the options in any order. In a slide's line, `tree` prints a text as
+`n<n> text <tree> style="<name>"` or `custom`: the tree's commas do not meet the ` | ` that separates
+a split's children.
+
+**The options of a span.** `style="<name>"` names a span style of the table, `custom` copies the
+values a span draws with into its own, and `font=`, `size=`, `bold`, `bold=off`, `italic`,
+`italic=off` and `colour=` set a value, as `text`'s options do; `align=` and `valign=` are the
+area's alone and are refused, #span-style-overrides. The options apply in order over the span's
+current style: a value set on a named span makes it custom with the named values and that change.
+`span` and `span-style set` merge so over the current values; `wrap` and a span of `text` start from
+a custom style that sets nothing. A custom span left setting nothing is refused, with a reply naming
+`unwrap`, #text-tree-normal-form.
+
+**The commands that name a span.** A `t<n>` names a span wherever it is in the document, since a
+span's id is unique in it, #text-node-ids; the session finds the area whose text holds it. `n<n>`
+names the root of an area's text.
+
+**Their replies.** A command that makes spans names their ids, `t<n>`, in the order of the text, as
+`design@rootpoint-protocol@protocol-transport` asks of a command that creates ids: `wrap` its new
+span, `split-span` the second half, `text` every span of its tree. `render` adds
+`span-styles=<t<n>:"<name>">,…`, each span naming a span style the table lacks, or `-`. `span-styles`
+is the query of the span style table, as `styles` is of the text styles, each entry
+`"<name>" <the values it sets>`, so that an agent reads the table the Styles tab will show,
+`goal@rootpoint-protocol@commands-drive-everything`. In `assets`, a named span style that uses an
+asset is written `span:"<name>"`, apart from a text style of one name.
+
+**`text` with its options.** The tree is applied by `Op::SetText`, which gives its spans new ids, and
+the area's style by `Op::SetContent` before it, as today, one undo step; on an image area that
+`Op::SetContent` makes it a text.
+
+**Open at this audit, put to the owner, and built as their defaults:**
+
+- **Q3**, on #text-node-ids: how an area's style changes with its spans kept, since `text` with a
+  tree gives every span a new id, and the side panel's controls send `text` with the area's whole
+  text today, `App::send_text_option` of `path@rootpoint-app@src/actions.rs`. Default: the tree of
+  `text` is optional; `text n3 bold` changes the area's style and keeps its tree and its ids, by
+  `Op::SetContent` of its current tree, and the side panel sends that form. Rival: a verb of its
+  own for the area's style, which leaves `text` always setting a whole tree.
+- **Q4**, on #span-style-overrides: how a value a span sets is cleared, so that it is inherited
+  again. Default: `<key>=inherit`, as `bold=inherit`, for each of the five values, in `span`,
+  `span-style set` and a span of `text`. Rival: an option naming the values to clear,
+  `clear=bold,size`.
 
 ## Acceptance criteria
 
