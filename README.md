@@ -17,3 +17,9 @@ renderer, a text protocol, and the editor, in a window and in a web browser.
 - `path@rootpoint@tools/xtask/`: the maintenance tool. `cargo x gates` runs every check a branch
   owes before it merges, and `cargo klarch` runs the document checker at the version the project
   pins.
+
+## Licence
+
+rootpoint is licensed under either of `path@rootpoint@LICENSE-APACHE` (Apache License 2.0) or
+`path@rootpoint@LICENSE-MIT` (MIT licence), at your option. The fonts built into the binary keep
+their own licence, whose text sits beside each font file.

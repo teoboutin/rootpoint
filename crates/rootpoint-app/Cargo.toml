@@ -3,6 +3,7 @@ name = "rootpoint-app"
 version = "0.0.0"
 edition = "2024"
 publish = false
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 # eframe's default features but `system_fonts`: the editor's own text needs only egui's built-in
