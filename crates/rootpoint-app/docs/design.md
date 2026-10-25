@@ -422,9 +422,8 @@ commit `64141cf0e7a073e1226ec168d317618537ba0fab`: `site.bind` binds both keys w
 it, `InsetText::confirmDeletion` being `!text().empty()`; and `Text::backspace` at an inset's start
 calls `dissolveInset`. The rival, deleting the character drawn before or after the caret in
 whatever text node holds it, never a span whole, edits a node the caret is not in, which the
-author does not see, and leaves an emptied span behind until the stay ends. On the owner's word:
-the two shapes met every binding constraint, and the owner chose LyX's, finding it very
-convenient.
+author does not see, and leaves an emptied span behind until the stay ends. The two shapes meet
+every binding constraint. On the owner's word: the owner chose LyX's, finding it very convenient.
 
 ### A selection is a range of one text node, a span inside it taken whole `##selection-one-level`
 
