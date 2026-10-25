@@ -145,7 +145,7 @@ asset is written `span:"<name>"`, apart from a text style of one name.
 the area's style by `Op::SetContent` before it, as today, one undo step; on an image area that
 `Op::SetContent` makes it a text.
 
-**Open at this audit, put to the owner, and built as their defaults:**
+**Open at this audit, put to the owner, built as their defaults, and ruled: the threads #text-style-alone and #span-value-inherit hold the rulings.**
 
 - **Q3**, on #text-node-ids: how an area's style changes with its spans kept, since `text` with a
   tree gives every span a new id, and the side panel's controls sent `text` with the area's whole
@@ -159,6 +159,23 @@ the area's style by `Op::SetContent` before it, as today, one undo step; on an i
   a span's options: `span`, `span-style set`, `wrap`, `span-style add` and a span of `text`, the
   last three starting from no value, where it changes nothing. Rival: an option naming the values
   to clear, `clear=bold,size`.
+
+## Threads
+
+### `text` with no tree changes the area's style alone, its spans and their ids kept `##text-style-alone`
+
+Q3, proposed by the session at the slice's design audit as a default, against a verb of its own for
+the area's style; the refusal on an image area was added in answer to the review of the slice's
+work, before the ruling. Closed approved by the owner: "q3 and q4 accepted". Its shape is Q3 in
+"Decided design"; its harvest is the protocol's head of #text-edit-commands, at this slice.
+
+### `<key>=inherit` clears a value a span sets, in every list of a span's options `##span-value-inherit`
+
+Q4, proposed by the session at the slice's design audit as a default, against an option naming the
+values to clear; its scope, every list of a span's options, was widened to the code built in answer
+to the review of the slice's work, before the ruling. Closed approved by the owner: "q3 and q4
+accepted". Its shape is Q4 in "Decided design"; its harvest is
+`design@rootpoint-model@span-style-overrides`'s protocol member, judged at this slice's harvest.
 
 ## Acceptance criteria
 
