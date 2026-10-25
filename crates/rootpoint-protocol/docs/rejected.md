@@ -114,3 +114,16 @@ a text by one operation per command.
 LaTeX written twice, since the quoted string reads `\` as the start of an escape; `"\frac{a}{b}"` is
 refused, `\f` being no escape of it, and `"\neq"` reads as a newline then `eq`. An agent copies
 LaTeX between `$` signs from a document or from Markdown as it is.
+
+### Commands that change a formula by the path of a cell `##cell-path-commands`
+
+`live`. A command naming a cell by its path and an offset in it, to insert or remove one atom, would
+add to the grammar a path for every kind of atom that holds cells, where the whole formula, given
+again, makes every such edit in one command, its atoms having no ids to keep.
+
+### A referenced equation removed, its references drawn `(??)` `##referenced-equation-removed`
+
+`live`. The removal would leave texts referencing an area that holds no equation, a cosmetic breach
+a command made in a document that held none, which `design@rootpoint-protocol@no-new-breach` refuses
+for every other target.
+

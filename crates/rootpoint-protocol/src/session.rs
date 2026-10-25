@@ -1050,7 +1050,8 @@ impl Session {
 
     /// Refuse the operations of a command that would leave an area that holds an equation holding
     /// none, by its removal, a split's or a slide's that holds it, or a change of its kind, while a
-    /// text the command leaves in place references it, `design@rootpoint-protocol@no-new-breach`:
+    /// text the command leaves in place references it,
+    /// `design@rootpoint-protocol@removed-equation-references`:
     /// the reason names each such equation, each text that references it and the count of its
     /// references. A swap carries the references with the contents, and a duplicate adds
     /// equations, so neither meets it, whatever breaches the document holds. A reload, which takes a

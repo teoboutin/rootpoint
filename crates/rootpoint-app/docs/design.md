@@ -406,7 +406,9 @@ the text out, `rejected@rootpoint-app@plain-editor`.
 ### A span's edge is two caret positions, and typing goes into the caret's text node `##boundary-caret-positions`
 
 A caret position is a text node of the text's tree, its root or a span, and an offset in its
-sequence, a span counting as one item, `design@rootpoint-model@text-node-tree`. Right at an offset
+sequence, a span, a formula and a reference each counting as one item,
+`design@rootpoint-model@text-node-tree`; the caret steps over a formula or a reference whole, and a
+byte index inside the characters a reference draws stands at its nearer edge. Right at an offset
 before a span enters it at offset 0, and at its last offset leaves it, after it in its parent; Left
 is the mirror; both positions of an edge stand at one byte index of the layout. Typing inserts into
 the caret's text node, so the author chooses, by an arrow, whether a typed letter joins a span. A

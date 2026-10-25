@@ -183,3 +183,15 @@ on math, if the owner's talks need it.
 
 `live`. It would differ from `EquationSize::AtMost` only where the size does not fit, and there it
 would draw past the area's edge, over the areas beside it.
+
+### Math as a kind of span `##math-as-span`
+
+`live`. A span holds characters and spans, where a formula holds rows of cells, each cell a list of
+atoms, and an atom such as a fraction cells of its own: a span of math would hold none of them, and
+the file would write a formula as a span's text.
+
+### Inline math as an area of its own `##inline-math-as-area`
+
+`live`. An area is a rectangle of the slide's tree, so a formula placed in one stands beside the
+text's lines, not inside a sentence, and a line's wrapping cannot carry it.
+

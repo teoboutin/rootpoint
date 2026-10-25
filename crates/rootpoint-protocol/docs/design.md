@@ -14,7 +14,8 @@ a word of a tree, or starts with `$`; a named option is `key=value`, its value b
 string, as a style's name with a space is. A text tree is given on one line, in brackets, braces and
 commas, which are words of their own outside a quoted string:
 `["Let x be a ", {t41 bold "prime"}, " number"]`, a tree its items separated by commas, each a
-quoted text or a span, and a span `{` its id, its options, then its items `}`. `text` takes a tree
+quoted text, a span, `{` its id, its options, then its items `}`, a formula or a reference to an
+equation area, `{ref n<id>}`. `text` takes a tree
 so and `tree` prints one so, so that an agent writes and reads a styled text as one line; the
 nearest rival, a tree as a JSON payload, `rejected@rootpoint-protocol@json-rpc-commands`, is easier
 to parse and harder to type. `tripwire@rootpoint-protocol@one-line-tree-written-badly` watches
@@ -37,8 +38,9 @@ every program that drives rootpoint.
 
 The lexer of `path@rootpoint-protocol@src/command.rs` reads a word that starts with `$` as a
 formula, raw up to the first `$` preceded by an even number of `\`, so `\$` is a dollar of the
-formula and `\\` just before the closing `$` is a row break that ends it; `equation` takes a formula
-so and `tree` prints one so, and the printer quotes a path that starts with `$`,
+formula and `\\` just before the closing `$` is a row break that ends it; `equation`, `insert`,
+`math` and a text's tree take a formula so and `tree` prints one so, and the printer quotes a path
+that starts with `$`,
 `design@rootpoint-protocol@protocol-transport`. The formula is the LaTeX that
 `design@rootpoint-math@math-storage-form` reads, written as an agent or a person writes LaTeX
 between `$` signs in a document or in Markdown. The nearest rival, a formula in a quoted string,
@@ -48,6 +50,18 @@ between `$` signs in a document or in Markdown. The nearest rival, a formula in 
 `goal@rootpoint-protocol@commands-drive-everything`, an agent writing each formula of a talk in its
 commands. Whether agents write the literal well is watched by
 `tripwire@rootpoint-protocol@formula-literal-written-badly`.
+
+### A formula is changed by replacing it whole `##math-edit-commands`
+
+`math <n|t> <offset> $…$` replaces the formula at an offset of a text node with the formula given,
+by `Op::SetMath`, and `equation` an equation's formula,
+`design@rootpoint-model@edit-operation-core`; no command addresses a cell or an atom inside a
+formula. A formula's atoms carry no ids, so replacing it whole loses nothing a later command could
+name, where replacing a text whole would renumber its spans,
+`rejected@rootpoint-protocol@whole-text-replacement`. The nearest rival, commands that address a
+formula's cells by a path, `rejected@rootpoint-protocol@cell-path-commands`, makes the grammar
+larger for no edit the whole formula cannot make. The command is part of the crate's interface to
+every program that edits a formula.
 
 ### A command names what the model stores by its stored id, never by a position `##protocol-addressing`
 
@@ -64,20 +78,21 @@ style is named by its name instead, `design@rootpoint-model@style-key`.
 
 ### A text is changed by commands of one operation each, so its spans keep their ids `##text-edit-commands`
 
-`insert <n|t> <offset> "<text>"`, `delete <n|t> <a>..<b>`, `wrap <n|t> <a>..<b> <options>`,
-`unwrap t<n>`, `span t<n> <options>` and `split-span t<n> <offset>` each apply one operation of
-the model's text tree, `design@rootpoint-model@edit-operation-core`, and change no span they do not
-name but to remove it whole, as `delete` removes a span in its range, so every span left keeps its
-id, `design@rootpoint-model@stable-ids`, and a script styles a span
-again by its id after any edit before it. `wrap` and `split-span` reply the id of the span they
-make. `split-span` is not `split`, which splits a node of a slide. `text <area> <tree> [options]`
-sets a whole tree, every span with a new id, and replies the new ids. A span's options are
-`text`'s but alignment, the area's alone, and apply in order over the span's current style,
-`design@rootpoint-model@named-span-styles`. The nearest rival, a whole-text replacement at each
-change, `rejected@rootpoint-protocol@whole-text-replacement`, gives every span a new id at each
-key, since a tree set whole is renumbered. The commands
-are the crate's interface to every program that edits a styled text, as
-`goal@rootpoint-protocol@commands-drive-everything` asks.
+`insert <n|t> <offset> "<text>"`, which inserts a formula `$…$` or a reference `{ref n<id>}` too,
+`delete <n|t> <a>..<b>`, `wrap <n|t> <a>..<b> <options>`, `unwrap t<n>`, `span t<n> <options>`,
+`split-span t<n> <offset>` and `math <n|t> <offset> $…$`,
+`design@rootpoint-protocol@math-edit-commands`, each apply one operation of the model's text tree,
+`design@rootpoint-model@edit-operation-core`, and change no span they do not name but to remove it
+whole, as `delete` removes a span in its range, so every span left keeps its id,
+`design@rootpoint-model@stable-ids`, and a script styles a span again by its id after any edit
+before it. `wrap` and `split-span` reply the id of the span they make. `split-span` is not `split`,
+which splits a node of a slide. `text <area> <tree> [options]` sets a whole tree, every span with a
+new id, and replies the new ids. A span's options are `text`'s but alignment, the area's alone, and
+apply in order over the span's current style, `design@rootpoint-model@named-span-styles`. The
+nearest rival, a whole-text replacement at each change,
+`rejected@rootpoint-protocol@whole-text-replacement`, gives every span a new id at each key, since a
+tree set whole is renumbered. The commands are the crate's interface to every program that edits a
+styled text, as `goal@rootpoint-protocol@commands-drive-everything` asks.
 `tripwire@rootpoint-protocol@one-line-tree-written-badly` watches agents writing `text`'s tree.
 
 ### `text` with options and no tree changes the area's style alone, its spans and their ids kept `##text-style-alone`
@@ -109,8 +124,11 @@ the table lacks, or one whose font is a missing target, and so do the span comma
 style and a span's font, `wrap`, `span`, a span of `text`, `span-style add`, `span-style set` and
 `span-style remove … into="<name>"`, and `import` refuses an asset path that
 fails `asset_path_is_confined`, `design@rootpoint-protocol@store-confines-access`, as `asset-move`
-and `asset-relink` refuse one, and `asset-remove … into=` an asset the table lacks. The refusal is
-the command's, since the operations accept a reference to a missing target but for the exceptions
+and `asset-relink` refuse one, and `asset-remove … into=` an asset the table lacks. A reference to
+an equation is a target too: `insert` and `text` refuse a reference to an area that holds no
+equation, and a command that would take an equation from a text that references it is refused,
+`design@rootpoint-protocol@removed-equation-references`. The refusal is the command's, since the
+operations accept a reference to a missing target but for the exceptions
 `design@rootpoint-model@cosmetic-fallbacks` names. So a breach reaches a document only through a
 file: a command that copies or moves an area, as `duplicate-slide` and `swap` do, carries the breach
 a file brought, and creates none in a document that has none. The property test of
@@ -121,6 +139,24 @@ rival, a command that passes the target through and leaves the breach to the fal
 editor's bug behind a warning; the refusal makes that bug a test's failure. It is a reason respected
 at every command that names a target.
 
+
+### A command that would take an equation from a text referencing it is refused, naming the references `##removed-equation-references`
+
+`remove`, `remove-slide`, `text`, `image`, `clear` and every other command whose operations would
+leave an area that held an equation holding none, by its removal, a split's or a slide's that holds
+it, or a change of its kind, while a text the command leaves in place references it, is refused
+before any operation, and the reason names each such equation, each text that references it and the
+count of its references; a reference inside the slide or the split removed goes with it. The check
+compares the equations before and after the command's operations,
+`Session::no_new_dangling_reference`, so a swap, which carries the references, and a duplicate,
+which adds equations, pass it whatever a file brought; an undo takes another path, and `apply`
+accepts each, `design@rootpoint-model@cosmetic-fallbacks`, so no undo is refused. The nearest rival,
+allowing the removal and drawing `(??)`, as LaTeX draws a reference to a removed label, would let a
+command create a breach, against `design@rootpoint-protocol@no-new-breach`,
+`rejected@rootpoint-protocol@referenced-equation-removed`. The references are moved first by
+`retarget`, `design@rootpoint-model@reference-retarget`, which the window's refusal names. On the
+owner's word: the owner thought the refusal better than allowing the removal, on the condition that
+retargeting every reference is easy.
 ### A split's axis is typed as a short word for where its children go `##protocol-axis-words`
 
 `split` and `tree` write a `LeftToRight` split as `beside` and a `TopToBottom` split as `stacked`.

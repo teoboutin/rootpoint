@@ -1687,9 +1687,9 @@ the fallback member is dropped and the owner told.
 3. The equation, a kind of content, #equation-kind, landed: the model, the file at version 6, the
    renderer, `equation`, the window's entries and options. Fails alone on: the fixture's round trip
    and the numbering test.
-4. [Math inside a text, and references to equations](inline-math.md), #inline-math: the items, the
-   file at version 7, inline boxes, the tree's items, `math`, `retarget`, the refusals, the picker.
-   Fails alone on: the refusals, and AC5.
+4. Math inside a text, and references to equations, #inline-math, landed: the items, the file at
+   version 7, inline boxes, the tree's items, `math`, `retarget`, the refusals, the picker. Fails
+   alone on: the refusals, and AC5.
 5. [Editing a formula in the window, and LyX's math keys](math-editing.md), #math-editing. Fails
    alone on: AC3 and AC6.
 

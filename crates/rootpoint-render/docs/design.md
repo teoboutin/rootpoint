@@ -38,7 +38,15 @@ tree, `design@rootpoint-model@text-node-tree`, is laid out as one string with `r
 each span's values set over its byte range, and `AreaText` carries the `TextMap` from each caret
 position of the tree to its byte index in that string, and each span's byte range; the ranged
 builder collapses no whitespace, as the doc comment of `RangedBuilder` in Parley 0.12.0's
-`builder.rs` says, so those byte indices are the stored text's. An editor that places a caret or a selection on that layout, with
+`builder.rs` says, so those byte indices are the stored characters'. A formula stands in that string
+on U+2060, the word joiner, which the built-in fonts draw as nothing, with no advance, after an
+inline box of the formula's width and height at that character's index; a reference stands on the
+characters of the number it draws, `(n)` or `(??)`. Parley 0.12 gives an inline box no byte of the
+string, so without a character after the box the caret position after a formula would be the one
+after the next character: measured with a probe at the slice that built formulas, a box at byte 2
+of `"abcd"` puts byte 2 before it and byte 3 after the `c`, and with the joiner, bytes 2 and 5
+stand either side of the box. `AreaText` carries each formula's byte range, its layout and the
+point its origin is drawn at. An editor that places a caret or a selection on that layout, with
 Parley's `Selection` and `Cursor`, places it on the drawn glyphs, which
 `goal@rootpoint-render@same-slide-everywhere` asks of every display. `area_text` and its `AreaText` are part
 of the crate's public interface; the app's editing in place, `design@rootpoint-app@edit-in-place`,

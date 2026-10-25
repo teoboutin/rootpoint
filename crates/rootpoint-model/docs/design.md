@@ -152,16 +152,16 @@ path loads, a cosmetic breach, `design@rootpoint-model@cosmetic-fallbacks`.
 
 ### An area's text is a tree of characters and spans `##text-node-tree`
 
-A text is a root `TextNode`, a sequence of runs of characters and spans; a span has an id, a span's
-style and a `TextNode` of its own. The root draws in the area's style,
-`design@rootpoint-model@named-styles`, and each span in the values it sets over its parent's,
-`design@rootpoint-model@span-style-overrides`. An offset in a text node counts characters, Unicode
-scalar values, and a span counts as one item, so that a span's edges are offsets of their own: the
-position before a span and the position at its start are two caret positions, `CaretPos`. The
-tree is part of the file, `design@rootpoint-model@save-format`, and of the document's public
-type. `apply` and `load_ron` keep each text node's runs of characters merged, none empty and no two
-adjacent, so that a document and its round trip through an operation and its inverse compare
-equal.
+A text is a root `TextNode`, a sequence of runs of characters, spans, formulas and references,
+`design@rootpoint-model@text-node-kinds`; a span has an id, a span's style and a `TextNode` of its
+own. The root draws in the area's style, `design@rootpoint-model@named-styles`, and each span in the
+values it sets over its parent's, `design@rootpoint-model@span-style-overrides`. An offset in a text
+node counts characters, Unicode scalar values, and a span, a formula and a reference each count as
+one item, so that a span's edges are offsets of their own: the position before a span and the
+position at its start are two caret positions, `CaretPos`. The tree is part of the file,
+`design@rootpoint-model@save-format`, and of the document's public type. `apply` and `load_ron` keep
+each text node's runs of characters merged, none empty and no two adjacent, so that a document and
+its round trip through an operation and its inverse compare equal.
 
 The nearest rival, flat runs of styles over one string, `rejected@rootpoint-model@flat-style-runs`,
 gives a style's edge one position, so the style typed there is guessed, and it cannot hold a
@@ -222,13 +222,17 @@ fallback, which `design@rootpoint-model@named-styles` keeps out of the area. The
 the file and of the document's public type. On the owner's word: the owner wants a span to be able
 to name a style.
 
-### A text's items are kinds of an enumeration, which leaves room for maths beside the span `##text-node-kinds`
+### A formula and a reference are items of a text of their own kinds, beside the span `##text-node-kinds`
 
-`TextItem` is `Chars` or `Span`, and the file, the operations and a caret position name an item by
-its kind, so a kind added later, maths, or a reference to an equation, joins the enumeration with
-no change of what a text is. No kind but these two exists; the math item and the reference are
-designed in `milestone@plans@math-support`, and an equation of its own is a kind of an area's
-content, `design@rootpoint-model@equation-content-kind`. It serves
+`TextItem` is `Chars`, `Span`, `Math` or `Ref`, and the file, the operations and a caret position
+name an item by its kind. `TextItem::Math` holds a formula, `design@rootpoint-math@formula-tree`,
+written in the file as its LaTeX, `design@rootpoint-math@math-storage-form`: one offset of its text
+node, laid out as one inline box, `design@rootpoint-render@area-text-layout`, at the size and in the
+colour its node resolves to, bold and italic not applying to it, as math has its own font rules.
+`TextItem::Ref` names an equation area, `design@rootpoint-model@equation-reference-target`. The
+nearest rivals: math as a kind of span, `rejected@rootpoint-model@math-as-span`, holds characters
+where a formula holds cells; inline math as an area of its own,
+`rejected@rootpoint-model@inline-math-as-area`, is no longer inline. It serves
 `goal@rootpoint@real-presentations`, whose talks need mathematics; on the owner's word, the owner
 wants maths inside a sentence.
 
@@ -367,14 +371,50 @@ the window's status shows, as a missing glyph is named. The rival, a breach that
 command, would refuse an agent's formula for one command of LaTeX outside the subset, and a file for
 a typo, where the formula around it is drawn and the author sees the red command in place.
 
+## References
+
+### A reference names its equation's area by its id, and draws the equation's number `##equation-reference-target`
+
+`TextItem::Ref(NodeId)` names an equation area, written `Ref(7)` in the file, where an id is a plain
+number, `design@rootpoint-model@stable-ids`; it draws `(n)`, the number
+`design@rootpoint-model@equation-numbering` gives the equation, in its text node's style, or
+`(??)` where the area has no number. A name the author gives an equation would need a namespace, a
+rule that names are unique, and a rename that rewrites every reference, where an id needs none, and
+the author picks the equation from a list in the window, so no name is needed to insert one. On the
+owner's word: the owner chose ids over names for a first shape, and kept names open in
+`issue@rootpoint-model@equation-names`.
+
+### A reference follows its equation when a swap moves it, and a duplicated slide's references follow the copies `##references-follow-equations`
+
+`Op::Swap` exchanges the contents of two areas and carries the references of both with them, so a
+moved equation keeps its references; `Op::DuplicateSlide` makes each reference of the copy to an
+equation of the slide name that equation's copy, and keeps every other reference's target. So a
+reference names what the author meant through the moves the window makes, which keep an area's
+place by its id. The nearest rival for the swap, an id of the equation's own stored in its content,
+which a swap carries by itself, adds a fifth kind of id beside those of
+`design@rootpoint-model@stable-ids`. A duplicate that keeps every target would leave the copy's
+text naming the original slide's equation, a slide away.
+
+### One operation moves every reference from one equation to another, and its undo moves back only those `##reference-retarget`
+
+`Op::RetargetReferences { from, to }` makes every reference to `from` name `to`, and returns
+`Op::SetContents` with the former content of each text it changed,
+`design@rootpoint-model@edit-operation-core`, so its undo moves back only the references it moved,
+where `to` had references of its own. The command `retarget` runs it, and the window's
+"Retarget all to…" sends that command, so moving the references of an equation before its removal,
+which `design@rootpoint-protocol@removed-equation-references` asks, is one step and one undo. On
+the owner's word: the owner made an easy way to retarget all references the condition of refusing
+the removal of a referenced equation.
+
 ## Changes
 
 ### Every change of a document is an operation, applied by one function that returns its inverse `##edit-operation-core`
 
 `apply` takes an `Op`, changes the document, and returns the operation that undoes it; a
-structural edit of a slide's tree returns a snapshot of the slide's former tree, and an edit of an
+structural edit of a slide's tree returns a snapshot of the slide's former tree, an edit of an
 area's text tree, `Op::SetContent` with the area's former content, which brings back every span
-with its id. Code outside the
+with its id, and an operation that changes several texts, `Op::SetContents` with the former content
+of each. Code outside the
 crate changes a document only through `apply`, which gives undo to every caller and keeps the
 invariants. The document's fields are public for reading, so this rule is delivered by the doc
 comment of `Document`, not enforced by the types.
@@ -394,7 +434,8 @@ result breaks one, leaving the document unchanged. A breach is structural when, 
 or the identity of the nodes is undefined: no area rectangle can be computed, an operation could
 panic or reuse an id, or a repair would have to guess the author's layout. An asset id at or above
 the counter is one, since a later `Op::AddAsset` would give it to a new asset, which the area would
-then show. What is not structural is `design@rootpoint-model@cosmetic-fallbacks`.
+then show, and so is a reference to an id at or above the counter, which would name the area a later
+operation creates. What is not structural is `design@rootpoint-model@cosmetic-fallbacks`.
 
 The rival, trusting a loaded file and the result of every operation,
 `rejected@rootpoint-model@unvalidated-documents`, was refuted by counterexamples built at review: a
@@ -408,16 +449,17 @@ Each is structural. A file edited by hand is a purpose,
 A breach is cosmetic when it is a reference to a missing target that has a defined stand-in, whose
 effect stays inside the drawing of each area that names it: an image or a text font naming an asset
 the table lacks, drawn grey or in the built-in sans, a `FontRef::Builtin` naming a family outside
-`BUILTIN_FAMILIES`, drawn in the built-in sans, a text naming a style the table lacks, drawn
-with `TextStyle::default()`, and a span naming a span style the table lacks, drawn with its
-parent's values; a span's font counts as a text's; or an asset of the table whose path fails
-`asset_path_is_confined`, which no store reads, so that every area showing it draws the stand-in
-of a missing asset. `Document::breaches` names each, as `Breach`, and the renderer's report, the
-window's status line and the reply of `render` name what was drawn with a stand-in, but a span's
-missing span style, which only `Document::breaches` and the renderer's report name. `load_ron` loads such a file, and
-`apply` accepts an operation whose result holds a breach, so the inverse of an edit of such an area,
-which brings back what a file was loaded with, is never refused. Three operations refuse what no
-undo meets. `Op::RemoveAsset` refuses an asset an area, a span or a style of a table uses: it refuses a
+`BUILTIN_FAMILIES`, drawn in the built-in sans, a text naming a style the table lacks, drawn with
+`TextStyle::default()`, a span naming a span style the table lacks, drawn with its parent's values,
+and a reference to an area that holds no equation, drawn `(??)`; a span's font counts as a text's;
+or an asset of the table whose path fails `asset_path_is_confined`, which no store reads, so that
+every area showing it draws the stand-in of a missing asset. `Document::breaches` names each, as
+`Breach`, and the renderer's report, the window's status line and the reply of `render`, after
+`refs=` for a reference, name what was drawn with a stand-in, but a span's missing span style, which
+only `Document::breaches` and the renderer's report name. `load_ron` loads such a file, and `apply`
+accepts an operation whose result holds a breach, so the inverse of an edit of such an area, which
+brings back what a file was loaded with, is never refused. Three operations refuse what no undo
+meets. `Op::RemoveAsset` refuses an asset an area, a span or a style of a table uses: it refuses a
 removal, not a reference, and the inverse of `Op::AddAsset` removes an id the counter has just
 given, which no area can name. `Op::RenameStyle` refuses a rename while a text names the new name, a
 style the table lacks, since its inverse would rename that text back with the others; after a rename
@@ -446,16 +488,18 @@ The test above, which tells the two apart, stands on its argument.
 
 ### Ids are stored in the file, come from one counter, and are never reused `##stable-ids`
 
-Every slide, node, asset and span has an id from one counter the document stores and only grows;
-ids are written in the file and print as `s<n>`, `n<n>`, `a<n>` and `t<n>`. A duplicated slide's
-nodes and spans get new ids, and so does every span of a tree `Op::SetText` sets. A command or a script can then name a node across edits, saves and loads, as
+Every slide, node, asset and span has an id from one counter the document stores and only grows; ids
+are written in the file and print as `s<n>`, `n<n>`, `a<n>` and `t<n>`. A duplicated slide's nodes
+and spans get new ids, and so does every span of a tree `Op::SetText` sets. A reference to an
+equation names its area by its id, `design@rootpoint-model@equation-reference-target`. A command or
+a script can then name a node across edits, saves and loads, as
 `goal@rootpoint@text-command-protocol` needs, and so could a link between dividers,
 `issue@rootpoint-model@linked-dividers`. The rival, naming a node by its position in the tree,
 `rejected@rootpoint-model@addressing-by-position`, shifts at every split or removal. An asset keeps
 its id when its file moves or its bytes change, so content names it by its id and a move is one
 `Op::SetAssetPath` that changes no slide; content naming an asset by its path,
-`rejected@rootpoint-model@asset-named-by-path`, would rewrite every image and style that shows it
-at each move. Ids are part of every saved file and of the crate's public types.
+`rejected@rootpoint-model@asset-named-by-path`, would rewrite every image and style that shows it at
+each move. Ids are part of every saved file and of the crate's public types.
 
 ## The file
 
@@ -464,7 +508,8 @@ at each move. Ids are part of every saved file and of the crate's public types.
 `save_ron` writes the document as RON, its first field the format version, and `load_ron` refuses
 another version. Ids are plain numbers, and the file enables ron's `unwrap_variant_newtypes`, so a
 node reads `Split(id: 4, ...)`, and `implicit_some`, so a value a span sets reads `bold: true`. A
-text's item is tagged, `Chars("...")` or `Span(id: ..., style: ..., text: [...])`: an untagged
+text's item is tagged, `Chars("...")`, `Span(id: ..., style: ..., text: [...])`,
+`Math(r#"..."#)` or `Ref(<id>)`: an untagged
 item, a bare string beside a span, writes a span with no name, and a hand-written `Span(...)` then
 fails to load, as measured with ron 0.12.2, `rejected@rootpoint-model@untagged-text-items`, which a
 file edited by hand, `goal@rootpoint-model@faithful-readable-file`, rules out; the test

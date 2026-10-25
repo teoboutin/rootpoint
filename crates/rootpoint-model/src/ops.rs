@@ -153,7 +153,8 @@ pub enum Op {
         formula: Formula,
     },
     /// Make every reference to the area `from` name `to`. Its inverse sets each text it changed
-    /// back, so it moves back only the references it moved.
+    /// back, so it moves back only the references it moved,
+    /// `design@rootpoint-model@reference-retarget`.
     RetargetReferences {
         from: NodeId,
         to: NodeId,
@@ -424,7 +425,7 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             })
         }
         // The references follow the contents, so a moved equation keeps them; the swap is its own
-        // inverse, references included.
+        // inverse, references included, `design@rootpoint-model@references-follow-equations`.
         Op::Swap { a, b } => {
             let content_a = area_mut(doc, a)?.content.clone();
             let content_b = std::mem::replace(&mut area_mut(doc, b)?.content, content_a);
