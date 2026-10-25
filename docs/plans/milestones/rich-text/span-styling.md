@@ -7,9 +7,10 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
 
 ## Builds
 
-- Style actions, by the milestone's second mapping table: Ctrl+B and Ctrl+I, D4, and the controls
-  of the side panel's Selection tab while editing, acting on the caret's span or the selection.
-- "Split here": Ctrl+Space, and a button of the ancestor row, sending `split-span`.
+- Style actions, by the milestone's style action table: Ctrl+B and Ctrl+I, D4, and the controls of
+  the side panel's Selection tab while editing, acting on the caret's span or the selection.
+- "Split here": Ctrl+Space, and a button of the ancestor row, sending `split-span`, or moving the
+  caret out at a span's edge.
 - The frames of the caret's spans, drawn by the overlay, and the caret drawn at the height and in
   the colour of the values it types with.
 - The ancestor row in the side panel's Selection tab while editing.
@@ -20,10 +21,19 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
 - One slide of `path@rootpoint-protocol@sample/sample.ron` with a styled text, which teaches the
   keys.
 
+## Steps
+
+1. The style actions and "split here", with their checks against a second session. Fails alone on:
+   the actions' tests.
+2. The frames and the caret's style, with AC2. Fails alone on: AC2.
+3. The ancestor row and the span styles of the Styles tab. Fails alone on: their actions' tests.
+4. The browser's keys, and the sample's slide. Fails alone on: the browser test of the keys.
+
 ## Claims
 
-- **AC2**: the test of `acceptance@rich-text@ac-edge-positions-differ`, on the overlay's shapes;
-  shown to fail by an overlay that draws no frame.
+- **AC2**: the test of `acceptance@rich-text@ac-edge-positions-differ`, on the overlay's shapes, as
+  `path@rootpoint-app@tests/gestures.rs` reads them with no window; shown to fail by an overlay
+  that draws no frame.
 - **Each action is its commands**: `path@rootpoint-app@tests/actions.rs` for each style action,
   "split here" and each span style action, against a second session.
 - **No frame reaches the slide's image**: `path@rootpoint-app@tests/presenter.rs` with the caret in
@@ -62,10 +72,17 @@ AC2 is judged here, and the landing commits report on it.
 
 ## Harvest
 
-- Write the app's heads of #style-action-target and #split-at-caret; rewrite
-  `design@rootpoint-app@editor-overlay` for the frames and `design@rootpoint-app@styles-tab-edits-styles`
-  for the span styles; update the texts the milestone's table lists for them, the restatement in
-  `path@rootpoint-app@CLAUDE.md` included.
+- Write the app's heads of #style-action-target and of #split-at-caret's key and button, if the
+  entry tests give them heads.
+- Record the frames as members of `design@rootpoint-app@editor-overlay`, which its argument covers,
+  directly, with the reason they take no space; judge the ancestor row by the entry tests, a
+  comment at `path@rootpoint-app@src/panels.rs` if it earns no head.
+- Rewrite `design@rootpoint-app@styles-tab-edits-styles` for the span styles; update the texts the
+  milestone's table lists for these heads, the restatement in `path@rootpoint-app@CLAUDE.md`
+  included.
 - Update `path@rootpoint-app@README.md` for the keys.
-- Write T1, guarding the head of #ancestor-frames, and T4, guarding the head of #named-span-styles.
+- The losing alternatives of these threads, reserved space for the frames among them, which T1's
+  response names, judged under `skill@knowledge-architect-decision-recording@losing-alternatives`.
+- Write T1, guarding `design@rootpoint-app@editor-overlay` as rewritten for the frames, and T4,
+  guarding the model's head of #named-span-styles.
 - The milestone document's own row: its "Harvest" section.
