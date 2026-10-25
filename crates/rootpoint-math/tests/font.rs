@@ -70,8 +70,8 @@ fn the_math_table_reads_as_the_survey_measured() {
 
 #[test]
 fn a_font_with_no_math_table_is_refused() {
-    let noto = include_bytes!("../../rootpoint-render/fonts/NotoSans-Regular.ttf");
-    assert!(MathFont::new(&noto[..]).is_err());
+    let sans = include_bytes!("../../rootpoint-render/fonts/open-sans/OpenSans-Regular.ttf");
+    assert!(MathFont::new(&sans[..]).is_err());
     assert!(MathFont::new(&b"not a font"[..]).is_err());
 }
 

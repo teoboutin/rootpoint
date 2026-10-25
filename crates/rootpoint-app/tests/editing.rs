@@ -825,8 +825,8 @@ fn backspace_and_delete_at_an_edge_select_a_span_or_unwrap_it() {
 /// start to its end and Left back, each caret position visited once each way, and each drawn on its
 /// glyph's boundary within half a pixel at three sizes of the view, but inside a ligature, which has
 /// none between its characters. The trees hold runs of ASCII letters and spaces, so every offset is
-/// a caret position, no character carrying a mark; "ff" is a ligature of the built-in Noto Sans,
-/// which the first run of this test met, and `the_walk_crosses_a_ligature` walks one each time.
+/// a caret position, no character carrying a mark; "ff" is a ligature of the built-in Open Sans,
+/// and `the_walk_crosses_a_ligature` walks one each time.
 /// The spans hold one item or more, nested three deep at most, since the walk unwraps an empty span
 /// it leaves.
 mod caret_walk {

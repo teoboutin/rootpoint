@@ -543,11 +543,14 @@ fn the_keys_split_remove_undo_and_redo() {
     assert!(d.doc().node(n3).is_none());
 }
 
-/// Enter editing the selected text area n3 by a second click on it, the caret at its text's end.
+/// Enter editing the selected text area n3 by a second click on it, the caret at its text's end: the
+/// click is inside the area near its bottom right corner, below and after its last line in any
+/// built-in font, and clear of the dividers at its edges.
 fn edit_n3(d: &mut Driver) {
     let n3 = NodeId(3);
     d.select(n3);
-    let p = d.app.layout().unwrap().rect(n3).unwrap().center();
+    let r = d.app.layout().unwrap().rect(n3).unwrap();
+    let p = Pos2::new(r.right() - 0.05 * r.width(), r.bottom() - 0.05 * r.height());
     d.click(p);
     assert_eq!(d.app.editing(), Some(n3));
 }

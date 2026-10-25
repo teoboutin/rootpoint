@@ -10,7 +10,7 @@ family, and a text falls back to Libertinus Math for a character its font lacks.
 - The four static styles of Open Sans's `noto-set` build, `OpenSans-Regular.ttf`, `-Bold`,
   `-Italic` and `-BoldItalic`, from googlefonts/opensans, `path@elsewhere@fonts/noto-set/ttf/`,
   embedded in the render crate with Open Sans's `OFL.txt`, under
-  `planned@rootpoint-render@fonts/open-sans/`; the Noto Sans files and their `OFL.txt` removed.
+  `path@rootpoint-render@fonts/open-sans/`; the Noto Sans files and their `OFL.txt` removed.
 - `BUILTIN_SANS` in `path@rootpoint-render@src/text.rs` names Open Sans; `FontRef::Builtin("sans")`
   keeps its name, so no saved file changes.
 - The font stack of `layout_text` ends with Libertinus Math after the built-in sans, so a character

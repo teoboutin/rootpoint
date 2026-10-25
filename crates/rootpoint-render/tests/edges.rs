@@ -82,7 +82,7 @@ fn a_size_of_zero_or_above_the_limit_is_refused() {
 
 #[test]
 fn a_character_the_chosen_font_lacks_is_drawn_in_the_built_in_sans() {
-    // Quicksand has no Greek; Noto Sans has.
+    // Quicksand has no Greek; Open Sans has.
     let Some(quicksand) = system_font("/usr/share/fonts/truetype/quicksand/Quicksand-Regular.ttf")
     else {
         return;
@@ -105,7 +105,7 @@ fn a_character_the_chosen_font_lacks_is_drawn_in_the_built_in_sans() {
 #[test]
 fn a_character_no_font_has_is_reported() {
     let (mut doc, root) = one_slide();
-    // Noto Sans has no emoji.
+    // Neither Open Sans nor Libertinus Math has an emoji.
     set(&mut doc, root, text("A \u{1F600}", TextStyle::default()));
     let out = render(&doc, 384, 216, &mut FontSet::new(), &ImageSet::new());
     assert_eq!(out.report.missing_glyphs, vec![root]);
@@ -160,7 +160,7 @@ fn a_builtin_name_other_than_sans_falls_back() {
         text(
             "x",
             TextStyle {
-                font: FontRef::Builtin("Noto Sans".into()),
+                font: FontRef::Builtin("Open Sans".into()),
                 ..TextStyle::default()
             },
         ),

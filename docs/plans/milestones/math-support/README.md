@@ -221,8 +221,8 @@ The slices are built in the order of "Implementation sequence".
   `path@rootpoint-app@tests/data/mixed.ron`, `path@rootpoint-model@tests/data/fixture.ron` and
   `path@rootpoint-model@tests/data/fixture-edited-by-agent.ron`.
 - **Licences of what is built in.** A font or a data file built into a binary whose licence has
-  conditions of its own keeps its licence text beside it, as `path@rootpoint-render@fonts/OFL.txt` sits
-  beside Noto Sans today, by `design@rootpoint@permissive-licence`: the fonts' OFL, and the W3C
+  conditions of its own keeps its licence text beside it, as
+  `path@rootpoint-render@fonts/open-sans/OFL.txt` sits beside Open Sans, by `design@rootpoint@permissive-licence`: the fonts' OFL, and the W3C
   notice of the table of commands.
 
 ## Names

@@ -55,7 +55,7 @@ fn tree_workspace(root: &Path) -> Session {
     let png = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/sample/splits.png")).unwrap();
     let font = std::fs::read(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../rootpoint-render/fonts/NotoSans-Regular.ttf"
+        "/../rootpoint-render/fonts/open-sans/OpenSans-Regular.ttf"
     ))
     .unwrap();
     std::fs::create_dir_all(root.join("img/b")).unwrap();

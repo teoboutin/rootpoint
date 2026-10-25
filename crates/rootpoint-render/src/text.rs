@@ -13,13 +13,13 @@ use rootpoint_model::{AssetId, BUILTIN_FAMILIES, FontRef, HAlign, Rgba, SpanStyl
 use vello_cpu::kurbo::{Affine, Diagonal2};
 
 /// The family of the built-in sans, which `FontRef::Builtin("sans")` names.
-const BUILTIN_SANS: &str = "Noto Sans";
+const BUILTIN_SANS: &str = "Open Sans";
 
 const BUILTIN_FONTS: [&[u8]; 4] = [
-    include_bytes!("../fonts/NotoSans-Regular.ttf"),
-    include_bytes!("../fonts/NotoSans-Bold.ttf"),
-    include_bytes!("../fonts/NotoSans-Italic.ttf"),
-    include_bytes!("../fonts/NotoSans-BoldItalic.ttf"),
+    include_bytes!("../fonts/open-sans/OpenSans-Regular.ttf"),
+    include_bytes!("../fonts/open-sans/OpenSans-Bold.ttf"),
+    include_bytes!("../fonts/open-sans/OpenSans-Italic.ttf"),
+    include_bytes!("../fonts/open-sans/OpenSans-BoldItalic.ttf"),
 ];
 
 /// The synthetic bold of a font with no bold face: the outline grows by this fraction of the
@@ -47,7 +47,7 @@ impl Default for TextBrush {
 #[derive(Clone, Debug, PartialEq)]
 pub struct FontError(pub String);
 
-/// The fonts a render may use: the built-in Noto Sans and Libertinus Math, and the font files of
+/// The fonts a render may use: the built-in Open Sans and Libertinus Math, and the font files of
 /// the document's asset table, and nothing else. No font of the system is ever discovered:
 /// parley's feature `system` is off, and the collection is created without system fonts.
 pub struct FontSet {
