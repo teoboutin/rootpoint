@@ -144,8 +144,10 @@ pub fn generate(
     for (name, code) in SYMBOLS {
         table.insert(name.to_owned(), code);
     }
-    // The commands of a character the font lacks are read, and drawn as the font's missing glyph,
-    // apart from the table that `commands` lists, which holds none of them.
+    // The commands of a character the font lacks go apart, in `ABSENT`, which `command` reads, so a
+    // formula holding one draws the font's missing glyph; the table `commands` lists holds none,
+    // so a list offered to an author, as the palette of the milestone of math, holds none drawn as
+    // a box.
     let (present, absent): (BTreeMap<String, u32>, BTreeMap<String, u32>) =
         table.into_iter().partition(|(_, code)| has(*code));
     classes.retain(|code, _| has(*code) || absent.values().any(|c| c == code));

@@ -220,3 +220,16 @@ fn deep_nesting_is_bounded() {
     );
     assert!(l.width > 0.0);
 }
+
+/// `-` and `*` are drawn as the minus sign and the asterisk operator, as LaTeX's fontdef.dtx takes
+/// them from its symbols font.
+#[test]
+fn minus_and_asterisk_are_drawn_as_latex_draws_them() {
+    let font = common::font();
+    let l = laid("a - b * c", Style::Text, 10.0);
+    let glyphs: Vec<u16> = l.glyphs.iter().map(|g| g.glyph).collect();
+    assert!(glyphs.contains(&font.glyph('\u{2212}').unwrap()));
+    assert!(glyphs.contains(&font.glyph('\u{2217}').unwrap()));
+    assert!(!glyphs.contains(&font.glyph('-').unwrap()));
+    assert!(!glyphs.contains(&font.glyph('*').unwrap()));
+}

@@ -20,7 +20,10 @@ the model, edited as source, makes LaTeX the way to write math in the window, wh
 subset of `path@rootpoint-math@src/latex.rs`: symbols and the commands of the table, fractions,
 radicals, scripts, `\left…\right`, twelve accents, five font changes, `\text`, the matrix, pmatrix,
 bmatrix and cases environments, six spaces, groups, and the 32 operator names LaTeX defines in
-`path@elsewhere@base/ltmath.dtx`; `'` reads as LaTeX reads it, a prime in a superscript. A text
+`path@elsewhere@base/ltmath.dtx`; `'` reads as LaTeX reads it, a prime in a superscript. Its
+environments set a matrix or a case analysis with no specification of their columns, where the
+rival, LaTeX's `array`, adds the grammar of one; on the owner's word, the owner thinks matrix,
+pmatrix and cases cover the owner's talks, and bmatrix is the bracketed form of the first. A text
 `to_latex` wrote reads back equal, which the proptest of `path@rootpoint-math@tests/latex.rs`
 checks, and so does every formula that keeps the invariants the doc comment of `Formula` states.
 A text that does not parse is refused, for the reasons the doc comment of `Formula::parse` lists,
@@ -44,19 +47,15 @@ relations of a derivation under one another.
 
 On the owner's word: the owner's talks need aligned rows often.
 
-### A matrix is an atom of its own, in the matrix, pmatrix, bmatrix and cases environments `##matrix-atom`
+### A matrix is an atom of its own `##matrix-atom`
 
 `Atom::Matrix` holds a grid of cells and its environment, written `\begin{…}…\end{…}`, which sets
-its delimiters: none, parentheses, brackets, or a brace on the left. Its cells are in text style,
-as LaTeX's arrays set them, and it is centred on the axis. A matrix stands inside a formula, between
-other atoms, so it is an atom with a grid of its own: the rival, the formula's own grid, holds the
-formula's rows and cannot stand inside parentheses beside `R(\theta) =`. The four environments set
-a matrix or a case analysis with no specification of their columns; the rival, LaTeX's `array`,
-would add the grammar of a column specification. An environment outside the four does not parse,
-since its delimiters and its alignment are unknown.
+its delimiters. Its cells are in text style, as LaTeX's arrays set them, and it is centred on the
+axis. A matrix stands inside a formula, between other atoms, so it is an atom with a grid of its
+own: the rival, the formula's own grid, holds the formula's rows and cannot stand inside
+parentheses beside `R(\theta) =`.
 
-On the owner's word: the owner's talks need matrices occasionally, and the owner thinks matrix,
-pmatrix and cases cover them.
+On the owner's word: the owner's talks need matrices occasionally.
 
 ## Layout
 
@@ -159,5 +158,6 @@ point, and `-` an ordinary character, so `a - b` would be set as `a-b`.
 A `-` of a formula is drawn as − U+2212 and a `*` as ∗ U+2217, which `drawn` of
 `path@rootpoint-math@src/table.rs` gives, as LaTeX's `path@elsewhere@base/fontdef.dtx` takes them
 from its symbols font, so `a - b` shows a minus, as a reader of TeX expects,
-`goal@rootpoint-math@tex-quality`. The rival, the hyphen and the asterisk of the text, draws a
-minus shorter than the plus beside it, and an asterisk raised as a footnote mark.
+`goal@rootpoint-math@tex-quality`. The rival, the hyphen and the asterisk of the text, draws
+characters LaTeX's math does not set. The test `minus_and_asterisk_are_drawn_as_latex_draws_them`
+of `path@rootpoint-math@tests/layout.rs` pins the two.
