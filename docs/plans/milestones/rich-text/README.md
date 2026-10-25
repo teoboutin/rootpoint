@@ -1085,8 +1085,8 @@ reopens #text-edit-commands.
   #span-styling, and it leaves an emptied span behind until the stay ends. It blocked the merge of
   #tree-caret. Harvested on #tree-caret's branch as `design@rootpoint-app@delete-in-caret-node`, a
   head of its own, since it loses to another rival than the caret's positions.
-- **Q5**, awaiting the owner. Open at the design audit of #span-styling, a load-bearing gap that
-  stops the slice; its text is in the slice's spec, `spec@rich-text@span-styling`, under "Defaults
+- **Q5**, ruled: the owner chose A, "q5 go with A". Open at the design audit of #span-styling, a
+  load-bearing gap that stopped the slice until the ruling; its text is in the slice's spec, `spec@rich-text@span-styling`, under "Defaults
   awaiting the owner".
 
 ## Harvest

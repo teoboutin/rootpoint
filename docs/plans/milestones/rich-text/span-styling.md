@@ -86,9 +86,10 @@ The fourth and last slice of `milestone@plans@rich-text`. It lands
 
 ## Defaults awaiting the owner
 
-### Q5, open at the audit: what the Selection tab's controls change while a text is edited
+### Q5, ruled: what the Selection tab's controls change while a text is edited
 
-Awaiting the owner; it stops the slice. The milestone says that a control of the side panel, with
+Ruled by the owner: "q5 go with A". Open at the audit, it stopped the slice until then; the thread
+#controls-act-at-the-caret records the shape chosen. The milestone says that a control of the side panel, with
 no selection, opens an empty span at the caret and, with one, wraps it, #style-action-target; and
 that a click on a span of the ancestor row "shows its style in the panel's controls, where it is
 changed", #ancestor-frames. It does not say how the one set of controls tells these targets apart,
@@ -119,10 +120,31 @@ audit rewrites it. The discriminating fact is none the record holds: each serves
 `goal@rootpoint@no-language-no-build`, and the choice weighs a click out of the stay against a mode
 or the panel's height.
 
+## Threads
+
+### While a text is edited, the Selection tab's controls are the style actions, and the ancestor row selects a span `##controls-act-at-the-caret`
+
+Put to the owner as Q5 by the session at this slice's design audit, with A as its default, against
+B, a target the ancestor row chooses, and C, the area's controls beside the style actions. Closed
+by the owner's word: "q5 go with A". Its shape is in "Decided design"; its harvest is the app's
+design home, judged by the entry tests with #style-action-target.
+
 ## Decided design
 
 The milestone's "Decided design" of #style-action-target, #ancestor-frames, #split-at-caret and
 #named-span-styles holds the shape.
+
+### #controls-act-at-the-caret
+
+While a text is edited, the Selection tab's style controls show the values the caret types with,
+or, when the selection is one whole span, that span's, and act as the style actions of the
+milestone's table: `wrap` at the caret or over the selection, `span t<n>` for a selection that is
+one whole span. The style menu lists the span styles, and "custom" while the selection is one
+named span. The alignment buttons send `text n<area>` with the alignment, since a span has none.
+The ancestor row lists the text, then each span that holds the caret, outer to inner; a click on a
+span selects it whole, and a click on the text leaves editing, as Esc does, the area still
+selected. Every command goes into the stay's group. Nearest rivals: B and C of Q5; the owner chose
+A.
 
 ## Acceptance criteria
 
@@ -130,8 +152,8 @@ AC2 is judged here, and the landing commits report on it.
 
 ## Harvest
 
-- Write the app's heads of #style-action-target and of #split-at-caret's key and button, if the
-  entry tests give them heads.
+- Write the app's heads of #style-action-target, of #controls-act-at-the-caret and of
+  #split-at-caret's key and button, if the entry tests give them heads.
 - Record the frames as members of `design@rootpoint-app@editor-overlay`, which its argument covers,
   directly, with the reason they take no space; judge the ancestor row by the entry tests, a
   comment at `path@rootpoint-app@src/panels.rs` if it earns no head.
