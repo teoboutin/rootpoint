@@ -60,8 +60,12 @@ renderer. It lands the shape of `thread@math-support@math-storage-form`,
   in a new field `Report::unknown_commands`, which the `render` reply of
   `path@rootpoint-protocol@src/session.rs` and `App::status` of `path@rootpoint-app@src/lib.rs` list
   beside the others, once a content shows a formula.
-- A test that pins the missing set: each of the 44 commands of the survey's section 4 is absent from
-  `COMMANDS`, and its character from Libertinus Math's cmap.
+- A test that pins the missing set both ways, so any change of the font or of its version fails it,
+  as the owner approved in round 8: of the math commands of KaTeX v0.19.1 that map to one character,
+  a fixture of the test, `planned@rootpoint@crates/rootpoint-math/tests/data/katex-symbols.txt`,
+  generated from KaTeX's `path@elsewhere@src/symbols.ts` as section 4 of the survey counts them, with
+  KaTeX's MIT notice beside it, the commands whose character Libertinus Math's cmap lacks are exactly
+  the 44 of that section, each also absent from `COMMANDS`.
 - An ignored test, `planned@rootpoint-render@tests/math.rs`, that draws the reference formulas into
   PNG files in the directory `ROOTPOINT_MATH_IMAGES` names, for the owner's comparison of AC1.
 
@@ -93,8 +97,8 @@ renderer. It lands the shape of `thread@math-support@math-storage-form`,
   constant spacing in slide units.
 - **AC4**, `acceptance@math-support@ac-script-glyphs`; shown to fail by laying scripts out with the
   base glyph.
-- **The missing set is pinned**: shown to fail by adding to the test's list a command whose character
-  the font has, as `\alpha`.
+- **The missing set is pinned both ways**: shown to fail by adding to the expected set a command whose
+  character the font has, as `\alpha`, and by removing one of the 44 from it.
 
 ## Fixtures
 

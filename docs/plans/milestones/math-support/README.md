@@ -155,7 +155,9 @@ answered by the owner's words of round 7, the missing set "not much of a problem
 | #equation-options | approved | size `Fit` (the default) or `AtMost(size)`, plus a colour, unnamed |
 | #equation-fit | approved | one layout scaled by k; both modes |
 
-The table's `TextItem::Ref(n<id>)` writes a reference as commands print it; the file writes it
+The table's "todo issue for read-fonts ≥ 0.45" was opened as a `deferred` issue,
+`issue@rootpoint-render@read-fonts-math-table`, since an event, parley's move, gates its work. The
+table's `TextItem::Ref(n<id>)` writes a reference as commands print it; the file writes it
 `Ref(7)`, since an id is a plain number there, `design@rootpoint-model@save-format`.
 
 The table was put "for you to contest": "A positive word on this table closes it,
@@ -261,8 +263,9 @@ What exists today, at each site the work touches:
 - **The renderer.** `layout_text` lays a text's string out with Parley's `ranged_builder`, each
   span's values over its byte range, with a font stack of the text's family then `BUILTIN_SANS`,
   "Noto Sans", four files embedded by `BUILTIN_FONTS`; `render_slide` draws a text area and an image
-  area, and the report names `missing_glyphs`; no `InlineBox` is used; ttf-parser is not in the
-  crate's tree for wasm.
+  area, and the report names `missing_glyphs`; no `InlineBox` is used; ttf-parser is in no crate's
+  tree for the browser's target, `cargo tree -i ttf-parser --target wasm32-unknown-unknown` printing
+  nothing.
 - **The protocol.** `split_words` reads quoted texts, bare words and the punctuation of a tree;
   `text` takes a tree of quoted texts and spans, `tree` prints one,
   `design@rootpoint-protocol@protocol-transport`; `image` sets an area's content to an image;
@@ -667,8 +670,11 @@ Harvested into `design@rootpoint-protocol@text-edit-commands`, at #inline-math.
 
 Proposed by the session in round 1, from the owner's request, #arg-5, #arg-29 and #arg-30. Approved in
 round 2: "math-keys: agreed on copying the keys from lyx exactly. The browser mode can have a few
-bindings disabled in case of conflicts, not a problem.", #arg-36. Harvested into the app's design
-home, at #math-editing.
+bindings disabled in case of conflicts, not a problem.", #arg-36. Which of LyX's keys are bound,
+and which are left out with their grounds, is D2, ruled by the owner in round 9 on its default: the
+keys LyX gives an action this milestone has are bound, and those whose action it lacks, as T's
+types of equation or Shift+N's number per row, are not. Harvested into the app's design home, at
+#math-editing.
 
 ### The math keys are a built-in table of key sequences to actions `##keymap-table`
 
@@ -1286,7 +1292,7 @@ scripts are small and it has no kerning, and the owner chose Libertinus from the
 
 A command whose character the math font lacks is drawn as the font's missing glyph and reported in
 `missing_glyphs`; the palette lists only the commands the font has. Nearest rival, STIX Two Math as a
-fallback: 819 KB in every build for 44 rare symbols, the owner's weighing, #arg-69.
+fallback: 819 KB in every build for 44 rare symbols, #arg-69, weighed by the owner in #arg-73.
 
 ### #builtin-text-family
 

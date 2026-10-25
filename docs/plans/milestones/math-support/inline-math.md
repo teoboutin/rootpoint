@@ -5,8 +5,8 @@ The fourth slice of `milestone@plans@math-support`. It lands `thread@math-suppor
 `thread@math-support@reference-retarget`, `thread@math-support@math-edit-commands` and the text
 tree's half of `thread@math-support@math-in-protocol-grammar`, through the model, the file, the
 renderer, the protocol and the window's reference picker. The window edits no formula yet. It judges
-`acceptance@math-support@ac-math-render-bound`. It waits for the owner's word on D4, a moved
-equation keeping its references, on which its references rest.
+`acceptance@math-support@ac-math-render-bound`. Its references rest on D4, a moved equation keeping
+its references, which the owner ruled on its default in round 9.
 
 ## Builds
 
