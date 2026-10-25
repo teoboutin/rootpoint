@@ -353,7 +353,7 @@ impl App {
         }
         // The selection, the composing text's underline and the caret of a text edited in place,
         // and the caret's place for the IME, per `design@rootpoint-app@edit-in-place`; and a thin
-        // frame around each span that holds the caret, which takes no space in the slide: each
+        // frame around each span that holds the caret, `design@rootpoint-app@editor-overlay`: each
         // outer frame lighter, and set `FRAME_GAP` further out, so that frames meeting at an edge
         // stay apart.
         if self.edit.is_some() {

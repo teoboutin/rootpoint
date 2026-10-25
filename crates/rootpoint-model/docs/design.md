@@ -182,7 +182,8 @@ the span instead. A file that holds such a span loads, drawn with its parent's v
 set whole, as an undo sets it, carries such a span as it is, and so does a duplicated slide, whose
 spans take new ids but keep their styles: refusing the duplicate would leave a slide loaded from a
 file edited by hand impossible to copy, for a span the file already drew. An empty span
-is accepted, so that a style chosen with nothing selected opens one at the caret. Adjacent spans of
+is accepted, so that a style chosen with nothing selected opens one at the caret,
+`design@rootpoint-app@style-action-target`. Adjacent spans of
 one style stay apart: they are what the author made, and either can be restyled alone, the
 grouping `tripwire@rootpoint-model@grouping-lost-to-merge` watches in a slide's tree. The rival,
 dissolving every span whose values change nothing of its parent's, dissolves a named span whose

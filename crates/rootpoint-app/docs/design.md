@@ -50,13 +50,14 @@ document itself, `rejected@rootpoint-model@gui-mutation`, implements every edit 
 A divider drag, a grip drag and a stay in editing a text each open a group with `begin` when they
 start, after closing any group still open, so that within one frame a group closes before another
 opens. The release closes a drag's group with `end`, and Esc with `cancel`; the end of a stay, by
-Esc, a click outside its area, an undo, a redo or any other action, closes its group, the stay
-ending first as every action ends a gesture, as the protocol's `undo` inside a group closes it
-first. An action of the side panel that acts on the edited text, a style control or a button of
-the ancestor row, `design@rootpoint-app@controls-act-at-the-caret`, is no other action: it joins
-the stay, its commands in the stay's group, as a key of editing's are. Ending the stay first would
-leave no caret for it to act at, and an undo step of its own would cut one stay into several,
-where `design@rootpoint-app@edit-in-place` makes every change of a stay one step. While a drag runs, no key but Esc acts, since a key's edit would join the drag's step. The
+Esc, a click outside its area, an undo, a redo or any other action that does not act on the edited
+text, closes its group, the stay ending first as every such action ends a gesture, as the
+protocol's `undo` inside a group closes it first. An action of the side panel that acts on the
+edited text, a style control, a span of the ancestor row or its "Split here",
+`design@rootpoint-app@controls-act-at-the-caret`, joins the stay instead, its commands in the
+stay's group, as a key of editing's are. Ending the stay first would leave no caret for it to act
+at, and an undo step of its own would cut the stay, which this head makes one undo step, into
+several. While a drag runs, no key but Esc acts, since a key's edit would join the drag's step. The
 groups are the protocol's, `design@rootpoint-protocol@gesture-undo`, so a gesture is one undo step
 in a script as in the window.
 
@@ -86,8 +87,7 @@ editor text that is no slide content, so they are not the slide text that
 `rejected@rootpoint-render@toolkit-painter` keeps out of the toolkit.
 
 The frames take no space in the slide, so the text an author edits stands where it is presented:
-one thin rectangle per line a span covers, each outer frame lighter and set `FRAME_GAP` of
-`path@rootpoint-app@src/view.rs` further out, so frames meeting at an edge stay apart, and around
+one thin rectangle per line a span covers, each outer frame lighter and further out, and around
 the caret for an empty span, which covers no glyph. The caret is drawn in the colour and at the
 size it types with. So the two caret positions at a span's edge, which stand at one byte index,
 show different marks, a frame at one and not the other, which the test
@@ -95,6 +95,9 @@ show different marks, a frame at one and not the other, which the test
 checks over the spans of the sample's styled text. LyX's frames reserve their space,
 `rejected@rootpoint-app@reserved-frame-space`. Whether frames of no space let the author tell the
 two positions of an edge apart in real use is watched by `tripwire@rootpoint-app@frames-mislead`.
+On the owner's word: the owner chose to start with frames over the slide, expects to revise their
+form once seen live, and might relax `goal@rootpoint-app@faithful-slide-view` if a pure overlay does
+not work.
 
 ### The window always shows where its presentation is and whether it is saved, and names where each writing action writes `##visible-mode`
 
@@ -453,8 +456,8 @@ with a selection, `wrap` of it, the new span then selected whole; and on a selec
 whole span, `span`, which changes that span's style, so a second action on a span just made
 changes it rather than wrapping it again. Ctrl+B sets bold and Ctrl+I italic; colour, size, font
 and a span style have no key, and are set from the Selection tab. A style action inside a span
-already in that style opens a span all the same, since equal spans stay apart,
-`design@rootpoint-model@text-tree-normal-form`. The empty span stays while the caret is in it,
+already in that style opens a span all the same, since a span that sets a value equal to its
+parent's is kept, `design@rootpoint-model@text-tree-normal-form`. The empty span stays while the caret is in it,
 `design@rootpoint-app@empty-span-unwrapped`.
 
 So the author styles the letters about to be typed as well as those already typed, with no
@@ -477,11 +480,14 @@ a span may name, and the values set a span's own; an alignment, which no span ha
 area's style by `text` with no tree. Every command joins the stay's group,
 `design@rootpoint-app@gesture-groups`.
 
-Each control then has one meaning at a time, and the window holds no state of its own for it. On
-the owner's word: the owner chose this over two other shapes, a target the row chooses for the
+Each control then has one meaning at a time, and the window holds no state of its own for it; the
+cost is that changing the area's size or style name while editing takes one click out of the stay.
+On the owner's word: the owner chose this over two other shapes, a target the row chooses for the
 controls, the caret's, a span's or the area's, which never leaves editing but makes the author
-read the target before each click; and the area's controls shown beside those at the caret, which
-reach the area's style in the stay at the cost of the side panel showing its controls twice.
+read the target before each click, held by the window with a rule for when it returns to the
+caret at each move of the caret; and the area's controls shown beside those at the caret, which
+reach the area's style in the stay at the cost of about ten rows of the side panel in place of
+five.
 
 ### "Split here" cuts the span that holds the caret at the caret, on Ctrl+Space, and leaves it at its edge `##split-at-caret`
 
@@ -495,13 +501,14 @@ The rival, a key per style that toggles it, Ctrl+B pressed in a bold span splitt
 unbolded, has no meaning for a colour or a named span, where "Split here" acts the same for every
 style.
 
-Ctrl+Space reaches the editor on the owner's desktop: `gsettings get
-org.freedesktop.ibus.general.hotkey triggers` and `gsettings get
+Ctrl+Space is a key no other action of editing takes: Esc leaves editing,
+`design@rootpoint-app@edit-entry`, the arrows move the caret and Shift with an arrow selects, and
+Alt with an arrow is the node keys outside editing. It reaches the editor on the owner's desktop:
+`gsettings get org.freedesktop.ibus.general.hotkey triggers` and `gsettings get
 org.gnome.desktop.wm.keybindings switch-input-source` both name Super+Space; and egui-winit 0.37.0
 sends no text for a key pressed with Ctrl, `on_keyboard_input`, so no space is typed. In the browser
 it is kept from the page, `design@rootpoint-app@editor-keys-kept-from-browser`. On the owner's word:
-the owner asked to be able to leave a style at any place, or split it, and found Ctrl+Space fine as
-its key.
+the owner asked to be able to leave a style at any place, or split it.
 
 ### A selection is a range of one text node, a span inside it taken whole `##selection-one-level`
 
@@ -519,11 +526,15 @@ and judged that cutting a span in half is practically never needed.
 ### The editor unwraps an empty span when the caret leaves it, and every empty span when the stay ends `##empty-span-unwrapped`
 
 The model accepts an empty span, `design@rootpoint-model@text-tree-normal-form`, so that a style
-chosen with nothing selected opens one at the caret, which stays while the caret is in it. When the
-caret leaves an empty span, the editor sends `unwrap` for it, and when a stay ends, for every empty
-span of the text, the inner first, inside the stay's group, so the stay is still one undo step. A
-position inside the unwrapped span, an anchor left there by Shift with an arrow, stands at the span's
-place in its parent. An empty span the caret has left draws nothing, and would remain an item the
+chosen with nothing selected opens one at the caret, `design@rootpoint-app@style-action-target`,
+which stays while the caret is in it, or while a selection whose ends stand in its parent is that
+span whole, as a click on the ancestor row makes one,
+`design@rootpoint-app@controls-act-at-the-caret`, so a second control changes its style; a
+selection lifted from an anchor left inside the span, as Shift with an arrow out of it leaves one,
+does not hold it. When the caret and the selection leave an empty span, the editor sends `unwrap`
+for it, and when a stay ends, for every empty span of the text, the inner first, inside the stay's
+group, so the stay is still one undo step. A position inside the unwrapped span, an anchor left
+there by Shift with an arrow, stands at the span's place in its parent. An empty span the caret has left draws nothing, and would remain an item the
 arrows step into and a file keeps, with nothing to show the author where it is.
 
 ### A first click on a text area selects it, and a click on the selected text area edits it `##edit-entry`
@@ -891,16 +902,24 @@ canvas has focus, `rejected@rootpoint-app@bubble-phase-f5-listener`. The test
 `path@rootpoint-app@tests/web.rs` checks it in a headless browser.
 
 The rule covers every key the editor consumes, since the browser's default of one is an action the
-author did not ask for, whether it leaves the page or not. While a text is edited the editor
-consumes Ctrl+B and Ctrl+I, and Meta with B or I, since eframe 0.37.0's web input sets egui's
-`command` from Ctrl or Meta, `modifiers_from_kb_event` of `path@elsewhere@src/web/input.rs`, and
-Ctrl+Space, `design@rootpoint-app@style-action-target` and `design@rootpoint-app@split-at-caret`;
-eframe prevents none of their defaults. That Firefox gives Ctrl+B to its bookmarks sidebar and
-Ctrl+I to page information is the session's knowledge of the browser, not measured; the rule does
-not rest on it, since a prevented default costs a key the editor consumes nothing. So the same
-listener prevents their default while a flag of the editor holds, which `App::frame` sets at each
+author did not ask for, whether it leaves the page or not. The editor reads its shortcuts with
+egui's `command`, which eframe 0.37.0's web input sets from Ctrl or Meta, `modifiers_from_kb_event`
+of `path@elsewhere@src/web/input.rs`: undo and redo, with Z and Y, always, and while a text is
+edited select all, bold and italic, with A, B and I, `design@rootpoint-app@style-action-target`;
+and, while a text is edited too, Ctrl+Space, `design@rootpoint-app@split-at-caret`.
+`should_prevent_default_for_key` names none of these letters, and prevents Space's default only
+while its text agent lacks the focus, which it holds while a text is edited, since the app sets
+`PlatformOutput::ime` then, `path@elsewhere@src/web/app_runner.rs`. So the same listener prevents
+their defaults, those of editing while a flag of the editor holds, which `App::frame` sets at each
 frame to whether a text is edited: eframe's text agent, which holds the focus while editing, hands
 its keydown to the canvas's handler, `path@elsewhere@src/web/text_agent.rs`, and the window's
-listener in the capture phase sees both first. Outside editing the editor consumes none of them,
-and the browser keeps them. The test
-`the_keys_of_editing_are_kept_from_the_browser_only_while_editing` of the same file checks it.
+listener in the capture phase sees both first. Outside editing the editor consumes none of the keys
+of editing, and the browser keeps them. The rival, letting the browser act too, makes one key both
+edit the presentation and act in the browser: Firefox gives Ctrl+B to its bookmarks sidebar and
+Ctrl+I to page information, by the session's knowledge of the browser, not measured, and the rule
+does not rest on it, since a prevented default costs a key the editor consumes nothing. Home, End,
+Page Up and Page Down, which the editor reads too, keep their default, which scrolls a page that
+cannot scroll: `path@rootpoint-app@web/index.html` hides the overflow of a page the canvas fills.
+Ctrl with C, V and X keep theirs, which carry the clipboard's events to eframe. The test
+`the_keys_of_editing_are_kept_from_the_browser_only_while_editing` of the same file checks the
+keys with Ctrl or Meta.

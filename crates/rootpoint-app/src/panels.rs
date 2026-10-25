@@ -294,6 +294,9 @@ impl App {
         };
         let spans = self.caret_spans();
         let selected = self.selected_span();
+        // The row names each span that holds the caret with its style, which the frames over the
+        // slide do not show, and is where a click selects a span whose edges the caret shares with
+        // another.
         ui.label("At the caret:");
         let mut chosen_span = None;
         let mut leave = false;

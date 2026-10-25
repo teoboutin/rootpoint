@@ -267,26 +267,29 @@ pub(crate) fn warn_before_unload(unsaved: std::rc::Weak<std::cell::Cell<bool>>) 
     listener.forget();
 }
 
-/// Keep the editor's keys from the browser's own actions, per
-/// `design@rootpoint-app@editor-keys-kept-from-browser`: a listener of the window, in the capture
-/// phase, prevents the default of F5, which starts presenter mode, and, while `editing` holds, of
-/// Ctrl+B, Ctrl+I, their Meta forms, and Ctrl+Space, which the editor consumes then. It holds the
-/// flag weakly, so an app dropped keeps F5 alone.
+/// Keep the editor's keys from the browser's own actions, the keys
+/// `design@rootpoint-app@editor-keys-kept-from-browser` names: a listener of the window, in the
+/// capture phase, prevents the default of F5 always, and of the keys of editing while `editing`
+/// holds. It holds the flag weakly, so an app dropped keeps F5 alone.
 pub fn keep_editor_keys(editing: std::rc::Weak<std::cell::Cell<bool>>) {
     let Some(window) = web_sys::window() else {
         return;
     };
     let listener =
         Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |e: web_sys::KeyboardEvent| {
-            // The editor reads Ctrl+B and Ctrl+I as egui's `command`, which eframe 0.37.0's web
-            // input sets from Ctrl or Meta, and Ctrl+Space from Ctrl alone.
-            let key = e.key().to_lowercase();
-            let styling = match key.as_str() {
-                "b" | "i" => e.ctrl_key() || e.meta_key(),
-                " " => e.ctrl_key(),
+            // The editor reads its shortcuts with egui's `command`, which eframe 0.37.0's web input
+            // sets from Ctrl or Meta: undo and redo always, and select all, bold and italic while
+            // a text is edited; and Ctrl+Space, from Ctrl alone, while editing too.
+            let command = e.ctrl_key() || e.meta_key();
+            let edited = || editing.upgrade().is_some_and(|flag| flag.get());
+            let kept = match e.key().to_lowercase().as_str() {
+                "f5" => true,
+                "z" | "y" => command,
+                "a" | "b" | "i" => command && edited(),
+                " " => e.ctrl_key() && edited(),
                 _ => false,
-            } && editing.upgrade().is_some_and(|flag| flag.get());
-            if e.key() == "F5" || styling {
+            };
+            if kept {
                 e.prevent_default();
             }
         });

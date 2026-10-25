@@ -50,8 +50,9 @@ of `App::frame` places its synthetic pointer on them;
 
 The code built for the wasm target alone is under `cfg(target_arch = "wasm32")`: what the page does,
 the entry point in `path@rootpoint-app@src/main.rs`, and in `path@rootpoint-app@src/web.rs` the
-pickers, the download, the reading of a dropped file, full screen and the warning before an unload,
-with their calls in `App` and the field that holds the warning's flag; the actions of
+pickers, the download, the reading of a dropped file, full screen, the warning before an unload
+and the listener that keeps the editor's keys from the browser, with their calls in `App` and the
+fields that hold the warning's flag and the listener's; the actions of
 `path@rootpoint-app@src/actions.rs` that ask the page for a file or hand it one, open, open a pack,
 save, save as a pack, adding an image or a font and replacing an asset's bytes; and the toolbar's
 "Save as pack…" of `path@rootpoint-app@src/panels.rs`. The native file buttons of

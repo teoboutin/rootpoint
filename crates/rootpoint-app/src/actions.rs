@@ -16,7 +16,7 @@ use rootpoint_protocol::{
 
 use crate::editing::{
     CaretMove, Editing, Item, empty_spans, from_byte, items, items_len, layout_point, left, parent,
-    range_text, right, spans_holding, text_node,
+    range_text, right, selection, spans_holding, text_node,
 };
 
 use crate::hit::{Edge, Layout, MIN_PART, Preview, Zone};
@@ -1863,8 +1863,8 @@ impl App {
         ))
     }
 
-    /// The one place the caret moves. Each empty span the caret was in and has left is unwrapped,
-    /// the inner first, `design@rootpoint-app@empty-span-unwrapped`; the caret, the anchor and the
+    /// The one place the caret moves. Each empty span the caret was in, or a selection whose ends
+    /// stand in its parent was whole, and that neither holds now is unwrapped, the inner first, `design@rootpoint-app@empty-span-unwrapped`; the caret, the anchor and the
     /// composing text are carried to where they stand after it, an anchor left in the span to the
     /// span's place in its parent, as Shift with an arrow out of it leaves one.
     fn put_caret(
@@ -1880,9 +1880,19 @@ impl App {
         let content = self.edited_text();
         let left: Vec<SpanId> = match &content {
             Some(content) => {
-                let inside = |pos: CaretPos| spans_holding(content, pos);
-                let now = inside(caret);
-                let mut was = inside(edit.caret);
+                let held = |caret: CaretPos, anchor: Option<CaretPos>| {
+                    let mut spans = spans_holding(content, caret);
+                    // A selection made of the span from its parent, as the ancestor row makes it,
+                    // and not one lifted from an anchor left inside it, as Shift with an arrow out
+                    // of it leaves.
+                    if let Some(anchor) = anchor.filter(|a| a.node == caret.node) {
+                        let (node, range, _) = selection(content, anchor, caret);
+                        spans.extend(whole_span(content, node, range));
+                    }
+                    spans
+                };
+                let now = held(caret, anchor);
+                let mut was = held(edit.caret, edit.anchor);
                 was.retain(|s| !now.contains(s));
                 was
             }

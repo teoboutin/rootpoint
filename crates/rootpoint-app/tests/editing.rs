@@ -1072,3 +1072,39 @@ fn ctrl_b_ctrl_i_and_ctrl_space_style_and_split_at_the_caret() {
     d.frame(vec![Event::Text("Y".into())]);
     assert_eq!(shape(&d, NodeId(3)), "a{X}b{c}Y{d}{e}f");
 }
+
+/// An empty span selected whole, as a click on the ancestor row selects it, is kept, so a second
+/// control changes its style; once the selection leaves it, still empty, it is unwrapped, per
+/// `design@rootpoint-app@empty-span-unwrapped`.
+#[test]
+fn an_empty_span_selected_whole_is_kept_until_the_selection_leaves_it() {
+    let mut d = edit_tree(r#"["ab", {bold "cd"}, "ef"]"#);
+    d.app.set_caret_pos(at(ROOT, 1));
+    d.app.bold();
+    assert_eq!(shape(&d, NodeId(3)), "a{}b{cd}ef");
+    let TextNodeRef::Span(new) = span(&d, 0) else {
+        unreachable!()
+    };
+    d.app.select_span(new);
+    assert_eq!(
+        shape(&d, NodeId(3)),
+        "a{}b{cd}ef",
+        "the selected span was unwrapped"
+    );
+    assert_eq!(d.app.selected_span(), Some(new));
+    d.app
+        .edit_control(rootpoint_protocol::StyleOption::Italic(true));
+    assert!(
+        matches!(
+            &content(&d, NodeId(3)).root.spans()[0].style,
+            rootpoint_model::SpanChoice::Custom(s) if s.italic == Some(true) && s.bold == Some(true)
+        ),
+        "the control did not change the selected span"
+    );
+    d.app.set_caret_pos(at(ROOT, 4));
+    assert_eq!(
+        shape(&d, NodeId(3)),
+        "ab{cd}ef",
+        "the empty span left was kept"
+    );
+}

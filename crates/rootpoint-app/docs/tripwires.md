@@ -74,12 +74,13 @@ store of `issue@rootpoint-app@browser-autosave`.
 **Re-entry:** at its firing, or at the design of video, as the session proposed and the owner
 approved; and the standing-state review before every merge, the home's standing re-entry.
 
-## Guarding `design@rootpoint-app@editor-overlay`: the frames of no space mislead the author about the caret's span `##frames-mislead`
+## Guarding `design@rootpoint-app@editor-overlay`: the frames of no space mislead the author about the caret's text node `##frames-mislead`
 
 T1 of the premortem of the milestone on rich text, recorded on the owner's word.
 
 **Fires when:** the owner reports, on two occasions after the frames landed, that they typed into a
-span they did not mean to, or that a frame hid a letter they needed to read.
+text node, the root or a span, they did not mean to, or that a frame hid a letter they needed to
+read.
 **Response:** reopen `design@rootpoint-app@editor-overlay` for the frames, toward space reserved
 for them, `rejected@rootpoint-app@reserved-frame-space`, which needs
 `goal@rootpoint-app@faithful-slide-view` relaxed, as the owner said they might, or another mark of

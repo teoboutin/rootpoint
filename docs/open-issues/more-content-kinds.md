@@ -34,7 +34,10 @@ Leads for inline maths, none decided, from the milestone on rich text:
 - the built-in Noto Sans has no `MATH` table: the table tags of each of its four files,
   `path@rootpoint-render@fonts/NotoSans-Regular.ttf` and its bold, italic and bold italic, read by a
   script, are DSIG, GDEF, GPOS, GSUB, OS/2, cmap, cvt, fpgm, gasp, glyf, head, hhea, hmtx, loca,
-  maxp, name, post and prep; maths would need a font of its own.
+  maxp, name, post and prep; maths would need a font of its own;
+- inline maths and the equation kind could share one layout of a formula and differ in what they
+  add, numbering and a reference, as TeX's inline and display styles share one; a lead of the
+  session's, not a decision.
 
 ### Why it matters
 

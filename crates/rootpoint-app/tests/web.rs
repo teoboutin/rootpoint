@@ -378,9 +378,9 @@ fn f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation() {
     stop.forget();
 }
 
-/// While a text is edited, Ctrl+B, Ctrl+I and Ctrl+Space never reach the browser's own action, and
-/// outside editing the browser keeps them: the window's listener reads a flag, which an editor
-/// sets at each frame.
+/// Undo and redo never reach the browser's own action; while a text is edited, Ctrl+A, Ctrl+B,
+/// Ctrl+I and Ctrl+Space do not either, and outside editing the browser keeps them: the window's
+/// listener reads a flag, which an editor sets at each frame.
 #[cfg(target_arch = "wasm32")]
 #[test]
 fn the_keys_of_editing_are_kept_from_the_browser_only_while_editing() {
@@ -409,11 +409,21 @@ fn the_keys_of_editing_are_kept_from_the_browser_only_while_editing() {
         event.default_prevented()
     };
     let key = |name: &str, ctrl: bool| key_with(name, ctrl, false);
-    for name in ["b", "i", " "] {
+    for name in ["a", "b", "i", " "] {
         assert!(!key(name, true), "Ctrl+{name:?} kept outside editing");
     }
+    for name in ["z", "y"] {
+        assert!(
+            key(name, true),
+            "Ctrl+{name:?}, undo or redo, reached the browser"
+        );
+        assert!(
+            key_with(name, false, true),
+            "Meta+{name:?} reached the browser"
+        );
+    }
     editing.set(true);
-    for name in ["b", "i", " "] {
+    for name in ["a", "b", "i", " "] {
         assert!(
             key(name, true),
             "Ctrl+{name:?} reached the browser while editing"
