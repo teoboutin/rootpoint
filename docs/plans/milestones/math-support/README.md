@@ -263,7 +263,8 @@ What exists today, at each site the work touches:
   `UNWRAP_VARIANT_NEWTYPES` and `IMPLICIT_SOME` and the default escaping of strings.
 - **The renderer.** `layout_text` lays a text's string out with Parley's `ranged_builder`, each
   span's values over its byte range, with a font stack of the text's family then `BUILTIN_SANS`,
-  "Noto Sans" before #builtin-open-sans, four files embedded by `BUILTIN_FONTS`; `render_slide` draws a text area and an image
+  "Noto Sans" before #builtin-open-sans, four files embedded by `BUILTIN_FONTS`, and after it
+  Open Sans then Libertinus Math; `render_slide` draws a text area and an image
   area, and the report names `missing_glyphs`; no `InlineBox` is used; ttf-parser is in no crate's
   tree for the browser's target, `cargo tree -i ttf-parser --target wasm32-unknown-unknown` printing
   nothing.

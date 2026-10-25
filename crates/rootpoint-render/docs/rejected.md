@@ -37,7 +37,7 @@ for 44 rare symbols, whose absence the owner judged not much of a problem, by
 `live`. A second family adds a name to the model's `BUILTIN_FAMILIES`, which saved files write, and
 the weight of its four static styles to every build: about 2 MB, an estimate from the two sans
 families measured in `path@rootpoint@docs/grounding/math-typesetting.md`, section 4, 2.1 MB and
-2.2 MB, where the owner named one preferred font, by `design@rootpoint-render@builtin-open-sans`.
+2.2 MB.
 
 ### The plain build of Open Sans `##open-sans-plain-build`
 
