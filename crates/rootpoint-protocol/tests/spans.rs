@@ -6,7 +6,7 @@ mod common;
 
 use common::*;
 use rootpoint_model::*;
-use rootpoint_protocol::{Reply, Session};
+use rootpoint_protocol::{Command, Reply, Session, SpanOption, SpanStyleCommand};
 
 /// A session holding one slide whose area n2 holds `text`'s tree, in the style Body.
 fn one_text(tree: &str) -> (Session, MemoryFiles) {
@@ -81,8 +81,8 @@ fn a_script_of_the_span_commands_gives_its_replies() {
     assert_eq!(replies.concat(), script("spans.replies"));
 }
 
-/// Each command applies the operation the milestone's mapping table gives it: the document after
-/// the command equals the document after `apply` of that operation.
+/// Each command applies one operation, the one listed beside it: the document after the command
+/// equals the document after `apply` of that operation.
 #[test]
 fn each_span_command_applies_its_operation() {
     let setup = "span-style add \"Term\" italic";
@@ -426,4 +426,66 @@ fn a_missing_span_style_is_named_by_the_render() {
     ok(&mut s, &mut files, "open-copy deck");
     let reply = ok(&mut s, &mut files, "render s1 out.png 160 90");
     assert!(reply.ends_with(" span-styles=t3:Term"), "{reply}");
+}
+
+/// `span-styles` writes a built-in family the binary does not carry, which only a file edited by
+/// hand holds, by its name, as `styles` does, so the reply hides no value the table holds.
+#[test]
+fn span_styles_names_a_family_the_binary_does_not_carry() {
+    let (mut s, mut files) = one_text("[\"ab\"]");
+    ok(&mut s, &mut files, "span-style add \"Term\" bold");
+    let mut doc = s.document().clone();
+    doc.span_styles.get_mut("Term").unwrap().font = Some(FontRef::Builtin("serif".into()));
+    files
+        .files
+        .insert("deck/presentation.ron".into(), save_ron(&doc).into_bytes());
+    ok(&mut s, &mut files, "open-copy deck");
+    assert_eq!(
+        ok(&mut s, &mut files, "span-styles"),
+        "\"Term\" bold font=serif"
+    );
+}
+
+/// A command built through the API that the grammar would refuse is refused by the session too, so
+/// that every command a session runs prints back as a line that parses.
+#[test]
+fn a_command_the_grammar_refuses_is_refused_when_built_through_the_api() {
+    let (mut s, mut files) = one_text("[{bold \"ab\"}]");
+    ok(&mut s, &mut files, "span-style add \"Term\" italic");
+    let commands = [
+        Command::Span {
+            span: SpanId(3),
+            style: Vec::new(),
+        },
+        Command::SpanStyle(SpanStyleCommand::Add {
+            name: "Key".into(),
+            options: vec![SpanOption::Custom],
+        }),
+        Command::SpanStyle(SpanStyleCommand::Set {
+            name: "Term".into(),
+            options: vec![SpanOption::Named("Term".into())],
+        }),
+    ];
+    for command in commands {
+        let doc = s.document().clone();
+        let line = command.to_string();
+        assert!(rootpoint_protocol::parse_command(&line).is_err(), "{line}");
+        let reply = s.run(command, &mut files);
+        assert!(matches!(reply, Reply::Err(_)), "`{line}` gave {reply:?}");
+        assert_eq!(s.document(), &doc, "`{line}`");
+    }
+}
+
+/// `text` with options and no tree is refused on an image area, which has no text style to change.
+#[test]
+fn text_with_no_tree_is_refused_on_an_image() {
+    let mut files = MemoryFiles::holding(&["cat.png"]);
+    let mut s = Session::new();
+    ok(&mut s, &mut files, "add-slide");
+    ok(&mut s, &mut files, "import cat.png");
+    ok(&mut s, &mut files, "image n2 a3 fit");
+    assert_eq!(
+        refused(&mut s, &mut files, "text n2 bold"),
+        "n2 holds an image: `text` with a tree makes it a text"
+    );
 }

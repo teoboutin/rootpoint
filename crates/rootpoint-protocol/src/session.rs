@@ -763,6 +763,13 @@ impl Session {
                 .map(|(name, style)| {
                     let mut words = vec![quote_always(name)];
                     words.extend(SpanOption::values_of(style).iter().map(|o| o.to_string()));
+                    // A built-in family the binary does not carry, which only a file edited by
+                    // hand holds, is written as its name, as `styles` writes it.
+                    if let Some(FontRef::Builtin(family)) = &style.font
+                        && family != "sans"
+                    {
+                        words.push(format!("font={}", quote(family)));
+                    }
                     words.join(" ")
                 })
                 .collect::<Vec<_>>()
@@ -1324,6 +1331,11 @@ impl Session {
                 span,
             },
             Command::Span { span, style } => {
+                // The grammar refuses a `span` with no option; a command built through the API is
+                // held to the same rule, so that it prints back as a line that parses.
+                if style.is_empty() {
+                    return Err("missing a span's style option".to_owned());
+                }
                 let (area, current) = self.span_area(span)?;
                 Op::SetSpanStyle {
                     area,
@@ -1400,7 +1412,7 @@ impl Session {
 
     /// The operations of `text`: with a tree, `Op::SetContent` gives the area its style and an
     /// empty text, then `Op::SetText` the tree, every span with a new id; with none, the area keeps
-    /// its tree and its ids, and `Op::SetContent` gives it the style alone.
+    /// its tree and its ids, and `Op::SetContent` gives it the style alone, refused on an image.
     fn text_ops(
         &self,
         area: NodeId,
@@ -1458,6 +1470,13 @@ impl Session {
                         content: Content::Text(t),
                         ..
                     })) => t.root.clone(),
+                    // An image has no text style to change, and no tree to keep.
+                    Some(Node::Area(_)) => {
+                        return Err(format!(
+                            "{area} holds an image: `text` with a tree makes it a text"
+                        ));
+                    }
+                    // A node that is no area is refused by `Op::SetContent`.
                     _ => TextNode::default(),
                 };
                 vec![content(current)]
@@ -1546,13 +1565,19 @@ impl Session {
         Ok(choice)
     }
 
-    /// The values `options` give a span style whose values were `values`.
+    /// The values `options` give a span style whose values were `values`. `style=` and `custom`
+    /// choose a span's style, not a value, and are refused, as the grammar refuses them.
     fn span_values(
         &self,
         mut values: SpanStyle,
         options: Vec<SpanOption>,
     ) -> Result<SpanStyle, String> {
         for option in options {
+            if matches!(option, SpanOption::Named(_) | SpanOption::Custom) {
+                return Err(format!(
+                    "`{option}` chooses a span's style, not a value of a span style"
+                ));
+            }
             self.apply_span_value(&mut values, option)?;
         }
         Ok(values)

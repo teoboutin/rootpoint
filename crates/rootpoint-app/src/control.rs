@@ -251,6 +251,7 @@ impl crate::App {
                                 | Command::View
                                 | Command::Store
                                 | Command::Styles
+                                | Command::SpanStyles
                                 | Command::Assets { .. }
                                 | Command::Render { .. }
                                 | Command::Control
@@ -277,6 +278,7 @@ impl crate::App {
             | Command::View
             | Command::Store
             | Command::Styles
+            | Command::SpanStyles
             | Command::Assets { .. }
             | Command::Render { .. } => self.session.run(command, &mut *self.files),
             Command::Control => {

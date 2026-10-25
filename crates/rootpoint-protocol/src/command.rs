@@ -89,7 +89,7 @@ pub enum Command {
         b: NodeId,
     },
     /// Set an area's text tree, every span given a new id, or, with no tree, keep it and its ids
-    /// and change the style alone. Its style is the area's current one, or the style a new area
+    /// and change the style alone, which an image area refuses. Its style is the area's current one, or the style a new area
     /// takes when the area holds an image; `style=` names a style, `custom` copies the values drawn
     /// into the text's own, and any other option changes the values drawn, which makes a named
     /// style custom.
@@ -245,7 +245,8 @@ pub struct TreeSpan {
 pub enum SpanOption {
     /// `style="<name>"`: name a span style of the table.
     Named(String),
-    /// `custom`: copy the values the span draws with into its own.
+    /// `custom`: copy the values the span's named style sets into its own, the others still taken
+    /// from its parent.
     Custom,
     Size(f64),
     Bold(bool),

@@ -287,6 +287,8 @@ fn the_window_holds_control_at_start_and_the_queries_need_none() {
     assert_eq!(app.session().document(), &before);
     assert!(one(&mut app, &path, "tree").starts_with("ok s1"));
     assert!(one(&mut app, &path, "view").starts_with("ok selected="));
+    assert!(one(&mut app, &path, "styles").starts_with("ok \""));
+    assert_eq!(one(&mut app, &path, "span-styles"), "ok");
     assert!(one(&mut app, &path, "render s1 s1.png 192 108").starts_with("ok"));
     assert!(dir.join("s1.png").exists());
 }

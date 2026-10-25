@@ -122,9 +122,12 @@ takes the whole tree on one line, `text n3 ["Let x be a ", {bold "prime"}, " num
 items separated by commas `]`, each a quoted text or a span, `{` its options, then its items `}`;
 a quoted text alone is a tree of one run, and spaces around the brackets, the braces and the commas
 are free. `tree` prints each span with its id first, `{t41 bold "prime"}`, and `text` gives every
-span of its tree a new id, ignoring any given, so `tree`'s line given back to `text` copies a text.
+span of its tree a new id, ignoring any given, so `tree`'s line given back to `text` copies a text,
+but for a custom span that sets no value, which only a file edited by hand holds and `text`
+refuses.
 `text` replies the new spans' ids. With options and no tree, `text n3 bold` changes the area's style
-alone and keeps its spans and their ids. Outside a quoted text, `[`, `]`, `{`, `}` and `,` are words
+alone and keeps its spans and their ids; an image area refuses it. Outside a quoted text, `[`, `]`,
+`{`, `}` and `,` are words
 of their own, so a path holding one is quoted.
 
 The commands that change a tree name a text node, the root of an area's text by the area's id or a
@@ -140,7 +143,7 @@ in order over the span's current style, so a value set on a named span makes it 
 span that would set nothing is refused: `unwrap` removes the span instead. `span-style add`,
 `span-style set`, `span-style rename` and `span-style remove` change the table of span styles, as
 the `style` commands change the text styles, and `span-styles` lists it, each entry with the values
-it sets. A command naming a span style or a font asset the document lacks is refused; a file naming
+it sets, separated by `; `. A command naming a span style or a font asset the document lacks is refused; a file naming
 a missing span style loads, its span drawn with its parent's values, and `render` names the span and
 the style after `span-styles=`.
 
