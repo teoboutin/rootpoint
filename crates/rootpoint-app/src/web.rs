@@ -1,6 +1,7 @@
 //! What the browser build does through the page: the pickers that read a presentation directory,
 //! a pack or an asset's file, the reading of a file dropped on the window, the download of a pack,
-//! full screen, and the question before the page unloads. A picker reads its files in a task of the
+//! full screen, the question before the page unloads, and the listener that keeps the editor's
+//! keys from the browser. A picker reads its files in a task of the
 //! page, after the frame that asked for them, so it puts them in an inbox that `App::frame`
 //! empties, waking the window when they are read.
 
