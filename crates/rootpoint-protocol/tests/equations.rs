@@ -198,3 +198,15 @@ fn a_command_the_grammar_refuses_is_refused_through_the_api() {
     assert!(matches!(s.run(command, &mut files), Reply::Err(_)));
     assert_eq!(s.document(), &before);
 }
+
+/// `text` with options and no tree changes a text's style alone, and refuses an equation, naming
+/// what the area holds.
+#[test]
+fn text_with_no_tree_refuses_an_equation_by_its_kind() {
+    let (mut s, mut files) = two_areas();
+    ok(&mut s, &mut files, r"equation n3 $\alpha$");
+    match s.execute("text n3 bold", &mut files) {
+        Some(Reply::Err(reason)) => assert!(reason.contains("n3 holds an equation"), "{reason}"),
+        other => panic!("{other:?}"),
+    }
+}

@@ -426,8 +426,9 @@ impl App {
         }
     }
 
-    /// Set the selected area's content to an equation with an empty formula, numbered, fitted, in
-    /// the colour a new equation takes.
+    /// Set the selected area's content to an equation with an empty formula, by `equation` with no
+    /// option: an area that holds no equation takes a new one's options, numbered, fitted and in the
+    /// Body style's colour, and an equation keeps its own.
     pub fn set_equation_content(&mut self) {
         if self.socket_holds() {
             return;

@@ -6,8 +6,8 @@ mod common;
 use common::*;
 use rootpoint_model::*;
 use rootpoint_protocol::{
-    AssetFilter, Command, Reply, Session, SpanField, SpanOption, SpanStyleCommand, Store,
-    StyleCommand, StyleOption, TextTarget, TreeItem, TreeSpan, parse_command,
+    AssetFilter, Command, EquationOption, Reply, Session, SpanField, SpanOption, SpanStyleCommand,
+    Store, StyleCommand, StyleOption, TextTarget, TreeItem, TreeSpan, parse_command,
 };
 
 #[test]
@@ -19,6 +19,12 @@ fn every_command_prints_back_as_it_parses() {
             dir: "a talk".into(),
         },
         Command::OpenCopy { dir: "deck".into() },
+        // A path that starts with `$` is quoted, as a bare one reads as a formula.
+        Command::Open { dir: "$a".into() },
+        Command::Import {
+            from: "$5$.png".into(),
+            to: Some("$x.png".into()),
+        },
         Command::Import {
             from: "/home/me/cat.png".into(),
             to: None,
@@ -112,6 +118,20 @@ fn every_command_prints_back_as_it_parses() {
             fit: ImageFit::Fill,
         },
         Command::Clear { area: NodeId(4) },
+        Command::Equation {
+            area: NodeId(4),
+            formula: rootpoint_math::Formula::parse(r"\frac{a}{b} \\ \$").unwrap(),
+            options: vec![
+                EquationOption::Numbered(false),
+                EquationOption::Size(EquationSize::AtMost(32.5)),
+                EquationOption::Colour(Rgba {
+                    r: 1,
+                    g: 2,
+                    b: 3,
+                    a: 4,
+                }),
+            ],
+        },
         Command::AssetMove {
             asset: AssetId(5),
             to: "img/a cat.png".into(),

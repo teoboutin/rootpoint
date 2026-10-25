@@ -1456,7 +1456,8 @@ impl Session {
 
     /// The operations of `text`: with a tree, `Op::SetContent` gives the area its style and an
     /// empty text, then `Op::SetText` the tree, every span with a new id; with none, the area keeps
-    /// its tree and its ids, and `Op::SetContent` gives it the style alone, refused on an image.
+    /// its tree and its ids, and `Op::SetContent` gives it the style alone, refused on an image or an
+    /// equation.
     fn text_ops(
         &self,
         area: NodeId,
@@ -1514,10 +1515,14 @@ impl Session {
                         content: Content::Text(t),
                         ..
                     })) => t.root.clone(),
-                    // An image has no text style to change, and no tree to keep.
-                    Some(Node::Area(_)) => {
+                    // An image or an equation has no text style to change, and no tree to keep.
+                    Some(Node::Area(a)) => {
+                        let kind = match a.content {
+                            Content::Equation(_) => "an equation",
+                            _ => "an image",
+                        };
                         return Err(format!(
-                            "{area} holds an image: `text` with a tree makes it a text"
+                            "{area} holds {kind}: `text` with a tree makes it a text"
                         ));
                     }
                     // A node that is no area is refused by `Op::SetContent`.

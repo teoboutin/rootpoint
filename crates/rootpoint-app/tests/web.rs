@@ -117,7 +117,7 @@ fn the_sample_s_slide_of_an_equation_is_the_native_golden_image() {
 fn is_the_golden_image(slide: SlideId, golden: &[u8], name: &str) {
     let bytes = sample_slide(slide);
     let golden = image::load_from_memory(golden).unwrap().to_rgba8();
-    // A blessing run compares against the image it writes: `GOLDEN` holds the bytes compiled in
+    // A blessing run compares against the image it writes: `golden` holds the bytes compiled in
     // before the write, which a first run after a change would otherwise fail against.
     #[cfg(not(target_arch = "wasm32"))]
     let golden = if std::env::var_os("ROOTPOINT_BLESS").is_some() {

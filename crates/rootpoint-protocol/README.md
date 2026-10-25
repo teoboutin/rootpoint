@@ -126,7 +126,7 @@ span of its tree a new id, ignoring any given, so `tree`'s line given back to `t
 but for what only a file edited by hand holds: a custom span that sets no value, which `text`
 refuses, and a built-in family the binary does not carry, which `tree` leaves out.
 `text` replies the new spans' ids. With options and no tree, `text n3 bold` changes the area's style
-alone and keeps its spans and their ids; an image area refuses it. Outside a quoted text, `[`, `]`,
+alone and keeps its spans and their ids; an image or an equation area refuses it. Outside a quoted text, `[`, `]`,
 `{`, `}` and `,` are words
 of their own, so a path holding one is quoted.
 

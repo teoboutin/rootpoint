@@ -90,8 +90,8 @@ pub enum Command {
         b: NodeId,
     },
     /// Set an area's text tree, every span given a new id, or, with no tree, keep it and its ids
-    /// and change the style alone, which an image area refuses. Its style is the area's current one, or the style a new area
-    /// takes when the area holds an image; `style=` names a style, `custom` copies the values drawn
+    /// and change the style alone, which an image or an equation area refuses. Its style is the
+    /// area's current one, or the style a new area takes when the area holds no text; `style=` names a style, `custom` copies the values drawn
     /// into the text's own, and any other option changes the values drawn, which makes a named
     /// style custom.
     Text {
@@ -1029,9 +1029,11 @@ fn read_quoted(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) -> Result<S
     }
 }
 
-/// A word as the printer writes it: bare when it can be read back bare, quoted otherwise.
+/// A word as the printer writes it: bare when it can be read back bare, quoted otherwise. A word
+/// that starts with `$` is quoted, since the lexer reads a bare one as a formula.
 pub(crate) fn quote(text: &str) -> String {
     let bare = !text.is_empty()
+        && !text.starts_with('$')
         && !text.contains(|c: char| {
             c.is_whitespace() || c == '"' || c == '\\' || PUNCTUATION.contains(&c)
         });

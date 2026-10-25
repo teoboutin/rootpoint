@@ -62,7 +62,8 @@ pub struct Report {
     pub font_fallbacks: Vec<NodeId>,
     /// The text areas holding a character that no font of its font stack has, drawn as a box: the
     /// text's or its span's font, then the built-in fonts; a font asset outside the stack is not
-    /// searched.
+    /// searched. Also the equation areas whose formula, or number, holds a character its font
+    /// lacks.
     pub missing_glyphs: Vec<NodeId>,
     /// The text areas naming a style the document's table lacks, with the name; each is drawn with
     /// `TextStyle::default()`.
@@ -72,7 +73,7 @@ pub struct Report {
     pub missing_span_styles: Vec<(NodeId, SpanId, String)>,
     /// The equation areas whose formula holds a command the math subset does not know, drawn red.
     pub unknown_commands: Vec<NodeId>,
-    /// The text areas whose glyphs could not all be drawn, as from a damaged font file.
+    /// The text and equation areas whose glyphs could not all be drawn, as from a damaged font file.
     pub undrawn_text: Vec<NodeId>,
     /// For each text area, the byte range of its text on each line, as laid out.
     pub lines: Vec<(NodeId, Vec<Range<usize>>)>,

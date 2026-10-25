@@ -66,8 +66,9 @@ const NUMBER_GAP: f64 = 1.0;
 /// for `Fit` and at its size for `AtMost`, then scaled by the largest factor at which it fits the
 /// area less the padding of a text, with room for its number on both sides, a factor no greater
 /// than 1 for `AtMost`; the formula centred, the number `(n)` at the right edge, in the built-in
-/// sans at the Body style's size, centred on the formula's axis. One layout and one multiplication
-/// suffice, since a layout scales exactly, `design@rootpoint-math@layout-scales-exactly`.
+/// sans at the Body style's size, centred on the formula's axis, or on its rows when it has
+/// several. One layout and one multiplication suffice, since a layout scales exactly,
+/// `design@rootpoint-math@layout-scales-exactly`.
 pub(crate) fn lay_out_equation(
     doc: &Document,
     fonts: &mut FontSet,
@@ -88,9 +89,13 @@ pub(crate) fn lay_out_equation(
     };
     let layout = lay_out(&equation.formula, &fonts.math.font, Style::Display, base);
     let number = number.map(|n| {
+        // Upright and regular whatever the Body style's weight and slant, as an equation number
+        // is set beside its formula.
         let style = TextStyle {
             font: FontRef::Builtin("sans".to_owned()),
             colour: equation.colour,
+            bold: false,
+            italic: false,
             ..body.clone()
         };
         crate::text::layout_text(fonts, &format!("({n})"), &style, &[], f32::MAX)
@@ -111,11 +116,17 @@ pub(crate) fn lay_out_equation(
         inner.x + (inner.w - scale * layout.width) / 2.0,
         top + scale * layout.ascent,
     );
-    let axis = origin.1 - scale * layout.axis;
+    // A number stands beside the formula as a whole, so it is centred on the rows when there are
+    // several, and on the one row's axis otherwise.
+    let middle = if equation.formula.rows.len() > 1 {
+        top + scale * height / 2.0
+    } else {
+        origin.1 - scale * layout.axis
+    };
     let number = number.map(|n| {
         let w = f64::from(n.layout.width());
         let h = f64::from(n.layout.height());
-        (n, (inner.x + inner.w - w, axis - h / 2.0))
+        (n, (inner.x + inner.w - w, middle - h / 2.0))
     });
     EquationLayout {
         formula: AreaFormula {
@@ -195,6 +206,37 @@ mod tests {
     use rootpoint_math::Formula;
     use vello_cpu::kurbo::Affine;
     use vello_cpu::{Pixmap, RasterizerSettings, RenderContext, RenderSettings, Resources};
+
+    /// The number of an equation of one row is centred on its axis, and that of several rows on
+    /// the rows.
+    #[test]
+    fn the_number_stands_on_the_axis_of_one_row_and_in_the_middle_of_several() {
+        let doc = Document::default();
+        let mut fonts = FontSet::new();
+        let area = SlideRect {
+            x: 0.0,
+            y: 0.0,
+            w: 1920.0,
+            h: 1080.0,
+        };
+        for text in ["x = 1", r"x &= 1 \\ y &= 2 \\ z &= 3"] {
+            let equation = doc.new_equation(Formula::parse(text).unwrap());
+            let laid = lay_out_equation(&doc, &mut fonts, &equation, Some(1), area);
+            let f = &laid.formula;
+            let (n, at) = laid.number.unwrap();
+            let centre = at.1 + f64::from(n.layout.height()) / 2.0;
+            let expected = if equation.formula.rows.len() > 1 {
+                let top = f.origin.1 - f.scale * f.layout.ascent;
+                top + f.scale * (f.layout.ascent + f.layout.descent) / 2.0
+            } else {
+                f.origin.1 - f.scale * f.layout.axis
+            };
+            assert!(
+                (centre - expected).abs() < 1e-6,
+                "{text}: {centre} ≠ {expected}"
+            );
+        }
+    }
 
     /// The reference formulas of the slice #math-layout.
     const REFERENCE: [&str; 5] = [
