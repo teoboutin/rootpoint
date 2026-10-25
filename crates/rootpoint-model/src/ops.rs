@@ -159,6 +159,35 @@ pub enum Op {
         area: NodeId,
         root: TextNode,
     },
+    /// Add a named span style; the name is not empty and not in the span style table.
+    AddSpanStyle {
+        name: String,
+        style: SpanStyle,
+    },
+    /// Replace a named span style's values, which every span naming it then draws with.
+    SetSpanStyleValues {
+        name: String,
+        style: SpanStyle,
+    },
+    /// Rename a span style, and every span naming it with it. Refused while a span names `to`.
+    RenameSpanStyle {
+        from: String,
+        to: String,
+    },
+    /// Remove a span style, and give the spans naming it the replacement `into`: another span
+    /// style, or a copy of the removed values each; with none, they keep naming the removed style.
+    RemoveSpanStyle {
+        name: String,
+        into: Option<Replacement>,
+    },
+    /// Put a removed span style back, and make `users` name it again: the inverse of
+    /// `RemoveSpanStyle`, as `RestoreStyle` is of `RemoveStyle`.
+    RestoreSpanStyle {
+        name: String,
+        style: SpanStyle,
+        users: Vec<(NodeId, SpanId)>,
+        into: Option<Replacement>,
+    },
     /// Replace the whole document, as a reload of its file changed outside the editor does; the
     /// inverse holds the document replaced, so an undo brings the editor's own back.
     ReplaceDocument {
@@ -198,6 +227,11 @@ pub enum OpError {
     UnknownStyle(String),
     /// The name is taken, by a style of the table.
     StyleExists(String),
+    /// A span names the span style a rename would give its name to.
+    SpanStyleNamed {
+        name: String,
+        span: SpanId,
+    },
     /// A text names the style a rename would give its name to.
     StyleNamed {
         name: String,
@@ -536,6 +570,72 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             crate::ops::renumber_spans(root, doc);
             Ok(())
         }),
+        Op::AddSpanStyle { name, style } => {
+            free_span_style_name(doc, &name)?;
+            doc.span_styles.insert(name.clone(), style);
+            Ok(Op::RemoveSpanStyle { name, into: None })
+        }
+        Op::SetSpanStyleValues { name, style } => {
+            let slot = doc
+                .span_styles
+                .get_mut(&name)
+                .ok_or_else(|| OpError::UnknownStyle(name.clone()))?;
+            let old = std::mem::replace(slot, style);
+            Ok(Op::SetSpanStyleValues { name, style: old })
+        }
+        // As `RenameStyle`: a span naming `to` is refused, since the inverse would rename it back
+        // with the others.
+        Op::RenameSpanStyle { from, to } => {
+            free_span_style_name(doc, &to)?;
+            if let Some(&(_, span)) = span_style_users(doc, &to).first() {
+                return Err(OpError::SpanStyleNamed { name: to, span });
+            }
+            let style = doc
+                .span_styles
+                .remove(&from)
+                .ok_or_else(|| OpError::UnknownStyle(from.clone()))?;
+            doc.span_styles.insert(to.clone(), style);
+            for (area, span) in span_style_users(doc, &from) {
+                set_span_choice(doc, area, span, SpanChoice::Named(to.clone()))?;
+            }
+            Ok(Op::RenameSpanStyle { from: to, to: from })
+        }
+        Op::RemoveSpanStyle { name, into } => {
+            let style = doc
+                .span_styles
+                .remove(&name)
+                .ok_or_else(|| OpError::UnknownStyle(name.clone()))?;
+            let users = span_style_users(doc, &name);
+            let replacement = match &into {
+                None => None,
+                Some(Replacement::Named(other)) => Some(SpanChoice::Named(other.clone())),
+                Some(Replacement::Custom) => Some(SpanChoice::Custom(style.clone())),
+            };
+            if let Some(choice) = replacement {
+                for &(area, span) in &users {
+                    set_span_choice(doc, area, span, choice.clone())?;
+                }
+            }
+            Ok(Op::RestoreSpanStyle {
+                name,
+                style,
+                users,
+                into,
+            })
+        }
+        Op::RestoreSpanStyle {
+            name,
+            style,
+            users,
+            into,
+        } => {
+            free_span_style_name(doc, &name)?;
+            doc.span_styles.insert(name.clone(), style);
+            for (area, span) in users {
+                set_span_choice(doc, area, span, SpanChoice::Named(name.clone()))?;
+            }
+            Ok(Op::RemoveSpanStyle { name, into })
+        }
         Op::RemoveStyle { name, into } => {
             let style = doc
                 .styles
@@ -721,6 +821,51 @@ impl Seq {
             });
         }
         Ok(())
+    }
+}
+
+/// Refuse a span style name that is empty or in the span style table.
+fn free_span_style_name(doc: &Document, name: &str) -> Result<(), OpError> {
+    if name.is_empty() {
+        Err(OpError::EmptyStyleName)
+    } else if doc.span_styles.contains_key(name) {
+        Err(OpError::StyleExists(name.to_owned()))
+    } else {
+        Ok(())
+    }
+}
+
+/// The spans that name the span style `name`, each with its area, in the order of the slides, of
+/// their trees and of each text.
+pub fn span_style_users(doc: &Document, name: &str) -> Vec<(NodeId, SpanId)> {
+    let mut out = Vec::new();
+    for area in doc.slides.iter().flat_map(|s| s.root.areas()) {
+        if let Content::Text(text) = &area.content {
+            for span in text.root.spans() {
+                if matches!(&span.style, SpanChoice::Named(n) if n == name) {
+                    out.push((area.id, span.id));
+                }
+            }
+        }
+    }
+    out
+}
+
+/// Give the span `span` of the text of the area `area` the style `choice`.
+fn set_span_choice(
+    doc: &mut Document,
+    area: NodeId,
+    span: SpanId,
+    choice: SpanChoice,
+) -> Result<(), OpError> {
+    match &mut area_mut(doc, area)?.content {
+        Content::Text(text) => {
+            find_span(&mut text.root, span)
+                .ok_or(OpError::UnknownSpan(span))?
+                .style = choice;
+            Ok(())
+        }
+        Content::Image(_) => Err(OpError::NotAText(area)),
     }
 }
 

@@ -1045,3 +1045,159 @@ proptest! {
         }
     }
 }
+
+/// A document with the span style "Term", italic, and one text whose span `t` names it.
+fn with_term() -> (Document, NodeId, SpanId) {
+    let (mut doc, area) = one_text("a term here");
+    apply(
+        &mut doc,
+        Op::AddSpanStyle {
+            name: "Term".to_owned(),
+            style: SpanStyle {
+                italic: Some(true),
+                ..SpanStyle::default()
+            },
+        },
+    )
+    .unwrap();
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 2..6,
+            style: SpanChoice::Named("Term".to_owned()),
+        },
+    )
+    .unwrap();
+    let span = first_span(&doc, area);
+    (doc, area, span)
+}
+
+#[test]
+fn a_span_style_removed_with_a_copy_gives_its_users_its_values_and_its_undo_names_it_again() {
+    let (mut doc, area, span) = with_term();
+    let before = doc.clone();
+    let inverse = apply(
+        &mut doc,
+        Op::RemoveSpanStyle {
+            name: "Term".to_owned(),
+            into: Some(Replacement::Custom),
+        },
+    )
+    .unwrap();
+    assert!(!doc.span_styles.contains_key("Term"));
+    let style = &text_of(&doc, area).root.spans()[0].style;
+    assert_eq!(
+        style,
+        &SpanChoice::Custom(SpanStyle {
+            italic: Some(true),
+            ..SpanStyle::default()
+        })
+    );
+    apply(&mut doc, inverse).unwrap();
+    assert!(doc.same_content(&before));
+    assert_eq!(span_style_users(&doc, "Term"), vec![(area, span)]);
+}
+
+#[test]
+fn a_span_style_removed_with_no_replacement_leaves_a_breach() {
+    let (mut doc, area, span) = with_term();
+    apply(
+        &mut doc,
+        Op::RemoveSpanStyle {
+            name: "Term".to_owned(),
+            into: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        doc.breaches(),
+        vec![Breach::MissingSpanStyle {
+            area,
+            span,
+            name: "Term".to_owned()
+        }]
+    );
+}
+
+#[test]
+fn a_span_style_rename_renames_its_spans_and_is_refused_onto_a_named_one() {
+    let (mut doc, area, span) = with_term();
+    apply(
+        &mut doc,
+        Op::RenameSpanStyle {
+            from: "Term".to_owned(),
+            to: "Word".to_owned(),
+        },
+    )
+    .unwrap();
+    assert_eq!(span_style_users(&doc, "Word"), vec![(area, span)]);
+    // A span naming a style the table lacks blocks a rename onto that name.
+    apply(
+        &mut doc,
+        Op::SetSpanStyle {
+            area,
+            span,
+            style: SpanChoice::Named("Ghost".to_owned()),
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        apply(
+            &mut doc,
+            Op::RenameSpanStyle {
+                from: "Word".to_owned(),
+                to: "Ghost".to_owned(),
+            },
+        ),
+        Err(OpError::SpanStyleNamed {
+            name: "Ghost".to_owned(),
+            span
+        })
+    );
+}
+
+#[test]
+fn a_span_font_asset_cannot_be_removed_and_one_above_the_counter_is_refused() {
+    let (mut doc, area) = one_text("abc");
+    let RemoveAssetId(asset) = add_asset(
+        &mut doc,
+        Asset {
+            path: "font.ttf".to_owned(),
+        },
+    );
+    let font = |id| {
+        SpanChoice::Custom(SpanStyle {
+            font: Some(FontRef::Asset(id)),
+            ..SpanStyle::default()
+        })
+    };
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area,
+            node: TextNodeRef::Root,
+            range: 0..1,
+            style: font(asset),
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        apply(&mut doc, Op::RemoveAsset { id: asset }),
+        Err(OpError::AssetInUse(asset))
+    );
+    let far = AssetId(next_id(&doc) + 10);
+    assert!(matches!(
+        apply(
+            &mut doc,
+            Op::WrapSpan {
+                area,
+                node: TextNodeRef::Root,
+                range: 1..2,
+                style: font(far),
+            },
+        ),
+        Err(OpError::Invalid(_))
+    ));
+}
