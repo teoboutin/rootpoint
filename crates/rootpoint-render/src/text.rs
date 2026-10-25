@@ -18,6 +18,8 @@ const BUILTIN_SANS: &str = "Open Sans";
 /// The family of the built-in math font, which ends the font stack of every text.
 const BUILTIN_MATH_FAMILY: &str = "Libertinus Math";
 
+/// The four static styles of Open Sans's `noto-set` build, from googlefonts/opensans at `bd7e376`,
+/// `path@elsewhere@fonts/noto-set/ttf/`.
 const BUILTIN_FONTS: [&[u8]; 4] = [
     include_bytes!("../fonts/open-sans/OpenSans-Regular.ttf"),
     include_bytes!("../fonts/open-sans/OpenSans-Bold.ttf"),
