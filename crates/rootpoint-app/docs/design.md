@@ -402,6 +402,24 @@ owner's word: the owner proposed the edge as an invisible character the caret en
 the explicit choice the key feature, and that in practice no place has many edges meeting, since
 these trees rarely go deep, maths aside, where LaTeX has the same problem.
 
+### Backspace and Delete act in the caret's text node, selecting a span before deleting it `##delete-in-caret-node`
+
+With no selection, Backspace and Delete act on the item before or after the caret in its text node.
+A character is deleted, by the logical clusters `App::delete` reads. A span with items is selected
+whole by a first press and deleted by a second; an empty span goes at once. At a span's own start
+for Backspace, or its end for Delete, the span is unwrapped, `unwrap`, its content kept in its
+parent and the caret where it was drawn. At the root's start or end the keys do nothing.
+
+So every edit of the keys stays in the caret's text node, where typing goes,
+`design@rootpoint-app@boundary-caret-positions`, and a span's style is removed from the keyboard,
+with no style action. LyX acts the same, read in its source by the design audit of the slice that
+built the tree's caret: `site.bind` binds both keys with `confirm`, `Text::dispatch` selects a
+non-empty text inset before deleting it, `InsetText::confirmDeletion` being `!text().empty()`, and
+`Text::backspace` at an inset's start calls `dissolveInset`. The rival, deleting the character drawn
+before or after the caret in whatever text node holds it, never a span whole, edits a node the
+caret is not in, which the author does not see, and leaves an emptied span behind until the stay
+ends.
+
 ### A selection is a range of one text node, a span inside it taken whole `##selection-one-level`
 
 A selection's anchor and caret are lifted to their nearest common text node: an end inside a span of

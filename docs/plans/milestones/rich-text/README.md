@@ -741,7 +741,8 @@ character, they delete it, Backspace one character of the cluster before the car
 break or emoji, Delete the cluster after it, as the editor deleted before this slice; on a span with
 items, a first press selects the span whole and a second deletes it; an empty span goes at once; at
 a span's own start for Backspace, or its end for Delete, the span is unwrapped, its content kept and
-the caret where it was drawn; at the root's start or end, nothing.
+the caret where it was drawn; at the root's start or end, nothing. Recorded as
+`design@rootpoint-app@delete-in-caret-node`.
 
 ### #ancestor-frames
 
@@ -1065,26 +1066,25 @@ reopens #text-edit-commands.
   naming the values to clear, `clear=bold,size`. Harvested as `design@rootpoint-protocol@text-style-alone` and
   `design@rootpoint-protocol@span-value-inherit`. They blocked the merge of #span-commands.
 
-- **D8**, awaiting the owner. Open at the design audit of #tree-caret. Its text, on
-  #boundary-caret-positions: the milestone did not say what Backspace and Delete do at a span's
-  edge, and two shapes meet every binding constraint. The default, built: LyX's, read in its
-  source, Codeberg mirror `LyX-org/lyx` at commit `64141cf0e7a073e1226ec168d317618537ba0fab`:
-  `site.bind` binds both keys with `confirm`; `Text::dispatch` of `path@elsewhere@src/Text.cpp` then selects a
-  non-empty text inset before the caret on a first Backspace and deletes it on a second, since
-  `InsetText::confirmDeletion` is `!text().empty()`; and `Text::backspace` at position 0 of an
-  inset's first paragraph calls `dissolveInset`, as `Text::erase` does at the end of its last. Here: with no
-  selection, the keys act in the caret's text node; a span with items is selected by a first press
-  and deleted by a second, an empty one at once; at a span's own start for Backspace, or its end
-  for Delete, `unwrap` dissolves it; at the root's ends, nothing. Every edit then stays in the
-  caret's node, where typing goes, and the keyboard alone can remove a span's style, which no style
-  action of this slice can. The rival: the keys delete the character drawn before or after the
-  caret, in whatever text node holds it, never a span whole and never unwrapping; it is nearer to
-  a plain editor, but it edits a node the caret is not in, which the author cannot see until the
-  frames of #span-styling, and it leaves an emptied span behind until the stay ends. It blocks the
-  merge of #tree-caret. Once the owner rules, on #tree-caret's branch, the rule ruled is written
-  into `design@rootpoint-app@edit-in-place` and `design@rootpoint-app@boundary-caret-positions`,
-  the comments of `App::delete` and of its test point at those heads, and a rival not kept is
-  judged by the tests for a rejected design.
+- **D8**, ruled: accepted by the owner, "LyX behavior is perfect, good choice. I find it very
+  convenient". Open at the design audit of #tree-caret. Its text, on #boundary-caret-positions: the
+  milestone did not say what Backspace and Delete do at a span's edge, and two shapes meet every
+  binding constraint. The default, built: LyX's, read in its source, Codeberg mirror `LyX-org/lyx`
+  at commit `64141cf0e7a073e1226ec168d317618537ba0fab`: `site.bind` binds both keys with `confirm`;
+  `Text::dispatch` of `path@elsewhere@src/Text.cpp` then selects a non-empty text inset before the
+  caret on a first Backspace and deletes it on a second, since `InsetText::confirmDeletion` is
+  `!text().empty()`; and `Text::backspace` at position 0 of an inset's first paragraph calls
+  `dissolveInset`, as `Text::erase` does at the end of its last. Here: with no selection, the keys
+  act in the caret's text node; a span with items is selected by a first press and deleted by a
+  second, an empty one at once; at a span's own start for Backspace, or its end for Delete,
+  `unwrap` dissolves it; at the root's ends, nothing. Every edit then stays in the caret's node,
+  where typing goes, and the keyboard alone can remove a span's style, which no style action of
+  this slice can. The rival: the keys delete the character drawn before or after the caret, in
+  whatever text node holds it, never a span whole and never unwrapping; it is nearer to a plain
+  editor, but it edits a node the caret is not in, which the author cannot see until the frames of
+  #span-styling, and it leaves an emptied span behind until the stay ends. It blocked the merge of
+  #tree-caret. Harvested on #tree-caret's branch as `design@rootpoint-app@delete-in-caret-node`, a
+  head of its own, since it loses to another rival than the caret's positions.
 
 ## Harvest
 

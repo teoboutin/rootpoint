@@ -1444,7 +1444,7 @@ impl App {
     }
 
     /// Delete the selection, or, with none, what is after the caret or before it in its text node,
-    /// as LyX does, D8 of `milestone@plans@rich-text`: a character; a span, which a first press
+    /// `design@rootpoint-app@delete-in-caret-node`: a character; a span, which a first press
     /// selects whole and a second deletes, but an empty one at once; or, at the start of a span
     /// for Backspace and at its end for Delete, the span itself, unwrapped, its content kept. At
     /// the root's start or end the key does nothing. So every edit stays in the caret's text node,
@@ -1558,8 +1558,9 @@ impl App {
     }
 
     /// The one place the caret moves. Each empty span the caret was in and has left is unwrapped,
-    /// the inner first, `design@rootpoint-app@empty-span-unwrapped`; the caret, the anchor and the composing text are carried to where they stand after it, an anchor left in
-    /// the span to the span's place in its parent, as Shift with an arrow out of it leaves one.
+    /// the inner first, `design@rootpoint-app@empty-span-unwrapped`; the caret, the anchor and the
+    /// composing text are carried to where they stand after it, an anchor left in the span to the
+    /// span's place in its parent, as Shift with an arrow out of it leaves one.
     fn put_caret(
         &mut self,
         mut caret: CaretPos,

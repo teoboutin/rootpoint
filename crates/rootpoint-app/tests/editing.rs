@@ -765,9 +765,9 @@ fn an_empty_span_is_unwrapped_when_the_caret_leaves_it_and_at_the_stay_s_end() {
     assert_eq!(shape(&d, NodeId(3)), before, "one undo step");
 }
 
-/// Backspace and Delete stay in the caret's text node, as LyX's do, D8 of
-/// `milestone@plans@rich-text`: a span is selected by a first press and deleted by a second, and
-/// at a span's own edge the key unwraps it, its characters kept.
+/// Backspace and Delete stay in the caret's text node, `design@rootpoint-app@delete-in-caret-node`:
+/// a span is selected by a first press and deleted by a second, and at a span's own edge the key
+/// unwraps it, its characters kept.
 #[test]
 fn backspace_and_delete_at_an_edge_select_a_span_or_unwrap_it() {
     let mut d = edit_tree(r#"["ab", {bold "cd"}, "ef"]"#);
