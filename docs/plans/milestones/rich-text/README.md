@@ -358,13 +358,14 @@ flat runs of styles over one string, as LyX stores bold, and C, both at once, as
 Approved in round 2: "text-node-tree: agreed on A." C was ruled out on #arg-1; B lost on #arg-2 and
 #arg-3. Its shape is in "Decided design"; its harvest is the model's design home, at #text-tree.
 
-### On D6, awaiting the owner: a custom span that sets nothing is refused, the editor unwraps an empty span, and equal siblings stay apart `##text-tree-normal-form`
+### A custom span that sets nothing is refused, the editor unwraps an empty span, and equal siblings stay apart `##text-tree-normal-form`
 
 Proposed by the session in round 1, on #arg-5. Approved in round 2: "text-tree-normal-form:
 agreed". The reviews of this document found that dissolving a child "whose style changes nothing"
 dissolves a named span whose style is missing or equal to its parent's values, which loses its
 name, against #named-span-styles; the rule is narrowed to a custom span that sets no field, D6,
-awaiting the owner. Its harvest is the model's design home, at #text-tree.
+which the owner accepted: "defaults accepted, proceed". Its harvest is the model's design home, at
+#text-tree.
 
 ### The area keeps one full style, and a span sets any text option, each optional `##span-style-overrides`
 
@@ -958,32 +959,36 @@ reopens #text-edit-commands.
 
 ## Defaults awaiting the owner
 
-- **D1**: the work is a milestone of four slices, in the order above, rather than one spec. The
-  session's default, put to the owner at the hand-off; it blocks the merge of this milestone's
-  branch.
-- **D2**: each slice on its own branch, merged before the next, as
-  `skill@knowledge-architect-planning@cutting-steps-and-slices` says; the owner chose one branch
-  for the whole of the milestone on asset storage, which is no ruling on this one. It blocks the
-  merge of this milestone's branch.
-- **D3**, on #text-edit-commands: a paste inserts plain text into the caret's node, and a copy
-  carries no span; styled copy and paste is a later consequence. It blocks the merge of
-  #tree-caret.
-- **D4**, on #style-action-target: Ctrl+B sets bold and Ctrl+I italic; colour, size, font and a
-  named span style have no key, and are set from the side panel. It blocks the merge of
-  #span-styling.
-- **D5**, on #boundary-caret-positions: `design@rootpoint-app@caret-editor-state` makes, on the
-  owner's word, the caret and the selection the editor's state, and the owner approved the
-  composing range apart. The default reads the caret's text node as part of the caret, a caret
-  position being a text node and an offset, so the ruling covers it as it stands and its head is
-  reworded at #tree-caret, with no new member. The other reading, a new member, goes to the owner
-  as a proposal, since the ruling names its members. It blocks the merge of #tree-caret.
-- **D6**, on #text-tree-normal-form: the owner approved, in round 2, dissolving a child whose style
-  changes nothing. The reviews of this document found that the rule dissolves a named span whose
-  style is missing or equal to its parent's values, losing its name, which #named-span-styles keeps,
-  and a bold span inside a bold span, which then loses its bold when the outer span changes. The
-  default narrows it: the model dissolves no span, an operation that would leave a custom span
-  setting no field is refused, and a named span is never dissolved, as "Decided design" says. It
-  narrows a ruling of the owner, so it blocks the merge of this milestone's branch.
+- **D1**, ruled: accepted by the owner, "defaults accepted, proceed". Its text: the work is a
+  milestone of four slices, in the order above, rather than one spec. The session's default, put to
+  the owner at the hand-off; it blocks the merge of this milestone's branch.
+- **D2**, ruled: accepted by the owner, "defaults accepted, proceed". Its text: each slice on its
+  own branch, merged before the next, as
+  `skill@knowledge-architect-planning@cutting-steps-and-slices` says; the owner chose one branch for
+  the whole of the milestone on asset storage, which is no ruling on this one. It blocks the merge
+  of this milestone's branch.
+- **D3**, ruled: accepted by the owner, "defaults accepted, proceed". Its text, on
+  #text-edit-commands: a paste inserts plain text into the caret's node, and a copy carries no span;
+  styled copy and paste is a later consequence. It blocks the merge of #tree-caret.
+- **D4**, ruled: accepted by the owner, "defaults accepted, proceed". Its text, on
+  #style-action-target: Ctrl+B sets bold and Ctrl+I italic; colour, size, font and a named span
+  style have no key, and are set from the side panel. It blocks the merge of #span-styling.
+- **D5**, ruled: accepted by the owner, "defaults accepted, proceed". Its text, on
+  #boundary-caret-positions: `design@rootpoint-app@caret-editor-state` makes, on the owner's word,
+  the caret and the selection the editor's state, and the owner approved the composing range apart.
+  The default reads the caret's text node as part of the caret, a caret position being a text node
+  and an offset, so the ruling covers it as it stands and its head is reworded at #tree-caret, with
+  no new member. The other reading, a new member, goes to the owner as a proposal, since the ruling
+  names its members. It blocks the merge of #tree-caret.
+- **D6**, ruled: accepted by the owner, "defaults accepted, proceed". Its text, on
+  #text-tree-normal-form: the owner approved, in round 2, dissolving a child whose style changes
+  nothing. The reviews of this document found that the rule dissolves a named span whose style is
+  missing or equal to its parent's values, losing its name, which #named-span-styles keeps, and a
+  bold span inside a bold span, which then loses its bold when the outer span changes. The default
+  narrows it: the model dissolves no span, an operation that would leave a custom span setting no
+  field is refused, and a named span is never dissolved, as "Decided design" says. It narrows a
+  ruling of the owner, so it blocks the merge of this milestone's branch.
+
 ## Harvest
 
 Each slice's row is in its spec. This document's own row, at the commit that deletes it, after the
