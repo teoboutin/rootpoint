@@ -450,7 +450,7 @@ pub fn new_row(f: &mut Formula, p: &CellPath) -> Option<CellPath> {
     Some(top(p.row + 1, 0, 0))
 }
 
-/// The edits of a matrix's rows and columns, D2 of the milestone on math: append an empty one
+/// The edits of a matrix's rows and columns, LyX's Alt+M C and W: append an empty one
 /// after the caret's, delete the caret's, copy it after itself, or swap it with the next.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MatrixEdit {

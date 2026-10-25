@@ -131,6 +131,15 @@ as LaTeX does, `goal@rootpoint-math@latex-text`, and draws it as the font's miss
 `design@rootpoint-render@no-fallback-math-font`. The rival, a table of the font's characters alone,
 reads `\Game` as an unknown command, drawn red, where that head draws a missing glyph.
 
+### The commands offered to an author are those of the characters the math font has `##offered-commands-drawn`
+
+`commands` holds the commands of the table whose characters the built-in math font has, apart from
+`ABSENT`, so a list offered to an author, the palette of the window's Selection tab and the
+completion of a command being typed, offers none that the font draws as its missing glyph,
+`design@rootpoint-render@no-fallback-math-font`. A command of `ABSENT` is still read where it is
+written, `design@rootpoint-math@absent-commands-read`. The rival, a list of every command of
+`unicode.xml`, offers the author a box for each character the font lacks.
+
 ### A command's name means what it means in LaTeX's math mode `##latex-command-meanings`
 
 An author who knows LaTeX has nothing new to learn, `goal@rootpoint-math@latex-text`. The generator

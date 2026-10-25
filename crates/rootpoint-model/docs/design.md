@@ -94,8 +94,8 @@ A text may hold no characters, and a new area, of `Op::AddSlide` or of a split, 
 style `design@rootpoint-model@new-area-style` gives. An empty text draws nothing, so a kind for an
 area with nothing in it adds nothing an empty text lacks: in what the renderer draws, it differs
 from an empty text only by an arm that draws nothing, `rejected@rootpoint-model@empty-content-kind`.
-Outside the renderer, the editor has one kind to enter for typing, the text, per
-`design@rootpoint-app@edit-entry`. On the owner's word: the owner proposed that no kind stand for an
+Outside the renderer, a new area is entered for typing as the text it holds, per
+`design@rootpoint-app@edit-entry`, with no step that first gives it a kind. On the owner's word: the owner proposed that no kind stand for an
 area with nothing in it, a kind that in the owner's view is noise in both the GUI and the
 implementation.
 

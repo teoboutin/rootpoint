@@ -1,8 +1,8 @@
-//! The palette of symbols and structures the Selection tab shows while a formula is edited: the
-//! commands of the math crate's table by category, each inserted at the caret by a click, and the
-//! structures, scripts, spaces and the controls of a matrix's rows and columns. The table holds the
-//! characters the built-in math font has alone, so the palette offers no command the font draws as
-//! a box.
+//! The palette of symbols and structures the Selection tab shows while a formula is edited,
+//! `design@rootpoint-app@math-symbol-palette`: the commands of the math crate's table by category,
+//! each inserted at the caret by a click, and the structures, scripts, spaces and the controls of a
+//! matrix's rows and columns. The table holds the characters the built-in math font has alone,
+//! `design@rootpoint-math@offered-commands-drawn`.
 
 use rootpoint_math::{Atom, Class, Command, Formula, MatrixEdit, commands};
 

@@ -1500,7 +1500,8 @@ impl App {
         let (Some(edit), Some(content)) = (self.edit.clone(), self.edited_text()) else {
             return;
         };
-        // Right before a formula, or Left after one, enters it, as LyX's caret enters an inset.
+        // Right before a formula, or Left after one, enters it, as LyX's caret enters an inset,
+        // `design@rootpoint-app@lyx-formula-keys`.
         if !extend && edit.anchor.is_none() && matches!(m, CaretMove::Right | CaretMove::Left) {
             let here = text_node(&content, edit.caret.node)
                 .map(items)

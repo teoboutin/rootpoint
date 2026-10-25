@@ -1,6 +1,7 @@
-//! The built-in table of the math keys: each entry is a sequence of keys, a chord then the
-//! characters typed after it, and the action it runs. LyX's keys are copied with their oddities,
-//! from `path@elsewhere@lib/bind/math.bind` as section 1 of
+//! The built-in table of the math keys, `design@rootpoint-app@keymap-table`: each entry is a
+//! sequence of keys, a chord then the characters typed after it, and the action it runs. The keys are
+//! LyX's, copied with their oddities, `design@rootpoint-app@math-keys`, from
+//! `path@elsewhere@lib/bind/math.bind` as section 1 of
 //! `path@rootpoint@docs/grounding/math-typesetting.md` reads it. The editor's other shortcuts stay
 //! where they are, until `issue@rootpoint-app@configurable-keys`.
 
@@ -58,8 +59,8 @@ pub struct Binding {
 /// The prefix of LyX's math table, Alt+M.
 pub const ALT_M: Stroke = Stroke::Chord(Modifiers::ALT, Key::M);
 
-/// The characters typed after Alt+M, and what each runs, by the table "A LyX math key, to the
-/// action it runs" of the milestone on math.
+/// The characters typed after Alt+M, and what each runs, LyX's, as
+/// `design@rootpoint-app@math-keys` names them.
 const AFTER_ALT_M: &[(&str, Action)] = &[
     ("f", Action::Insert(r"\frac{}{}")),
     ("s", Action::Insert(r"\sqrt{}")),

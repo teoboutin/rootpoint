@@ -1,8 +1,9 @@
 //! The editing of a formula in the window: the caret in a math item of a text, or in an equation
 //! area's formula, its moves and the edits of its keys, LyX's, by the math crate's editing of a
 //! formula at a `CellPath`. Each change sends the whole formula, by `math` for a math item and
-//! `equation` for an equation area, `design@rootpoint-protocol@math-edit-commands`, inside the
-//! stay's undo group, `design@rootpoint-app@gesture-groups`.
+//! `equation` for an equation area, `design@rootpoint-app@math-editing-model` and
+//! `design@rootpoint-protocol@math-edit-commands`, inside the stay's undo group,
+//! `design@rootpoint-app@gesture-groups`.
 
 use eframe::egui::{Pos2, Rect};
 use parley::Affinity;
@@ -459,9 +460,8 @@ impl App {
         }
     }
 
-    /// A character typed in a formula, as LyX's `InsetMathNest::interpretChar` takes it, by the
-    /// mapping table "A key in a formula, to what it does" of the milestone on math: a letter, a
-    /// digit or an operator inserts its symbol; `^` and `_` make a script; `{` opens a group, `}`
+    /// A character typed in a formula, as LyX's `InsetMathNest::interpretChar` takes it,
+    /// `design@rootpoint-app@lyx-formula-keys`: a letter, a digit or an operator inserts its symbol; `^` and `_` make a script; `{` opens a group, `}`
     /// leaves it; `&` sets an alignment point or moves to a matrix's next cell; `\` opens a command
     /// name, which letters extend and any other character closes, a space being swallowed; a space
     /// leaves the cell, then the formula.

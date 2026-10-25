@@ -1,7 +1,7 @@
-//! The math keys: each sequence of the table runs its action through `App::frame`, given as the
-//! events egui gives for it, a chord, then the text of each key after it; the expected actions are
-//! restated here from the milestone's table "A LyX math key, to the action it runs", so a table
-//! with one binding swapped fails.
+//! The math keys, `design@rootpoint-app@math-keys`: each sequence of the table runs its action
+//! through `App::frame`, given as the events egui gives for it, a chord, then the text of each key
+//! after it; the expected actions are restated here from the milestone's table "A LyX math key, to
+//! the action it runs", so a table with one binding swapped fails.
 
 use eframe::egui::{Context, Event, Key, Modifiers, Pos2, RawInput, Rect, Vec2};
 use rootpoint_app::{App, MemoryFiles};

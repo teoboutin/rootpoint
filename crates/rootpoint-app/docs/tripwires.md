@@ -87,3 +87,12 @@ for them, `rejected@rootpoint-app@reserved-frame-space`, which needs
 depth.
 **Re-entry:** the design audit of the next work on the overlay, or earlier on the owner's word; and
 the standing-state review before every merge.
+
+## Guarding `design@rootpoint-app@math-keys`: an Alt+M chord does not reach the native window `##alt-m-lost-natively`
+
+T3 of the premortem of the milestone on math, recorded on the owner's word.
+
+**Fires when:** the owner reports once that an Alt+M chord, in the native window on the owner's
+desktop, did not reach the editor or did something else.
+**Response:** reopen `design@rootpoint-app@math-keys` toward another prefix on that platform.
+**Re-entry:** the first real talk prepared with math.

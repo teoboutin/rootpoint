@@ -1692,8 +1692,9 @@ the fallback member is dropped and the owner told.
 4. Math inside a text, and references to equations, #inline-math, landed: the items, the file at
    version 7, inline boxes, the tree's items, `math`, `retarget`, the refusals, the picker. Fails
    alone on: the refusals, and AC5.
-5. [Editing a formula in the window, and LyX's math keys](math-editing.md), #math-editing. Fails
-   alone on: AC3 and AC6.
+5. Editing a formula in the window, and LyX's math keys, #math-editing, landed: the caret in a
+   formula and LyX's moves, typing and commands, the overlay, the palette, the keymap table and the
+   browser's listener. Fails alone on: AC3 and AC6.
 
 ## Order rationale
 

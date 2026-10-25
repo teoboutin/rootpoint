@@ -75,7 +75,9 @@ first, `design@rootpoint-app@one-controller-at-a-time`.
 The divider lines, the highlight of the divider under the pointer, the selection's outline and its
 grip, the line of a split at the pointer, the hint of a drop, and the caret, the selection, the
 composition's underline and the frames of the spans that hold the caret, of a text edited in place,
-are drawn with egui's painter over the texture, in `App::overlay`; the marks of a gesture are not drawn while the control socket holds the authority to
+and, in a formula, its caret, the outline of each empty cell, on the placeholder box the layout
+reserves, `design@rootpoint-math@empty-cell-placeholder`, the frames of the atoms that hold the
+caret, the atom a first Backspace selected and the name of a command being typed, are drawn with egui's painter over the texture, in `App::overlay`; the marks of a gesture are not drawn while the control socket holds the authority to
 edit, `design@rootpoint-app@one-controller-at-a-time`, and no mark is drawn in the final view, the
 session's preview, `design@rootpoint-protocol@view-state`. The banner of the control socket and its
 button "Take control", `design@rootpoint-app@take-over-at-once`, are egui widgets, in presenter mode
@@ -88,7 +90,8 @@ editor text that is no slide content, so they are not the slide text that
 
 The frames take no space in the slide, so the text an author edits stands where it is presented:
 one thin rectangle per line a span covers, each outer frame lighter and further out, and around
-the caret for an empty span, which covers no glyph. The caret is drawn in the colour and at the
+the caret for an empty span, which covers no glyph; an atom's frame is drawn the same way, around its
+box. The caret is drawn in the colour and at the
 size it types with. So the two caret positions at a span's edge, which stand at one byte index,
 show different marks, a frame at one and not the other, which the test
 `the_two_positions_at_an_edge_show_different_marks` of `path@rootpoint-app@tests/gestures.rs`
@@ -388,7 +391,10 @@ every span keeps its id; the render lays the new text out, and the caret keeps i
 move past a character passes one cluster as Parley 0.12.0 cuts the layout: a character with the
 marks drawn on it is one cluster, so the caret stays on a glyph's boundary; each character of a
 ligature is a cluster too, with an even share of its advance by `Cluster::advance`, where Parley's
-own moves stop as well. The composing text stands in the text node it was typed into, by commands,
+own moves stop as well. A formula's inline box is no cluster, so Parley would draw the caret before
+a formula after its box, where the caret after it stands: that caret is drawn at the box's left
+edge. The caret in a formula is drawn on the formula's own layout, at its cell's height,
+`design@rootpoint-app@math-editing-model`. The composing text stands in the text node it was typed into, by commands,
 so the renderer draws it where it will stand; the overlay draws the caret, the selection and the
 composition's underline, per `design@rootpoint-app@editor-overlay`. While editing, the app sets
 `PlatformOutput::ime` every frame, since egui-winit 0.37.0 allows IME input only in a frame that
@@ -398,7 +404,8 @@ So the caret sits on the drawn glyphs at every size of the view, as
 `goal@rootpoint-render@same-slide-everywhere` asks of every display: a test over every character
 of the sample's area n3 puts it on the drawn glyph at three window sizes, within half a pixel, a
 tolerance for rounding that the session chose, and a property test walks the caret through
-generated trees of spans at the same sizes, by `cargo test -p rootpoint-app --test editing`. A
+generated trees of spans and formulas at the same sizes, every position of each formula among
+them, by `cargo test -p rootpoint-app --test editing`. A
 toolkit text field over the slide would break lines differently and let the caret drift, as
 `rejected@rootpoint-render@toolkit-painter` says, and Parley's `PlainEditor` lays its own copy of
 the text out, `rejected@rootpoint-app@plain-editor`.
@@ -407,7 +414,8 @@ the text out, `rejected@rootpoint-app@plain-editor`.
 
 A caret position is a text node of the text's tree, its root or a span, and an offset in its
 sequence, a span, a formula and a reference each counting as one item,
-`design@rootpoint-model@text-node-tree`; the caret steps over a formula or a reference whole. Right
+`design@rootpoint-model@text-node-tree`; the caret steps over a reference whole, and Right before a
+formula, or Left after it, enters it, `design@rootpoint-app@lyx-formula-keys`. Right
 at an offset before a span enters it at offset 0, and at its last offset leaves it, after it in its
 parent; Left is the mirror; both positions of an edge stand at one byte index of the layout. Typing
 inserts into the caret's text node, so the author chooses, by an arrow, whether a typed letter joins
@@ -429,8 +437,8 @@ these trees rarely go deep, maths aside, where LaTeX has the same problem.
 ### Backspace and Delete act in the caret's text node, selecting a span before deleting it `##delete-in-caret-node`
 
 With no selection, Backspace and Delete act on the item before or after the caret in its text node.
-A character is deleted, by the logical clusters `App::delete` reads. A span with items is selected
-whole by a first press and deleted by a second; an empty span goes at once. At a span's own start
+A character is deleted, by the logical clusters `App::delete` reads. A span with items, and a
+formula, are selected whole by a first press and deleted by a second; an empty span goes at once. At a span's own start
 for Backspace, or its end for Delete, the span is unwrapped, `unwrap`, its content kept in its
 parent and the caret where it was drawn. At the root's start or end the keys do nothing.
 
@@ -480,7 +488,9 @@ controls show the values the caret types with, or those of a span selected whole
 is a style action, `design@rootpoint-app@style-action-target`: the style menu lists the span styles
 a span may name, and the values set a span's own; an alignment, which no span has, changes the
 area's style by `text` with no tree. Every command joins the stay's group,
-`design@rootpoint-app@gesture-groups`.
+`design@rootpoint-app@gesture-groups`. While the caret is in a formula, the palette stands in their
+place, `design@rootpoint-app@math-symbol-palette`, and while a text is edited the tab has "Insert
+formula", `design@rootpoint-app@key-actions-have-controls`.
 
 Each control then has one meaning at a time, and the window holds no state of its own for it; the
 cost is that changing the area's size or style name while editing takes one click out of the stay.
@@ -557,8 +567,9 @@ editing, `design@rootpoint-app@final-view-presses`, and a double-click begun the
 click. A secondary click in the slide view or on a row of the outline, inside the edited area too,
 leaves editing before it opens the node menu, `design@rootpoint-app@node-menu`. A new area holds an
 empty text, per `design@rootpoint-model@no-empty-kind`, so a second click enters editing on a new
-area too, and typing into it needs no step that makes it a text first; a click on an image area or
-an equation area, which hold no text, only selects it.
+area too, and typing into it needs no step that makes it a text first. A click on the selected
+equation area enters editing its formula, `design@rootpoint-app@math-editing-model`, and a click on
+an image area, which holds nothing to edit, only selects it.
 
 On the owner's word: the owner chose this shape over a single click that selects a text area and
 edits it at once, which saves a click before typing in an area not yet selected, but leaves the node
@@ -581,7 +592,9 @@ drag's position does, and the protocol has no command that places or reads them;
 the text they lead to is a command of `design@rootpoint-protocol@text-edit-commands`, per
 `design@rootpoint-app@edit-in-place`. The caret is a caret position, a text node and an offset,
 `design@rootpoint-app@boundary-caret-positions`, so its text node is part of the caret, which the
-owner's ruling below covers as it stands. On the
+owner's ruling below covers as it stands; so are the path of cells of a caret in a formula, the
+atom a first Backspace selected there and the name of a command being typed,
+`design@rootpoint-app@math-editing-model`. On the
 owner's word, they are not among the views `goal@rootpoint-protocol@commands-drive-everything`
 makes commands of: the owner chose editor state alone over a protocol command for the caret and
 the selection, `rejected@rootpoint-app@caret-command`, and approved the same for the composing
@@ -596,6 +609,117 @@ composition starts, read from its source,
 desktop; applied as a composition, it would replace the selection with nothing and so delete a
 selected text before the first composed character. An empty preedit while a composition is open
 ends it, removing the composing text.
+
+## Editing a formula
+
+### A formula is edited in place as its tree of cells, with no LaTeX source to type `##math-editing-model`
+
+A math item of a text and an equation area's formula are edited on the slide, the caret a path of
+cells and an offset in a cell's list, `rootpoint_math::CellPath`, which the editor holds as it holds
+a text's caret, `design@rootpoint-app@caret-editor-state`. Each change sends the whole formula,
+`math` for a math item and `equation` for an equation area, inside the stay's group,
+`design@rootpoint-protocol@math-edit-commands` and `design@rootpoint-app@gesture-groups`; the caret
+is drawn and placed on the formula's layout that `render_slide` draws, `area_text`'s formulas for a
+math item and `area_formula` for an equation, `design@rootpoint-app@edit-in-place`. A math item left
+empty when the caret leaves it is removed, as an empty span is unwrapped,
+`design@rootpoint-app@empty-span-unwrapped`; an equation area keeps its formula, empty or not. The
+keys and the moves are LyX's, `design@rootpoint-app@lyx-formula-keys`; a command typed after `\`
+becomes its atom when it closes, its name until then held by the editor and shown by the overlay,
+since a name being typed, as `\fra` on the way to `\frac`, can be one the session refuses.
+
+So an author writes math with no LaTeX to know, which `goal@rootpoint@no-language-no-build` asks,
+and every cell carries the caret, `goal@rootpoint-math@editable-in-place`. The rival, a field of
+LaTeX source with a preview, makes LaTeX the way to write math in the window, against that goal.
+
+### In a formula, each key acts as LyX's caret and `InsetMathNest::interpretChar` make it act `##lyx-formula-keys`
+
+Right enters an atom at the start of its first cell, a root's index where it has one, and leaves it
+at that cell's end, but goes across a matrix's columns and from a root's index to its body; Left is
+the mirror, entering at the end of an atom's last cell. So Right goes from a fraction's numerator out
+of the fraction, and a denominator or a script is reached by Left, Up, Down or Tab. In the
+formula's grid both keep to the caret's row, and at its first or last position they leave the
+formula, into its text, one press, as at a span's edge, `design@rootpoint-app@boundary-caret-positions`.
+Up and Down move between a fraction's numerator and denominator, between the rows of a matrix and
+of the formula, and from a script's nucleus to its script only at the nucleus's end; with no cell
+above or below, in a text, the move is the text's. Tab goes to the next cell, Space and `}` leave
+the cell, then the formula. A letter, a digit or an operator inserts its symbol; `^` and `_` make the
+atom before the caret a script's nucleus; `{` opens a group; `&` cuts a cell of the grid or moves to
+a matrix's next cell; Ctrl+Return starts a row; `\` opens a command name, which a letter extends,
+Tab completing it, and any other character closes, a space being swallowed. Backspace and Delete
+delete a symbol, select an atom with cells by a first press and delete it by a second, as
+`design@rootpoint-app@delete-in-caret-node` does a span, and at the formula's first or last
+position do nothing.
+
+LyX's source, read in section 1 of `path@rootpoint@docs/grounding/math-typesetting.md`: Right is
+`Cursor::mathForward`, which enters by `idxFirst` and, at a cell's end, moves by `idxForward` or
+leaves; `InsetMathFrac::idxForward` and `InsetMathScript::idxForward` return false, a grid's moves
+to its next column, a root's from its index to its body; `InsetMathScript::idxUpDown` reaches a
+script only from the nucleus's end; `InsetMathNest` leaves an Up or Down it cannot make to the text;
+the typed characters are `InsetMathNest::interpretChar`'s, ASCII letters extending a command's name
+at its lines 2052 to 2055. The owner's keys work as they do in LyX, the weighed criterion of the
+owner's message in the milestone on math. The rival that visits every position by Right, a
+numerator then its denominator, is how the editor first moved, and is not LyX's.
+
+### While a formula is edited, the Selection tab shows the table's commands by category, each inserted by a click `##math-symbol-palette`
+
+The palette lists every command of `rootpoint_math::commands` once, by category: relations, arrows,
+operators, Greek, delimiters, other symbols and the styled letters of the mathematical
+alphanumerics; an arrow and a Greek letter by their Unicode block, the rest by class. Above them
+stand the structures, the scripts among them, and the controls of the rows and columns of the matrix
+that holds the caret, enabled only there. A click inserts at the caret by the edit a key makes, so
+it sends the whole formula as a key does, and each category is folded until it is opened. The
+palette stands in place of the controls at the caret of `design@rootpoint-app@controls-act-at-the-caret`,
+and, for an equation area, above the equation's options. Its symbols are drawn from the built-in
+math font, added to egui's families after egui's own fonts, which lack most of them.
+
+LyX's Alt+M table binds about sixty symbols, so with keys alone ≤, →, ∈ or ∀ are written as
+`\leq`, which is LaTeX, against `goal@rootpoint@no-language-no-build`. The rival, a palette in a
+menu, costs a click more for each symbol. The table holds only the characters the math font has,
+`design@rootpoint-math@offered-commands-drawn`, so the palette offers no command drawn as a box.
+
+### LyX's math keys are copied with their oddities `##math-keys`
+
+The keys of the milestone's mapping table "A LyX math key, to the action it runs" are LyX's, from
+`path@elsewhere@lib/bind/math.bind` as section 1 of
+`path@rootpoint@docs/grounding/math-typesetting.md` reads it: Ctrl+M inserts a formula at the caret,
+its selection the formula's content where it reads as one; Alt+M then a key inserts a structure, a
+symbol, an accent or a delimiter, makes a script, toggles the equation's number or edits a matrix's
+rows and columns, and Alt+M G then a letter a Greek letter, o and w both ω, v θ and q ϑ, six Shift
+keys giving a variant in lowercase. They act while a text or a formula is edited; in a text whose
+caret is in no formula, an action that edits a formula first inserts one. Ctrl+Shift+M and
+Ctrl+Alt+N act while an area is selected and not edited, making it an unnumbered or a numbered
+equation, as LyX's `math-display` does. A key LyX gives an action this editor has is bound, and one
+whose action it lacks is not: the sub-table T, which changes the hull type, where an equation has
+one kind; the keys of C and W for rules and alignment; Shift+N, a number per row; and M, D, L and O.
+A binding with a modifier is matched with its modifiers exactly. The browser build disables a
+binding the browser keeps from a page; none is, by the session's knowledge of the browsers, not
+measured, `design@rootpoint-app@editor-keys-kept-from-browser`.
+
+A corrected table would cost the muscle memory the keys are copied for. On the owner's word: the
+owner asked that LyX's keys be copied exactly, and allowed the browser build to disable a few
+bindings that conflict. Whether an Alt+M chord reaches the native window is watched by
+`tripwire@rootpoint-app@alt-m-lost-natively`.
+
+### The math keys are a built-in table from key sequences to actions `##keymap-table`
+
+`path@rootpoint-app@src/keymap.rs` holds each binding as a sequence, a chord then the characters
+typed after it, and its action; the editor reads a chord against it, waits on a prefix, names the
+waiting sequence on the status line, and takes the keys typed next as egui's text events, the first
+text egui gives for Alt+M itself dropped; a key that types no text, as Backspace or an arrow, drops a
+waiting sequence, and so does leaving editing. The editor's other shortcuts stay where they are,
+until `issue@rootpoint-app@configurable-keys` makes the keys configurable, and the table is where a
+configuration fills them. The rival, moving every key into the table now, is the same work earlier,
+with the existing key tests at risk in work on math.
+
+### Every action a math key runs has a control in the window `##key-actions-have-controls`
+
+"Insert formula" in the Selection tab while a text is edited, for Ctrl+M; the node menu's
+"Equation", for Ctrl+Shift+M and Ctrl+Alt+N; the equation's "numbered" option, for Alt+M N; and the
+palette, for every symbol and structure, the Greek letters, the accents, the delimiters, the reversed
+ones of Alt+M `>` among them, and a matrix's rows and columns. So a binding the browser build
+disables, `design@rootpoint-app@math-keys`, loses no action, which
+`goal@rootpoint-app@browser-window` asks of the browser, the same actions as the window, and a reader
+with no muscle memory for LyX's keys reaches every action.
 
 ## The control socket
 
@@ -931,3 +1055,12 @@ which carry the clipboard's events to eframe, so preventing it would stop them. 
 keeps every key the editor reads from the browser stops the clipboard. The test
 `the_keys_of_editing_are_kept_from_the_browser_only_while_editing` of the same file checks the
 keys with Ctrl or Meta.
+
+The math keys, `design@rootpoint-app@math-keys`, are the editor's too: the listener prevents the
+default of Ctrl+M and of Alt+M while a text or a formula is edited, and of Ctrl+Shift+M and
+Ctrl+Alt+N while an area is selected and not edited, by a second flag `App::frame` sets at each
+frame, so in no other state does the browser lose them. Each is matched with its modifiers exactly,
+as the table matches them, so AltGr+M, which is Ctrl and Alt on Windows, types its character; M is
+read by its physical key too, since Option+M gives "µ". The test `the_math_keys_reach_the_editor`
+of `path@rootpoint-app@tests/web.rs` checks them in a headless browser, which shows that the
+listener prevents a default, not that a browser honours it.
