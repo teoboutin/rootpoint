@@ -177,7 +177,7 @@ before the next begins, D2.
 
 What exists today, at each site the work touches:
 
-- - **The model.** A text is one string and one `StyleChoice`; `Op::SetContent` replaces an area's
+- **The model.** A text is one string and one `StyleChoice`; `Op::SetContent` replaces an area's
   whole content, and `Op::AddStyle`, `Op::SetStyle`, `Op::RenameStyle`, `Op::RemoveStyle` and its
   inverse `Op::RestoreStyle` act on the one style table, `path@rootpoint-model@src/ops.rs`. Ids come
   from `Document::next_id`, one counter, for slides, nodes and assets,
@@ -656,20 +656,35 @@ crates/rootpoint-app/src/editing.rs
 
 An area's text is a root text node, a sequence of characters and spans; a span has an id, a span's
 style and its own text node. The area's `StyleChoice` stays the style of the root. In RON a text
-reads, as an illustration; the serde shape is #text-tree's to settle, with
-`criterion@rich-text@c-readable-tree` as its test:
+reads as below, the shape measured at #text-tree's audit with ron 0.12.2: an item is externally
+tagged, `Chars("…")` or `Span(…)`, a span style writes only the fields it sets, and the file
+declares `implicit_some`, so a field reads `bold: true`. An untagged item, a bare string beside a
+span, was measured too: ron writes the span with no name, and a hand-written `Span(…)` then fails
+to load, which `criterion@rich-text@c-readable-tree` rules out.
 
 ```ron
-Text(root: [ "Let x be a ", Span(id: 41, style: Custom(bold: Some(true)), [ "prime" ]), " number" ],
-     style: Named("Body"))
+Text(
+    root: [
+        Chars("Let x be a "),
+        Span(
+            id: 41,
+            style: Custom(bold: true),
+            text: [Chars("prime")],
+        ),
+        Chars(" number"),
+    ],
+    style: Named("Body"),
+)
 ```
 
 Characters are kept in one canonical form: `apply` and `load_ron` merge two adjacent runs of
 characters and drop an empty run, so a document and its round trip through an operation and its
-inverse compare equal. The renderer lays the tree out in one Parley layout, through `TreeBuilder`,
-`ranged_builder` with one range per span, or `style_run_builder`, the slice's choice, and the layout
-carries each run's colour, a brush type in place of `()`. Nearest rival: flat runs over one string.
-Defeated by #arg-2 and #arg-3.
+inverse compare equal. The renderer lays the tree out in one Parley layout with `ranged_builder`,
+the area's values as defaults and each span's resolved values pushed for its byte range, outer spans
+before inner, since a later push wins over an earlier one where they overlap; `TreeBuilder`
+collapses whitespace, per its doc comment in Parley 0.12.0's `builder.rs`, which would move the
+drawn text's byte indices off the stored text's. The layout carries each run's colour, a brush type
+in place of `()`. Nearest rival: flat runs over one string. Defeated by #arg-2 and #arg-3.
 
 ### #text-tree-normal-form
 
