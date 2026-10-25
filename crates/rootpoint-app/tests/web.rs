@@ -103,16 +103,20 @@ fn sample_first_slide() -> Vec<u8> {
 #[test]
 fn the_sample_s_first_slide_is_the_native_golden_image() {
     let bytes = sample_first_slide();
+    let golden = image::load_from_memory(GOLDEN).unwrap().to_rgba8();
+    // A blessing run compares against the image it writes: `GOLDEN` holds the bytes compiled in
+    // before the write, which a first run after a change would otherwise fail against.
     #[cfg(not(target_arch = "wasm32"))]
-    if std::env::var_os("ROOTPOINT_BLESS").is_some() {
+    let golden = if std::env::var_os("ROOTPOINT_BLESS").is_some() {
         let path =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/sample-s1.png");
-        image::RgbaImage::from_raw(SIZE[0] as u32, SIZE[1] as u32, bytes.clone())
-            .unwrap()
-            .save(&path)
-            .unwrap();
-    }
-    let golden = image::load_from_memory(GOLDEN).unwrap().to_rgba8();
+        let image =
+            image::RgbaImage::from_raw(SIZE[0] as u32, SIZE[1] as u32, bytes.clone()).unwrap();
+        image.save(&path).unwrap();
+        image
+    } else {
+        golden
+    };
     assert_eq!(
         [golden.width() as usize, golden.height() as usize],
         SIZE,
