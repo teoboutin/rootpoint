@@ -95,9 +95,8 @@ show different marks, a frame at one and not the other, which the test
 checks over the spans of the sample's styled text. LyX's frames reserve their space,
 `rejected@rootpoint-app@reserved-frame-space`. Whether frames of no space let the author tell the
 two positions of an edge apart in real use is watched by `tripwire@rootpoint-app@frames-mislead`.
-On the owner's word: the owner chose to start with frames over the slide, expects to revise their
-form once seen live, and might relax `goal@rootpoint-app@faithful-slide-view` if a pure overlay does
-not work.
+On the owner's word: the owner expects to revise the frames' form once seen live, and might relax
+`goal@rootpoint-app@faithful-slide-view` if a pure overlay does not work.
 
 ### The window always shows where its presentation is and whether it is saved, and names where each writing action writes `##visible-mode`
 
@@ -457,7 +456,7 @@ whole span, `span`, which changes that span's style, so a second action on a spa
 changes it rather than wrapping it again. Ctrl+B sets bold and Ctrl+I italic; colour, size, font
 and a span style have no key, and are set from the Selection tab. A style action inside a span
 already in that style opens a span all the same, since a span that sets a value equal to its
-parent's is kept, `design@rootpoint-model@text-tree-normal-form`. The empty span stays while the caret is in it,
+parent's is kept, `design@rootpoint-model@text-tree-normal-form`. The empty span stays while it is held,
 `design@rootpoint-app@empty-span-unwrapped`.
 
 So the author styles the letters about to be typed as well as those already typed, with no
@@ -523,7 +522,7 @@ nodes, makes each of them a cut of several nodes at once. On the owner's word: t
 rule, in the owner's opinion, a feature more than a cost, found LyX's selection model convenient,
 and judged that cutting a span in half is practically never needed.
 
-### The editor unwraps an empty span when the caret leaves it, and every empty span when the stay ends `##empty-span-unwrapped`
+### The editor unwraps an empty span once neither the caret nor a selection of the span holds it, and every empty span when the stay ends `##empty-span-unwrapped`
 
 The model accepts an empty span, `design@rootpoint-model@text-tree-normal-form`, so that a style
 chosen with nothing selected opens one at the caret, `design@rootpoint-app@style-action-target`,
@@ -885,7 +884,7 @@ when it ends. The browser takes Esc to leave full screen, and the page may not r
 presenter mode ends when the page leaves full screen while presenting, as Esc ends it natively;
 `goal@rootpoint-app@presents-full-screen` asks presenter mode to be full screen.
 
-### In the browser, no key of the editor reaches the browser's own action `##editor-keys-kept-from-browser`
+### In the browser, no key of the editor reaches a browser action the author did not ask for `##editor-keys-kept-from-browser`
 
 A key's default action in the browser, a reload or a step back in the history, leaves the page,
 which holds its edits in memory alone, `design@rootpoint-app@browser-pack-save`, after the page's
@@ -902,12 +901,13 @@ canvas has focus, `rejected@rootpoint-app@bubble-phase-f5-listener`. The test
 `f5_is_kept_from_the_browser_when_the_canvas_stops_its_propagation` of
 `path@rootpoint-app@tests/web.rs` checks it in a headless browser.
 
-The rule covers every key the editor consumes, since the browser's default of one is an action the
+The rule covers every key the editor consumes whose default in the browser is an action the
 author did not ask for, whether it leaves the page or not. The editor reads its shortcuts with
 egui's `command`, which eframe 0.37.0's web input sets from Ctrl or Meta, `modifiers_from_kb_event`
-of `path@elsewhere@src/web/input.rs`: undo and redo, with Z and Y, always, and while a text is
-edited select all, bold and italic, with A, B and I, `design@rootpoint-app@style-action-target`;
-and, while a text is edited too, Ctrl+Space, `design@rootpoint-app@split-at-caret`.
+of `path@elsewhere@src/web/input.rs`: open and save, with O and S, which eframe keeps itself; undo
+and redo, with Z and Y, always; and while a text is edited select all, with A, and bold and
+italic, with B and I, `design@rootpoint-app@style-action-target`; and, while a text is edited too,
+Ctrl+Space, `design@rootpoint-app@split-at-caret`.
 `should_prevent_default_for_key` names none of these letters, and prevents Space's default only
 while its text agent lacks the focus, which it holds while a text is edited, since the app sets
 `PlatformOutput::ime` then, `path@elsewhere@src/web/app_runner.rs`. So the same listener prevents
@@ -918,9 +918,11 @@ listener in the capture phase sees both first. Outside editing the editor consum
 of editing, and the browser keeps them. The rival, letting the browser act too, makes one key both
 edit the presentation and act in the browser: Firefox gives Ctrl+B to its bookmarks sidebar and
 Ctrl+I to page information, by the session's knowledge of the browser, not measured, and the rule
-does not rest on it, since a prevented default costs a key the editor consumes nothing. Home, End,
-Page Up and Page Down, which the editor reads too, keep their default, which scrolls a page that
-cannot scroll: `path@rootpoint-app@web/index.html` hides the overflow of a page the canvas fills.
-Ctrl with C, V and X keep theirs, which carry the clipboard's events to eframe. The test
+does not rest on it, since a prevented default costs a key the editor consumes nothing. The
+editor's other keys have no such default: Home, End, Page Up and Page Down scroll a page that
+cannot scroll, `path@rootpoint-app@web/index.html` hiding the overflow of a page the canvas fills;
+and the default of Ctrl with C, V and X is the copy, the paste and the cut the author asked for,
+which carry the clipboard's events to eframe, so preventing it would stop them. The rival that
+keeps every key the editor reads from the browser stops the clipboard. The test
 `the_keys_of_editing_are_kept_from_the_browser_only_while_editing` of the same file checks the
 keys with Ctrl or Meta.

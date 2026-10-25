@@ -321,7 +321,7 @@ impl App {
         // `design@rootpoint-app@no-discard-confirmation`.
         #[cfg(target_arch = "wasm32")]
         web::warn_before_unload(std::rc::Rc::downgrade(&app.unload_warning));
-        // No key of the editor reaches the browser's own action,
+        // No key of the editor reaches a browser action the author did not ask for,
         // `design@rootpoint-app@editor-keys-kept-from-browser`.
         #[cfg(target_arch = "wasm32")]
         web::keep_editor_keys(std::rc::Rc::downgrade(&app.editing_keys));
