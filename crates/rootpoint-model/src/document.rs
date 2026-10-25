@@ -154,6 +154,28 @@ impl Document {
         }
     }
 
+    /// The values a span sets over its parent's: a span style of the table for a name, or the
+    /// span's own values; `None` for a name the table lacks, a cosmetic breach, whose span draws
+    /// with its parent's values.
+    pub fn resolve_span(&self, choice: &SpanChoice) -> Option<SpanStyle> {
+        match choice {
+            SpanChoice::Named(name) => self.span_styles.get(name).cloned(),
+            SpanChoice::Custom(style) => Some(style.clone()),
+        }
+    }
+
+    /// Every font a text draws with: its style's, then each font its spans set, in the order of
+    /// the text. A host that loads the fonts of a slide loads these.
+    pub fn text_fonts(&self, text: &TextContent) -> Vec<FontRef> {
+        let mut out = vec![self.resolve_style(&text.style).font];
+        for span in text.root.spans() {
+            if let Some(font) = self.resolve_span(&span.style).and_then(|s| s.font) {
+                out.push(font);
+            }
+        }
+        out
+    }
+
     /// The style of a new area that copies no other: Body while the table holds it and it draws
     /// with no stand-in, the default values otherwise, so that no new area holds a breach,
     /// `design@rootpoint-model@new-area-style`.

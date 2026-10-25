@@ -338,7 +338,10 @@ impl App {
     }
 
     /// Set the selection from the area's current layout.
-    fn with_layout(&mut self, f: impl FnOnce(Selection, &parley::Layout<()>) -> Selection) {
+    fn with_layout(
+        &mut self,
+        f: impl FnOnce(Selection, &parley::Layout<rootpoint_render::TextBrush>) -> Selection,
+    ) {
         let Some(area) = self.editing() else {
             return;
         };
@@ -355,7 +358,7 @@ impl App {
         &mut self,
         p: Pos2,
         layout: &Layout,
-        f: impl FnOnce(Selection, &parley::Layout<()>, f32, f32) -> Selection,
+        f: impl FnOnce(Selection, &parley::Layout<rootpoint_render::TextBrush>, f32, f32) -> Selection,
     ) {
         let Some(area) = self.editing() else {
             return;

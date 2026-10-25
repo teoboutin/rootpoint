@@ -9,7 +9,7 @@ use parley::{
     Alignment, AlignmentOptions, FontContext, FontFamily, FontFamilyName, FontStyle, FontWeight,
     Layout, LayoutContext, PositionedLayoutItem, StyleProperty,
 };
-use rootpoint_model::{AssetId, BUILTIN_FAMILIES, FontRef, HAlign, TextStyle};
+use rootpoint_model::{AssetId, BUILTIN_FAMILIES, FontRef, HAlign, Rgba, SpanStyle, TextStyle};
 use vello_cpu::kurbo::{Affine, Diagonal2};
 
 /// The family of the built-in sans, which `FontRef::Builtin("sans")` names.
@@ -26,6 +26,23 @@ const BUILTIN_FONTS: [&[u8]; 4] = [
 /// font size on each side.
 const EMBOLDEN: f64 = 0.02;
 
+/// The colour of a run of a laid-out text: the brush Parley carries for each run, so that a span's
+/// colour is drawn with its glyphs. Its default, which every text replaces by its style's colour,
+/// is opaque black.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct TextBrush(pub Rgba);
+
+impl Default for TextBrush {
+    fn default() -> Self {
+        TextBrush(Rgba {
+            r: 0,
+            g: 0,
+            b: 0,
+            a: 255,
+        })
+    }
+}
+
 /// Why an asset's bytes gave no font.
 #[derive(Clone, Debug, PartialEq)]
 pub struct FontError(pub String);
@@ -35,7 +52,7 @@ pub struct FontError(pub String);
 /// is off, and the collection is created without system fonts.
 pub struct FontSet {
     fonts: FontContext,
-    layouts: LayoutContext<()>,
+    layouts: LayoutContext<TextBrush>,
     assets: BTreeMap<AssetId, String>,
 }
 
@@ -103,45 +120,77 @@ impl FontSet {
 
 /// A text laid out in slide units, with the lines' ranges in the text.
 pub(crate) struct TextLayout {
-    pub layout: Layout<()>,
+    pub layout: Layout<TextBrush>,
     /// The byte range of the text each line holds, within the text's length.
     pub lines: Vec<Range<usize>>,
-    /// Whether the text's font was missing, and the built-in sans stood in.
+    /// Whether the text's font, or a font a span sets, was missing, and the built-in sans stood
+    /// in.
     pub fell_back: bool,
     /// Whether a character has no glyph in any font of the stack, and is drawn as a box.
     pub missing_glyph: bool,
 }
 
-/// Lay a text out in slide units in the style `style`, wrapped to `width` slide units. The layout
-/// depends on no pixel size: every display draws this one layout through its own scale.
+/// Lay a text out in slide units in the style `style`, each span's values in `spans` set over its
+/// byte range, wrapped to `width` slide units. `spans` lists the spans outer before inner, as a
+/// later range's value wins where two overlap. The layout depends on no pixel size: every display
+/// draws this one layout through its own scale.
 pub(crate) fn layout_text(
     fonts: &mut FontSet,
     text: &str,
     style: &TextStyle,
+    spans: &[(Range<usize>, SpanStyle)],
     width: f32,
 ) -> TextLayout {
-    let resolved = fonts.family(&style.font);
-    let fell_back = resolved.is_none();
-    let family = resolved.unwrap_or_else(|| BUILTIN_SANS.to_owned());
-    // The built-in sans ends the stack, so a character the chosen font lacks is drawn in it.
-    let stack = [
-        FontFamilyName::named(&family),
-        FontFamilyName::named(BUILTIN_SANS),
-    ];
+    // The built-in sans ends each stack, so a character the chosen font lacks is drawn in it.
+    let mut fell_back = false;
+    let mut stack = |fonts: &FontSet, font: &FontRef| {
+        let resolved = fonts.family(font);
+        fell_back |= resolved.is_none();
+        let family = resolved.unwrap_or_else(|| BUILTIN_SANS.to_owned());
+        vec![family, BUILTIN_SANS.to_owned()]
+    };
+    let area_stack = stack(fonts, &style.font);
+    let span_stacks: Vec<Option<Vec<String>>> = spans
+        .iter()
+        .map(|(_, s)| s.font.as_ref().map(|f| stack(fonts, f)))
+        .collect();
+    let area_names = family_names(&area_stack);
+    let span_names: Vec<Option<Vec<FontFamilyName<'_>>>> = span_stacks
+        .iter()
+        .map(|s| s.as_deref().map(family_names))
+        .collect();
     let mut builder = fonts
         .layouts
         .ranged_builder(&mut fonts.fonts, text, 1.0, true);
     builder.push_default(StyleProperty::FontFamily(FontFamily::List(
-        stack.as_slice().into(),
+        area_names.as_slice().into(),
     )));
     builder.push_default(StyleProperty::FontSize(style.size as f32));
-    if style.bold {
-        builder.push_default(StyleProperty::FontWeight(FontWeight::BOLD));
+    builder.push_default(StyleProperty::FontWeight(weight(style.bold)));
+    builder.push_default(StyleProperty::FontStyle(slant(style.italic)));
+    builder.push_default(StyleProperty::Brush(TextBrush(style.colour)));
+    for ((range, span), names) in spans.iter().zip(&span_names) {
+        let range = range.clone();
+        if let Some(names) = names {
+            builder.push(
+                StyleProperty::FontFamily(FontFamily::List(names.as_slice().into())),
+                range.clone(),
+            );
+        }
+        if let Some(size) = span.size {
+            builder.push(StyleProperty::FontSize(size as f32), range.clone());
+        }
+        if let Some(bold) = span.bold {
+            builder.push(StyleProperty::FontWeight(weight(bold)), range.clone());
+        }
+        if let Some(italic) = span.italic {
+            builder.push(StyleProperty::FontStyle(slant(italic)), range.clone());
+        }
+        if let Some(colour) = span.colour {
+            builder.push(StyleProperty::Brush(TextBrush(colour)), range.clone());
+        }
     }
-    if style.italic {
-        builder.push_default(StyleProperty::FontStyle(FontStyle::Italic));
-    }
-    let mut layout: Layout<()> = builder.build(text);
+    let mut layout: Layout<TextBrush> = builder.build(text);
     layout.break_all_lines(Some(width));
     let alignment = match style.h_align {
         HAlign::Left => Alignment::Left,
@@ -172,7 +221,29 @@ pub(crate) fn layout_text(
     }
 }
 
-/// Draw a laid-out text with its top-left corner at the origin of the context's transform.
+/// A stack of families as Parley names them.
+fn family_names(stack: &[String]) -> Vec<FontFamilyName<'_>> {
+    stack.iter().map(|f| FontFamilyName::named(f)).collect()
+}
+
+fn weight(bold: bool) -> FontWeight {
+    if bold {
+        FontWeight::BOLD
+    } else {
+        FontWeight::NORMAL
+    }
+}
+
+fn slant(italic: bool) -> FontStyle {
+    if italic {
+        FontStyle::Italic
+    } else {
+        FontStyle::Normal
+    }
+}
+
+/// Draw a laid-out text with its top-left corner at the origin of the context's transform, each
+/// glyph run in its run's colour.
 /// Returns false when a glyph run could not be drawn, as from a damaged font file.
 pub(crate) fn draw_text(
     ctx: &mut vello_cpu::RenderContext,
@@ -186,6 +257,12 @@ pub(crate) fn draw_text(
                 continue;
             };
             let run = glyph_run.run();
+            let TextBrush(c) = glyph_run.style().brush;
+            ctx.set_paint(
+                vello_cpu::color::AlphaColor::<vello_cpu::color::Srgb>::from_rgba8(
+                    c.r, c.g, c.b, c.a,
+                ),
+            );
             let size = run.font_size();
             let synthesis = run.synthesis();
             let glyphs = glyph_run.positioned_glyphs().map(|g| vello_cpu::Glyph {

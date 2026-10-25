@@ -462,10 +462,12 @@ impl Session {
                             }
                         }
                         Content::Text(t) => {
-                            if let FontRef::Asset(id) = self.doc.resolve_style(&t.style).font
-                                && let Ok(bytes) = self.asset_bytes(id, files)
-                            {
-                                let _ = fonts.insert_bytes(id, bytes);
+                            for font in self.doc.text_fonts(t) {
+                                if let FontRef::Asset(id) = font
+                                    && let Ok(bytes) = self.asset_bytes(id, files)
+                                {
+                                    let _ = fonts.insert_bytes(id, bytes);
+                                }
                             }
                         }
                     }

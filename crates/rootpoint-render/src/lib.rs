@@ -15,10 +15,10 @@ pub use images::{DecodeError, ImageSet, decode_rgba};
 pub use map::TextMap;
 use parley::Layout;
 use rootpoint_model::{
-    AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, StyleChoice,
-    TextContent, TextStyle, VAlign, area_rects,
+    AssetId, Content, Document, ImageFit, Node, NodeId, Rect as SlideRect, SlideId, SpanChoice,
+    SpanId, SpanStyle, StyleChoice, TextContent, TextStyle, VAlign, area_rects,
 };
-pub use text::{FontError, FontSet};
+pub use text::{FontError, FontSet, TextBrush};
 use vello_cpu::color::AlphaColor;
 use vello_cpu::color::palette::css::{BLACK, WHITE};
 use vello_cpu::kurbo::{Affine, Point, Rect, Shape};
@@ -55,13 +55,17 @@ pub enum RenderError {
 pub struct Report {
     /// The image assets with no decoded image in the `ImageSet`; their areas are drawn grey.
     pub missing_images: Vec<AssetId>,
-    /// The text areas whose font no font of the `FontSet` has; the built-in sans stands in.
+    /// The text areas whose font, or a font one of its spans sets, no font of the `FontSet` has;
+    /// the built-in sans stands in.
     pub font_fallbacks: Vec<NodeId>,
     /// The text areas holding a character that no font of the `FontSet` has, drawn as a box.
     pub missing_glyphs: Vec<NodeId>,
     /// The text areas naming a style the document's table lacks, with the name; each is drawn with
     /// `TextStyle::default()`.
     pub missing_styles: Vec<(NodeId, String)>,
+    /// The spans naming a span style the document's table lacks, each with its area and the name;
+    /// each is drawn with its parent's values.
+    pub missing_span_styles: Vec<(NodeId, SpanId, String)>,
     /// The text areas whose glyphs could not all be drawn, as from a damaged font file.
     pub undrawn_text: Vec<NodeId>,
     /// For each text area, the byte range of its text on each line, as laid out.
@@ -143,8 +147,15 @@ pub fn render_slide(
                 {
                     report.missing_styles.push((id, name.clone()));
                 }
+                for span in content.root.spans() {
+                    if let SpanChoice::Named(name) = &span.style
+                        && !doc.span_styles.contains_key(name)
+                    {
+                        report.missing_span_styles.push((id, span.id, name.clone()));
+                    }
+                }
                 let style = doc.resolve_style(&content.style);
-                let (laid, origin) = lay_out_area(fonts, content, &style, area);
+                let (laid, origin) = lay_out_area(doc, fonts, content, &style, area);
                 if laid.fell_back {
                     report.font_fallbacks.push(id);
                 }
@@ -152,10 +163,6 @@ pub fn render_slide(
                     report.missing_glyphs.push(id);
                 }
                 ctx.set_transform(to_pixels * Affine::translate(origin));
-                let c = style.colour;
-                ctx.set_paint(AlphaColor::<vello_cpu::color::Srgb>::from_rgba8(
-                    c.r, c.g, c.b, c.a,
-                ));
                 if !text::draw_text(&mut ctx, &mut resources, &laid) {
                     report.undrawn_text.push(id);
                 }
@@ -183,7 +190,7 @@ pub fn render_slide(
 /// positions to the layout's byte indices. An editor that places a caret or a selection on this
 /// layout, with Parley's `Selection` and `Cursor`, places it on the drawn glyphs.
 pub struct AreaText {
-    pub layout: Layout<()>,
+    pub layout: Layout<TextBrush>,
     pub origin: (f64, f64),
     pub map: TextMap,
 }
@@ -208,7 +215,7 @@ pub fn area_text(
         return None;
     };
     let style = doc.resolve_style(&content.style);
-    let (laid, origin) = lay_out_area(fonts, content, &style, rect);
+    let (laid, origin) = lay_out_area(doc, fonts, content, &style, rect);
     Some(AreaText {
         layout: laid.layout,
         origin,
@@ -221,13 +228,23 @@ pub fn area_text(
 /// alignment's share of the room left. `render_slide` and `area_text` both lay a text out here, so
 /// they give one layout.
 fn lay_out_area(
+    doc: &Document,
     fonts: &mut FontSet,
     content: &TextContent,
     style: &TextStyle,
     area: SlideRect,
 ) -> (text::TextLayout, (f64, f64)) {
     let inner = (area.w - 2.0 * TEXT_PADDING).max(0.0);
-    let laid = text::layout_text(fonts, &content.plain_text(), style, inner as f32);
+    // Each span's values over its byte range, outer spans first, as `TextNode::spans` lists them:
+    // a span naming a style the table lacks sets nothing, and draws with its parent's values.
+    let map = TextMap::new(content);
+    let spans: Vec<(Range<usize>, SpanStyle)> = content
+        .root
+        .spans()
+        .into_iter()
+        .filter_map(|span| Some((map.span_range(span.id)?, doc.resolve_span(&span.style)?)))
+        .collect();
+    let laid = text::layout_text(fonts, &content.plain_text(), style, &spans, inner as f32);
     let free = area.h - 2.0 * TEXT_PADDING - f64::from(laid.layout.height());
     let dy = match style.v_align {
         VAlign::Top => 0.0,

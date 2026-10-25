@@ -218,3 +218,220 @@ fn a_named_style_draws_as_its_table_entry() {
     let default = render(StyleChoice::Custom(TextStyle::default()));
     assert!(named.pixmap.data_as_u8_slice() != default.pixmap.data_as_u8_slice());
 }
+
+/// A text of a bold span holding a red span, and a red span alone, on one slide.
+fn styled() -> Document {
+    let (mut doc, root) = one_slide();
+    set(
+        &mut doc,
+        root,
+        text(
+            "Plain, then bold with a red word inside, then a red word alone.",
+            TextStyle {
+                size: 40.0,
+                ..TextStyle::default()
+            },
+        ),
+    );
+    let red = || {
+        SpanChoice::Custom(SpanStyle {
+            colour: Some(Rgba {
+                r: 200,
+                g: 30,
+                b: 30,
+                a: 255,
+            }),
+            ..SpanStyle::default()
+        })
+    };
+    let wrap = |doc: &mut Document, node, range, style| {
+        apply(
+            doc,
+            Op::WrapSpan {
+                area: root,
+                node,
+                range,
+                style,
+            },
+        )
+        .unwrap();
+    };
+    // "bold with a red word inside" is offsets 12..39; "red word" offsets 12..20 within it.
+    wrap(
+        &mut doc,
+        TextNodeRef::Root,
+        12..39,
+        SpanChoice::Custom(SpanStyle {
+            bold: Some(true),
+            ..SpanStyle::default()
+        }),
+    );
+    let bold = text_spans(&doc, root)[0];
+    wrap(&mut doc, TextNodeRef::Span(bold), 12..20, red());
+    // "red word alone": the root counts the bold span as one offset, 12, so it starts at 22.
+    wrap(&mut doc, TextNodeRef::Root, 22..36, red());
+    doc
+}
+
+fn text_spans(doc: &Document, area: NodeId) -> Vec<SpanId> {
+    match doc.node(area) {
+        Some(Node::Area(Area {
+            content: Content::Text(t),
+            ..
+        })) => t.root.spans().iter().map(|s| s.id).collect(),
+        _ => panic!("no text"),
+    }
+}
+
+fn render_small(doc: &Document) -> rootpoint_render::Rendered {
+    render_slide(
+        doc,
+        doc.slides[0].id,
+        960,
+        540,
+        &mut FontSet::new(),
+        &ImageSet::new(),
+        Precision::Portable,
+    )
+    .unwrap()
+}
+
+#[test]
+fn a_styled_text_matches_its_golden_image() {
+    let doc = styled();
+    let root = doc.slides[0].root.id();
+    match doc.node(root) {
+        Some(Node::Area(Area {
+            content: Content::Text(t),
+            ..
+        })) => assert_eq!(
+            t.plain_text(),
+            "Plain, then bold with a red word inside, then a red word alone."
+        ),
+        _ => panic!("no text"),
+    }
+    assert_eq!(text_spans(&doc, root).len(), 3);
+    let out = render_small(&doc);
+    assert_eq!(out.report.font_fallbacks, vec![]);
+    assert_golden(out.pixmap, "spans.png");
+}
+
+/// A span setting bold over a whole text draws as the text whose own style is bold: the span's
+/// value replaces the area's over its range.
+#[test]
+fn a_span_over_the_whole_text_draws_as_the_style_it_sets() {
+    let plain = |bold| {
+        let (mut doc, root) = one_slide();
+        set(
+            &mut doc,
+            root,
+            text(
+                "One line of text",
+                TextStyle {
+                    bold,
+                    ..TextStyle::default()
+                },
+            ),
+        );
+        (doc, root)
+    };
+    let (bold, _) = plain(true);
+    let (mut spanned, root) = plain(false);
+    apply(
+        &mut spanned,
+        Op::WrapSpan {
+            area: root,
+            node: TextNodeRef::Root,
+            range: 0..16,
+            style: SpanChoice::Custom(SpanStyle {
+                bold: Some(true),
+                ..SpanStyle::default()
+            }),
+        },
+    )
+    .unwrap();
+    let (a, b) = (render_small(&bold), render_small(&spanned));
+    assert!(a.pixmap.data_as_u8_slice() == b.pixmap.data_as_u8_slice());
+    let (not_bold, _) = plain(false);
+    assert!(render_small(&not_bold).pixmap.data_as_u8_slice() != b.pixmap.data_as_u8_slice());
+}
+
+/// Each caret position of a nested text stands at its byte index, and each span covers its
+/// bytes; the two positions at an edge stand at one index.
+#[test]
+fn the_map_places_every_caret_position_on_its_byte_index() {
+    let doc = styled();
+    let root = doc.slides[0].root.id();
+    let Some(Node::Area(Area {
+        content: Content::Text(t),
+        ..
+    })) = doc.node(root)
+    else {
+        panic!("no text")
+    };
+    let map = rootpoint_render::TextMap::new(t);
+    let plain = t.plain_text();
+    let spans = text_spans(&doc, root);
+    let at = |node, offset| map.byte_index(CaretPos { node, offset }).unwrap();
+    assert_eq!(
+        &plain[map.span_range(spans[0]).unwrap()],
+        "bold with a red word inside"
+    );
+    assert_eq!(&plain[map.span_range(spans[1]).unwrap()], "red word");
+    assert_eq!(&plain[map.span_range(spans[2]).unwrap()], "red word alone");
+    // Before the bold span in the root, and at its start inside it: one byte index.
+    assert_eq!(
+        at(TextNodeRef::Root, 12),
+        at(TextNodeRef::Span(spans[0]), 0)
+    );
+    assert_eq!(at(TextNodeRef::Root, 12), plain.find("bold").unwrap());
+    // After the bold span, offset 13 of the root.
+    assert_eq!(at(TextNodeRef::Root, 13), plain.find(", then a").unwrap());
+    // The root's last offset is the text's end.
+    let last = map.positions(TextNodeRef::Root).unwrap() - 1;
+    assert_eq!(at(TextNodeRef::Root, last), plain.len());
+    assert_eq!(
+        map.byte_index(CaretPos {
+            node: TextNodeRef::Root,
+            offset: last + 1
+        }),
+        None
+    );
+}
+
+/// A span naming a span style the table lacks is reported and drawn with its parent's values;
+/// a span whose font asset the set lacks falls back to the built-in sans, and its area is named.
+#[test]
+fn a_span_with_a_missing_style_or_font_is_reported() {
+    let (mut doc, root) = one_slide();
+    set(&mut doc, root, text("two words", TextStyle::default()));
+    let asset = add_asset(&mut doc, "font.ttf");
+    let wrap = |doc: &mut Document, range, style| {
+        apply(
+            doc,
+            Op::WrapSpan {
+                area: root,
+                node: TextNodeRef::Root,
+                range,
+                style,
+            },
+        )
+        .unwrap();
+    };
+    wrap(&mut doc, 0..3, SpanChoice::Named("Ghost".to_owned()));
+    wrap(
+        &mut doc,
+        2..3,
+        SpanChoice::Custom(SpanStyle {
+            font: Some(FontRef::Asset(asset)),
+            ..SpanStyle::default()
+        }),
+    );
+    let ghost = text_spans(&doc, root)[0];
+    let out = render_small(&doc);
+    assert_eq!(
+        out.report.missing_span_styles,
+        vec![(root, ghost, "Ghost".to_owned())]
+    );
+    assert_eq!(out.report.font_fallbacks, vec![root]);
+}

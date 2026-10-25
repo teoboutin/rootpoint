@@ -35,25 +35,33 @@ impl Assets {
         let mut uses: BTreeMap<AssetId, Use> = BTreeMap::new();
         for slide in &doc.slides {
             for area in slide.root.areas() {
-                let (id, image) = match &area.content {
-                    Content::Image(i) => (i.asset, true),
-                    Content::Text(t) => match doc.resolve_style(&t.style).font {
-                        FontRef::Asset(id) => (id, false),
-                        FontRef::Builtin(_) => continue,
-                    },
+                // An image area uses its image; a text, its style's font and each font its spans
+                // set.
+                let used: Vec<(AssetId, bool)> = match &area.content {
+                    Content::Image(i) => vec![(i.asset, true)],
+                    Content::Text(t) => doc
+                        .text_fonts(t)
+                        .into_iter()
+                        .filter_map(|font| match font {
+                            FontRef::Asset(id) => Some((id, false)),
+                            FontRef::Builtin(_) => None,
+                        })
+                        .collect(),
                 };
-                let Some(asset) = doc.assets.get(&id) else {
-                    continue;
-                };
-                let entry = uses.entry(id).or_insert(Use {
-                    image: false,
-                    font: false,
-                    path: asset.path.clone(),
-                });
-                if image {
-                    entry.image = true;
-                } else {
-                    entry.font = true;
+                for (id, image) in used {
+                    let Some(asset) = doc.assets.get(&id) else {
+                        continue;
+                    };
+                    let entry = uses.entry(id).or_insert(Use {
+                        image: false,
+                        font: false,
+                        path: asset.path.clone(),
+                    });
+                    if image {
+                        entry.image = true;
+                    } else {
+                        entry.font = true;
+                    }
                 }
             }
         }

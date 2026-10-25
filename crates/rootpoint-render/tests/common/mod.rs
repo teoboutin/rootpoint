@@ -186,6 +186,27 @@ pub fn mixed() -> (Document, AssetId) {
             },
         ),
     );
+    // A styled span in the paragraph, so that the slide the render's bound is timed on holds one:
+    // "line breaks", red and not bold, `tripwire@rootpoint-render@render-within-bounds`.
+    apply(
+        &mut doc,
+        Op::WrapSpan {
+            area: areas[2],
+            node: TextNodeRef::Root,
+            range: 76..87,
+            style: SpanChoice::Custom(SpanStyle {
+                bold: Some(false),
+                colour: Some(Rgba {
+                    r: 200,
+                    g: 30,
+                    b: 30,
+                    a: 255,
+                }),
+                ..SpanStyle::default()
+            }),
+        },
+    )
+    .unwrap();
     set(
         &mut doc,
         areas[3],
