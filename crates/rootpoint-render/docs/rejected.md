@@ -46,3 +46,11 @@ covers 21 of the 208 characters of Latin Extended-B and 101 of the 256 of Vietna
 Sans and the `noto-set` build cover whole, as measured in
 `path@rootpoint@docs/grounding/math-typesetting.md`, section 4: text Noto Sans drew would have
 characters missing.
+
+### A formula's inline box at an index with no character of its own `##inline-box-without-mark`
+
+`live`. Parley 0.12 gives an inline box no byte of the string, so the caret position after the box
+is the position after the next character, and a caret cannot stand between a formula and the text
+that follows it: a box at byte 2 of `"abcd"` puts byte 2 before the box and byte 3 after the `c`,
+as `a_box_with_no_character_after_it_leaves_no_position_after_it` of
+`path@rootpoint-render@src/text.rs` measures.

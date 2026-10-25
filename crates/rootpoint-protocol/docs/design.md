@@ -80,8 +80,9 @@ style is named by its name instead, `design@rootpoint-model@style-key`.
 
 `insert <n|t> <offset> "<text>"`, which inserts a formula `$…$` or a reference `{ref n<id>}` too,
 `delete <n|t> <a>..<b>`, `wrap <n|t> <a>..<b> <options>`, `unwrap t<n>`, `span t<n> <options>`,
-`split-span t<n> <offset>` and `math <n|t> <offset> $…$`,
-`design@rootpoint-protocol@math-edit-commands`, each apply one operation of the model's text tree,
+`split-span t<n> <offset>`, `math <n|t> <offset> $…$`,
+`design@rootpoint-protocol@math-edit-commands`, and `retarget n<from> n<to>`,
+`design@rootpoint-model@reference-retarget`, each apply one operation of the model's text tree,
 `design@rootpoint-model@edit-operation-core`, and change no span they do not name but to remove it
 whole, as `delete` removes a span in its range, so every span left keeps its id,
 `design@rootpoint-model@stable-ids`, and a script styles a span again by its id after any edit
@@ -95,6 +96,10 @@ tree set whole is renumbered. The commands are the crate's interface to every pr
 styled text, as `goal@rootpoint-protocol@commands-drive-everything` asks.
 `tripwire@rootpoint-protocol@one-line-tree-written-badly` watches agents writing `text`'s tree.
 
+
+`retarget` replies the number of references it moved, and refuses a target that holds no equation
+and a source that is its target; its source may hold none, so that the references a file brought to
+an area that holds no equation can be moved to one.
 ### `text` with options and no tree changes the area's style alone, its spans and their ids kept `##text-style-alone`
 
 `text <area> <options>` changes the style of an area's text by `Op::SetContent` of its current
@@ -119,26 +124,25 @@ since its comma is outside a quoted string a word of a text tree,
 
 A command that names a target the document lacks is refused before any operation: `image` and the
 `font` option of `text`, `style add` and `style set` reply `err no asset a<n>` for an asset the
-table does not hold, `text … style="<name>"` and `style remove … into="<name>"` refuse a style
-the table lacks, or one whose font is a missing target, and so do the span commands for a span
-style and a span's font, `wrap`, `span`, a span of `text`, `span-style add`, `span-style set` and
-`span-style remove … into="<name>"`, and `import` refuses an asset path that
-fails `asset_path_is_confined`, `design@rootpoint-protocol@store-confines-access`, as `asset-move`
-and `asset-relink` refuse one, and `asset-remove … into=` an asset the table lacks. A reference to
-an equation is a target too: `insert` and `text` refuse a reference to an area that holds no
-equation, and a command that would take an equation from a text that references it is refused,
-`design@rootpoint-protocol@removed-equation-references`. The refusal is the command's, since the
-operations accept a reference to a missing target but for the exceptions
+table does not hold, `text … style="<name>"` and `style remove … into="<name>"` refuse a style the
+table lacks, or one whose font is a missing target, and so do the span commands for a span style and
+a span's font, `wrap`, `span`, a span of `text`, `span-style add`, `span-style set` and
+`span-style remove … into="<name>"`, and `import` refuses an asset path that fails
+`asset_path_is_confined`, `design@rootpoint-protocol@store-confines-access`, as `asset-move` and
+`asset-relink` refuse one, and `asset-remove … into=` an asset the table lacks. A reference to an
+equation is a target too: `insert` and `text` refuse a reference to an area that holds no equation,
+and `retarget` a target that holds none, and a command that would take an equation from a text that
+references it is refused, `design@rootpoint-protocol@removed-equation-references`. The refusal is
+the command's, since the operations accept a reference to a missing target but for the exceptions
 `design@rootpoint-model@cosmetic-fallbacks` names. So a breach reaches a document only through a
 file: a command that copies or moves an area, as `duplicate-slide` and `swap` do, carries the breach
 a file brought, and creates none in a document that has none. The property test of
 `path@rootpoint-protocol@tests/properties.rs` runs random sequences of commands from an empty
 document, `undo`, `redo`, the groups and the commands of a text tree and of the span style table
-included, and checks that none leaves a breach. The nearest
-rival, a command that passes the target through and leaves the breach to the fallback, would hide an
-editor's bug behind a warning; the refusal makes that bug a test's failure. It is a reason respected
-at every command that names a target.
-
+included, and checks that none leaves a breach. The nearest rival, a command that passes the target
+through and leaves the breach to the fallback, would hide an editor's bug behind a warning; the
+refusal makes that bug a test's failure. It is a reason respected at every command that names a
+target.
 
 ### A command that would take an equation from a text referencing it is refused, naming the references `##removed-equation-references`
 
@@ -154,9 +158,8 @@ accepts each, `design@rootpoint-model@cosmetic-fallbacks`, so no undo is refused
 allowing the removal and drawing `(??)`, as LaTeX draws a reference to a removed label, would let a
 command create a breach, against `design@rootpoint-protocol@no-new-breach`,
 `rejected@rootpoint-protocol@referenced-equation-removed`. The references are moved first by
-`retarget`, `design@rootpoint-model@reference-retarget`, which the window's refusal names. On the
-owner's word: the owner thought the refusal better than allowing the removal, on the condition that
-retargeting every reference is easy.
+`retarget`, `design@rootpoint-model@reference-retarget`, which the window's refusal names.
+
 ### A split's axis is typed as a short word for where its children go `##protocol-axis-words`
 
 `split` and `tree` write a `LeftToRight` split as `beside` and a `TopToBottom` split as `stacked`.

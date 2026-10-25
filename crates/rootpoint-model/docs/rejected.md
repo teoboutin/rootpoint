@@ -195,3 +195,9 @@ the file would write a formula as a span's text.
 `live`. An area is a rectangle of the slide's tree, so a formula placed in one stands beside the
 text's lines, not inside a sentence, and a line's wrapping cannot carry it.
 
+### An equation's own id, stored in its content `##equation-own-id`
+
+`live`. A reference would name an id an equation's content holds, which a swap carries with the
+content by itself, at the cost of a fifth kind of id beside the slide's, the node's, the asset's and
+the span's, in the file and in the public types, and of a counter or a rule that keeps it unique
+when a slide is duplicated.

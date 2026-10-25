@@ -14,8 +14,8 @@ equations to be nameable, as LyX labels them, with the name set in the side pane
 ### What
 
 `milestone@plans@math-support` builds references to equations by area id: a text's reference item
-reads `Ref(7)` in the file, where an id is a plain number, and `{ref n7}` in commands, and draws as the equation's number. The
-author picks the equation from a list in the window, so no name is needed to insert one. The design
+reads `Ref(7)` in the file, where an id is a plain number, and `{ref n7}` in commands, and draws as
+the equation's number, `design@rootpoint-model@equation-reference-target`. The design
 discussion of that milestone weighed names, as LyX's `\label{eq:energy}` and `reference "eq:red"`
 are, against ids, and the owner chose ids for a first shape, and asked that naming stay open as
 this entry.
@@ -40,5 +40,4 @@ which equation is meant, which bears on `goal@rootpoint@readable-save-file`.
 
 ### What would close it
 
-A design session on equation names, held once the milestone's references exist, and its work built,
-or the owner's word that ids are enough.
+A design session on equation names, and its work built, or the owner's word that ids are enough.

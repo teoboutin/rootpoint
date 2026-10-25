@@ -404,6 +404,66 @@ mod tests {
         assert_eq!(math_runs, 1, "the arrow alone is drawn from the math font");
     }
 
+    /// The measurement behind the mark a formula stands on in a text's string,
+    /// `design@rootpoint-render@formula-mark`: in Parley 0.12, an inline box at byte 2 of `"abcd"`
+    /// takes no byte, so the caret's positions are byte 2, before the box, and byte 3, after the
+    /// `c`, with none between the box and the `c`; with U+2060 after the box, byte 5 stands right
+    /// after the box. Open Sans draws U+2060 with no advance, and with a glyph of its own.
+    #[test]
+    fn a_box_with_no_character_after_it_leaves_no_position_after_it() {
+        use parley::{Affinity, Cursor};
+        let mut set = FontSet::new();
+        let stack = vec![BUILTIN_SANS.to_owned()];
+        let names = family_names(&stack);
+        let mut lay = |text: &str| {
+            let mut b = set.layouts.ranged_builder(&mut set.fonts, text, 1.0, true);
+            b.push_default(StyleProperty::FontFamily(FontFamily::List(
+                names.as_slice().into(),
+            )));
+            b.push_default(StyleProperty::FontSize(40.0));
+            b.push_inline_box(InlineBox {
+                id: 0,
+                kind: InlineBoxKind::InFlow,
+                index: 2,
+                width: 100.0,
+                height: 30.0,
+                baseline: Some(20.0),
+                vertical_align: Default::default(),
+            });
+            let mut layout: Layout<TextBrush> = b.build(text);
+            layout.break_all_lines(Some(1000.0));
+            layout
+        };
+        let x = |layout: &Layout<TextBrush>, byte| {
+            Cursor::from_byte_index(layout, byte, Affinity::Downstream)
+                .geometry(layout, 1.0)
+                .x0
+        };
+        let bare = lay("abcd");
+        let box_right = x(&bare, 2) + 100.0;
+        // After the box, the next position is past the `c`.
+        assert!(x(&bare, 3) > box_right + 1.0, "{} {box_right}", x(&bare, 3));
+        let marked = lay("ab\u{2060}cd");
+        assert!((x(&marked, 2) - x(&bare, 2)).abs() < 1e-3);
+        assert!(
+            (x(&marked, 5) - box_right).abs() < 1e-3,
+            "{} {box_right}",
+            x(&marked, 5)
+        );
+        // The mark's glyph is the font's own, not the missing glyph, and has no advance.
+        let mut glyphs = Vec::new();
+        for line in marked.lines() {
+            for item in line.items() {
+                if let PositionedLayoutItem::GlyphRun(run) = item {
+                    glyphs.extend(run.positioned_glyphs().map(|g| (g.id, g.x)));
+                }
+            }
+        }
+        assert!(glyphs.iter().all(|(id, _)| *id != 0), "{glyphs:?}");
+        assert_eq!(glyphs.len(), 5, "{glyphs:?}");
+        assert!((glyphs[2].1 - glyphs[3].1).abs() < 1e-3, "{glyphs:?}");
+    }
+
     /// The binary carries one text family, so `family` resolves every built-in name to it: a second
     /// name in the model's list would need a family of its own here, and this test then fails.
     #[test]

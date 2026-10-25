@@ -407,17 +407,16 @@ the text out, `rejected@rootpoint-app@plain-editor`.
 
 A caret position is a text node of the text's tree, its root or a span, and an offset in its
 sequence, a span, a formula and a reference each counting as one item,
-`design@rootpoint-model@text-node-tree`; the caret steps over a formula or a reference whole, and a
-byte index inside the characters a reference draws stands at its nearer edge. Right at an offset
-before a span enters it at offset 0, and at its last offset leaves it, after it in its parent; Left
-is the mirror; both positions of an edge stand at one byte index of the layout. Typing inserts into
-the caret's text node, so the author chooses, by an arrow, whether a typed letter joins a span. A
-byte index goes back to a caret position, after a click or a move by Parley, in the deepest text
-node that owns the glyph on the side the cursor's affinity names, the glyph after the index for
-`Downstream` and before it for `Upstream`, which is the side of the glyph a click took, as Parley
-0.12.0's `Cursor::from_point` sets it; with no glyph on that side, at the text's start or end, the
-other side is taken. However many edges meet at an index, one glyph owns each side, so the rule
-never has to choose among them.
+`design@rootpoint-model@text-node-tree`; the caret steps over a formula or a reference whole. Right
+at an offset before a span enters it at offset 0, and at its last offset leaves it, after it in its
+parent; Left is the mirror; both positions of an edge stand at one byte index of the layout. Typing
+inserts into the caret's text node, so the author chooses, by an arrow, whether a typed letter joins
+a span. A byte index goes back to a caret position, after a click or a move by Parley, in the
+deepest text node that owns the glyph on the side the cursor's affinity names, the glyph after the
+index for `Downstream` and before it for `Upstream`, which is the side of the glyph a click took, as
+Parley 0.12.0's `Cursor::from_point` sets it; with no glyph on that side, at the text's start or
+end, the other side is taken. However many edges meet at an index, one glyph owns each side, so the
+rule never has to choose among them.
 
 The rival, one caret position per edge and a rule that guesses the typing style, is how LyX types
 into its flat runs of fonts, by `Cursor::setCurrentFont`, in the survey of LyX,

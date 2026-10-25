@@ -131,7 +131,10 @@ pub enum Op {
         offset: usize,
         text: String,
     },
-    /// Insert a formula, one item, in a text node of an area's text, at an offset.
+    /// Insert a formula, one item, in a text node of an area's text, at an offset. A formula and a
+    /// reference are inserted by two operations, rather than one taking any item, so that no
+    /// operation takes an item it would have to refuse, as characters, which `InsertText` inserts,
+    /// or a span, whose id the counter gives.
     InsertMath {
         area: NodeId,
         node: TextNodeRef,
@@ -425,7 +428,7 @@ fn apply_in(doc: &mut Document, op: Op) -> Result<Op, OpError> {
             })
         }
         // The references follow the contents, so a moved equation keeps them; the swap is its own
-        // inverse, references included, `design@rootpoint-model@references-follow-equations`.
+        // inverse, references included, `design@rootpoint-model@swap-carries-references`.
         Op::Swap { a, b } => {
             let content_a = area_mut(doc, a)?.content.clone();
             let content_b = std::mem::replace(&mut area_mut(doc, b)?.content, content_a);
@@ -1208,7 +1211,8 @@ fn renumber(
     }
 }
 
-/// Make each reference of the subtree's texts to an area `copies` holds name that area's copy.
+/// Make each reference of the subtree's texts to an area `copies` holds name that area's copy,
+/// `design@rootpoint-model@duplicate-redirects-references`.
 fn redirect(node: &mut Node, copies: &std::collections::BTreeMap<NodeId, NodeId>) {
     match node {
         Node::Split(s) => s.children.iter_mut().for_each(|c| redirect(c, copies)),

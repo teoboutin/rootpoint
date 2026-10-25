@@ -599,12 +599,13 @@ model's design home, at #inline-math.
 Proposed by the session in round 1, #arg-20; allowing the removal lost on #arg-21. Approved in round
 2 on a condition: "this is better than allowing the removal I think, under the condition that there
 must be an easy way to retarget all references", #arg-33, which #reference-retarget meets. Harvested
-into the model's design home, at #inline-math.
+into `design@rootpoint-protocol@removed-equation-references`, at #inline-math.
 
 ### One operation moves every reference from one equation to another `##reference-retarget`
 
 Proposed by the session in round 2, carrying the owner's condition, #arg-40, with Q7. Approved in
-round 3: "reference-retarget agreed". Harvested with #removed-equation-references, at #inline-math.
+round 3: "reference-retarget agreed". Harvested into `design@rootpoint-model@reference-retarget`, at
+#inline-math.
 
 ### Math is laid out by the project's own code from the font's MATH table, a box per atom and per cell `##math-layout-engine`
 
@@ -672,7 +673,7 @@ Harvested into `design@rootpoint-protocol@math-in-protocol-grammar`, at #equatio
 ### The window changes a formula by replacing that one formula whole `##math-edit-commands`
 
 Proposed by the session in round 1, #arg-28. Approved in round 2: "math-edit-commands: agreed".
-Harvested into `design@rootpoint-protocol@text-edit-commands`, at #inline-math.
+Harvested into `design@rootpoint-protocol@math-edit-commands`, at #inline-math.
 
 ### LyX's math keys are copied exactly, the browser build disabling a binding that conflicts `##math-keys`
 

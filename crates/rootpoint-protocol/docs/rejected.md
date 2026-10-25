@@ -126,4 +126,3 @@ again, makes every such edit in one command, its atoms having no ids to keep.
 `live`. The removal would leave texts referencing an area that holds no equation, a cosmetic breach
 a command made in a document that held none, which `design@rootpoint-protocol@no-new-breach` refuses
 for every other target.
-

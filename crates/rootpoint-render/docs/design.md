@@ -39,20 +39,29 @@ each span's values set over its byte range, and `AreaText` carries the `TextMap`
 position of the tree to its byte index in that string, and each span's byte range; the ranged
 builder collapses no whitespace, as the doc comment of `RangedBuilder` in Parley 0.12.0's
 `builder.rs` says, so those byte indices are the stored characters'. A formula stands in that string
-on U+2060, the word joiner, which the built-in fonts draw as nothing, with no advance, after an
-inline box of the formula's width and height at that character's index; a reference stands on the
-characters of the number it draws, `(n)` or `(??)`. Parley 0.12 gives an inline box no byte of the
-string, so without a character after the box the caret position after a formula would be the one
-after the next character: measured with a probe at the slice that built formulas, a box at byte 2
-of `"abcd"` puts byte 2 before it and byte 3 after the `c`, and with the joiner, bytes 2 and 5
-stand either side of the box. `AreaText` carries each formula's byte range, its layout and the
-point its origin is drawn at. An editor that places a caret or a selection on that layout, with
+on a mark of its own, `design@rootpoint-render@formula-mark`, and a reference on the characters of
+the number it draws, `(n)` or `(??)`; `AreaText` carries each formula's byte range, its layout and
+the point its origin is drawn at. An editor that places a caret or a selection on that layout, with
 Parley's `Selection` and `Cursor`, places it on the drawn glyphs, which
 `goal@rootpoint-render@same-slide-everywhere` asks of every display. `area_text` and its `AreaText` are part
 of the crate's public interface; the app's editing in place, `design@rootpoint-app@edit-in-place`,
 consumes it. A layout the editor made itself, from the same styles set again, would be a second
 layout that must agree with the drawn one, as `rejected@rootpoint-app@plain-editor` records of
 Parley's own editor.
+
+### A formula of a text is an inline box, on a word joiner of the laid-out string `##formula-mark`
+
+Each formula of a text is laid out by the math crate, in text style, at the size and in the colour
+its text node resolves to, and placed in the text's one Parley layout as an inline box of its width,
+its height and its baseline, at the byte index of a U+2060, the word joiner, that the laid-out
+string holds for it. The caret's positions before and after the formula are then two byte indices,
+either side of the box. The nearest rival, the box at an index with no character of its own,
+`rejected@rootpoint-render@inline-box-without-mark`, leaves no caret position between the box and
+the character after it, since Parley 0.12 gives an inline box no byte of the string; measured by
+`a_box_with_no_character_after_it_leaves_no_position_after_it` of
+`path@rootpoint-render@src/text.rs`, `cargo test -p rootpoint-render --lib`, which also finds that
+Open Sans draws U+2060 with a glyph of its own and no advance, so the mark is no missing glyph and
+moves nothing.
 
 ### What an area sets in type is inset from it by 24 slide units, and an image is not `##typeset-padding`
 

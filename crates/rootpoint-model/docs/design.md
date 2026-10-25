@@ -70,7 +70,7 @@ are part of every saved file.
 
 ### An area holds its content, and heavy data is an asset the content refers to by id `##inline-content-assets`
 
-An area holds one content: a text, its tree of characters and spans with its style,
+An area holds one content: a text, its tree of items with its style,
 `design@rootpoint-model@text-node-tree`, an image, `design@rootpoint-model@no-empty-kind`, or an
 equation, `design@rootpoint-model@equation-content-kind`. Image data and font files live once in the
 document's asset table, keyed by asset id, so a slide's text is read in the file where it is shown,
@@ -150,7 +150,7 @@ that fails it, `design@rootpoint-protocol@no-new-breach`. The model checks nothi
 file is at the path, and where a symlink leads, are the store's to check. A file that names another
 path loads, a cosmetic breach, `design@rootpoint-model@cosmetic-fallbacks`.
 
-### An area's text is a tree of characters and spans `##text-node-tree`
+### An area's text is a tree whose nodes are spans, each carrying its style `##text-node-tree`
 
 A text is a root `TextNode`, a sequence of runs of characters, spans, formulas and references,
 `design@rootpoint-model@text-node-kinds`; a span has an id, a span's style and a `TextNode` of its
@@ -164,14 +164,14 @@ each text node's runs of characters merged, none empty and no two adjacent, so t
 its round trip through an operation and its inverse compare equal.
 
 The nearest rival, flat runs of styles over one string, `rejected@rootpoint-model@flat-style-runs`,
-gives a style's edge one position, so the style typed there is guessed, and it cannot hold a
-fraction's two cells, which maths will need. Both at once, as LyX keeps them,
-`rejected@rootpoint-model@runs-beside-spans`, puts a seam between two styling models. One style
-for a whole area, `rejected@rootpoint-model@one-style-per-area`, styles no word apart from its
-text. Parley lays the tree out in one layout,
-`design@rootpoint-render@area-text-layout`, which `goal@rootpoint-render@same-slide-everywhere`
-asks of every display. On the owner's word: the owner proposed the text as a tree whose nodes
-carry styles, as the owner imagined, as a user, that LyX works.
+gives a style's edge one position, so the style typed there is guessed, and it holds characters
+alone, where a formula is one item of the tree, `design@rootpoint-model@text-node-kinds`. Both at
+once, as LyX keeps them, `rejected@rootpoint-model@runs-beside-spans`, puts a seam between two
+styling models. One style for a whole area, `rejected@rootpoint-model@one-style-per-area`, styles no
+word apart from its text. Parley lays the tree out in one layout,
+`design@rootpoint-render@area-text-layout`, which `goal@rootpoint-render@same-slide-everywhere` asks
+of every display. On the owner's word: the owner proposed the text as a tree whose nodes carry
+styles, as the owner imagined, as a user, that LyX works.
 
 ### No span is dissolved, and a custom span that sets nothing is refused `##text-tree-normal-form`
 
@@ -222,19 +222,20 @@ fallback, which `design@rootpoint-model@named-styles` keeps out of the area. The
 the file and of the document's public type. On the owner's word: the owner wants a span to be able
 to name a style.
 
-### A formula and a reference are items of a text of their own kinds, beside the span `##text-node-kinds`
+### A text's items are kinds of one enumeration, a formula and a reference among them `##text-node-kinds`
 
 `TextItem` is `Chars`, `Span`, `Math` or `Ref`, and the file, the operations and a caret position
-name an item by its kind. `TextItem::Math` holds a formula, `design@rootpoint-math@formula-tree`,
-written in the file as its LaTeX, `design@rootpoint-math@math-storage-form`: one offset of its text
-node, laid out as one inline box, `design@rootpoint-render@area-text-layout`, at the size and in the
-colour its node resolves to, bold and italic not applying to it, as math has its own font rules.
-`TextItem::Ref` names an equation area, `design@rootpoint-model@equation-reference-target`. The
-nearest rivals: math as a kind of span, `rejected@rootpoint-model@math-as-span`, holds characters
-where a formula holds cells; inline math as an area of its own,
-`rejected@rootpoint-model@inline-math-as-area`, is no longer inline. It serves
-`goal@rootpoint@real-presentations`, whose talks need mathematics; on the owner's word, the owner
-wants maths inside a sentence.
+name an item by its kind, so a kind added later joins the enumeration with no change of what a text
+is, and a formula and a reference joined it so. `TextItem::Math` holds a formula,
+`design@rootpoint-math@formula-tree`, written in the file as its LaTeX,
+`design@rootpoint-math@math-storage-form`: one offset of its text node, laid out as one inline box,
+`design@rootpoint-render@formula-mark`, at the size and in the colour its node resolves to, bold and
+italic not applying to it, as math has its own font rules. `TextItem::Ref` names an equation area,
+`design@rootpoint-model@equation-reference-target`. The nearest rivals: math as a kind of span,
+`rejected@rootpoint-model@math-as-span`, holds characters where a formula holds cells; inline math
+as an area of its own, `rejected@rootpoint-model@inline-math-as-area`, is no longer inline. It
+serves `goal@rootpoint@real-presentations`, whose talks need mathematics; on the owner's word, the
+owner wants maths inside a sentence.
 
 ### A text names a style of the document's table, or holds its own values `##named-styles`
 
@@ -381,19 +382,25 @@ number, `design@rootpoint-model@stable-ids`; it draws `(n)`, the number
 `(??)` where the area has no number. A name the author gives an equation would need a namespace, a
 rule that names are unique, and a rename that rewrites every reference, where an id needs none, and
 the author picks the equation from a list in the window, so no name is needed to insert one. On the
-owner's word: the owner chose ids over names for a first shape, and kept names open in
-`issue@rootpoint-model@equation-names`.
+owner's word: the owner chose, with a "maybe", ids over names for a first shape, and kept names
+open in `issue@rootpoint-model@equation-names`.
 
-### A reference follows its equation when a swap moves it, and a duplicated slide's references follow the copies `##references-follow-equations`
+### A swap carries the references of its two areas with their contents, a reference naming an area's id `##swap-carries-references`
 
-`Op::Swap` exchanges the contents of two areas and carries the references of both with them, so a
-moved equation keeps its references; `Op::DuplicateSlide` makes each reference of the copy to an
-equation of the slide name that equation's copy, and keeps every other reference's target. So a
-reference names what the author meant through the moves the window makes, which keep an area's
-place by its id. The nearest rival for the swap, an id of the equation's own stored in its content,
-which a swap carries by itself, adds a fifth kind of id beside those of
-`design@rootpoint-model@stable-ids`. A duplicate that keeps every target would leave the copy's
-text naming the original slide's equation, a slide away.
+`Op::Swap` exchanges the contents of two areas, which keep their ids and their places, and makes
+every reference to either area name the other, so a reference follows the content it named. The
+`swap` command runs it, and so does the window's drag of an area onto another,
+`design@rootpoint-app@swap-gesture`, so a referenced equation moved by either keeps its references.
+The nearest rival, an id of the equation's own stored in its content, which a swap carries by
+itself, `rejected@rootpoint-model@equation-own-id`, adds a fifth kind of id beside those of
+`design@rootpoint-model@stable-ids`, to the file and to the public types.
+
+### A duplicated slide's references to its own equations name the copies `##duplicate-redirects-references`
+
+`Op::DuplicateSlide` makes each reference of the copy to an equation of the slide name that
+equation's copy, and keeps every other reference's target. The nearest rival, a duplicate that keeps
+every target, leaves the copy's text naming the original slide's equation, a slide away, whose
+number the copy then shows.
 
 ### One operation moves every reference from one equation to another, and its undo moves back only those `##reference-retarget`
 
@@ -402,9 +409,11 @@ text naming the original slide's equation, a slide away.
 `design@rootpoint-model@edit-operation-core`, so its undo moves back only the references it moved,
 where `to` had references of its own. The command `retarget` runs it, and the window's
 "Retarget all to…" sends that command, so moving the references of an equation before its removal,
-which `design@rootpoint-protocol@removed-equation-references` asks, is one step and one undo. On
-the owner's word: the owner made an easy way to retarget all references the condition of refusing
-the removal of a referenced equation.
+which `design@rootpoint-protocol@removed-equation-references` asks, is one step and one undo. The
+nearest rival, a dialog that retargets the references and removes the equation, puts a question in
+the middle of a Delete, which no action of the window that undo can reverse asks,
+`design@rootpoint-app@no-discard-confirmation`. On the owner's word: the owner made an easy way to
+retarget all references the condition of refusing the removal of a referenced equation.
 
 ## Changes
 

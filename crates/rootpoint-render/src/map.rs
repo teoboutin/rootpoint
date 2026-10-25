@@ -7,11 +7,9 @@ use std::ops::Range;
 use rootpoint_math::Formula;
 use rootpoint_model::{CaretPos, NodeId, SpanId, TextContent, TextItem, TextNode, TextNodeRef};
 
-/// The character a formula stands on in the laid-out string, after its inline box: the word joiner,
-/// which a font draws as nothing, with no advance, so the caret positions before and after the
-/// formula are two byte indices, either side of the box. Parley 0.12 places an inline box at a byte
-/// index and gives it none of the string, so with no character after it, the position after a
-/// formula would be the position after the next character.
+/// The character a formula stands on in the laid-out string, after its inline box, so that the
+/// caret positions before and after the formula are two byte indices,
+/// `design@rootpoint-render@formula-mark`.
 const FORMULA_MARK: char = '\u{2060}';
 
 /// Where each caret position of a text stands in its laid-out string, the text's characters in
