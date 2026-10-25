@@ -11,7 +11,8 @@ use rootpoint_model::{AssetId, Axis, Content, ImageFit, Node, NodeId, SlideId, n
 use rootpoint_model::{CaretPos, SpanId, TextNodeRef};
 use rootpoint_model::{Content as C, FontRef, Replacement, StyleChoice, TextContent};
 use rootpoint_protocol::{
-    Command, Reply, SpanOption, SpanStyleCommand, StyleCommand, StyleOption, TextTarget,
+    Command, EquationOption, Reply, SpanOption, SpanStyleCommand, StyleCommand, StyleOption,
+    TextTarget,
 };
 
 use crate::editing::{
@@ -189,6 +190,11 @@ impl App {
             MenuEntry::Text => {
                 if !matches!(content, Some(Content::Text(_))) {
                     self.set_text_content();
+                }
+            }
+            MenuEntry::Equation => {
+                if !matches!(content, Some(Content::Equation(_))) {
+                    self.set_equation_content();
                 }
             }
             MenuEntry::Image(asset) => match content {
@@ -416,6 +422,40 @@ impl App {
                 area,
                 root: Some(Vec::new()),
                 style: Vec::new(),
+            });
+        }
+    }
+
+    /// Set the selected area's content to an equation with an empty formula, numbered, fitted, in
+    /// the colour a new equation takes.
+    pub fn set_equation_content(&mut self) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        if let Some(area) = self.selected_area() {
+            self.run(Command::Equation {
+                area,
+                formula: rootpoint_math::Formula::empty(),
+                options: Vec::new(),
+            });
+        }
+    }
+
+    /// Change one option of the selected equation, its formula sent as it stands, since `equation`
+    /// keeps the options it does not give.
+    pub fn set_equation_option(&mut self, option: EquationOption) {
+        if self.socket_holds() {
+            return;
+        }
+        self.end_gestures();
+        if let (Some(area), Some(C::Equation(e))) = (self.selected_area(), self.selected_content())
+        {
+            let formula = e.formula.clone();
+            self.run(Command::Equation {
+                area,
+                formula,
+                options: vec![option],
             });
         }
     }

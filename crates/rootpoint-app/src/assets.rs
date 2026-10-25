@@ -36,7 +36,7 @@ impl Assets {
         for slide in &doc.slides {
             for area in slide.root.areas() {
                 // An image area uses its image; a text, its style's font and each font its spans
-                // set.
+                // set; an equation, none, as it draws in the built-in math font.
                 let used: Vec<(AssetId, bool)> = match &area.content {
                     Content::Image(i) => vec![(i.asset, true)],
                     Content::Text(t) => doc
@@ -47,6 +47,7 @@ impl Assets {
                             FontRef::Builtin(_) => None,
                         })
                         .collect(),
+                    Content::Equation(_) => Vec::new(),
                 };
                 for (id, image) in used {
                     let Some(asset) = doc.assets.get(&id) else {

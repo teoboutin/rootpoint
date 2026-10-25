@@ -142,7 +142,7 @@ fn a_move_keeps_every_slide() {
             &mut files,
             &format!("render s1 {r}/out.png 192 108")
         ),
-        "fallback=- missing=- glyphs=- styles=- span-styles=-"
+        "fallback=- missing=- glyphs=- styles=- span-styles=- commands=-"
     );
     run_ok(&mut s, &mut files, "save");
     let text = std::fs::read_to_string(root.join("presentation.ron")).unwrap();

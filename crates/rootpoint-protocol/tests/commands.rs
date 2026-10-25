@@ -863,13 +863,18 @@ fn the_sample_opens_with_its_images_and_no_history() {
     // Every build carries the sample, so its images stay small: under 50 KB in all.
     let images: usize = map.values().map(Vec::len).sum();
     assert!(images < 50 * 1024, "{images} bytes");
-    // Its last slide says where a presentation is saved, the modes and the pack, with no image.
+    // Its last slide shows an equation, between texts, with no image.
     let last = doc.slides.last().unwrap();
+    let areas = last.root.areas();
     assert!(
-        last.root
-            .areas()
+        areas
             .iter()
-            .all(|a| matches!(a.content, Content::Text(_)))
+            .any(|a| matches!(a.content, Content::Equation(_)))
+    );
+    assert!(
+        areas
+            .iter()
+            .all(|a| !matches!(a.content, Content::Image(_)))
     );
     assert!(matches!(s.execute("undo", &mut files), Some(Reply::Err(_))));
     assert!(matches!(s.execute("end", &mut files), Some(Reply::Err(_))));
@@ -880,7 +885,7 @@ fn the_sample_opens_with_its_images_and_no_history() {
                 &mut files,
                 &format!("render {} out.png 192 108", slide.id)
             ),
-            "fallback=- missing=- glyphs=- styles=- span-styles=-"
+            "fallback=- missing=- glyphs=- styles=- span-styles=- commands=-"
         );
     }
 }

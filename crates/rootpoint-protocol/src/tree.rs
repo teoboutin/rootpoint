@@ -1,19 +1,22 @@
 //! The one-line form of a slide's tree that `tree` replies with.
 
+use std::collections::BTreeMap;
+
 use rootpoint_model::{
-    Axis, Content, ImageFit, Node, Slide, SpanChoice, StyleChoice, TextItem, TextNode,
+    Axis, Content, ImageFit, Node, NodeId, Slide, SpanChoice, StyleChoice, TextItem, TextNode,
 };
 
-use crate::command::{SpanOption, TreeItem, TreeSpan, quote_always, tree_text};
+use crate::command::{EquationOption, SpanOption, TreeItem, TreeSpan, quote_always, tree_text};
 
 /// The slide as `s<n> <node>`: a split as `n<n>:<axis>(<dividers>)[<child> | ...]`, an area as
 /// `n<n>` and its content, a text as its tree in the grammar `text` takes, then its style,
-/// `style="<name>"` or `custom`.
-pub(crate) fn slide_tree(slide: &Slide) -> String {
-    format!("{} {}", slide.id, node_tree(&slide.root))
+/// `style="<name>"` or `custom`, an equation as `equation` takes it, all its options, then its
+/// number, `(<n>)`, when it is numbered.
+pub(crate) fn slide_tree(slide: &Slide, numbers: &BTreeMap<NodeId, u32>) -> String {
+    format!("{} {}", slide.id, node_tree(&slide.root, numbers))
 }
 
-fn node_tree(node: &Node) -> String {
+fn node_tree(node: &Node, numbers: &BTreeMap<NodeId, u32>) -> String {
     match node {
         Node::Split(s) => {
             let axis = match s.axis {
@@ -21,7 +24,7 @@ fn node_tree(node: &Node) -> String {
                 Axis::TopToBottom => "stacked",
             };
             let dividers: Vec<String> = s.dividers.iter().map(|d| d.to_string()).collect();
-            let children: Vec<String> = s.children.iter().map(node_tree).collect();
+            let children: Vec<String> = s.children.iter().map(|c| node_tree(c, numbers)).collect();
             format!(
                 "{}:{axis}({})[{}]",
                 s.id,
@@ -45,6 +48,20 @@ fn node_tree(node: &Node) -> String {
                     ImageFit::Fill => "fill",
                 };
                 format!("{} image {} {fit}", a.id, i.asset)
+            }
+            Content::Equation(e) => {
+                let options = [
+                    EquationOption::Numbered(e.numbered),
+                    EquationOption::Size(e.size),
+                    EquationOption::Colour(e.colour),
+                ]
+                .map(|o| o.to_string())
+                .join(" ");
+                let mut line = format!("{} equation ${}$ {options}", a.id, e.formula.to_latex());
+                if let Some(n) = numbers.get(&a.id) {
+                    line.push_str(&format!(" ({n})"));
+                }
+                line
             }
         },
     }

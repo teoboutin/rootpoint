@@ -404,7 +404,7 @@ fn a_click_on_a_row_shows_its_slide_and_a_drag_moves_it() {
     let mut d = Driver::new();
     let rows = d.app.slide_rows().to_vec();
     let ids: Vec<_> = rows.iter().map(|r| r.0).collect();
-    assert_eq!(ids.len(), 5);
+    assert_eq!(ids.len(), 6);
     d.click(rows[1].1.center());
     assert_eq!(d.app.shown_slide(), Some(ids[1]));
     // Drag the first row onto the third.
@@ -415,7 +415,7 @@ fn a_click_on_a_row_shows_its_slide_and_a_drag_moves_it() {
     }
     d.button(to, false);
     let after: Vec<_> = d.doc().slides.iter().map(|s| s.id).collect();
-    assert_eq!(after, [ids[1], ids[2], ids[0], ids[3], ids[4]]);
+    assert_eq!(after, [ids[1], ids[2], ids[0], ids[3], ids[4], ids[5]]);
     // The drag showed no slide of its own.
     assert_eq!(d.app.shown_slide(), Some(ids[1]));
 }
@@ -553,6 +553,29 @@ fn edit_n3(d: &mut Driver) {
     let p = Pos2::new(r.right() - 0.05 * r.width(), r.bottom() - 0.05 * r.height());
     d.click(p);
     assert_eq!(d.app.editing(), Some(n3));
+}
+
+/// A click on the selected equation area enters no editing: it holds no text, and Delete then
+/// removes the area, as a node key does.
+#[test]
+fn a_second_click_on_an_equation_area_enters_no_editing() {
+    let mut d = Driver::new();
+    let n3 = NodeId(3);
+    assert!(matches!(
+        d.app
+            .run(rootpoint_protocol::parse_command(r"equation n3 $\alpha$").unwrap()),
+        Reply::Ok(_)
+    ));
+    d.select(n3);
+    let r = d.app.layout().unwrap().rect(n3).unwrap();
+    d.click(Pos2::new(
+        r.right() - 0.05 * r.width(),
+        r.bottom() - 0.05 * r.height(),
+    ));
+    assert_eq!(d.app.editing(), None);
+    assert_eq!(d.selected(), Some(n3));
+    d.key(Key::Delete, Modifiers::NONE);
+    assert!(d.doc().node(n3).is_none());
 }
 
 #[test]

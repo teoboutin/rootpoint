@@ -255,8 +255,12 @@ fn the_presenter_keys_move_through_the_slides_and_esc_leaves_full_screen() {
     assert_eq!(d.presenting(), Some(SlideId(20)));
     d.key(Key::PageDown);
     assert_eq!(d.presenting(), Some(SlideId(24)));
+    d.key(Key::PageDown);
+    assert_eq!(d.presenting(), Some(SlideId(33)));
     // At the last slide, the next key stays there.
     d.key(Key::PageDown);
+    assert_eq!(d.presenting(), Some(SlideId(33)));
+    d.key(Key::PageUp);
     assert_eq!(d.presenting(), Some(SlideId(24)));
     d.key(Key::PageUp);
     assert_eq!(d.presenting(), Some(SlideId(20)));

@@ -59,6 +59,8 @@ pub struct FontSet {
     fonts: FontContext,
     layouts: LayoutContext<TextBrush>,
     assets: BTreeMap<AssetId, String>,
+    /// The built-in math font, as the math crate lays a formula out from it and as it is drawn.
+    pub(crate) math: crate::formula::BuiltinMath,
 }
 
 impl Default for FontSet {
@@ -89,6 +91,7 @@ impl FontSet {
             fonts,
             layouts: LayoutContext::new(),
             assets: BTreeMap::new(),
+            math: crate::formula::BuiltinMath::new(),
         }
     }
 

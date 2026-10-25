@@ -4,14 +4,6 @@
 // Ties this crate's build to its checkout.
 const _: Option<&str> = option_env!("ROOTPOINT_CHECKOUT");
 
-// No content draws a formula until the equation, a kind of content, lands.
-#[cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "`render_slide` draws formulas from #equation-kind"
-    )
-)]
 mod formula;
 mod images;
 mod map;
@@ -20,6 +12,7 @@ mod text;
 use std::ops::Range;
 use std::sync::Arc;
 
+pub use formula::AreaFormula;
 pub use images::{DecodeError, ImageSet, decode_rgba};
 pub use map::TextMap;
 use parley::Layout;
@@ -77,8 +70,7 @@ pub struct Report {
     /// The spans naming a span style the document's table lacks, each with its area and the name;
     /// each is drawn with its parent's values.
     pub missing_span_styles: Vec<(NodeId, SpanId, String)>,
-    /// The areas whose formula holds a command the math subset does not know, drawn red. No kind
-    /// of content holds a formula yet, so it is empty.
+    /// The equation areas whose formula holds a command the math subset does not know, drawn red.
     pub unknown_commands: Vec<NodeId>,
     /// The text areas whose glyphs could not all be drawn, as from a damaged font file.
     pub undrawn_text: Vec<NodeId>,
@@ -102,7 +94,7 @@ impl Rendered {
 }
 
 /// The space between a text and the edges of its area, in slide units.
-const TEXT_PADDING: f64 = 24.0;
+pub(crate) const TEXT_PADDING: f64 = 24.0;
 
 /// The grey of an image area whose image is missing.
 const MISSING: AlphaColor<vello_cpu::color::Srgb> = AlphaColor::from_rgba8(224, 224, 224, 255);
@@ -144,6 +136,7 @@ pub fn render_slide(
     let whole = doc.aspect.slide_rect();
     ctx.set_paint(WHITE);
     ctx.fill_rect(&on_pixels(to_pixels, whole));
+    let numbers = doc.equation_numbers();
     for (id, area) in area_rects(the_slide, doc.aspect) {
         let Some(Node::Area(a)) = the_slide.root.find(id) else {
             continue;
@@ -190,6 +183,43 @@ pub fn render_slide(
                     ctx.fill_rect(&clip);
                 }
             },
+            Content::Equation(equation) => {
+                let laid = formula::lay_out_equation(
+                    doc,
+                    fonts,
+                    equation,
+                    numbers.get(&id).copied(),
+                    area,
+                );
+                ctx.set_transform(
+                    to_pixels
+                        * Affine::translate(laid.formula.origin)
+                        * Affine::scale(laid.formula.scale),
+                );
+                let drawn = formula::draw_formula(
+                    &mut ctx,
+                    &mut resources,
+                    &fonts.math.data,
+                    &laid.formula.layout,
+                    equation.colour,
+                );
+                let mut all = drawn.all;
+                let mut missing = drawn.missing_glyph;
+                if let Some((number, origin)) = &laid.number {
+                    ctx.set_transform(to_pixels * Affine::translate(*origin));
+                    all &= text::draw_text(&mut ctx, &mut resources, number);
+                    missing |= number.missing_glyph;
+                }
+                if missing {
+                    report.missing_glyphs.push(id);
+                }
+                if drawn.unknown_command {
+                    report.unknown_commands.push(id);
+                }
+                if !all {
+                    report.undrawn_text.push(id);
+                }
+            }
         }
         ctx.pop_layer();
     }
@@ -235,6 +265,29 @@ pub fn area_text(
         origin,
         map: TextMap::new(content),
     })
+}
+
+/// The formula of the equation area `area` of the slide `slide`, laid out as `render_slide` lays
+/// it out; `None` when the slide or the area is not there, or the area holds no equation.
+pub fn area_formula(
+    doc: &Document,
+    slide: SlideId,
+    area: NodeId,
+    fonts: &mut FontSet,
+) -> Option<AreaFormula> {
+    let the_slide = doc.slide(slide)?;
+    let rect = area_rects(the_slide, doc.aspect)
+        .into_iter()
+        .find(|(id, _)| *id == area)?
+        .1;
+    let Some(Node::Area(a)) = the_slide.root.find(area) else {
+        return None;
+    };
+    let Content::Equation(equation) = &a.content else {
+        return None;
+    };
+    let number = doc.equation_numbers().get(&area).copied();
+    Some(formula::lay_out_equation(doc, fonts, equation, number, rect).formula)
 }
 
 /// A text area's layout in its resolved style, wrapped to the area's width less its padding, and

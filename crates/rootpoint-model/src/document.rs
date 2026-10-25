@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 
 use std::fmt;
 
+use rootpoint_math::Formula;
 use serde::{Deserialize, Serialize};
 
 /// The id of a slide, unique in its document and never reused.
@@ -212,6 +213,39 @@ impl Document {
     pub fn node(&self, id: NodeId) -> Option<&Node> {
         self.slides.iter().find_map(|s| s.root.find(id))
     }
+
+    /// The number of each numbered equation, from 1: the slides in their order, then the areas of
+    /// a slide in the depth-first order of its tree. A number is computed, never stored, so a move
+    /// renumbers and a divider's drag does not.
+    pub fn equation_numbers(&self) -> BTreeMap<NodeId, u32> {
+        let mut out = BTreeMap::new();
+        let mut next = 1;
+        for slide in &self.slides {
+            for area in slide.root.areas() {
+                if let Content::Equation(e) = &area.content
+                    && e.numbered
+                {
+                    out.insert(area.id, next);
+                    next += 1;
+                }
+            }
+        }
+        out
+    }
+
+    /// A new equation of `formula`: numbered, fitted to its area, in the colour of the Body style
+    /// of the table, or black when the table has none.
+    pub fn new_equation(&self, formula: Formula) -> EquationContent {
+        EquationContent {
+            formula,
+            numbered: true,
+            size: EquationSize::Fit,
+            colour: self
+                .styles
+                .get(BODY)
+                .map_or(TextStyle::default().colour, |body| body.colour),
+        }
+    }
 }
 
 /// The shape of every slide of a document, 16:9 by default. A slide is 1080 slide units high and
@@ -328,6 +362,7 @@ pub struct Area {
 pub enum Content {
     Text(TextContent),
     Image(ImageContent),
+    Equation(EquationContent),
 }
 
 /// An empty text, in the default values. It reads no style table: the operations give a new area
@@ -602,6 +637,42 @@ pub enum VAlign {
     Top,
     Middle,
     Bottom,
+}
+
+/// An equation area: its formula, whether it is numbered, how it is sized in its area, and its
+/// colour. The file writes the formula as LaTeX, which `Formula::parse` reads back; a text that
+/// does not parse makes the file refused.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct EquationContent {
+    #[serde(with = "formula_text")]
+    pub formula: Formula,
+    pub numbered: bool,
+    pub size: EquationSize,
+    pub colour: Rgba,
+}
+
+/// How an equation is sized in its area: `Fit` scales its one layout to the largest size at which
+/// it and its number fit the area less its padding; `AtMost(size)` lays it out at `size`, in slide
+/// units, scaled down as `Fit` would when it does not fit.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum EquationSize {
+    Fit,
+    AtMost(f64),
+}
+
+/// A formula as its LaTeX in the file.
+mod formula_text {
+    use rootpoint_math::Formula;
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S: Serializer>(formula: &Formula, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&formula.to_latex())
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Formula, D::Error> {
+        let text = String::deserialize(d)?;
+        Formula::parse(&text).map_err(serde::de::Error::custom)
+    }
 }
 
 /// An image area: the asset it shows and how the image is scaled into the area.

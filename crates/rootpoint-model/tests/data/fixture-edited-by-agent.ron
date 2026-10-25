@@ -1,12 +1,12 @@
 #![enable(implicit_some)]
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 5,
+    version: 6,
     aspect: (
         width: 16,
         height: 9,
     ),
-    next_id: 10,
+    next_id: 12,
     assets: {
         7: (
             path: "images/cat.png",
@@ -163,6 +163,23 @@
                 dividers: [
                     0.4,
                 ],
+            ),
+        ),
+        (
+            id: 10,
+            root: Area(
+                id: 11,
+                content: Equation(
+                    formula: r#"\frac{a}{b} + \alpha = \text{"c"}"#,
+                    numbered: true,
+                    size: Fit,
+                    colour: (
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 255,
+                    ),
+                ),
             ),
         ),
     ],

@@ -18,8 +18,8 @@ mod tree;
 pub mod workspace;
 
 pub use command::{
-    AssetFilter, Command, ParseError, SpanField, SpanOption, SpanStyleCommand, StyleCommand,
-    StyleOption, TextTarget, TreeItem, TreeSpan, parse_command,
+    AssetFilter, Command, EquationOption, ParseError, SpanField, SpanOption, SpanStyleCommand,
+    StyleCommand, StyleOption, TextTarget, TreeItem, TreeSpan, parse_command,
 };
 pub use files::Files;
 pub use session::{Reply, Session, Store, View, listed_untracked, read_line};

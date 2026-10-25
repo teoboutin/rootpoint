@@ -115,6 +115,7 @@ impl App {
             .filter(|a| match &a.content {
                 Content::Image(image) => image.asset == asset,
                 Content::Text(text) => text.own_fonts().contains(&&font),
+                Content::Equation(_) => false,
             })
             .map(|a| AssetUse::Area(a.id))
             .collect();

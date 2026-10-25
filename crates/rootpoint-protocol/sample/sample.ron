@@ -1,12 +1,12 @@
 #![enable(implicit_some)]
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 5,
+    version: 6,
     aspect: (
         width: 16,
         height: 9,
     ),
-    next_id: 33,
+    next_id: 38,
     assets: {
         19: (
             path: "splits.png",
@@ -370,6 +370,51 @@
                 ],
                 dividers: [
                     0.25,
+                ],
+            ),
+        ),
+        (
+            id: 33,
+            root: Split(
+                id: 37,
+                axis: TopToBottom,
+                children: [
+                    Area(
+                        id: 34,
+                        content: Text(
+                            root: [
+                                Chars("Equations"),
+                            ],
+                            style: Named("Title"),
+                        ),
+                    ),
+                    Area(
+                        id: 35,
+                        content: Equation(
+                            formula: r#"\int_{-\infty}^{\infty} e^{-x^2}\,\mathrm{d}x = \sqrt{\pi}"#,
+                            numbered: true,
+                            size: Fit,
+                            colour: (
+                                r: 0,
+                                g: 0,
+                                b: 0,
+                                a: 255,
+                            ),
+                        ),
+                    ),
+                    Area(
+                        id: 36,
+                        content: Text(
+                            root: [
+                                Chars("An equation area draws a formula written in LaTeX, numbered at its right edge in the order of the slides. Its options are in the side panel; the protocol's equation command sets its formula."),
+                            ],
+                            style: Named("Body"),
+                        ),
+                    ),
+                ],
+                dividers: [
+                    0.25,
+                    0.7,
                 ],
             ),
         ),

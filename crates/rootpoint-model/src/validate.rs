@@ -182,6 +182,9 @@ impl Document {
                     }
                     continue;
                 }
+                // An unknown command of a formula is drawn red and reported by the renderer, as a
+                // missing glyph is, and is no breach of the document.
+                Content::Equation(_) => continue,
                 Content::Text(TextContent {
                     style: StyleChoice::Named(name),
                     ..
@@ -261,6 +264,7 @@ impl Document {
 fn assets_named(area: &Area) -> Vec<AssetId> {
     match &area.content {
         Content::Image(image) => vec![image.asset],
+        Content::Equation(_) => Vec::new(),
         Content::Text(text) => {
             let own = match &text.style {
                 StyleChoice::Custom(TextStyle {

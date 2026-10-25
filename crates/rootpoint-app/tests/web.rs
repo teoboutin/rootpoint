@@ -1,6 +1,6 @@
 //! The browser build, run natively and in a browser: in the browser, the image the app hands its
-//! texture for the sample's first slide is the native golden image, so the browser lays the slide
-//! out as the native build does; a picked directory's image is drawn; and, in a browser, F5 never reaches
+//! texture for the sample's first slide, and for its slide of an equation, is the native golden
+//! image, so the browser lays out the slide, and the formula, as the native build does; a picked directory's image is drawn; and, in a browser, F5 never reaches
 //! the browser. In a browser, run with
 //! `cargo test --target wasm32-unknown-unknown -p rootpoint-app --test web --test actions`, which
 //! `wasm-bindgen-test-runner` runs in a headless browser.
@@ -14,11 +14,13 @@ use eframe::egui::{Color32, Context, ImageData, Pos2, RawInput, Rect, TextureId,
 use rootpoint_app::App;
 use rootpoint_model::SlideId;
 
-/// The native golden image of the sample's first slide at 640×360, drawn with
-/// `Precision::Portable`, whose pixels do not depend on the machine's SIMD, as
-/// `design@rootpoint-render@portable-precision` has golden images drawn. `ROOTPOINT_BLESS=1`
-/// rewrites it from a native run after a deliberate change to the sample or the renderer.
-const GOLDEN: &[u8] = include_bytes!("data/sample-s1.png");
+/// The native golden images of the sample's first slide and of its slide of an equation at 640×360,
+/// each with its name under `path@rootpoint-app@tests/data/`, drawn with `Precision::Portable`, whose pixels do not
+/// depend on the machine's SIMD, as `design@rootpoint-render@portable-precision` has golden images
+/// drawn. `ROOTPOINT_BLESS=1` rewrites them from a native run after a deliberate change to the
+/// sample or the renderer.
+const GOLDEN_S1: &[u8] = include_bytes!("data/sample-s1.png");
+const GOLDEN_S33: &[u8] = include_bytes!("data/sample-s33.png");
 const SIZE: [usize; 2] = [640, 360];
 
 thread_local! {
@@ -73,22 +75,23 @@ fn presented_image(app: &mut App) -> ([usize; 2], Vec<Color32>) {
     last.expect("the presenter draws the slide")
 }
 
-/// The sample's first slide at 640×360, as premultiplied RGBA: in the browser, the image the app
-/// hands its texture in presenter mode, in a 640×360 window at one pixel per point; natively, the
-/// golden image's own render.
-fn sample_first_slide() -> Vec<u8> {
+/// A slide of the sample at 640×360, as premultiplied RGBA: in the browser, the image the app hands
+/// its texture in presenter mode, in a 640×360 window at one pixel per point; natively, the golden
+/// image's own render.
+fn sample_slide(slide: SlideId) -> Vec<u8> {
     let mut app = App::in_memory();
     app.open_sample();
     if cfg!(target_arch = "wasm32") {
+        app.show_slide(slide);
         app.present();
-        assert_eq!(app.session().view().presenting, Some(SlideId(1)));
+        assert_eq!(app.session().view().presenting, Some(slide));
         let (size, pixels) = presented_image(&mut app);
         assert_eq!(size, SIZE);
         pixels.iter().flat_map(|p| p.to_array()).collect()
     } else {
         let out = rootpoint_render::render_slide(
             app.session().document(),
-            SlideId(1),
+            slide,
             SIZE[0] as u16,
             SIZE[1] as u16,
             &mut rootpoint_render::FontSet::new(),
@@ -102,14 +105,25 @@ fn sample_first_slide() -> Vec<u8> {
 
 #[test]
 fn the_sample_s_first_slide_is_the_native_golden_image() {
-    let bytes = sample_first_slide();
-    let golden = image::load_from_memory(GOLDEN).unwrap().to_rgba8();
+    is_the_golden_image(SlideId(1), GOLDEN_S1, "sample-s1.png");
+}
+
+/// The math crate's layout, run in the browser, draws the formula as it does natively.
+#[test]
+fn the_sample_s_slide_of_an_equation_is_the_native_golden_image() {
+    is_the_golden_image(SlideId(33), GOLDEN_S33, "sample-s33.png");
+}
+
+fn is_the_golden_image(slide: SlideId, golden: &[u8], name: &str) {
+    let bytes = sample_slide(slide);
+    let golden = image::load_from_memory(golden).unwrap().to_rgba8();
     // A blessing run compares against the image it writes: `GOLDEN` holds the bytes compiled in
     // before the write, which a first run after a change would otherwise fail against.
     #[cfg(not(target_arch = "wasm32"))]
     let golden = if std::env::var_os("ROOTPOINT_BLESS").is_some() {
-        let path =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/data/sample-s1.png");
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/data")
+            .join(name);
         let image =
             image::RgbaImage::from_raw(SIZE[0] as u32, SIZE[1] as u32, bytes.clone()).unwrap();
         image.save(&path).unwrap();
@@ -138,7 +152,7 @@ fn the_sample_s_first_slide_is_the_native_golden_image() {
     assert_eq!(
         (differing, largest),
         (0, 0),
-        "pixels that differ from the golden image, and the largest difference of a channel"
+        "{name}: pixels that differ from the golden image, and the largest difference of a channel"
     );
 }
 

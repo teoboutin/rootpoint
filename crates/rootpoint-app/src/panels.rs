@@ -6,10 +6,10 @@
 
 use eframe::egui::{self, Align2, Color32, FontId, Sense, Stroke, Ui, Vec2};
 use rootpoint_model::{
-    AssetId, Axis, Breach, Content, FontRef, HAlign, ImageFit, Node, NodeId, Rgba, SlideId,
-    SpanChoice, SpanStyle, StyleChoice, VAlign,
+    AssetId, Axis, Breach, Content, EquationContent, EquationSize, FontRef, HAlign, ImageFit, Node,
+    NodeId, Rgba, SlideId, SpanChoice, SpanStyle, StyleChoice, VAlign,
 };
-use rootpoint_protocol::{SpanField, SpanOption, StyleOption};
+use rootpoint_protocol::{EquationOption, SpanField, SpanOption, StyleOption};
 
 use crate::hit::Edge;
 use crate::{App, OutlineRow, SideTab};
@@ -419,6 +419,7 @@ impl App {
             doc: &rootpoint_model::Document,
             missing: &[(NodeId, String)],
             missing_spans: &[(NodeId, String)],
+            numbers: &std::collections::BTreeMap<NodeId, u32>,
             rows: &mut Vec<(Option<NodeId>, usize, String)>,
         ) {
             let label = match node {
@@ -459,16 +460,33 @@ impl App {
                         };
                         format!("I  {}  {name}", a.id)
                     }
+                    Content::Equation(e) => {
+                        let number = match numbers.get(&a.id) {
+                            Some(n) => format!("({n})"),
+                            None => "unnumbered".to_owned(),
+                        };
+                        let start: String = e.formula.to_latex().chars().take(40).collect();
+                        format!("E  {}  {number}  ${start}$", a.id)
+                    }
                 },
             };
             rows.push((Some(node.id()), depth, label));
             if let Node::Split(s) = node {
                 for child in &s.children {
-                    walk(child, depth + 1, doc, missing, missing_spans, rows);
+                    walk(child, depth + 1, doc, missing, missing_spans, numbers, rows);
                 }
             }
         }
-        walk(&the_slide.root, 1, doc, &missing, &missing_spans, &mut rows);
+        let numbers = doc.equation_numbers();
+        walk(
+            &the_slide.root,
+            1,
+            doc,
+            &missing,
+            &missing_spans,
+            &numbers,
+            &mut rows,
+        );
         let selected = self.session.view().selected;
         let visuals = ui.visuals().clone();
         let mut clicked = None;
@@ -523,8 +541,8 @@ impl App {
         }
     }
 
-    /// The selected area's content: its kind, then the text's style, or the image and its fit; the
-    /// text itself is edited in place, on the slide.
+    /// The selected area's content: its kind, then the text's style, the image and its fit, or the
+    /// equation's options; the text itself is edited in place, on the slide.
     fn content(&mut self, ui: &mut Ui, content: &Content) {
         ui.horizontal_wrapped(|ui| {
             ui.label("Content:");
@@ -546,6 +564,14 @@ impl App {
             {
                 self.set_image(*first, ImageFit::Fit);
             }
+            let equation = matches!(content, Content::Equation(_));
+            let response = ui.selectable_label(equation, "equation");
+            self.view
+                .buttons
+                .push(("equation".to_owned(), response.rect));
+            if response.clicked() && !equation {
+                self.set_equation_content();
+            }
         });
         if ui.button("Add an image…").clicked() {
             self.add_asset_dialog();
@@ -563,7 +589,67 @@ impl App {
                 }
             }
             Content::Image(i) => self.image(ui, i.asset, i.fit),
+            Content::Equation(e) => {
+                if let Some(option) = self.equation(ui, e) {
+                    self.set_equation_option(option);
+                }
+            }
         }
+    }
+
+    /// The selected equation's options, numbered, its size mode and its colour: each control
+    /// returns the one option it changes, which its caller sends. Its formula is changed by the
+    /// protocol until the window edits it in place.
+    fn equation(&mut self, ui: &mut Ui, e: &EquationContent) -> Option<EquationOption> {
+        let mut chosen = None;
+        ui.horizontal_wrapped(|ui| {
+            let mut numbered = e.numbered;
+            let response = ui.checkbox(&mut numbered, "numbered");
+            self.view
+                .buttons
+                .push(("numbered".to_owned(), response.rect));
+            if response.changed() {
+                chosen = Some(EquationOption::Numbered(numbered));
+            }
+            let shown = match e.size {
+                EquationSize::Fit => "fit".to_owned(),
+                EquationSize::AtMost(size) => format!("at most {size}"),
+            };
+            egui::ComboBox::from_label("size")
+                .selected_text(shown)
+                .show_ui(ui, |ui| {
+                    let fit = e.size == EquationSize::Fit;
+                    if ui.selectable_label(fit, "fit").clicked() && !fit {
+                        chosen = Some(EquationOption::Size(EquationSize::Fit));
+                    }
+                    for size in SIZES {
+                        let on = e.size == EquationSize::AtMost(size);
+                        if ui.selectable_label(on, format!("at most {size}")).clicked() && !on {
+                            chosen = Some(EquationOption::Size(EquationSize::AtMost(size)));
+                        }
+                    }
+                });
+        });
+        ui.horizontal_wrapped(|ui| {
+            for (r, g, b) in COLOURS {
+                let colour = Rgba { r, g, b, a: 255 };
+                let (rect, response) = ui.allocate_exact_size(Vec2::splat(18.0), Sense::click());
+                ui.painter()
+                    .rect_filled(rect, 2.0, Color32::from_rgb(r, g, b));
+                if e.colour == colour {
+                    ui.painter().rect_stroke(
+                        rect,
+                        2.0,
+                        Stroke::new(2.0, ui.visuals().selection.stroke.color),
+                        egui::StrokeKind::Outside,
+                    );
+                }
+                if response.clicked() && e.colour != colour {
+                    chosen = Some(EquationOption::Colour(colour));
+                }
+            }
+        });
+        chosen
     }
 
     /// The selected text's style: a style of the table, by name, or its own values, "custom".

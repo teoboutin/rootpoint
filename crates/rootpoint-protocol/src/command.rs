@@ -4,9 +4,10 @@ use std::fmt;
 
 use std::ops::Range;
 
+use rootpoint_math::Formula;
 use rootpoint_model::{
-    AssetId, Axis, FontRef, HAlign, ImageFit, NodeId, Replacement, Rgba, Side, SlideId, SpanId,
-    SpanStyle, TextStyle, VAlign,
+    AssetId, Axis, EquationSize, FontRef, HAlign, ImageFit, NodeId, Replacement, Rgba, Side,
+    SlideId, SpanId, SpanStyle, TextStyle, VAlign,
 };
 
 /// One command of the protocol.
@@ -134,6 +135,14 @@ pub enum Command {
         area: NodeId,
         asset: AssetId,
         fit: ImageFit,
+    },
+    /// Set an area's content to an equation of this formula, or change the equation it holds:
+    /// each option given replaces the equation's own, an option not given keeping the current
+    /// equation's, or a new equation's, numbered, fitted, in the Body style's colour.
+    Equation {
+        area: NodeId,
+        formula: Formula,
+        options: Vec<EquationOption>,
     },
     /// Empty an area's text. A text keeps its style, so that clearing it changes its characters
     /// only; an image area, which has no text style to keep, becomes a text in the style a new area
@@ -549,6 +558,17 @@ pub fn parse_command(line: &str) -> Result<Command, ParseError> {
             asset: parse_asset(&args.word("an asset")?)?,
             fit: args.optional(parse_fit)?.unwrap_or(ImageFit::Fit),
         },
+        "equation" => Command::Equation {
+            area: parse_node(&args.word("an area")?)?,
+            formula: args.formula()?,
+            options: {
+                let mut options = Vec::new();
+                while let Some(option) = args.optional(parse_equation_option)? {
+                    options.push(option);
+                }
+                options
+            },
+        },
         "clear" => Command::Clear {
             area: parse_node(&args.word("an area")?)?,
         },
@@ -744,6 +764,17 @@ impl fmt::Display for Command {
                 };
                 write!(f, "image {area} {asset} {fit}")
             }
+            Command::Equation {
+                area,
+                formula,
+                options,
+            } => {
+                write!(f, "equation {area} ${}$", formula.to_latex())?;
+                for option in options {
+                    write!(f, " {option}")?;
+                }
+                Ok(())
+            }
             Command::Clear { area } => write!(f, "clear {area}"),
             Command::AssetMove { asset, to } => write!(f, "asset-move {asset} {}", quote(to)),
             Command::AssetRelink { asset, to } => {
@@ -897,19 +928,24 @@ fn items_text(items: &[TreeItem]) -> String {
 const PUNCTUATION: [char; 5] = ['[', ']', '{', '}', ','];
 
 /// A word of a line: a run of characters without spaces, a double-quoted string with `\"`, `\\`
-/// and `\n` escapes, or one of the `PUNCTUATION` characters. A quoted word is kept apart, so
-/// `"bold"` is a text and not a flag.
+/// and `\n` escapes, a formula between `$` signs, or one of the `PUNCTUATION` characters. A quoted
+/// word is kept apart, so `"bold"` is a text and not a flag.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum Word {
     Bare(String),
     Quoted(String),
     Punct(char),
+    /// A formula's LaTeX, read raw between `$` signs: no escape is read, so `\frac` is written
+    /// once; the formula ends at the first `$` preceded by an even number of `\`, so `\$` is a
+    /// dollar of the formula and `\\$` a row break that ends it,
+    /// `design@rootpoint-protocol@protocol-transport`.
+    Math(String),
 }
 
 impl Word {
     pub(crate) fn text(&self) -> &str {
         match self {
-            Word::Bare(s) | Word::Quoted(s) => s,
+            Word::Bare(s) | Word::Quoted(s) | Word::Math(s) => s,
             Word::Punct('[') => "[",
             Word::Punct(']') => "]",
             Word::Punct('{') => "{",
@@ -931,6 +967,9 @@ pub(crate) fn split_words(line: &str) -> Result<Vec<Word>, ParseError> {
         } else if c == '"' {
             chars.next();
             words.push(Word::Quoted(read_quoted(&mut chars)?));
+        } else if c == '$' {
+            chars.next();
+            words.push(Word::Math(read_math(&mut chars)?));
         } else {
             let mut text = String::new();
             while let Some(&c) = chars.peek() {
@@ -952,6 +991,21 @@ pub(crate) fn split_words(line: &str) -> Result<Vec<Word>, ParseError> {
         }
     }
     Ok(words)
+}
+
+/// The rest of a formula, after its opening `$`, up to the first `$` preceded by an even number of
+/// backslashes, which ends it and is not kept.
+fn read_math(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) -> Result<String, ParseError> {
+    let mut text = String::new();
+    let mut backslashes = 0usize;
+    for c in chars.by_ref() {
+        if c == '$' && backslashes.is_multiple_of(2) {
+            return Ok(text);
+        }
+        backslashes = if c == '\\' { backslashes + 1 } else { 0 };
+        text.push(c);
+    }
+    Err(ParseError("an unclosed `$`".to_owned()))
 }
 
 /// The rest of a quoted string, after its opening quote, with its escapes read.
@@ -1017,6 +1071,7 @@ impl<'a> Args<'a> {
             }
             Some(Word::Quoted(_)) => Err(ParseError(format!("a quoted word instead of {what}"))),
             Some(Word::Punct(c)) => Err(ParseError(format!("`{c}` instead of {what}"))),
+            Some(Word::Math(_)) => Err(ParseError(format!("a formula instead of {what}"))),
             None => Err(ParseError(format!("missing {what}"))),
         }
     }
@@ -1044,6 +1099,9 @@ impl<'a> Args<'a> {
             .ok_or_else(|| ParseError("missing a path".to_owned()))?;
         if let Word::Punct(c) = word {
             return Err(ParseError(format!("`{c}` instead of a path")));
+        }
+        if let Word::Math(_) = word {
+            return Err(ParseError("a formula instead of a path".to_owned()));
         }
         self.next += 1;
         if word.text().is_empty() {
@@ -1073,6 +1131,17 @@ impl<'a> Args<'a> {
                 parse(text).map(Some)
             }
             _ => Ok(None),
+        }
+    }
+
+    /// The next word, which must be a formula between `$` signs, read by `Formula::parse`.
+    pub(crate) fn formula(&mut self) -> Result<Formula, ParseError> {
+        match self.words.get(self.next) {
+            Some(Word::Math(text)) => {
+                self.next += 1;
+                Formula::parse(text).map_err(|e| ParseError(format!("the formula: {e}")))
+            }
+            _ => Err(ParseError("missing a formula between `$` signs".to_owned())),
         }
     }
 
@@ -1361,6 +1430,42 @@ fn value_text(value: &str) -> Result<String, ParseError> {
     match chars.next() {
         None => Ok(text),
         Some(_) => Err(ParseError(format!("`{value}` has words after its quote"))),
+    }
+}
+
+/// An option of `equation`.
+#[derive(Clone, Debug, PartialEq)]
+pub enum EquationOption {
+    Numbered(bool),
+    Size(EquationSize),
+    Colour(Rgba),
+}
+
+impl fmt::Display for EquationOption {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EquationOption::Numbered(true) => f.write_str("numbered=yes"),
+            EquationOption::Numbered(false) => f.write_str("numbered=no"),
+            EquationOption::Size(EquationSize::Fit) => f.write_str("size=fit"),
+            EquationOption::Size(EquationSize::AtMost(size)) => write!(f, "size={size}"),
+            EquationOption::Colour(c) => write!(f, "{}", StyleOption::Colour(*c)),
+        }
+    }
+}
+
+fn parse_equation_option(text: &str) -> Result<EquationOption, ParseError> {
+    let bad = || ParseError(format!("`{text}` is not an option of `equation`"));
+    match text.split_once('=') {
+        Some(("numbered", "yes")) => Ok(EquationOption::Numbered(true)),
+        Some(("numbered", "no")) => Ok(EquationOption::Numbered(false)),
+        Some(("size", "fit")) => Ok(EquationOption::Size(EquationSize::Fit)),
+        Some(("size", v)) => parse_number(v)
+            .ok()
+            .filter(|n| *n > 0.0)
+            .map(|n| EquationOption::Size(EquationSize::AtMost(n)))
+            .ok_or_else(bad),
+        Some(("colour", v)) => parse_colour(v).map(EquationOption::Colour).ok_or_else(bad),
+        _ => Err(bad()),
     }
 }
 

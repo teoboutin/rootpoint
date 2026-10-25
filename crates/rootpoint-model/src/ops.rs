@@ -875,7 +875,7 @@ fn set_span_choice(
                 .style = choice;
             Ok(())
         }
-        Content::Image(_) => Err(OpError::NotAText(area)),
+        Content::Image(_) | Content::Equation(_) => Err(OpError::NotAText(area)),
     }
 }
 
@@ -909,7 +909,7 @@ fn set_choice(doc: &mut Document, id: NodeId, choice: StyleChoice) -> Result<(),
             text.style = choice;
             Ok(())
         }
-        Content::Image(_) => Err(OpError::NotAText(id)),
+        Content::Image(_) | Content::Equation(_) => Err(OpError::NotAText(id)),
     }
 }
 
@@ -1021,6 +1021,7 @@ fn asset_in_use(doc: &Document, id: AssetId) -> bool {
             .flat_map(|s| s.root.areas())
             .any(|a| match &a.content {
                 Content::Image(image) => image.asset == id,
+                Content::Equation(_) => false,
                 Content::Text(text) => {
                     matches!(&text.style, StyleChoice::Custom(style) if style.font == font)
                         || text.root.spans().into_iter().any(

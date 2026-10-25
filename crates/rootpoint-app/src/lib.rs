@@ -628,6 +628,14 @@ impl App {
                 .collect(),
         );
         list(
+            "unknown commands, drawn in red",
+            report
+                .unknown_commands
+                .iter()
+                .map(|n| n.to_string())
+                .collect(),
+        );
+        list(
             "text not drawn",
             report.undrawn_text.iter().map(|n| n.to_string()).collect(),
         );

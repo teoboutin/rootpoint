@@ -146,7 +146,7 @@ fn no_read_of_a_workspace_reaches_outside_its_root() {
             &format!("render s1 {root_text}/out.png 192 108")
         ),
         format!(
-            "fallback=- missing={} glyphs=- styles=- span-styles=-",
+            "fallback=- missing={} glyphs=- styles=- span-styles=- commands=-",
             ids.join(",")
         )
     );
@@ -225,7 +225,7 @@ fn a_copy_in_memory_reads_no_file_of_the_host_after_its_open() {
     files.files.clear();
     assert_eq!(
         ok(&mut t, &mut files, "render s1 out.png 192 108"),
-        "fallback=- missing=- glyphs=- styles=- span-styles=-"
+        "fallback=- missing=- glyphs=- styles=- span-styles=- commands=-"
     );
 }
 

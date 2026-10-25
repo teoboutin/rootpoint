@@ -180,8 +180,8 @@ fn a_file_with_a_missing_divider_is_refused() {
 #[test]
 fn a_file_whose_counter_is_below_its_ids_is_refused() {
     let text = fixture_text();
-    load_refused(&text.replacen("next_id: 10,", "next_id: 2,", 1));
-    load_refused(&text.replacen("next_id: 10,", "next_id: 9,", 1));
+    load_refused(&text.replacen("next_id: 12,", "next_id: 2,", 1));
+    load_refused(&text.replacen("next_id: 12,", "next_id: 11,", 1));
 }
 
 #[test]
@@ -194,7 +194,7 @@ fn a_file_naming_a_missing_asset_loads_and_names_the_breach() {
     // a99 is below the raised counter, so only the table lacks it.
     let text = fixture_text()
         .replacen("asset: 7,", "asset: 99,", 1)
-        .replacen("next_id: 10,", "next_id: 100,", 1);
+        .replacen("next_id: 12,", "next_id: 100,", 1);
     let doc = load_ron(&text).expect("a missing asset is a cosmetic breach");
     assert_eq!(
         doc.breaches(),
@@ -259,7 +259,7 @@ fn a_file_naming_an_unconfined_asset_loads_and_names_the_breach() {
 #[test]
 fn a_file_naming_an_asset_at_or_above_the_counter_is_refused() {
     let text = fixture_text();
-    for id in [10, 70] {
+    for id in [12, 70] {
         match load_ron(&text.replacen("asset: 7,", &format!("asset: {id},"), 1)) {
             Err(LoadError::Invalid(reason)) => assert!(
                 reason.contains(&format!("asset {id}")),
@@ -417,7 +417,7 @@ fn a_style_whose_font_is_an_asset_at_or_above_the_counter_is_refused() {
     let text = fixture_text();
     let body = "        \"Body\": (\n            font: Builtin(\"sans\"),";
     assert!(text.contains(body), "the fixture changed shape");
-    load_refused(&text.replacen(body, "        \"Body\": (\n            font: Asset(10),", 1));
+    load_refused(&text.replacen(body, "        \"Body\": (\n            font: Asset(12),", 1));
     let below = text.replacen(body, "        \"Body\": (\n            font: Asset(6),", 1);
     let doc = load_ron(&below).expect("a style's missing font below the counter loads");
     // No area names Body, so the document has no breach.

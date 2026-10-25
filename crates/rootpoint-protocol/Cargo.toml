@@ -6,6 +6,7 @@ publish = false
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+rootpoint-math = { path = "../rootpoint-math" }
 rootpoint-model = { path = "../rootpoint-model" }
 rootpoint-render = { path = "../rootpoint-render" }
 # A pack is a zip file. zip names flate2 with its default features off, so flate2 is named here for

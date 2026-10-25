@@ -10,7 +10,7 @@ use crate::document::{AspectRatio, Asset, AssetId, Document, Slide, SpanStyle, T
 
 /// The version of the file format this crate writes and reads. A file of another version is
 /// refused, per `design@rootpoint-model@save-format`.
-pub const FORMAT_VERSION: u32 = 5;
+pub const FORMAT_VERSION: u32 = 6;
 
 /// Why a file was not loaded.
 #[derive(Clone, Debug, PartialEq)]
@@ -68,8 +68,12 @@ pub fn save_ron(doc: &Document) -> String {
     // `unwrap_variant_newtypes` writes `Split(id: 3, ...)` rather than `Split((id: 3, ...))`, and
     // `implicit_some` a span's set value as `bold: true` rather than `bold: Some(true)`; the file
     // declares the extensions in its first lines, so a reader needs no option to read it back.
+    // `escape_strings(false)` writes a string holding a `"` or a `\` as a raw string, so a formula
+    // reads `r#"\frac{a}{b}"#` rather than with every backslash doubled; it applies to every
+    // string of the file, as ron 0.12.2's `serialize_unescaped_or_raw_str` writes it.
     let config = PrettyConfig::new()
-        .extensions(Extensions::UNWRAP_VARIANT_NEWTYPES | Extensions::IMPLICIT_SOME);
+        .extensions(Extensions::UNWRAP_VARIANT_NEWTYPES | Extensions::IMPLICIT_SOME)
+        .escape_strings(false);
     ron::ser::to_string_pretty(&file, config).expect("a document always serializes")
 }
 

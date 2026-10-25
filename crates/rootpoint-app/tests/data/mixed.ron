@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 #![enable(unwrap_variant_newtypes)]
 (
-    version: 5,
+    version: 6,
     aspect: (
         width: 16,
         height: 9,

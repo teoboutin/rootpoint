@@ -148,6 +148,7 @@ it sets, separated by `; `. A command naming a span style or a font asset the do
 a missing span style loads, its span drawn with its parent's values, and `render` names the span and
 the style after `span-styles=`.
 
-`sample` opens the built-in sample in memory, a presentation of five slides that says how the
-editor's gestures work, how a text is styled and where a presentation is saved; the crate holds its RON text and its image, in `sample/`, so it opens in
+`sample` opens the built-in sample in memory, a presentation of six slides that says how the
+editor's gestures work, how a text is styled, where a presentation is saved and what an equation
+area draws; the crate holds its RON text and its image, in `sample/`, so it opens in
 every host with no file.

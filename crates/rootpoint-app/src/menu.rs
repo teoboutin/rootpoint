@@ -27,6 +27,8 @@ pub enum MenuEntry {
     Select(NodeId),
     /// Make the area hold a text, as the side panel's "text" does.
     Text,
+    /// Make the area hold an equation with an empty formula, as the side panel's "equation" does.
+    Equation,
     /// Make the area hold this image, as the side panel's "image" and its image list do.
     Image(AssetId),
     /// Name this style, or with `None` make the text custom, as the side panel's style row does.
@@ -73,7 +75,7 @@ impl App {
 
     /// The entries of the open menu, in order: "Select" with the node's ancestors from the root
     /// down and the node itself; on an area, "Content" with text, image while the document holds an
-    /// image asset and, on an image area, each image asset; on a text area, "Style" with the
+    /// image asset and, on an image area, each image asset, then equation; on a text area, "Style" with the
     /// table's styles and custom; and "Remove", except on the slide's root.
     pub fn menu_items(&self) -> Vec<MenuItem> {
         let Some(menu) = self.menu else {
@@ -105,6 +107,7 @@ impl App {
                     Node::Area(a) => match a.content {
                         Content::Text(_) => "text",
                         Content::Image(_) => "image",
+                        Content::Equation(_) => "equation",
                     },
                 };
                 let id = n.id();
@@ -123,7 +126,9 @@ impl App {
             let (text, image) = match &area.content {
                 Content::Text(_) => (true, None),
                 Content::Image(i) => (false, Some(i.asset)),
+                Content::Equation(_) => (false, None),
             };
+            let equation = matches!(area.content, Content::Equation(_));
             items.push(item(
                 MenuSection::Content,
                 MenuEntry::Text,
@@ -138,7 +143,7 @@ impl App {
                     MenuSection::Content,
                     MenuEntry::Image(image.unwrap_or(*first)),
                     "image".to_owned(),
-                    !text,
+                    image.is_some(),
                     editable,
                 ));
             }
@@ -154,6 +159,13 @@ impl App {
                     ));
                 }
             }
+            items.push(item(
+                MenuSection::Content,
+                MenuEntry::Equation,
+                "equation".to_owned(),
+                equation,
+                editable,
+            ));
             if let Content::Text(t) = &area.content {
                 for name in doc.styles.keys() {
                     let on = t.style == StyleChoice::Named(name.clone());

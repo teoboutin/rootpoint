@@ -2,8 +2,15 @@
 
 use std::sync::Arc;
 
-use rootpoint_math::{FormulaLayout, MathFont};
-use rootpoint_model::Rgba;
+use rootpoint_math::{FormulaLayout, MathFont, Style, lay_out};
+use rootpoint_model::{
+    BODY, Document, EquationContent, EquationSize, FontRef, Rect as SlideRect, Rgba, StyleChoice,
+    TextStyle,
+};
+
+use crate::FontSet;
+use crate::TEXT_PADDING;
+use crate::text::TextLayout;
 use vello_cpu::kurbo::Rect;
 use vello_cpu::peniko::{Blob, FontData};
 
@@ -31,6 +38,92 @@ impl BuiltinMath {
             font: MathFont::new(BUILTIN_MATH).expect("the built-in math font has a MATH table"),
             data: FontData::new(Blob::new(Arc::new(BUILTIN_MATH)), 0),
         }
+    }
+}
+
+/// An equation's formula as `render_slide` draws it: its layout, at the base size its size mode
+/// lays it out at, the point of the slide, in slide units, where the origin of its first row's
+/// baseline is drawn, and the scale the layout is drawn at.
+#[derive(Clone, Debug)]
+pub struct AreaFormula {
+    pub layout: FormulaLayout,
+    pub origin: (f64, f64),
+    pub scale: f64,
+}
+
+/// An equation laid out in its area: its formula, and its number's text with the point its origin
+/// is drawn at, when it is numbered.
+pub(crate) struct EquationLayout {
+    pub formula: AreaFormula,
+    pub number: Option<(TextLayout, (f64, f64))>,
+}
+
+/// The space between the formula and its number, in ems of the number's size, kept free on both
+/// sides of the formula so that it stays centred in its area.
+const NUMBER_GAP: f64 = 1.0;
+
+/// Lay out an equation in its area: its formula once, in display style, at the Body style's size
+/// for `Fit` and at its size for `AtMost`, then scaled by the largest factor at which it fits the
+/// area less the padding of a text, with room for its number on both sides, a factor no greater
+/// than 1 for `AtMost`; the formula centred, the number `(n)` at the right edge, in the built-in
+/// sans at the Body style's size, centred on the formula's axis. One layout and one multiplication
+/// suffice, since a layout scales exactly, `design@rootpoint-math@layout-scales-exactly`.
+pub(crate) fn lay_out_equation(
+    doc: &Document,
+    fonts: &mut FontSet,
+    equation: &EquationContent,
+    number: Option<u32>,
+    area: SlideRect,
+) -> EquationLayout {
+    let body = doc.resolve_style(&StyleChoice::Named(BODY.to_owned()));
+    let inner = SlideRect {
+        x: area.x + TEXT_PADDING,
+        y: area.y + TEXT_PADDING,
+        w: (area.w - 2.0 * TEXT_PADDING).max(0.0),
+        h: (area.h - 2.0 * TEXT_PADDING).max(0.0),
+    };
+    let base = match equation.size {
+        EquationSize::Fit => body.size,
+        EquationSize::AtMost(size) => size,
+    };
+    let layout = lay_out(&equation.formula, &fonts.math.font, Style::Display, base);
+    let number = number.map(|n| {
+        let style = TextStyle {
+            font: FontRef::Builtin("sans".to_owned()),
+            colour: equation.colour,
+            ..body.clone()
+        };
+        crate::text::layout_text(fonts, &format!("({n})"), &style, &[], f32::MAX)
+    });
+    let reserved = number.as_ref().map_or(0.0, |n| {
+        f64::from(n.layout.width()) + NUMBER_GAP * body.size
+    });
+    let room_w = (inner.w - 2.0 * reserved).max(0.0);
+    let height = layout.ascent + layout.descent;
+    let fit = (room_w / layout.width).min(inner.h / height);
+    let fit = if fit.is_finite() { fit.max(0.0) } else { 0.0 };
+    let scale = match equation.size {
+        EquationSize::Fit => fit,
+        EquationSize::AtMost(_) => fit.min(1.0),
+    };
+    let top = inner.y + (inner.h - scale * height) / 2.0;
+    let origin = (
+        inner.x + (inner.w - scale * layout.width) / 2.0,
+        top + scale * layout.ascent,
+    );
+    let axis = origin.1 - scale * layout.axis;
+    let number = number.map(|n| {
+        let w = f64::from(n.layout.width());
+        let h = f64::from(n.layout.height());
+        (n, (inner.x + inner.w - w, axis - h / 2.0))
+    });
+    EquationLayout {
+        formula: AreaFormula {
+            layout,
+            origin,
+            scale,
+        },
+        number,
     }
 }
 
@@ -99,7 +192,7 @@ pub(crate) fn draw_formula(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rootpoint_math::{Formula, Style, lay_out};
+    use rootpoint_math::Formula;
     use vello_cpu::kurbo::Affine;
     use vello_cpu::{Pixmap, RasterizerSettings, RenderContext, RenderSettings, Resources};
 

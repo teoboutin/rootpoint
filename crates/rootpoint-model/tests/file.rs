@@ -11,9 +11,10 @@ fn data(name: &str) -> PathBuf {
         .join(name)
 }
 
-/// One slide: a side-by-side split of an image area on the left and, on the right, a stacked split
-/// of two text areas, the second holding a nested span and a named span. The image is a file
-/// beside the presentation.
+/// Two slides: on the first, a side-by-side split of an image area on the left and, on the right, a
+/// stacked split of two text areas, the second holding a nested span and a named span; on the
+/// second, an equation, whose formula holds backslashes and a quote, written as a raw string. The
+/// image is a file beside the presentation.
 fn fixture() -> Document {
     let mut doc = Document::default();
     apply(&mut doc, Op::AddSlide { at: 0 }).unwrap();
@@ -121,6 +122,11 @@ fn fixture() -> Document {
         },
     )
     .unwrap();
+    apply(&mut doc, Op::AddSlide { at: 1 }).unwrap();
+    let area = doc.slides[1].root.id();
+    let formula = rootpoint_math::Formula::parse(r#"\frac{a}{b} + \alpha = \text{"c"}"#).unwrap();
+    let equation = Content::Equation(doc.new_equation(formula));
+    set(&mut doc, area, equation);
     doc
 }
 
@@ -338,7 +344,7 @@ fn a_hand_written_span_loads() {
         "Chars(\"A \"), Span(id: 99, style: Custom(italic: true), text: [Chars(\"title\")]),",
         1,
     );
-    let by_hand = by_hand.replacen("next_id: 10,", "next_id: 100,", 1);
+    let by_hand = by_hand.replacen("next_id: 12,", "next_id: 100,", 1);
     let doc = load_ron(&by_hand).expect("a span written by hand loads");
     let Some(Node::Area(Area {
         content: Content::Text(t),

@@ -127,7 +127,7 @@ fn a_removal_in_use_takes_a_replacement() {
     let before = s.document().clone();
     assert_eq!(
         refused(&mut s, &mut files, "style remove \"Body\""),
-        "\"Body\" is used by n3 n5 n9 n22 n26"
+        "\"Body\" is used by n3 n5 n9 n22 n26 n36"
     );
     ok(&mut s, &mut files, "style remove \"Body\" into=\"Title\"");
     for id in [3, 5, 9, 22, 26] {
@@ -172,7 +172,7 @@ fn a_missing_style_draws_with_the_default_and_is_reported() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 heading.png 320 180"),
-        "fallback=- missing=- glyphs=- styles=n2:Heading span-styles=-"
+        "fallback=- missing=- glyphs=- styles=n2:Heading span-styles=- commands=-"
     );
     // The same text in the default values, as its own, draws the same image.
     ok(&mut s, &mut files, "text n2 \"rootpoint\" custom");
@@ -182,7 +182,7 @@ fn a_missing_style_draws_with_the_default_and_is_reported() {
     );
     assert_eq!(
         ok(&mut s, &mut files, "render s1 default.png 320 180"),
-        "fallback=- missing=- glyphs=- styles=- span-styles=-"
+        "fallback=- missing=- glyphs=- styles=- span-styles=- commands=-"
     );
     assert_eq!(files.files["heading.png"], files.files["default.png"]);
 }

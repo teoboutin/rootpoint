@@ -4,17 +4,18 @@ use std::fmt;
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use rootpoint_math::Formula;
 use rootpoint_model::{
-    Area, Asset, AssetId, BUILTIN_FAMILIES, Content, Document, FontRef, ImageContent, Node, NodeId,
-    Op, Replacement, SlideId, Span, SpanChoice, SpanId, SpanStyle, StyleChoice, TextContent,
-    TextItem, TextNode, TextNodeRef, TextStyle, apply, asset_path_is_confined, load_ron, save_ron,
-    span_style_users,
+    Area, Asset, AssetId, BUILTIN_FAMILIES, Content, Document, EquationContent, EquationSize,
+    FontRef, ImageContent, Node, NodeId, Op, Replacement, SlideId, Span, SpanChoice, SpanId,
+    SpanStyle, StyleChoice, TextContent, TextItem, TextNode, TextNodeRef, TextStyle, apply,
+    asset_path_is_confined, load_ron, save_ron, span_style_users,
 };
 use rootpoint_render::{FontSet, ImageSet, Precision, Report, render_slide};
 
 use crate::command::{
-    AssetFilter, Command, SpanField, SpanOption, SpanStyleCommand, StyleCommand, StyleOption,
-    TextTarget, TreeItem, parse_command, quote, quote_always,
+    AssetFilter, Command, EquationOption, SpanField, SpanOption, SpanStyleCommand, StyleCommand,
+    StyleOption, TextTarget, TreeItem, parse_command, quote, quote_always,
 };
 use crate::files::Files;
 use crate::store::{PRESENTATION, TRASH, join, readable, unconfined, with_suffix, writable};
@@ -441,12 +442,18 @@ impl Session {
                 })
             }
             Command::Tree { slide } => {
+                let numbers = self.doc.equation_numbers();
                 let slides: Vec<String> = match slide {
                     Some(id) => {
                         let s = self.doc.slide(id).ok_or(format!("no slide {id}"))?;
-                        vec![slide_tree(s)]
+                        vec![slide_tree(s, &numbers)]
                     }
-                    None => self.doc.slides.iter().map(slide_tree).collect(),
+                    None => self
+                        .doc
+                        .slides
+                        .iter()
+                        .map(|s| slide_tree(s, &numbers))
+                        .collect(),
                 };
                 Ok(slides.join("; "))
             }
@@ -463,6 +470,7 @@ impl Session {
                                 let _ = images.insert_bytes(i.asset, &bytes);
                             }
                         }
+                        Content::Equation(_) => {}
                         Content::Text(t) => {
                             for font in self.doc.text_fonts(t) {
                                 if let FontRef::Asset(id) = font
@@ -906,6 +914,7 @@ impl Session {
             .filter(|a| match &a.content {
                 Content::Image(image) => image.asset == asset,
                 Content::Text(text) => text.own_fonts().contains(&&font),
+                Content::Equation(_) => false,
             })
             .map(|a| a.id.to_string())
             .collect();
@@ -1257,6 +1266,41 @@ impl Session {
                     content: Content::Image(ImageContent { asset, fit }),
                 }
             }
+            Command::Equation {
+                area,
+                formula,
+                options,
+            } => {
+                let current = match self.doc.node(area) {
+                    Some(Node::Area(Area {
+                        content: Content::Equation(e),
+                        ..
+                    })) => e.clone(),
+                    _ => self.doc.new_equation(Formula::empty()),
+                };
+                // A command built through the API is held to the grammar, so that it prints back
+                // as a line that parses: a formula whose LaTeX reads back to it, and a size above 0.
+                if Formula::parse(&formula.to_latex()).as_ref() != Ok(&formula) {
+                    return Err("the formula's LaTeX does not read back to it".to_owned());
+                }
+                let mut equation = EquationContent { formula, ..current };
+                for option in options {
+                    match option {
+                        EquationOption::Numbered(on) => equation.numbered = on,
+                        EquationOption::Size(EquationSize::AtMost(size))
+                            if !(size.is_finite() && size > 0.0) =>
+                        {
+                            return Err("an equation's size is a number above 0".to_owned());
+                        }
+                        EquationOption::Size(size) => equation.size = size,
+                        EquationOption::Colour(colour) => equation.colour = colour,
+                    }
+                }
+                Op::SetContent {
+                    area,
+                    content: Content::Equation(equation),
+                }
+            }
             Command::Clear { area } => Op::SetContent {
                 area,
                 content: Content::Text(TextContent {
@@ -1525,7 +1569,7 @@ impl Session {
                     .into_iter()
                     .find(|s| s.id == span)
                     .map(|s| (a.id, s.style.clone())),
-                Content::Image(_) => None,
+                Content::Image(_) | Content::Equation(_) => None,
             })
             .ok_or(format!("no span {span}"))
     }
@@ -1966,12 +2010,13 @@ fn report_words(report: &Report) -> String {
         .map(|(_, span, name)| format!("{span}:{}", quote(name)))
         .collect();
     format!(
-        "fallback={} missing={} glyphs={} styles={} span-styles={}",
+        "fallback={} missing={} glyphs={} styles={} span-styles={} commands={}",
         list(&report.font_fallbacks),
         list(&report.missing_images),
         list(&report.missing_glyphs),
         list(&styles),
-        list(&span_styles)
+        list(&span_styles),
+        list(&report.unknown_commands)
     )
 }
 

@@ -21,6 +21,7 @@ eframe = { version = "0.37.0", default-features = false, features = [
 # The caret and the selection of a text edited in place are Parley's, on the render crate's layout;
 # the same version and features as the render crate's, so the two share one `Layout` type.
 parley = { version = "0.12", default-features = false, features = ["std"] }
+rootpoint-math = { path = "../rootpoint-math" }
 rootpoint-model = { path = "../rootpoint-model" }
 rootpoint-protocol = { path = "../rootpoint-protocol" }
 rootpoint-render = { path = "../rootpoint-render" }

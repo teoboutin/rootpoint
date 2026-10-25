@@ -3282,6 +3282,7 @@ dependencies = [
  "parley",
  "proptest",
  "rfd",
+ "rootpoint-math",
  "rootpoint-model",
  "rootpoint-protocol",
  "rootpoint-render",
@@ -3306,6 +3307,7 @@ version = "0.0.0"
 dependencies = [
  "proptest",
  "ron",
+ "rootpoint-math",
  "serde",
 ]
 
@@ -3317,6 +3319,7 @@ dependencies = [
  "image",
  "libc",
  "proptest",
+ "rootpoint-math",
  "rootpoint-model",
  "rootpoint-render",
  "zip",

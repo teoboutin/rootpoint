@@ -532,6 +532,21 @@ fn op_for(doc: &Document, s: &Step) -> Option<Op> {
             a: areas[pick(areas.len())],
             b: areas[s.other % areas.len()],
         },
+        // An equation, numbered or not, fitted or held at a size, as often as a text.
+        7 if !areas.is_empty() && s.flag => Op::SetContent {
+            area: areas[pick(areas.len())],
+            content: Content::Equation(EquationContent {
+                formula: rootpoint_math::Formula::parse(&format!(r"x^{{{}}}", s.other % 10))
+                    .unwrap(),
+                numbered: s.other.is_multiple_of(2),
+                size: if s.other.is_multiple_of(3) {
+                    EquationSize::Fit
+                } else {
+                    EquationSize::AtMost(10.0 + (s.other % 90) as f64)
+                },
+                colour: TextStyle::default().colour,
+            }),
+        },
         7 if !areas.is_empty() => Op::SetContent {
             area: areas[pick(areas.len())],
             content: Content::Text(TextContent {

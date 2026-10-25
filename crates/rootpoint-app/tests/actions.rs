@@ -18,10 +18,12 @@ use rootpoint_app::hit::{Edge, Layout, Preview, Zone};
 use rootpoint_app::selection::Move;
 use rootpoint_app::{App, MenuEntry};
 use rootpoint_model::{
-    AssetId, Axis, CaretPos, Content, ImageFit, Node, NodeId, Side, SlideId, SpanId, TextNodeRef,
+    AssetId, Axis, CaretPos, Content, EquationSize, ImageFit, Node, NodeId, Rgba, Side, SlideId,
+    SpanId, TextNodeRef,
 };
 use rootpoint_protocol::{
-    Command, Files, Reply, Session, SpanField, SpanOption, StyleCommand, StyleOption, parse_command,
+    Command, EquationOption, Files, Reply, Session, SpanField, SpanOption, StyleCommand,
+    StyleOption, parse_command,
 };
 
 /// Files held in memory, by path, shared so that the test reads what a save wrote.
@@ -296,12 +298,12 @@ fn the_grip_actions_issue_their_commands() {
             a.grab_grip(NodeId(3));
             a.drop_grip(Some((NodeId(2), Zone::Move(Edge::Down))));
         },
-        // The sample's next id is 33, so the split's new area is n33.
+        // The sample's next id is 38, so the split's new area is n38.
         |_| {
             vec![
                 c("begin"),
                 c("split n2 stacked 0.5 after"),
-                c("swap n3 n33"),
+                c("swap n3 n38"),
                 c("remove n3"),
                 c("end"),
             ]
@@ -320,6 +322,34 @@ fn the_grip_actions_issue_their_commands() {
 
 #[test]
 fn the_content_actions_issue_their_commands() {
+    check(
+        "set the content to an equation",
+        &["select n3"],
+        App::set_equation_content,
+        |_| vec![c("equation n3 $$")],
+    );
+    // An option sends the formula as it stands, and `equation` keeps the options it does not give.
+    for (option, line) in [
+        (EquationOption::Numbered(false), "numbered=no"),
+        (EquationOption::Size(EquationSize::AtMost(40.0)), "size=40"),
+        (EquationOption::Size(EquationSize::Fit), "size=fit"),
+        (
+            EquationOption::Colour(Rgba {
+                r: 200,
+                g: 30,
+                b: 30,
+                a: 255,
+            }),
+            "colour=#c81e1e",
+        ),
+    ] {
+        check(
+            &format!("an equation's {line}"),
+            &["select n3", r"equation n3 $\frac{a}{b}$ size=20"],
+            move |a| a.set_equation_option(option),
+            move |_| vec![c(&format!(r"equation n3 $\frac{{a}}{{b}}$ {line}"))],
+        );
+    }
     check(
         "set the content to text",
         &["select n3", "image n3 a19 fit"],
@@ -614,7 +644,7 @@ fn the_span_style_table_actions_issue_their_commands() {
 }
 
 /// The Assets tab's actions, on the sample's image `a19`, shown by `n14` and `n17`, and `cat.png`
-/// imported as `a33`, which nothing names.
+/// imported as `a38`, which nothing names.
 #[test]
 fn the_asset_actions_issue_their_commands() {
     let imported = &["import cat.png"];
@@ -627,32 +657,32 @@ fn the_asset_actions_issue_their_commands() {
     check(
         "drop an asset on a folder",
         &["import cat.png", "asset-move a19 img/splits.png"],
-        |a| a.move_asset_to_folder(AssetId(33), "img"),
-        |_| vec![c("asset-move a33 img/cat.png")],
+        |a| a.move_asset_to_folder(AssetId(38), "img"),
+        |_| vec![c("asset-move a38 img/cat.png")],
     );
     check(
         "drop an asset on the root",
-        &["import cat.png", "asset-move a33 img/cat.png"],
-        |a| a.move_asset_to_folder(AssetId(33), ""),
-        |_| vec![c("asset-move a33 cat.png")],
+        &["import cat.png", "asset-move a38 img/cat.png"],
+        |a| a.move_asset_to_folder(AssetId(38), ""),
+        |_| vec![c("asset-move a38 cat.png")],
     );
     check(
         "replace an asset",
         imported,
-        |a| a.replace_asset(AssetId(33), "other.png".to_owned()),
-        |_| vec![c("asset-replace a33 other.png")],
+        |a| a.replace_asset(AssetId(38), "other.png".to_owned()),
+        |_| vec![c("asset-replace a38 other.png")],
     );
     check(
         "remove an asset",
         imported,
-        |a| a.remove_asset(AssetId(33)),
-        |_| vec![c("asset-remove a33")],
+        |a| a.remove_asset(AssetId(38)),
+        |_| vec![c("asset-remove a38")],
     );
     check(
         "remove an asset into another",
         imported,
-        |a| a.remove_asset_into(AssetId(19), AssetId(33)),
-        |_| vec![c("asset-remove a19 into=a33")],
+        |a| a.remove_asset_into(AssetId(19), AssetId(38)),
+        |_| vec![c("asset-remove a19 into=a38")],
     );
     check(
         "remove the unused assets",
@@ -670,8 +700,8 @@ fn the_asset_actions_issue_their_commands() {
     check(
         "relink an asset",
         imported,
-        |a| a.relink_asset(AssetId(33), "cat.png".to_owned()),
-        |_| vec![c("asset-relink a33 cat.png")],
+        |a| a.relink_asset(AssetId(38), "cat.png".to_owned()),
+        |_| vec![c("asset-relink a38 cat.png")],
     );
 }
 
@@ -949,8 +979,8 @@ fn the_node_menu_entries_issue_their_commands() {
     check(
         "menu: another image keeps the fit",
         &["import other.png", "image n3 a19 fill"],
-        menu(3, MenuEntry::Image(AssetId(33))),
-        |_| vec![c("select n3"), c("image n3 a33 fill")],
+        menu(3, MenuEntry::Image(AssetId(38))),
+        |_| vec![c("select n3"), c("image n3 a38 fill")],
     );
     check(
         "menu: name a style",
@@ -981,12 +1011,24 @@ fn the_node_menu_entries_issue_their_commands() {
     // panel's button does; the menu's own entries are read, not built by the test.
     check(
         "menu: image on an image area",
-        &["import other.png", "image n3 a33 fill"],
+        &["import other.png", "image n3 a38 fill"],
         |a| {
             a.open_node_menu(NodeId(3), Pos2::ZERO);
             let item = a.menu_items().into_iter().find(|i| i.label == "image");
             a.menu_entry(item.unwrap().entry);
         },
+        |_| vec![c("select n3")],
+    );
+    check(
+        "menu: content equation",
+        &[],
+        menu(3, MenuEntry::Equation),
+        |_| vec![c("select n3"), c("equation n3 $$")],
+    );
+    check(
+        "menu: equation on an equation area",
+        &[r"equation n3 $\alpha$"],
+        menu(3, MenuEntry::Equation),
         |_| vec![c("select n3")],
     );
     // An entry that names what the node holds sends nothing, as the side panel's does.

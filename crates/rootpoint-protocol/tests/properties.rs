@@ -57,7 +57,7 @@ fn spans(doc: &Document) -> Vec<SpanId> {
         .flat_map(|s| s.root.areas())
         .flat_map(|a| match &a.content {
             Content::Text(t) => t.root.spans().iter().map(|s| s.id).collect(),
-            Content::Image(_) => Vec::new(),
+            Content::Image(_) | Content::Equation(_) => Vec::new(),
         })
         .collect()
 }
@@ -157,6 +157,13 @@ fn line_for(doc: &Document, s: &Step) -> String {
             node(s.pick),
             asset(s.other),
             if s.flag { "fit" } else { "fill" }
+        ),
+        // An equation, set or changed, with an option or none, as often as a clear.
+        13 if s.flag => format!(
+            "equation {} $x^{{{}}}$ {}",
+            node(s.pick),
+            s.other % 10,
+            ["", "numbered=no", "size=fit", "size=30", "colour=#ff0000"][s.other % 5]
         ),
         13 => format!("clear {}", node(s.pick)),
         // Five files of other bytes, imported at the root or under a folder; the folder `../` is

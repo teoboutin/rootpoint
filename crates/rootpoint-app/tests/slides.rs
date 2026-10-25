@@ -39,22 +39,22 @@ fn slides(app: &App) -> Vec<SlideId> {
 #[test]
 fn a_slide_is_added_after_the_shown_one_and_the_shown_one_is_removed_or_duplicated() {
     let mut app = sample();
-    let [a, b, c, d, e] = slides(&app)[..] else {
-        panic!("the sample has five slides");
+    let [a, b, c, d, e, f] = slides(&app)[..] else {
+        panic!("the sample has six slides");
     };
     // With none shown, the first is.
     assert_eq!(app.shown_slide(), Some(a));
     app.show_slide(b);
     app.add_slide();
     let after = slides(&app);
-    assert_eq!(after.len(), 6);
+    assert_eq!(after.len(), 7);
     assert_eq!(
-        (after[0], after[1], after[3], after[4], after[5]),
-        (a, b, c, d, e)
+        (after[0], after[1], after[3], after[4], after[5], after[6]),
+        (a, b, c, d, e, f)
     );
     app.duplicate_slide();
     let after = slides(&app);
-    assert_eq!(after.len(), 7);
+    assert_eq!(after.len(), 8);
     assert_eq!(after[1], b);
     assert_eq!(
         app.session().document().slides[2].root.areas().len(),
@@ -69,13 +69,13 @@ fn a_slide_is_added_after_the_shown_one_and_the_shown_one_is_removed_or_duplicat
 #[test]
 fn a_slide_dropped_on_a_row_takes_its_place() {
     let mut app = sample();
-    let [a, b, c, d, e] = slides(&app)[..] else {
-        panic!("the sample has five slides");
+    let [a, b, c, d, e, f] = slides(&app)[..] else {
+        panic!("the sample has six slides");
     };
     app.move_slide(a, 2);
-    assert_eq!(slides(&app), [b, c, a, d, e]);
+    assert_eq!(slides(&app), [b, c, a, d, e, f]);
     app.move_slide(a, 0);
-    assert_eq!(slides(&app), [a, b, c, d, e]);
+    assert_eq!(slides(&app), [a, b, c, d, e, f]);
 }
 
 #[test]

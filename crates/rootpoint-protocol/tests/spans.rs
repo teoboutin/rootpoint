@@ -425,7 +425,10 @@ fn a_missing_span_style_is_named_by_the_render() {
         .insert("deck/presentation.ron".into(), save_ron(&doc).into_bytes());
     ok(&mut s, &mut files, "open-copy deck");
     let reply = ok(&mut s, &mut files, "render s1 out.png 160 90");
-    assert!(reply.ends_with(" span-styles=t3:Term"), "{reply}");
+    assert!(
+        reply.ends_with(" span-styles=t3:Term commands=-"),
+        "{reply}"
+    );
 }
 
 /// `span-styles` writes a built-in family the binary does not carry, which only a file edited by
