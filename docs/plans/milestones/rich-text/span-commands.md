@@ -6,10 +6,11 @@ The second slice of `milestone@plans@rich-text`. It lands the protocol's half of
 
 ## Builds
 
-- In `path@rootpoint-protocol@src/command.rs`: the commands of the milestone's second mapping
-  table, `insert`, `delete`, `wrap`, `unwrap`, `span`, `split-span`, and `span-style add`, `set`,
+- In `path@rootpoint-protocol@src/command.rs`: the commands of the milestone's mapping table "A
+  command, to the operation it runs", `insert`, `delete`, `wrap`, `unwrap`, `span`, `split-span`, and `span-style add`, `set`,
   `rename` and `remove`, each one line, each printed and parsed back; `text` taking a whole tree on
-  one line, its grammar fixed at this slice's audit from the milestone's illustration, with quoted
+  one line, its grammar fixed at this slice's audit from the illustration in the milestone's
+  "Decided design" of #text-edit-commands, with quoted
   strings and the escapes of `design@rootpoint-protocol@protocol-transport`.
 - In `path@rootpoint-protocol@src/tree.rs`: `tree` printing a text as a tree in the grammar of
   `text`, each span with its `t<n>`.
@@ -53,6 +54,13 @@ The second slice of `milestone@plans@rich-text`. It lands the protocol's half of
   that moves the caret instead of replying `err`.
 - **No command sequence leaves a new breach** is shown to fail by a `span` command that accepts a
   span style the table lacks.
+
+## Fixtures
+
+The new commands' tests are scripts of `path@rootpoint-protocol@tests/scripts/` and tests of
+`path@rootpoint-protocol@tests/commands.rs`, written in the commands this slice adds: a styled text
+built by `text` with a tree, or by `wrap` over a plain text, nested and named spans, and a span style
+added by `span-style add`. No fixture needs a form the slice does not add.
 
 ## Audit subjects
 
@@ -103,8 +111,9 @@ None is judged at this slice.
 
 ## Harvest
 
-- Write the protocol's head of the editor's small commands, under the slug of #text-edit-commands,
-  against whole-text replacement.
+- Write the protocol's head of its small commands, under the slug of #text-edit-commands, against
+  whole-text replacement: the commands this slice builds; the editor's use of them is
+  `design@rootpoint-app@edit-in-place`'s, rewritten at #tree-caret.
 - Rewrite `design@rootpoint-protocol@protocol-transport` for `text`'s tree on one line,
   `design@rootpoint-protocol@protocol-addressing` for `t<n>` and the offsets read at the moment of a
   command, and record the members of `design@rootpoint-protocol@asset-commands` and

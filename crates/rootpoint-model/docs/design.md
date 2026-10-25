@@ -179,7 +179,9 @@ value equal to its parent's is kept, so a bold word inside a bold span stays bol
 span changes. An operation that would make a custom span that sets no field, by a wrap, a change of
 style, a whole tree, a cut of such a span or a removal of a span style into a copy, is refused, and its caller unwraps
 the span instead. A file that holds such a span loads, drawn with its parent's values; a content
-set whole, as an undo sets it, and a duplicated slide carry such a span as it is. An empty span
+set whole, as an undo sets it, carries such a span as it is, and so does a duplicated slide, whose
+spans take new ids but keep their styles: refusing the duplicate would leave a slide loaded from a
+file edited by hand impossible to copy, for a span the file already drew. An empty span
 is accepted, so that a style chosen with nothing selected opens one at the caret. Adjacent spans of
 one style stay apart: they are what the author made, and either can be restyled alone, the
 grouping `tripwire@rootpoint-model@grouping-lost-to-merge` watches in a slide's tree. The rival,
@@ -220,8 +222,8 @@ to name a style.
 its kind, so a kind added later, maths, or a reference to an equation, joins the enumeration with
 no change of what a text is. No kind but these two exists, and an equation's design is
 `issue@rootpoint@more-content-kinds`'s. It serves `goal@rootpoint@real-presentations`, whose talks
-need mathematics; on the owner's word, the owner wants maths inside a sentence, beside an equation
-kind of its own.
+need mathematics; on the owner's word, the owner wants maths inside a sentence, and is
+considering, as an intuition, an equation kind of its own beside it, `issue@rootpoint@more-content-kinds`.
 
 ### A text names a style of the document's table, or holds its own values `##named-styles`
 

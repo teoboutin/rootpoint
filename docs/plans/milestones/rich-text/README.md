@@ -990,25 +990,25 @@ reopens #text-edit-commands.
 
 - **D1**, ruled: accepted by the owner, "defaults accepted, proceed". Its text: the work is a
   milestone of four slices, in the order above, rather than one spec. The session's default, put to
-  the owner at the hand-off; it blocks the merge of this milestone's branch.
+  the owner at the hand-off; it blocked the merge of this milestone's branch.
 - **D2**, ruled: accepted by the owner, "defaults accepted, proceed". Its text: each slice on its
   own branch, merged before the next, as
   `skill@knowledge-architect-planning@cutting-steps-and-slices` says; the owner chose one branch for
-  the whole of the milestone on asset storage, which is no ruling on this one. It blocks the merge
+  the whole of the milestone on asset storage, which is no ruling on this one. It blocked the merge
   of this milestone's branch.
 - **D3**, ruled: accepted by the owner, "defaults accepted, proceed". Its text, on
   #text-edit-commands: a paste inserts plain text into the caret's node, and a copy carries no span;
-  styled copy and paste is a later consequence. It blocks the merge of #tree-caret.
+  styled copy and paste is a later consequence. It blocked the merge of #tree-caret.
 - **D4**, ruled: accepted by the owner, "defaults accepted, proceed". Its text, on
   #style-action-target: Ctrl+B sets bold and Ctrl+I italic; colour, size, font and a named span
-  style have no key, and are set from the side panel. It blocks the merge of #span-styling.
+  style have no key, and are set from the side panel. It blocked the merge of #span-styling.
 - **D5**, ruled: accepted by the owner, "defaults accepted, proceed". Its text, on
   #boundary-caret-positions: `design@rootpoint-app@caret-editor-state` makes, on the owner's word,
   the caret and the selection the editor's state, and the owner approved the composing range apart.
   The default reads the caret's text node as part of the caret, a caret position being a text node
   and an offset, so the ruling covers it as it stands and its head is reworded at #tree-caret, with
   no new member. The other reading, a new member, goes to the owner as a proposal, since the ruling
-  names its members. It blocks the merge of #tree-caret.
+  names its members. It blocked the merge of #tree-caret.
 - **D6**, ruled: accepted by the owner, "defaults accepted, proceed". Its text, on
   #text-tree-normal-form: the owner approved, in round 2, dissolving a child whose style changes
   nothing. The reviews of this document found that the rule dissolves a named span whose style is
@@ -1016,7 +1016,7 @@ reopens #text-edit-commands.
   bold span inside a bold span, which then loses its bold when the outer span changes. The default
   narrows it: the model dissolves no span, an operation that would leave a custom span setting no
   field is refused, and a named span is never dissolved, as "Decided design" says. It narrows a
-  ruling of the owner, so it blocks the merge of this milestone's branch.
+  ruling of the owner, so it blocked the merge of this milestone's branch.
 - **D7**, ruled: accepted by the owner, "D7 accepted". Its text, on #text-node-tree and
   #span-style-overrides: the review before the merge of #text-tree found that the two heads' titles,
   taken from the thread titles the owner approved, each state a decision another head holds: "each
@@ -1025,7 +1025,7 @@ reopens #text-edit-commands.
   `design@rootpoint-model@named-styles`. The default, built: the titles drop those clauses, "An
   area's text is a tree of characters and spans" and "A span sets each text option it changes, each
   optional, over its parent's values", the decisions unchanged. It narrows titles the owner
-  approved, so it blocks the merge of #text-tree.
+  approved, so it blocked the merge of #text-tree.
 
 ## Harvest
 
