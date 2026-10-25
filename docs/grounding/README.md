@@ -7,3 +7,4 @@ decision; the decisions it informed are in the design homes and cite their own g
 - [Slide tools that lay out a slide as a recursive split tree](prior-art.md)
 - [Rust GUI toolkits and slide renderers](toolkits.md)
 - [Editing a split layout, and grouping undo steps](split-editing.md)
+- [How LyX represents, navigates and decorates nested text](lyx-nested-text.md)
