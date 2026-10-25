@@ -733,6 +733,12 @@ goes to the text, as `design@rootpoint-app@edit-entry` says: the arrows move the
 an arrow extends the selection; outside editing, Alt with an arrow stays the node keys. Nearest
 rival: one position per edge and a rule for the typing style; defeated by #arg-2 and #arg-12.
 
+Backspace and Delete, with no selection, act in the caret's text node, as LyX's do, D8: on a
+character, they delete it; on a span with items, a first press selects the span whole and a second
+deletes it; an empty span goes at once; at a span's own start for Backspace, or its end for Delete,
+the span is unwrapped, its content kept and the caret where it was drawn; at the root's start or
+end, nothing.
+
 ### #ancestor-frames
 
 While editing, the overlay draws a thin frame around each span that holds the caret, one rectangle
@@ -849,7 +855,7 @@ snapshot restores every span with its id and its style, and a text is small.
 
 | caret at | Right | Left |
 | --- | --- | --- |
-| offset i, item i a character | offset i+1, same text node | (by item i−1) |
+| offset i, item i a character | past its cluster, same text node | (by item i−1) |
 | offset i, item i a span s | s, offset 0 | (by item i−1) |
 | offset i, item i−1 a span s | (by item i) | s, its last offset |
 | last offset of span s | after s in its parent | (by item i−1) |
@@ -857,9 +863,18 @@ snapshot restores every span with its id and its style, and a text is small.
 | last offset of the root | no move | (by item i−1) |
 | offset 0 of the root | (by item i) | no move |
 
+A move past a character passes one cluster of the layout, the characters drawn as one glyph or
+one cluster of glyphs, and stops at a span's edge: the caret stands on a glyph's boundary, as
+`design@rootpoint-app@edit-in-place` asks, and never inside a cluster, which has none.
+
 Up and Down, word moves and line moves are Parley's on the byte index, then mapped back to a caret
-position; #text-tree's map gives the forward direction and each span's byte range, and
-#tree-caret's audit settles the backward rule for a byte index at which several edges meet.
+position; #text-tree's map gives the forward direction and each span's byte range. The backward
+rule, settled at #tree-caret's audit, is the click's rule of #boundary-caret-positions applied to
+every byte index Parley gives: the caret goes into the deepest text node that owns the glyph on the
+side Parley's affinity names, the glyph after the index for `Downstream` and the glyph before it for
+`Upstream`, which is the side of the glyph a click took, as Parley 0.12.0's `Cursor::from_point`
+sets it; with no glyph on that side, at the text's start or end, the other side is taken. Several
+edges meeting at the index then never leave a choice: one glyph owns each side.
 
 ### A style action, by the selection, to the operation it gives
 
@@ -949,8 +964,8 @@ guarding `design@rootpoint-app@editor-overlay`, with the frames recorded in it; 
 
 AC1. Guards #boundary-caret-positions and #text-node-tree. Judged at #tree-caret. Observable: a
 property test over random trees, in `path@rootpoint-app@tests/editing.rs`, walks the caret with
-Right from the start to the end and with Left back; each caret position is visited once in each
-direction, and each maps to a byte index whose drawn glyph is the caret's, within the half-pixel
+Right from the start to the end and with Left back; each caret position that stands on a cluster's
+boundary is visited once in each direction, and each maps to a byte index whose drawn glyph is the caret's, within the half-pixel
 tolerance of `design@rootpoint-app@edit-in-place`, at the three window sizes that test uses.
 Response: the map is fixed in the slice; a tree whose positions cannot be mapped to the one layout
 reopens #text-node-tree.
@@ -1041,6 +1056,24 @@ reopens #text-edit-commands.
   `text`, the last three starting from no value, where it changes nothing; the rival, an option
   naming the values to clear, `clear=bold,size`. Harvested as `design@rootpoint-protocol@text-style-alone` and
   `design@rootpoint-protocol@span-value-inherit`. They blocked the merge of #span-commands.
+
+- **D8**, awaiting the owner. Open at the design audit of #tree-caret. Its text, on
+  #boundary-caret-positions: the milestone did not say what Backspace and Delete do at a span's
+  edge, and two shapes meet every binding constraint. The default, built: LyX's, read in its
+  source, Codeberg mirror `LyX-org/lyx` at commit `64141cf0e7a073e1226ec168d317618537ba0fab`:
+  `site.bind` binds both keys with `confirm`; `Text::dispatch` of `path@elsewhere@src/Text.cpp` then selects a
+  non-empty text inset before the caret on a first Backspace and deletes it on a second, since
+  `InsetText::confirmDeletion` is `!text().empty()`; and `Text::backspace` at position 0 of an
+  inset's first paragraph calls `dissolveInset`, as `Text::erase` does at the end of its last. Here: with no
+  selection, the keys act in the caret's text node; a span with items is selected by a first press
+  and deleted by a second, an empty one at once; at a span's own start for Backspace, or its end
+  for Delete, `unwrap` dissolves it; at the root's ends, nothing. Every edit then stays in the
+  caret's node, where typing goes, and the keyboard alone can remove a span's style, which no style
+  action of this slice can. The rival: the keys delete the character drawn before or after the
+  caret, in whatever text node holds it, never a span whole and never unwrapping; it is nearer to
+  a plain editor, but it edits a node the caret is not in, which the author cannot see until the
+  frames of #span-styling, and it leaves an emptied span behind until the stay ends. It blocks the
+  merge of #tree-caret.
 
 ## Harvest
 
