@@ -26,7 +26,12 @@ command. No text item holds math yet, and no reference exists.
   area's right edge on the formula's axis, in the built-in sans at the Body style's size; `Fit`
   takes the largest scale at which the formula and the number fit. `area_formula`, beside
   `area_text`, gives an equation area's `FormulaLayout`, the point where its origin is drawn and its
-  scale, as `render_slide` draws it, for the window's caret at #math-editing.
+  scale, as `render_slide` draws it, for the window's caret at #math-editing. `render_slide` calls
+  `draw_formula`, so `Report::unknown_commands`, which #math-layout adds, is listed in the `render`
+  reply of `path@rootpoint-protocol@src/session.rs` and in `App::status` of
+  `path@rootpoint-app@src/lib.rs`. A slide with an equation joins the slides the browser test of
+  `path@rootpoint-app@tests/web.rs` draws against the native golden, so the math crate's layout is
+  run in a browser, by `design@xtask@browser-tests-gated`.
 - **Protocol**: `equation <area> $<formula>$ [numbered=yes|no] [size=fit|<n>] [colour=<c>]`,
   setting an area's content to an equation or changing one; the lexer of
   `path@rootpoint-protocol@src/command.rs` reads `$…$` as a word of its own, its content raw up to

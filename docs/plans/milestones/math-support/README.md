@@ -1173,7 +1173,7 @@ crates/rootpoint-render/src/
   area_formula                         an equation area's layout, origin and scale, as drawn
   Report::unknown_commands             the formulas holding an unknown command
   BUILTIN_MATH                         Libertinus Math's bytes
-crates/rootpoint-render/tests/math.rs  the image test of AC1, ignored
+crates/rootpoint-render/src/formula.rs  draw_formula, and the image test of AC1, ignored
 crates/rootpoint-protocol/src/command.rs
   Word::Math(String)                   the `$…$` literal
   Command::Equation, Command::Math, Command::Retarget
@@ -1267,8 +1267,9 @@ retargets and removes: a question in the middle of a Delete, #arg-40.
 ### #math-layout-engine
 
 The math crate lays a formula out from the font file's bytes, all of which it reads with ttf-parser
-0.25: the cmap, the glyphs' advances and bounds, the MATH table and the `ssty` lookups of GSUB. It
-gives a box per atom and per cell, each tied to its place in the formula, with the glyphs to draw and
+0.25: the cmap, the glyphs' advances and bounds, the MATH table and the `ssty` lookups of GSUB, which in Libertinus Math 7.051 substitute the six primes alone, ′ to ‷, as
+measured at #math-layout's audit, so its other glyphs are set in scripts at their base form, scaled.
+It gives a box per atom and per cell, each tied to its place in the formula, with the glyphs to draw and
 their positions; the renderer draws them. An equation is laid out in display style, a math item of a
 text in text style, and scripts in script and scriptscript styles, as TeX's rules have them, each
 style taking the MATH constants that name it. A script's glyphs are the font's `ssty` forms, chosen
@@ -1316,7 +1317,12 @@ field with a preview: fails C1, #arg-24.
 
 `COMMANDS`, generated from W3C `unicode.xml` by the generator of `path@xtask@src/main.rs`, maps each
 command name to its character and class, limited to the characters Libertinus Math has, the W3C
-notice beside it; the structures of #math-storage-form's subset are commands too. A command typed
+notice beside it. A name means what it means in LaTeX's math mode: the generator takes every name
+a `<character>` gives in its columns `<AMS>`, `<mathlatex>` without a set, `<IEEE>`, `<mathlatex
+set="unicode-math">` and `<latex>`, and a name two characters claim goes to the first column of
+that order, so `\epsilon` is ϵ and `\varepsilon` ε, as in TeX; LaTeX's aliases of
+`path@elsewhere@base/fontdef.dtx` that no column gives, as `\to`, `\le` and `\neq`, are a list of
+the generator's own, D6; the structures of #math-storage-form's subset are commands too. A command typed
 after `\` and closed by a character that is not a letter becomes its atom. Nearest rival, unicode-math's
 table: LPPL, #arg-61.
 
@@ -1384,6 +1390,7 @@ the owner chose both, #arg-47.
 | `\sum`, `\prod`, `\int`, `\oint` and the other operators of class op, with `_` and `^` | big operator with limits |
 | `\mathbf`, `\mathrm`, `\mathcal`, `\mathbb`, `\mathit` | font change |
 | `\text{…}` | text run |
+| `\log`, `\lg`, `\ln`, `\lim`, `\limsup`, `\liminf`, `\sin`, `\arcsin`, `\sinh`, `\cos`, `\arccos`, `\cosh`, `\tan`, `\arctan`, `\tanh`, `\cot`, `\coth`, `\sec`, `\csc`, `\max`, `\min`, `\sup`, `\inf`, `\arg`, `\ker`, `\dim`, `\hom`, `\det`, `\exp`, `\Pr`, `\gcd`, `\deg` | operator name, upright, of class op; with limits for `\lim`, `\limsup`, `\liminf`, `\max`, `\min`, `\sup`, `\inf`, `\det`, `\Pr` and `\gcd`, as `path@elsewhere@base/ltmath.dtx` defines the 32; D7 |
 | `\begin{matrix}`, `pmatrix`, `bmatrix`, `cases` … `\end{…}`, cells at `&`, rows at `\\` | matrix |
 | `\,`, `\:`, `\;`, `\quad`, `\qquad`, `\!` | space |
 | `{…}` | group |
@@ -1422,10 +1429,12 @@ fraction or a delimited group, is TeX's.
 | punct | (thin) | (thin) | — | (thin) | (thin) | (thin) | (thin) | (thin) |
 | inner | (thin) | thin | (medium) | (thick) | (thin) | 0 | (thin) | (thin) |
 
-A "—" cannot occur: a bin with no ord-like atom before it, or before a rel, open or punct, becomes an
-ord, as TeX's rules 5 and 6 of appendix G have it. An assumption: the session wrote this table and the
-next from memory; #math-layout's audit checks each against its source, The TeXbook and the Unicode
-block Mathematical Alphanumeric Symbols.
+A "—" cannot occur: a bin first in its list, or after a bin, an op, a rel, an open, a punct or the
+start of a delimited group, becomes an ord, and so does a bin last in its list, or before a rel, a
+close, a punct or the end of a delimited group, as TeX's rules 5 and 6 of appendix G have it. The
+table was checked at #math-layout's audit against `math_spacing` of `path@elsewhere@tex.web`, §764,
+which it matches cell for cell, and the conversion against §728 and §729 of the same file; the next
+table against `path@elsewhere@UnicodeData.txt`, every base code point and every hole it names.
 
 ### A character under a font change, to the code point drawn
 
@@ -1611,8 +1620,11 @@ reopens #math-text-item.
 
 ### A script is drawn with the font's `ssty` glyph `##ac-script-glyphs`
 
-AC4. Guards #math-layout-engine. Judged at #math-layout. Observable: a test finds that the `a` of
-`x^{a}` is drawn with the glyph Libertinus Math's `ssty` substitutes for it, not its base glyph.
+AC4. Guards #math-layout-engine. Judged at #math-layout. Observable: a test finds that the ′ of
+`x^{\prime}` is drawn with the glyph Libertinus Math's `ssty` substitutes for it, not its base glyph,
+and that the `a` of `x^{a}` keeps its base glyph, which that font's `ssty` does not cover. The
+observable was reworded at #math-layout's audit: the font's `ssty` covers the six primes alone, so
+the first wording, on the `a`, could not be observed.
 Response: `ssty` applied by the math crate itself if no shaper applies it; none at all reopens
 #math-layout-engine.
 
@@ -1738,6 +1750,29 @@ everywhere", state what the project is for, which a goal records,
 purpose to the owner. A goal would be drafted under that skill and ruled by the owner.
 
 Ruled by the owner on the default, round 9: "agreed on the other defaults". No goal is written.
+
+### D6: the names of the table of commands
+
+Bears on #latex-command-set. The owner, round 3: "latex-command-set agreed on shape", the shape
+being a table "generated from W3C `unicode.xml`". A finding of #math-layout's audit: the column the
+slice's spec read, `<mathlatex set="unicode-math">` else `<latex>`, names α `\mupalpha` and ≤ `\leq`
+alone, so `\alpha`, `\le` and `\dots` would be unknown, and the columns disagree on `\epsilon` and
+`\phi`; and LaTeX defines `\to`, `\gets`, `\le`, `\ge`, `\land`, `\lor`, `\lnot`, `\owns`,
+`\neq` and `\iff` as aliases or macros of other commands, which no column of `unicode.xml` gives.
+The default, in #latex-command-set's decided design: every name of the five columns, a disputed name
+going to the first column of the order AMS, `<mathlatex>` without a set, IEEE, unicode-math,
+`<latex>`, which gives each Greek command its TeX character; and a list of the generator's own for
+LaTeX's aliases, each naming the command or character it stands for in `path@elsewhere@base/fontdef.dtx`.
+It widens the table's source beyond `unicode.xml` by that list of names, which is the scope change.
+
+### D7: the operator names of LaTeX
+
+Bears on #math-storage-form and #latex-command-set. A finding of #math-layout's audit: the reference
+formulas of #math-layout's "Fixtures" write `\cos` and `\sin`, which the closed subset read as
+unknown atoms, drawn red. The default, in the mapping table "A LaTeX construct, to the atom it reads
+as": the 32 operator names LaTeX defines in `path@elsewhere@base/ltmath.dtx`, each an atom of its own,
+upright, of class op, with limits for the ten that LaTeX sets without `\nolimits`. It adds a kind of
+atom to the subset the owner approved, which is the scope change.
 
 ## Harvest
 
