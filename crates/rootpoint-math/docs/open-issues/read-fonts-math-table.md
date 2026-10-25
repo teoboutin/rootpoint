@@ -5,8 +5,9 @@ kind: deferred
 
 ## Summary
 
-The math crate reads a math font's OpenType MATH table with ttf-parser, because read-fonts, which
-parley already links, parses that table only from version 0.45. Once parley moves to such a
+The math crate reads a math font's OpenType MATH table with ttf-parser,
+`design@rootpoint-math@math-layout-engine`, because read-fonts, which parley already links, parses
+that table only from version 0.45. Once parley moves to such a
 read-fonts, one font parser could serve both.
 
 ## Details

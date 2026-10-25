@@ -29,7 +29,9 @@ impl Formula {
     /// Read a formula from its LaTeX. A text that does not parse is refused: an unbalanced brace, a
     /// second superscript or subscript on one nucleus, an `\end` that closes no `\begin`, a
     /// `\right` with no `\left`, a missing argument, an `&` or a `\\` outside the formula's grid
-    /// or a matrix. An unknown command is an atom of its own.
+    /// or a matrix, an environment the subset does not know, a delimiter that is no open, close,
+    /// bar or slash, or atoms nested deeper than `MAX_DEPTH`. An unknown command is an atom of its
+    /// own.
     pub fn parse(text: &str) -> Result<Formula, ParseError> {
         let mut p = Parser {
             text,
@@ -130,8 +132,9 @@ impl Stop {
 
 /// How deep atoms may nest, one in the cell of another. Reading and laying out recurse once per
 /// level, so a bound keeps a formula of a few kilobytes from overflowing the stack, which aborts
-/// the program; a browser's stack of 1 MB held a nesting of 200 in a debug build, measured at the
-/// review of the math crate. No formula of a talk nests near it.
+/// the program: in a debug build, a thread of 1 MB, the stack Rust's wasm32 target gives, overflowed
+/// at a nesting of 200 `\left(`, measured at the review of the math crate, and held the deepest
+/// formula this bound admits. No formula of a talk nests near it.
 pub const MAX_DEPTH: usize = 64;
 
 struct Parser<'a> {
@@ -194,6 +197,13 @@ impl Parser<'_> {
 
     /// A list of atoms, up to the stop that ends it. `in_index` makes a `]` a stop.
     fn list(&mut self, in_index: bool) -> Result<(List, Stop), ParseError> {
+        self.enter()?;
+        let list = self.list_at_depth(in_index);
+        self.leave();
+        list
+    }
+
+    fn list_at_depth(&mut self, in_index: bool) -> Result<(List, Stop), ParseError> {
         let mut list = List::new();
         loop {
             let Some(token) = self.next() else {
@@ -206,7 +216,7 @@ impl Parser<'_> {
                 Token::Char(']') if in_index => return Ok((list, Stop::Bracket)),
                 Token::Symbol('\\') => return Ok((list, Stop::Row)),
                 Token::Char(c @ ('^' | '_')) => self.script(&mut list, c == '^')?,
-                Token::Char('\'') => prime(&mut list),
+                Token::Char('\'') => self.prime(&mut list)?,
                 Token::Word(name) if name == "right" => {
                     let delim = self.delimiter()?;
                     return Ok((list, Stop::Right(delim)));
@@ -241,7 +251,13 @@ impl Parser<'_> {
             Some(Token::Word(name)) if name == "right" || name == "end" => {
                 Err(self.error_at_last("an argument is missing"))
             }
-            Some(token) => Ok(vec![self.atom(token)?]),
+            // A one-atom argument is a list of the tree, as a braced one is.
+            Some(token) => {
+                self.enter()?;
+                let atom = self.atom(token);
+                self.leave();
+                Ok(vec![atom?])
+            }
         }
     }
 
@@ -282,6 +298,11 @@ impl Parser<'_> {
             sub, sup: sup_slot, ..
         }) = list.last_mut()
         {
+            // A superscript after primes joins them, as TeX reads `f'^2` as `f^{\prime 2}`.
+            if sup && let Some(primes) = sup_slot.as_mut().filter(|s| all_primes(s)) {
+                primes.extend(arg);
+                return Ok(());
+            }
             let slot = if sup { sup_slot } else { sub };
             if slot.is_some() {
                 return Err(double());
@@ -307,6 +328,36 @@ impl Parser<'_> {
         Ok(())
     }
 
+    /// A `'` after an atom: a prime in its superscript, as LaTeX reads `f'` as `f^{\prime}`, a second
+    /// `'` adding a second prime; after another superscript, as in `f^2'`, a second superscript,
+    /// refused as TeX refuses it.
+    fn prime(&mut self, list: &mut List) -> Result<(), ParseError> {
+        if let Some(Atom::Scripts { sup, .. }) = list.last_mut() {
+            match sup {
+                None => {
+                    *sup = Some(vec![PRIME]);
+                    return Ok(());
+                }
+                Some(primes) if all_primes(primes) => {
+                    primes.push(PRIME);
+                    return Ok(());
+                }
+                Some(_) => return Err(self.error_at_last("a second superscript on one nucleus")),
+            }
+        }
+        let nucleus = match list.pop() {
+            Some(Atom::Group(inner)) => inner,
+            Some(atom) => vec![atom],
+            None => Vec::new(),
+        };
+        list.push(Atom::Scripts {
+            nucleus,
+            sub: None,
+            sup: Some(vec![PRIME]),
+        });
+        Ok(())
+    }
+
     /// The delimiter after `\left` or `\right`.
     fn delimiter(&mut self) -> Result<Option<Delim>, ParseError> {
         self.skip_spaces();
@@ -322,7 +373,10 @@ impl Parser<'_> {
                 ch: '\u{27E9}',
                 name: Some("rangle"),
             })),
-            Some(Token::Char(c)) if is_delimiter(c) => Ok(Some(Delim { ch: c, name: None })),
+            // A bare brace opens or closes a group, so `\left{` is refused, as TeX refuses it.
+            Some(Token::Char(c)) if is_delimiter(c) && c != '{' && c != '}' => {
+                Ok(Some(Delim { ch: c, name: None }))
+            }
             Some(Token::Symbol(s @ ('{' | '}' | '|'))) => {
                 let ch = ESCAPED.iter().find(|(e, _)| *e == s).unwrap().1;
                 Ok(Some(Delim {
@@ -341,18 +395,21 @@ impl Parser<'_> {
         }
     }
 
-    /// The atom a token begins, refused when it nests deeper than `MAX_DEPTH`.
-    fn atom(&mut self, token: Token) -> Result<Atom, ParseError> {
+    /// Enter a list, refused when lists would nest deeper than `MAX_DEPTH`; `leave` ends it.
+    fn enter(&mut self) -> Result<(), ParseError> {
         if self.depth >= MAX_DEPTH {
             return Err(self.error_at_last(&format!("atoms nest deeper than {MAX_DEPTH} levels")));
         }
         self.depth += 1;
-        let atom = self.atom_at_depth(token);
-        self.depth -= 1;
-        atom
+        Ok(())
     }
 
-    fn atom_at_depth(&mut self, token: Token) -> Result<Atom, ParseError> {
+    fn leave(&mut self) {
+        self.depth -= 1;
+    }
+
+    /// The atom a token begins.
+    fn atom(&mut self, token: Token) -> Result<Atom, ParseError> {
         Ok(match token {
             Token::Char('{') => Atom::Group(self.group()?),
             Token::Char(c) => Atom::Symbol {
@@ -490,37 +547,16 @@ fn is_delimiter(ch: char) -> bool {
         )
 }
 
-/// A `'` after an atom: a prime in its superscript, as LaTeX reads `f'` as `f^{\prime}`, a
-/// second `'` adding a second prime.
-fn prime(list: &mut List) {
-    let prime = Atom::Symbol {
-        ch: '\u{2032}',
-        class: Class::Ord,
-        name: Some("prime"),
-    };
-    if let Some(Atom::Scripts { sup, .. }) = list.last_mut() {
-        match sup {
-            None => {
-                *sup = Some(vec![prime]);
-                return;
-            }
-            Some(primes) if primes.iter().all(|a| *a == prime) => {
-                primes.push(prime);
-                return;
-            }
-            Some(_) => {}
-        }
-    }
-    let nucleus = match list.pop() {
-        Some(Atom::Group(inner)) => inner,
-        Some(atom) => vec![atom],
-        None => Vec::new(),
-    };
-    list.push(Atom::Scripts {
-        nucleus,
-        sub: None,
-        sup: Some(vec![prime]),
-    });
+/// The prime a `'` stands for.
+const PRIME: Atom = Atom::Symbol {
+    ch: '\u{2032}',
+    class: Class::Ord,
+    name: Some("prime"),
+};
+
+/// Whether a superscript is primes alone, as `'`s give it.
+fn all_primes(list: &List) -> bool {
+    !list.is_empty() && list.iter().all(|a| *a == PRIME)
 }
 
 /// The name a symbol written with a backslash and one character keeps.
@@ -642,7 +678,18 @@ fn write_atom(atom: &Atom) -> Piece {
         }),
         Atom::Scripts { nucleus, sub, sup } => {
             let mut text = match nucleus.as_slice() {
-                [one] if !matches!(one, Atom::Scripts { .. } | Atom::Group(_)) => {
+                // A lone `]` is braced, so that it does not close a radical's index.
+                [one]
+                    if !matches!(one, Atom::Scripts { .. } | Atom::Group(_))
+                        && !matches!(
+                            one,
+                            Atom::Symbol {
+                                ch: ']',
+                                name: None,
+                                ..
+                            }
+                        ) =>
+                {
                     write_atom(one).text
                 }
                 _ => braced(nucleus),

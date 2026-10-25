@@ -4,6 +4,8 @@ mod common;
 
 use rootpoint_math::{Atom, Formula, FormulaLayout, MAX_DEPTH, Style, lay_out};
 
+/// The reference formulas of the milestone of math, which AC1 and AC2 lay out: the first two are
+/// equations (61) and (62) of page 60 of the owner's thesis.
 const REFERENCE: [&str; 5] = [
     r"\frac{\partial f_i}{\partial t} + \mathbf{c}_i \cdot \nabla_{\mathbf{x}} f_i = \Omega(f_i)",
     r"\int_{-\infty}^{\infty} P_n(x)\,\bar{\omega}(x)\,\mathrm{d}x = \sum_{i=1}^{N} w_i P_n(x_i)",
@@ -195,6 +197,15 @@ fn deep_nesting_is_bounded() {
     assert!(Formula::parse(&deep(MAX_DEPTH - 1)).is_ok());
     assert!(Formula::parse(&deep(MAX_DEPTH)).is_err());
     assert!(Formula::parse(&deep(5000)).is_err());
+    // A script's argument nests as a group does, and `\hat` with one atom too.
+    let scripts = |n: usize| format!("{}x{}", "x^{".repeat(n), "}".repeat(n));
+    assert!(Formula::parse(&scripts(MAX_DEPTH - 1)).is_ok());
+    assert!(Formula::parse(&scripts(MAX_DEPTH)).is_err());
+    assert!(Formula::parse(&scripts(5000)).is_err());
+    assert!(Formula::parse(&format!("{}x", r"\hat ".repeat(5000))).is_err());
+    // The deepest formula `parse` gives is laid out whole, with no cell cut.
+    let l = laid(&scripts(MAX_DEPTH - 1), Style::Text, 10.0);
+    assert!(l.cells.iter().all(|c| !c.empty));
     let mut list = vec![Atom::Unknown("x".to_owned())];
     for _ in 0..5000 {
         list = vec![Atom::Group(list)];

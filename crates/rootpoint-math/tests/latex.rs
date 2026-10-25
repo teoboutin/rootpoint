@@ -247,6 +247,7 @@ fn a_delimiter_is_an_open_a_close_or_a_bar() {
     assert!(Formula::parse(r"\left\alpha x \right)").is_err());
     assert!(Formula::parse(r"\left⟨ x \right⟩").is_ok());
     assert!(Formula::parse(r"\left\lfloor x \right\rfloor").is_ok());
+    assert!(Formula::parse(r"\left{ x \right)").is_err());
 }
 
 #[test]
@@ -254,6 +255,11 @@ fn a_quote_is_a_prime_in_the_superscript() {
     assert_eq!(parse("f'"), parse(r"f^{\prime}"));
     assert_eq!(parse("f''"), parse(r"f^{\prime \prime}"));
     assert_eq!(parse("f_i'"), parse(r"f_i^{\prime}"));
+    // A superscript after primes joins them, as in TeX; a prime after a superscript is a second
+    // superscript, refused as TeX refuses it.
+    assert_eq!(parse("f'^2"), parse(r"f^{\prime 2}"));
+    assert!(Formula::parse("f^2'").is_err());
+    assert!(Formula::parse("x^{}'").is_err());
 }
 
 #[test]
@@ -261,4 +267,14 @@ fn an_escaped_character_is_written_back_escaped() {
     let f = parse(r"\{ a \} \% \_");
     assert_eq!(parse(&f.to_latex()), f);
     assert_eq!(f.to_latex(), r"\{ a\} \% \_");
+}
+
+/// A formula `parse` gives writes back to a text that reads back equal, a `]` in an index
+/// included.
+#[test]
+fn a_bracket_in_an_index_round_trips() {
+    for text in [r"\sqrt[{]}^2]{x}", r"\sqrt[{]}']{x}"] {
+        let f = parse(text);
+        assert_eq!(parse(&f.to_latex()), f, "{text}");
+    }
 }

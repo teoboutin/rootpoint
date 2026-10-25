@@ -334,11 +334,12 @@ it, and the slice that judges or updates each.** Each slice's audit runs `cargo 
 the heads it changes, and reads each text against the change:
 
 - `design@rootpoint@crate-existence-rule`: its list of crates gains `rootpoint-math`, a member the
-  rule admits, and its sentence that the model's serialization stays inside it is rewritten, since
-  the grammar of a formula is the math crate's, #math-layout. Referenced by
+  rule admits, at #math-layout, and its sentence that the model's serialization stays inside it is
+  rewritten, since the grammar of a formula is the math crate's, at #equation-kind, when the model
+  first holds a formula. Referenced by
   `design@rootpoint@gui-only-in-app`, whose text does not change on that account.
 - `design@rootpoint@gui-only-in-app`: its graph of dependencies gains the math crate, which the
-  model and the renderer depend on, #math-layout. Referenced at
+  renderer depends on from #math-layout and the model from #equation-kind. Referenced at
   `register@rootpoint-protocol@design`, which does not change.
 - `design@rootpoint@wasm-from-the-start`: the crates the gate builds gain the math crate,
   #math-layout. Referenced at `path@rootpoint-model@CLAUDE.md` and `path@rootpoint-render@CLAUDE.md`,
@@ -1794,7 +1795,7 @@ Ruled by the owner on the default, in the session that built #math-layout, by se
 ### D7, ruled: the operator names of LaTeX
 
 Bears on #math-storage-form and #latex-command-set. A finding of #math-layout's audit: the reference
-formulas of #math-layout's "Fixtures" write `\cos` and `\sin`, which the closed subset read as
+formulas, then in #math-layout's "Fixtures", write `\cos` and `\sin`, which the closed subset read as
 unknown atoms, drawn red. The default, in the mapping table "A LaTeX construct, to the atom it reads
 as": the 32 operator names LaTeX defines in `path@elsewhere@base/ltmath.dtx`, each an atom of its own,
 upright, of class op, with limits for the ten that LaTeX sets without `\nolimits`, `\liminf` and

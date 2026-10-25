@@ -75,7 +75,8 @@ pub struct Report {
     /// The spans naming a span style the document's table lacks, each with its area and the name;
     /// each is drawn with its parent's values.
     pub missing_span_styles: Vec<(NodeId, SpanId, String)>,
-    /// The areas whose formula holds a command the math subset does not know, drawn red.
+    /// The areas whose formula holds a command the math subset does not know, drawn red. No kind
+    /// of content holds a formula yet, so it is empty.
     pub unknown_commands: Vec<NodeId>,
     /// The text areas whose glyphs could not all be drawn, as from a damaged font file.
     pub undrawn_text: Vec<NodeId>,

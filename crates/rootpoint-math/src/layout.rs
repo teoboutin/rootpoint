@@ -345,6 +345,7 @@ impl Ctx<'_, '_> {
             }
         }
         let em = self.em(env.st);
+        // Between pairs of columns, the session's choice, near amsmath's `align` on a slide.
         let gap = 2.0 * em;
         let mut starts = Vec::with_capacity(columns);
         let mut x = 0.0;
@@ -392,10 +393,9 @@ impl Ctx<'_, '_> {
     /// A list of atoms, as one box, with the space between its atoms by their classes. `before` is
     /// the class TeX counts before the first atom, `None` at the start of a list.
     fn list(&self, list: &List, env: Env, path: &CellPath, before: Option<Class>) -> Bx {
-        // A list holds atoms and an atom lists, so lists nest twice as deep as atoms: a formula
-        // built deeper than `parse` reads is cut there, so that laying it out cannot overflow the
-        // stack.
-        if list.is_empty() || env.depth > 2 * MAX_DEPTH {
+        // Lists nest at most `MAX_DEPTH` deep in a formula `parse` gives; one built deeper is cut
+        // there, so that laying it out cannot overflow the stack.
+        if list.is_empty() || env.depth >= MAX_DEPTH {
             return self.placeholder(env.st, path);
         }
         let env = Env {
@@ -656,7 +656,7 @@ impl Ctx<'_, '_> {
             let axis = self.c(self.r.constants.axis_height(), env.st);
             let shift = (b.h - b.d) / 2.0 - axis;
             // Centred, the operator is a box of its own, as TeX's rule 13 makes it, so a script's
-            // baseline drops apply to it; an accent over it still attaches to its glyph.
+            // baseline drops apply to it, and an accent over it attaches at its middle.
             let mut out = Bx {
                 w: b.w,
                 italic: b.italic,
@@ -1101,6 +1101,7 @@ impl Ctx<'_, '_> {
             cramped: env.st.cramped,
         };
         let em = self.em(st);
+        // amsmath's cases sets `\arraystretch` to 1.2.
         let stretch = if kind == Environment::Cases { 1.2 } else { 1.0 };
         let strut_h = 0.7 * 1.2 * em * stretch;
         let strut_d = 0.3 * 1.2 * em * stretch;

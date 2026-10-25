@@ -2716,8 +2716,8 @@ pub(crate) const ABSENT: &[Command] = &[
     Command { name: "zproject", ch: '\u{2a21}', class: Class::Ord },
 ];
 
-/// The class of each character of the table that `unicode.xml`, or LaTeX for a fence, gives a
-/// class other than ord, sorted by character.
+/// The class of each character the font has, or of a command of `ABSENT`, that `unicode.xml`,
+/// or LaTeX for a fence, gives a class other than ord, sorted by character.
 #[rustfmt::skip]
 pub(crate) const CLASSES: &[(char, Class)] = &[
     ('\u{21}', Class::Punct),

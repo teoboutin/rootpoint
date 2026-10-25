@@ -6,42 +6,51 @@ rootpoint-math is for is in `register@rootpoint-math@goal`.
 
 ## Formulas
 
-### A formula is a tree in memory, and a closed subset of LaTeX as text `##math-storage-form`
+### A formula is held as a tree of atoms, in a grid of cells `##formula-tree`
 
-`Formula` is a grid of rows of cells, each cell a list of `Atom`s; `Formula::parse` reads it from
-LaTeX and `Formula::to_latex` writes it back, over the closed subset of
-`path@rootpoint-math@src/latex.rs`: symbols and the commands of the table, fractions, radicals,
-scripts, `\left…\right`, twelve accents, five font changes, `\text`, the matrix, pmatrix, bmatrix
-and cases environments, six spaces, groups, and the 32 operator names LaTeX defines in
-`path@elsewhere@base/ltmath.dtx`. A text `to_latex` wrote reads back equal, which the proptest of
-`path@rootpoint-math@tests/latex.rs` checks, and so does every formula that keeps the invariants
-the doc comment of `Formula` states. `'` reads as LaTeX reads it, a prime in a superscript. A text
-that does not parse is refused: an unbalanced brace, a second superscript or subscript on one
-nucleus, as TeX refuses it, an `\end` that closes no `\begin`, a `\right` with no `\left`, a
-missing argument, an environment the subset does not know, or atoms nested deeper than
-`MAX_DEPTH`, 64: reading and laying out recurse once a level, and a formula of a few kilobytes
-nested deeper overflowed a browser's stack of 1 MB at the review of the crate. An unknown command is an atom of its own that takes no argument, so
-the groups after it stay groups and write back as they were read; it is drawn red, so it is no
-error of the formula.
+`Formula` is a grid of rows of cells, each cell a list of `Atom`s, and an atom with cells, as a
+fraction, holds lists of its own. An editor changes a formula cell by cell, and a layout gives each
+atom and each cell its box, `goal@rootpoint-math@editable-in-place`. The rival, the LaTeX string as
+the model, edited as source, makes LaTeX the way to write math in the window, which
+`goal@rootpoint@no-language-no-build` rules out.
 
-LaTeX is the text a file and a command hold: a person and an agent already read and write it,
-`goal@rootpoint-math@latex-text`, where a tree of atoms
-written out, the rival, is about ten times longer for `\frac{a}{b}` and written by nobody. The tree
-is what the program holds: the window edits a formula's cells in place,
-`goal@rootpoint@no-language-no-build`, where the rival, the LaTeX string as the model edited as
-source, makes LaTeX the way to write math in the window.
+### A formula's text is a closed subset of LaTeX `##math-storage-form`
 
-### A formula is rows of cells aligned at `&`, and a matrix is an atom of its own `##equation-rows`
+`Formula::parse` reads a formula from LaTeX and `Formula::to_latex` writes it back, over the closed
+subset of `path@rootpoint-math@src/latex.rs`: symbols and the commands of the table, fractions,
+radicals, scripts, `\left…\right`, twelve accents, five font changes, `\text`, the matrix, pmatrix,
+bmatrix and cases environments, six spaces, groups, and the 32 operator names LaTeX defines in
+`path@elsewhere@base/ltmath.dtx`; `'` reads as LaTeX reads it, a prime in a superscript. A text
+`to_latex` wrote reads back equal, which the proptest of `path@rootpoint-math@tests/latex.rs`
+checks, and so does every formula that keeps the invariants the doc comment of `Formula` states.
+A text that does not parse is refused, for the reasons the doc comment of `Formula::parse` lists,
+among them a nesting of atoms deeper than `MAX_DEPTH`: reading and laying out recurse once a
+level, and a stack overflow aborts the program. An unknown command is an atom of its own that takes
+no argument, so the groups after it stay groups and write back as they were read; it is drawn red
+and `draw_formula` returns it to its caller, as it returns a missing glyph, so it is no error of the
+formula.
 
-A formula's grid is rows separated by `\\`, each row's cells separated by `&`. `lay_out` sets one
-column centred, or the cells of a row right then left in turn, as amsmath's `align` sets them, with
-2 em between pairs of columns; a relation that opens a cell keeps the space it has after an ord, as
-amsmath's `{}` gives it. Rows stand baseline to baseline at 1.2 em at least, further where their ink
-would come closer than the font's `mathLeading`. A matrix of the matrix, pmatrix, bmatrix or cases
-environment is an atom, its cells in text style, its columns 1 em apart and its rows on struts of
-1.2 em, 1.44 em in cases, as amsmath's `\arraystretch` of 1.2 there sets them, centred on the axis.
+A person and an agent already read and write LaTeX, `goal@rootpoint-math@latex-text`, where a tree
+of atoms written out, the rival, is about ten times longer for `\frac{a}{b}` and written by nobody.
 
-On the owner's word: the owner's talks need aligned rows often and matrices occasionally.
+### A formula's rows are aligned at `&`, right then left in turn, as amsmath's `align` sets them `##equation-rows`
+
+A formula's grid is rows separated by `\\`, each row's cells separated by `&`; `lay_out` sets the
+cells of a row right-aligned then left-aligned in turn, as amsmath's `align` sets them, so the
+relation after each `&` stands under the one above, and a formula with no `&` as one column, each
+row centred. The rival, rows centred with no alignment, as amsmath's `gather`, cannot stand the
+relations of a derivation under one another.
+
+On the owner's word: the owner's talks need aligned rows often.
+
+### A matrix is an atom of its own, in amsmath's matrix, pmatrix, bmatrix and cases environments `##matrix-atom`
+
+`Atom::Matrix` holds a grid of cells and its environment, written `\begin{…}…\end{…}`, which sets
+its delimiters: none, parentheses, brackets, or a brace on the left. Its cells are in text style,
+as LaTeX's arrays set them, and it is centred on the axis. An unknown environment does not parse,
+since its delimiters and alignment are unknown.
+
+On the owner's word: the owner's talks need matrices occasionally.
 
 ## Layout
 
@@ -58,15 +67,17 @@ Mathematical Alphanumeric Symbols, their holes filled from the Letterlike Symbol
 atom and each cell a box, tied to its `CellPath`, beside the glyphs and the rules to draw, which the
 renderer draws.
 
-The window places a caret in a numerator or a script, so the layout must say where each atom and
-cell is drawn, `goal@rootpoint-math@editable-in-place`, and TeX's rules give the look a reader of
-TeX expects, `goal@rootpoint-math@tex-quality`. The survey of
-`path@rootpoint@docs/grounding/math-typesetting.md`, section 2, found no Rust typesetter whose
-boxes are tied to the formula's atoms and cells, and none built on the MATH table that a renderer
-can call for boxes alone: `rejected@rootpoint-math@rex-fork`, `rejected@rootpoint-math@mathtex-layout`,
-`rejected@rootpoint-math@typst-math-layout` and `rejected@rootpoint-math@ratex-typesetter`. Every math font the
-survey measured has a MATH table, and only ttf-parser among the font crates the build can link
-reads it while parley links read-fonts 0.41, `issue@rootpoint-math@read-fonts-math-table`.
+An editor places a caret in a numerator or a script, so the layout says where each atom and cell
+is drawn, `goal@rootpoint-math@editable-in-place`, and TeX's rules give the look a reader of TeX
+expects, `goal@rootpoint-math@tex-quality`. The survey of
+`path@rootpoint@docs/grounding/math-typesetting.md`, section 2, found one Rust typesetter whose
+boxes are tied to the atoms and cells of the formula, mathtex, which is XeTeX translated to unsafe
+code, and none built on the MATH table that a renderer can call for such boxes alone:
+`rejected@rootpoint-math@rex-fork`, `rejected@rootpoint-math@mathtex-layout`,
+`rejected@rootpoint-math@typst-math-layout` and `rejected@rootpoint-math@ratex-typesetter`. Every
+math font the survey measured has a MATH table. ttf-parser reads it; read-fonts, which parley
+links at 0.41, reads it from 0.45, which would link a second copy of read-fonts until parley moves,
+`issue@rootpoint-math@read-fonts-math-table`.
 
 ### A layout at `k` times a size is the layout at that size scaled by `k` `##layout-scales-exactly`
 
@@ -85,41 +96,51 @@ sizes.
 ### An empty cell is laid out as a placeholder half an em wide, in every display `##empty-cell-placeholder`
 
 A cell with no atom is a box half an em wide and as high as the font's x-height, marked empty in
-the layout, but an empty group and an empty nucleus of scripts, which take no width as TeX gives
-them none, so LaTeX's `{}^{14}\mathrm{C}` and `a{}={}b` are set as LaTeX sets them. The window's
-overlay draws the outline of a box marked empty while the formula is edited. TeX gives an empty
-cell no width, which would leave a caret nowhere to stand in a numerator or a script. The space is the same in the
-editor and in presenter mode, so it is not `rejected@rootpoint-app@reserved-frame-space`, which
-reserved space in the editor alone and made the two displays differ.
+the layout. An empty group and an empty nucleus of scripts take no width, as TeX gives them none,
+so LaTeX's `{}^{14}\mathrm{C}` and `a{}={}b` are set as LaTeX sets them; their boxes are marked
+empty too. TeX gives an empty cell no width, which would leave a caret nowhere to stand in a
+numerator or a script, `goal@rootpoint-math@editable-in-place`. The space is the same in every
+display, so it is not `rejected@rootpoint-app@reserved-frame-space`, which reserved space in the
+editor alone and made the displays differ; a formula with no empty cell, as a finished one, takes
+no such space.
 
-On the owner's word: an unfinished formula is not expected in a real talk, so the space it takes in
-presenter mode costs nothing.
+On the owner's word: the owner believes the placeholder is needed, and that an unfinished formula
+is not expected in a real talk.
 
 ## The table of commands
 
-### The table of commands is generated from W3C `unicode.xml`, holds only the math font's characters, and gives each name its meaning in LaTeX `##latex-command-set`
+### The table of commands is generated from W3C `unicode.xml` `##latex-command-set`
 
 `path@rootpoint-math@src/commands.rs` maps each command name to its character and its class. The
 command `cargo x math-commands` of `path@xtask@src/math_commands.rs` writes it, and
-`path@rootpoint-math@W3C-NOTICE.txt` beside it, from `unicode.xml` and the math font, keeping only
-the characters the font has, so the palette and the commands typed after `\` offer nothing the font
-draws as missing; the commands of the characters the font lacks are written apart, so a formula
-holding one, as a hand-written `\Game`, reads it as its character, drawn as the font's missing
-glyph and reported, `design@rootpoint-render@no-fallback-math-font`. A name means what it means in
-LaTeX's math mode: the generator takes every name
-of a character's columns `<AMS>`, `<mathlatex>` without a set, `<IEEE>`, `<mathlatex
-set="unicode-math">` and `<latex>`, a name two characters claim going to the first column of that
-order, so `\epsilon` is ϵ and `\varepsilon` ε as in TeX; it adds LaTeX's aliases that no column
-gives, as `\to`, `\le` and `\neq`, each naming the command it stands for in
-`path@elsewhere@base/fontdef.dtx`, and fontdef.dtx's `\emptyset`; it leaves out unicode-math's
-names of an upright letter, as `\mupalpha`, since a letter is set italic and `\mathrm` sets one
-upright. A character takes the class its `type` gives, but for the characters whose class
-fontdef.dtx declares otherwise: `.` an ord, `-` and `*` bins drawn as − and ∗, `:` a rel, `!` and
-`?` closes, and `\langle`, `\rangle`, `\lgroup`, `\rgroup`, `\lmoustache` and `\rmoustache`
-opens and closes. The test `a_command_means_what_it_means_in_latex` of
-`path@rootpoint-math@tests/font.rs` pins nine names.
-
-`unicode.xml` carries a class for each character and a licence that lets the binary be distributed
+`path@rootpoint-math@W3C-NOTICE.txt` beside it, from `unicode.xml` and the math font. `unicode.xml`
+gives a TeX-like type to most of its characters, and a licence that lets the binary be distributed
 under MIT OR Apache-2.0, `design@rootpoint@permissive-licence`, which rules out LyX's table, under
 the GPL. Its rivals are `rejected@rootpoint-math@unicode-math-table` and
 `rejected@rootpoint-math@katex-table`.
+
+### The commands an author picks from are those whose character the math font has `##commands-of-the-font`
+
+`commands` lists only the commands of the characters the font has, so a command an author picks or
+types from it is never drawn as missing. The generator writes the commands of the characters the
+font lacks apart, and `command` reads both, so a formula holding one, as a hand-written `\Game`,
+reads it as its character, drawn as the font's missing glyph,
+`design@rootpoint-render@no-fallback-math-font`. The rival, one table of every command, would offer
+an author commands the font draws as boxes; a table of the font's alone would read `\Game` as an
+unknown command, drawn red, where that head draws its missing glyph.
+
+### A command's name and its class mean what they mean in LaTeX's math mode `##latex-command-meanings`
+
+An author who knows LaTeX has nothing new to learn, `goal@rootpoint-math@latex-text`. The generator
+takes every name of a character's columns `<AMS>`, `<mathlatex>` without a set, `<IEEE>`,
+`<mathlatex set="unicode-math">` and `<latex>`, a name two characters claim going to the first
+column of that order, so `\epsilon` is ϵ and `\varepsilon` ε as in TeX; it adds LaTeX's aliases
+that no column gives, as `\to`, `\le` and `\neq`, each naming the command it stands for in
+`path@elsewhere@base/fontdef.dtx`, and fontdef.dtx's `\emptyset`; it leaves out unicode-math's names
+of an upright letter, as `\mupalpha`, since a letter is set italic and `\mathrm` sets one upright.
+A character takes the class its `type` gives, ord where it has none, but for the characters whose
+class fontdef.dtx declares otherwise: `.` an ord, `-` and `*` bins drawn as − and ∗, `:` a rel, `!`
+and `?` closes, and `\langle`, `\rangle`, `\lgroup`, `\rgroup`, `\lmoustache` and `\rmoustache`
+opens and closes. The test `a_command_means_what_it_means_in_latex` of
+`path@rootpoint-math@tests/font.rs` pins nine names. The rival is
+`rejected@rootpoint-math@unicode-math-names-first`.

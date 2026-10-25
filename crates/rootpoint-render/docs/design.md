@@ -94,12 +94,12 @@ built-in font changes every saved slide that names it. The four files weigh 2.1 
 build carries. The family is the session's choice at the design audit of the renderer, among the
 fonts under the Open Font License on the owner's machine.
 
-### The built-in math font is Libertinus Math 7.051 `##builtin-libertinus-math`
+### The built-in math font is Libertinus Math `##builtin-libertinus-math`
 
-`path@rootpoint-render@fonts/libertinus/LibertinusMath-Regular.otf`, under the SIL Open Font
+`path@rootpoint-render@fonts/libertinus/LibertinusMath-Regular.otf`, its version 7.051, under the SIL Open Font
 License 1.1, whose text sits beside it, is registered in every `FontSet`, and every formula is laid
 out from its MATH table and drawn with its glyphs. It weighs 588,848 bytes, which every build
-carries, the browser build included, as `cargo x web` measures it. Changing it changes the look and
+carries, the browser build included. Changing it changes the look and
 the layout of every saved formula, and the table of commands of
 `path@rootpoint-math@src/commands.rs`, which holds only the characters it has.
 
@@ -119,16 +119,17 @@ kerning.
 
 On the owner's word: the owner chose Libertinus Math from rendered samples of Noto Sans Math, Latin
 Modern Math, New Computer Modern Math, STIX Two Math and Fira Math, and found its missing set not
-much of a problem. The measurements the samples came with are in
-`path@rootpoint@docs/grounding/math-typesetting.md`, sections 2 and 4.
+much of a problem. The nearest rival, Noto Sans Math, matches the built-in Noto Sans, but scales
+its scripts to 60 and 50 per cent, has no math kerning and one weight, as measured in
+`path@rootpoint@docs/grounding/math-typesetting.md`, sections 2 and 4, beside the other fonts.
 
 ### No fallback math font is built in: a character the math font lacks is drawn as its missing glyph and reported `##no-fallback-math-font`
 
 A formula holding a character Libertinus Math has no glyph for draws the font's glyph 0, and
-`draw_formula` reports it, as a text's missing glyph is reported. The table of commands holds no
-command of such a character, so the palette and the commands an author types after `\` offer none;
-only a formula written by hand or by an agent can hold one. The rival, a second math font for those
-characters alone, is `rejected@rootpoint-render@stix-math-fallback`, and the owner judged the 44
-commands it would add not much of a problem, by `design@rootpoint-render@builtin-libertinus-math`.
+`draw_formula` returns it to its caller, as a text's missing glyph is returned. The commands an
+author picks from hold none of such a character, `design@rootpoint-math@commands-of-the-font`, so
+only a formula written by hand or by an agent holds one. The rival, a second math font for those
+characters alone, is `rejected@rootpoint-render@stix-math-fallback`; the owner judged the absence of
+the 44 commands not much of a problem, by `design@rootpoint-render@builtin-libertinus-math`.
 Whether a real talk needs one of them is watched by
 `tripwire@rootpoint-render@math-glyph-needed`.

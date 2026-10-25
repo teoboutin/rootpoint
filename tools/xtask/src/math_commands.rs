@@ -183,8 +183,8 @@ pub fn generate(
     write(&mut out, &absent);
     out.push_str(
         "];\n\n\
-         /// The class of each character of the table that `unicode.xml`, or LaTeX for a fence, gives a\n\
-         /// class other than ord, sorted by character.\n\
+         /// The class of each character the font has, or of a command of `ABSENT`, that `unicode.xml`,\n\
+         /// or LaTeX for a fence, gives a class other than ord, sorted by character.\n\
          #[rustfmt::skip]\n\
          pub(crate) const CLASSES: &[(char, Class)] = &[\n",
     );

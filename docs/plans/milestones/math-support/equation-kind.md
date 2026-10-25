@@ -100,6 +100,11 @@ command. No text item holds math yet, and no reference exists.
   model's serialization stays inside it, since the text of a formula in the file is the math
   crate's; and `design@rootpoint@gui-only-in-app`, its graph, where the model now depends on the
   math crate. #math-layout's harvest left both, which were not yet true.
+- Into `register@rootpoint-model@design`, with #equation-content-kind: the half of #equation-rows
+  #math-layout did not harvest, the rows of an equation under one number, centred on them, and its
+  nearest rival, a number per row, by which a reference would name a row, #arg-15; and the half of
+  #math-storage-form on the file and the commands, that an unknown command is no breach of the
+  document, since the renderer reports it, so a command may write one.
 - Into `register@rootpoint-model@design`: heads for #equation-content-kind, #equation-numbering and
   #equation-options with #equation-fit, by the test of one decision per head;
   `design@rootpoint-model@inline-content-assets` and `design@rootpoint-model@style-kinds` rewritten

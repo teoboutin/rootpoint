@@ -6,8 +6,8 @@ the design head whose argument covers it, in `register@rootpoint-math@design`.
 ### A fork of KenyC/ReX or latex-rust for the layout `##rex-fork`
 
 `live`. Both lay out from the MATH table into a tree of boxes, but no box names the atom or the
-cell it came from, as the survey read in their sources, `path@rootpoint@docs/grounding/math-typesetting.md`,
-section 2, so a fork would add that identity to a parser and node types of their own.
+cell it came from, as the survey read in their sources,
+`path@rootpoint@docs/grounding/math-typesetting.md`, section 2, so a fork would add that identity to a parser and node types of their own.
 
 ### mathtex for the layout `##mathtex-layout`
 
@@ -17,8 +17,9 @@ translated by c2rust: unsafe code, and a TeX format file to load,
 
 ### typst's math layout `##typst-math-layout`
 
-`live`. Its math module is private, and its output a frame reached only through a whole typst
-compilation, with 240 packages on the browser's target, measured in
+`live`. Its math module is private, and its output a frame reached through a typst compilation,
+which the survey read in the API and did not test, with 240 packages on the browser's target,
+measured in
 `path@rootpoint@docs/grounding/math-typesetting.md`, section 2.
 
 ### RaTeX for the layout `##ratex-typesetter`
@@ -37,3 +38,9 @@ table derived from it, `path@rootpoint@docs/grounding/math-typesetting.md`, sect
 
 `live`. Under MIT, it holds 490 math commands of a name, about a fifth of unicode-math's 2448, as
 counted in `path@rootpoint@docs/grounding/math-typesetting.md`, section 2.
+
+### Names taken from unicode-math's column first, else from `<latex>` `##unicode-math-names-first`
+
+`live`. Read in `unicode.xml` at efed20d: that rule names α `\mupalpha` and ≤ `\leq` alone, so
+`\alpha`, `\le` and `\dots` would be unknown commands, and the `<latex>` column names ε
+`\epsilon`, where TeX's `\epsilon` is ϵ, as the `<AMS>` column gives it.

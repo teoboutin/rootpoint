@@ -29,4 +29,5 @@ computer lays out differently.
 `live`. STIX Two Math 2.13, measured in `path@rootpoint@docs/grounding/math-typesetting.md`,
 sections 2 and 4, covers every command of unicode-math's 2448, and so the 44 of KaTeX that
 Libertinus Math lacks, for 838,652 bytes in every build, the browser build included: about 0.8 MB
-for 44 rare symbols, which the owner judged not much of a problem.
+for 44 rare symbols, whose absence the owner judged, by
+`design@rootpoint-render@builtin-libertinus-math`.
