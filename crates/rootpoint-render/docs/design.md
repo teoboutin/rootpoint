@@ -90,16 +90,20 @@ available font is watched by `tripwire@rootpoint-render@glyph-missing-everywhere
 
 `FontRef::Builtin("sans")` names Open Sans, regular, bold, italic and bold italic, of the `noto-set`
 build of googlefonts/opensans, in `path@rootpoint-render@fonts/open-sans/` under the SIL Open Font
-License 1.1, whose text sits beside the files. That build covers every script Noto Sans covers, and
-Hebrew and thirteen mathematical operators besides, as measured in
-`path@rootpoint@docs/grounding/math-typesetting.md`, section 4, where the plain build covers 21 of
-the 208 characters of Latin Extended-B; coverage is the concern
-`tripwire@rootpoint-render@glyph-missing-everywhere` watches. The four files weigh 2,159,352 bytes, which every build carries. Changing the built-in
-font changes every saved slide that names it. The rival, two built-in families, is
+License 1.1, whose text sits beside the files. The four files weigh 2,159,352 bytes, which every
+build carries. Changing the built-in font changes every saved slide that names it.
+
+The `noto-set` build covers every block section 4 of
+`path@rootpoint@docs/grounding/math-typesetting.md` measured as fully as Noto Sans does, and 45 of
+the 112 code points of Hebrew and 13 mathematical operators besides, among them the minus sign, ≤,
+≥, ≠, ≈ and ∞, which Noto Sans lacks; coverage is the concern
+`tripwire@rootpoint-render@glyph-missing-everywhere` watches. Its rival, the plain build, is
+`rejected@rootpoint-render@open-sans-plain-build`. A second built-in family is
 `rejected@rootpoint-render@two-builtin-text-families`.
 
-On the owner's word: the owner found Noto Sans and Open Sans the easiest to read beside Libertinus
-Math, with a slight preference for Open Sans, and accepted it as the one built-in family.
+On the owner's word: the owner considered Libertinus for the text too, and, from rendered samples
+of text fonts beside Libertinus Math, prefers the look of Noto Sans and of Open Sans and finds them
+the easier to read, with a slight preference for Open Sans.
 
 ### A character the text's fonts lack is drawn from the math font `##text-falls-back-to-math-font`
 
@@ -107,7 +111,7 @@ The font stack of every text ends with Libertinus Math, after the text's font an
 sans, so a character neither has, as an arrow, is drawn from the math font, character by
 character, and the report's `missing_glyphs` names only what no built-in font has. Open Sans and
 Noto Sans have no arrow among the 112 of their block, where Libertinus Math has all of them, as
-measured in `path@rootpoint@docs/grounding/math-typesetting.md`, section 4, so an author's `→`
+measured in `path@rootpoint@docs/grounding/math-typesetting.md`, sections 2 and 4, so an author's `→`
 would otherwise be a box. The test
 `an_arrow_typed_in_a_text_is_drawn_from_the_math_font` of `path@rootpoint-render@src/text.rs`
 checks it. The fallback adds no weight to a build, since the math font is built in for formulas,
@@ -139,8 +143,8 @@ kerning.
 
 On the owner's word: the owner chose Libertinus Math from rendered samples of Noto Sans Math, Latin
 Modern Math, New Computer Modern Math, STIX Two Math and Fira Math, and found its missing set not
-much of a problem. The nearest rival, Noto Sans Math, matches Noto Sans, but scales
-its scripts to 60 and 50 per cent, has no math kerning and one weight, as measured in
+much of a problem. The nearest rival, Noto Sans Math, scales its scripts to 60 and 50
+per cent, has no math kerning and one weight, as measured in
 `path@rootpoint@docs/grounding/math-typesetting.md`, sections 2 and 4, beside the other fonts.
 
 ### No fallback math font is built in: a character the math font lacks is drawn as its missing glyph `##no-fallback-math-font`

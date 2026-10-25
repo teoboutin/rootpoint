@@ -4,7 +4,7 @@ mod common;
 
 use rootpoint_math::{Atom, Formula, FormulaLayout, MAX_DEPTH, Style, lay_out};
 
-/// The reference formulas of the milestone of math, which AC1 and AC2 lay out: the first two are
+/// The reference formulas the owner judged the layout by: the first two are
 /// equations (61) and (62) of page 60 of the owner's thesis.
 const REFERENCE: [&str; 5] = [
     r"\frac{\partial f_i}{\partial t} + \mathbf{c}_i \cdot \nabla_{\mathbf{x}} f_i = \Omega(f_i)",
@@ -69,7 +69,7 @@ fn assert_scaled(a: &FormulaLayout, b: &FormulaLayout, k: f64, what: &str) {
     }
 }
 
-/// AC2: a formula laid out at `k` times a size is the formula at the size scaled by `k`.
+/// A formula laid out at `k` times a size is the formula at the size scaled by `k`.
 #[test]
 fn a_formula_fitted_by_scaling_equals_the_formula_laid_out_at_the_scaled_size() {
     for text in REFERENCE {
@@ -82,7 +82,7 @@ fn a_formula_fitted_by_scaling_equals_the_formula_laid_out_at_the_scaled_size() 
     }
 }
 
-/// AC4: a script's glyph is the font's `ssty` form where the font has one, as for the prime, and
+/// A script's glyph is the font's `ssty` form where the font has one, as for the prime, and
 /// its base glyph where it has none, as for the italic a.
 #[test]
 fn a_script_is_drawn_with_the_font_s_ssty_glyph() {

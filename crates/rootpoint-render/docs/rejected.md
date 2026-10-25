@@ -32,9 +32,17 @@ Libertinus Math lacks, for 838,652 bytes in every build, the browser build inclu
 for 44 rare symbols, whose absence the owner judged not much of a problem, by
 `design@rootpoint-render@builtin-libertinus-math`.
 
-### Two built-in text families, a sans and a serif `##two-builtin-text-families`
+### Two built-in text families `##two-builtin-text-families`
 
-`live`. A second family, as Libertinus Serif beside the sans, adds about 2 MB to every build, the
-four static styles of either family weighing 2.1 MB to 2.2 MB as measured in
-`path@rootpoint@docs/grounding/math-typesetting.md`, section 4, when the owner named one preferred
-font, by `design@rootpoint-render@builtin-open-sans`.
+`live`. A second family adds a name to the model's `BUILTIN_FAMILIES`, which saved files write, and
+the weight of its four static styles to every build: about 2 MB, an estimate from the two sans
+families measured in `path@rootpoint@docs/grounding/math-typesetting.md`, section 4, 2.1 MB and
+2.2 MB, where the owner named one preferred font, by `design@rootpoint-render@builtin-open-sans`.
+
+### The plain build of Open Sans `##open-sans-plain-build`
+
+`live`. Its four static styles weigh 601,356 bytes against the `noto-set` build's 2,159,352, but it
+covers 21 of the 208 characters of Latin Extended-B and 101 of the 256 of Vietnamese, which Noto
+Sans and the `noto-set` build cover whole, as measured in
+`path@rootpoint@docs/grounding/math-typesetting.md`, section 4: text Noto Sans drew would have
+characters missing.

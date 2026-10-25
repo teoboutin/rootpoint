@@ -333,7 +333,7 @@ mod tests {
     }
 
     /// An arrow, which neither the text's font nor Open Sans has, is drawn from Libertinus Math,
-    /// and is no missing glyph: AC7 of the milestone of math.
+    /// and is no missing glyph, `design@rootpoint-render@text-falls-back-to-math-font`.
     #[test]
     fn an_arrow_typed_in_a_text_is_drawn_from_the_math_font() {
         let mut set = FontSet::new();

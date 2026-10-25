@@ -153,7 +153,7 @@ mod tests {
         pixmap
     }
 
-    /// The reference formulas drawn into PNG files, for the owner's comparison of AC1 with the
+    /// The reference formulas drawn into PNG files, for the owner's comparison with the
     /// browser's rendering of the same formulas: in display style, `reference-<n>.png`, and in
     /// text style, `reference-<n>-text.png`, in the directory `ROOTPOINT_MATH_IMAGES` names.
     #[test]
