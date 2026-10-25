@@ -2,7 +2,7 @@
 
 mod common;
 
-use rootpoint_math::{Formula, FormulaLayout, Style, lay_out};
+use rootpoint_math::{Atom, Formula, FormulaLayout, MAX_DEPTH, Style, lay_out};
 
 const REFERENCE: [&str; 5] = [
     r"\frac{\partial f_i}{\partial t} + \mathbf{c}_i \cdot \nabla_{\mathbf{x}} f_i = \Omega(f_i)",
@@ -113,14 +113,28 @@ fn an_empty_cell_is_a_placeholder_half_an_em_wide() {
     assert!(l.cells[0].empty);
 }
 
+/// Every atom of a formula, at every depth.
+fn count_atoms(list: &[Atom]) -> usize {
+    list.iter()
+        .map(|a| match a {
+            Atom::Matrix { rows, .. } => {
+                1 + rows.iter().flatten().map(|c| count_atoms(c)).sum::<usize>()
+            }
+            other => 1 + other.cells().iter().map(|c| count_atoms(c)).sum::<usize>(),
+        })
+        .sum()
+}
+
 #[test]
 fn every_atom_has_a_box_and_glyphs_are_found() {
-    for text in REFERENCE {
+    for text in REFERENCE.iter().chain([&r"a\,b \quad c"]) {
         let l = laid(text, Style::Display, 48.0);
         assert!(!l.missing_glyph, "{text}");
         assert!(!l.unknown_command, "{text}");
         assert!(l.width > 0.0 && l.ascent > 0.0, "{text}");
-        assert!(!l.atoms.is_empty());
+        let f = Formula::parse(text).unwrap();
+        let atoms: usize = f.rows.iter().flatten().map(|c| count_atoms(c)).sum();
+        assert_eq!(l.atoms.len(), atoms, "{text}");
     }
     let l = laid(r"\foo", Style::Text, 48.0);
     assert!(l.unknown_command);
@@ -134,4 +148,64 @@ fn an_italic_letter_is_drawn_from_the_math_italic_block() {
     assert_eq!(l.glyphs[0].glyph, font.glyph('\u{1D465}').unwrap());
     let l = laid(r"\mathrm{x}", Style::Text, 10.0);
     assert_eq!(l.glyphs[0].glyph, font.glyph('x').unwrap());
+}
+
+/// A command whose character the font lacks is read, drawn as the font's missing glyph and
+/// reported, by #math-glyph-fallback, though the table the palette lists holds none.
+#[test]
+fn a_command_the_font_lacks_is_drawn_missing() {
+    let f = Formula::parse(r"\Game").unwrap();
+    assert!(!f.has_unknown());
+    let l = lay_out(&f, &common::font(), Style::Text, 10.0);
+    assert!(l.missing_glyph);
+    assert!(!l.unknown_command);
+    assert_eq!(l.glyphs[0].glyph, 0);
+}
+
+/// An empty group takes no width, as TeX gives it none, while an empty cell of a structure is a
+/// placeholder.
+#[test]
+fn an_empty_group_takes_no_width() {
+    let with = laid(r"{}^{14}\mathrm{C}", Style::Text, 48.0);
+    let without = laid(r"^{14}\mathrm{C}", Style::Text, 48.0);
+    assert!((with.width - without.width).abs() < 1e-9);
+    assert!(with.cells.iter().any(|c| c.empty && c.width == 0.0));
+}
+
+/// A delimiter built from parts is centred on the axis, its ink in its box.
+#[test]
+fn an_assembled_bar_is_centred_on_the_axis() {
+    let text = r"\left| \begin{matrix} a \\ b \\ c \\ d \\ e \\ f \\ g \\ h \end{matrix} \right.";
+    let l = laid(text, Style::Display, 100.0);
+    let atom = &l.atoms[0];
+    let centre = (atom.ascent - atom.descent) / 2.0;
+    assert!(
+        (centre - l.axis).abs() < 2.0,
+        "centre {centre} against the axis {}",
+        l.axis
+    );
+}
+
+/// A formula deeper than `MAX_DEPTH` is refused when read, and cut when laid out, rather than
+/// overflowing the stack.
+#[test]
+fn deep_nesting_is_bounded() {
+    let deep = |n: usize| format!("{}x{}", "{".repeat(n), "}".repeat(n));
+    // `n` groups around `x` nest `n + 1` atoms.
+    assert!(Formula::parse(&deep(MAX_DEPTH - 1)).is_ok());
+    assert!(Formula::parse(&deep(MAX_DEPTH)).is_err());
+    assert!(Formula::parse(&deep(5000)).is_err());
+    let mut list = vec![Atom::Unknown("x".to_owned())];
+    for _ in 0..5000 {
+        list = vec![Atom::Group(list)];
+    }
+    let l = lay_out(
+        &Formula {
+            rows: vec![vec![list]],
+        },
+        &common::font(),
+        Style::Text,
+        10.0,
+    );
+    assert!(l.width > 0.0);
 }

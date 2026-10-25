@@ -9,6 +9,7 @@ use ttf_parser::GlyphId;
 use ttf_parser::math::{GlyphConstruction, MathValue};
 
 use crate::font::Reader;
+use crate::latex::MAX_DEPTH;
 use crate::table::{drawn, operator_limits};
 use crate::{
     Accent, Atom, CellPath, Class, Delim, Environment, Formula, List, MathFont, MathVariant,
@@ -108,6 +109,7 @@ pub fn lay_out(formula: &Formula, font: &MathFont, style: Style, size: f64) -> F
             cramped: false,
         },
         variant: None,
+        depth: 0,
     };
     let b = ctx.grid(&formula.rows, env);
     let mut layout = FormulaLayout {
@@ -201,6 +203,8 @@ impl St {
 struct Env {
     st: St,
     variant: Option<MathVariant>,
+    /// How many lists hold the one being laid out.
+    depth: usize,
 }
 
 impl Env {
@@ -388,9 +392,16 @@ impl Ctx<'_, '_> {
     /// A list of atoms, as one box, with the space between its atoms by their classes. `before` is
     /// the class TeX counts before the first atom, `None` at the start of a list.
     fn list(&self, list: &List, env: Env, path: &CellPath, before: Option<Class>) -> Bx {
-        if list.is_empty() {
+        // A list holds atoms and an atom lists, so lists nest twice as deep as atoms: a formula
+        // built deeper than `parse` reads is cut there, so that laying it out cannot overflow the
+        // stack.
+        if list.is_empty() || env.depth > 2 * MAX_DEPTH {
             return self.placeholder(env.st, path);
         }
+        let env = Env {
+            depth: env.depth + 1,
+            ..env
+        };
         let classes = classes(list, before);
         let mut out = Bx::default();
         let mut x = 0.0;
@@ -404,7 +415,16 @@ impl Ctx<'_, '_> {
             if let Atom::Space(space) = atom {
                 x += italic;
                 italic = 0.0;
-                x += space.mu() / 18.0 * self.em(env.st);
+                let w = space.mu() / 18.0 * self.em(env.st);
+                out.items.push(Item::Atom(AtomBox {
+                    path: at,
+                    x,
+                    y: 0.0,
+                    width: w,
+                    ascent: 0.0,
+                    descent: 0.0,
+                }));
+                x += w;
                 continue;
             }
             let class = classes[i].expect("every atom but a space has a class");
@@ -440,6 +460,26 @@ impl Ctx<'_, '_> {
             empty: false,
         }));
         out
+    }
+
+    /// A group's list, or a nucleus: empty, it takes no width, as TeX gives an empty group none,
+    /// so `{}^{14}\mathrm{C}` and `a{}={}b` are set as in LaTeX; its box is still marked empty.
+    fn list_or_nothing(&self, list: &List, env: Env, path: &CellPath) -> Bx {
+        if !list.is_empty() {
+            return self.list(list, env, path, None);
+        }
+        Bx {
+            items: vec![Item::Cell(CellBox {
+                path: path.clone(),
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                ascent: 0.0,
+                descent: 0.0,
+                empty: true,
+            })],
+            ..Bx::default()
+        }
     }
 
     /// An empty cell's placeholder: half an em wide, as high as the font's x-height.
@@ -532,7 +572,19 @@ impl Ctx<'_, '_> {
                 self.delimited(*open, *close, b, env.st)
             }
             Atom::Accent { accent, body } => self.accent(*accent, body, env, cell(0)),
-            Atom::OperatorName(name) => self.upright(name, env.st, false),
+            // `\liminf` and `\limsup` are `lim\,inf` and `lim\,sup` in ltmath.dtx.
+            Atom::OperatorName(name) => match name.strip_prefix("lim").filter(|r| !r.is_empty()) {
+                Some(rest) => {
+                    let mut out = self.upright("lim", env.st, false);
+                    let thin = 3.0 / 18.0 * self.em(env.st);
+                    let r = self.upright(rest, env.st, false);
+                    let x = out.w + thin;
+                    out.w = x + r.w;
+                    out.put(r, x, 0.0);
+                    out
+                }
+                None => self.upright(name, env.st, false),
+            },
             Atom::FontChange { font, body } => self.list(
                 body,
                 Env {
@@ -545,7 +597,7 @@ impl Ctx<'_, '_> {
             Atom::Text(text) => self.upright(text, env.st, false),
             Atom::Matrix { env: kind, rows } => self.matrix(*kind, rows, env, at),
             Atom::Space(_) => Bx::default(),
-            Atom::Group(list) => self.list(list, env, &cell(0), None),
+            Atom::Group(list) => self.list_or_nothing(list, env, &cell(0)),
             Atom::Unknown(name) => {
                 let spelled = format!("\\{name}");
                 self.upright(&spelled, env.st, true)
@@ -710,9 +762,10 @@ impl Ctx<'_, '_> {
         if let Some(index) = index {
             let i = self.list(
                 index,
+                // `\root` sets its index in `\scriptscriptstyle`, uncramped.
                 env.with(St {
                     level: Level::SS,
-                    cramped: true,
+                    cramped: false,
                 }),
                 &ip,
                 None,
@@ -821,8 +874,8 @@ impl Ctx<'_, '_> {
                 .min(largest_overlap.max(min_overlap))
                 .max(min_overlap)
         };
-        let height = advance - joints as f64 * overlap;
-        // Parts go from the bottom up; the assembly's baseline is its bottom, moved by the caller.
+        // Parts go from the bottom up, the first part's baseline at the assembly's; its box is the
+        // parts' ink, which the caller centres.
         let mut out = Bx::default();
         let mut bottom = 0.0;
         let mut width = 0.0f64;
@@ -833,8 +886,6 @@ impl Ctx<'_, '_> {
             bottom += f64::from(p.full_advance) * s - overlap;
         }
         out.w = width;
-        out.h = height;
-        out.d = 0.0;
         out
     }
 
@@ -949,7 +1000,7 @@ impl Ctx<'_, '_> {
     ) -> Bx {
         let c = &self.r.constants;
         let st = env.st;
-        let n = self.list(nucleus, env, &np, None);
+        let n = self.list_or_nothing(nucleus, env, &np);
         let sub_box = sub.map(|l| self.list(l, env.with(st.sub()), subp.as_ref().unwrap(), None));
         let sup_box = sup.map(|l| self.list(l, env.with(st.sup()), supp.as_ref().unwrap(), None));
         let limits = match nucleus.as_slice() {
@@ -1041,17 +1092,13 @@ impl Ctx<'_, '_> {
         out
     }
 
-    /// A matrix: its cells in text style, or in the style in force when it is smaller, columns
-    /// apart by one em, rows by struts of 1.2 em, the whole centred on the axis, with the
-    /// environment's delimiters.
+    /// A matrix: its cells in text style, as LaTeX's array sets every cell whatever the style
+    /// around it, columns apart by one em, rows by struts of 1.2 em, the whole centred on the
+    /// axis, with the environment's delimiters.
     fn matrix(&self, kind: Environment, rows: &[Vec<List>], env: Env, at: &CellPath) -> Bx {
-        let st = if env.st.level <= Level::T {
-            St {
-                level: Level::T,
-                cramped: env.st.cramped,
-            }
-        } else {
-            env.st
+        let st = St {
+            level: Level::T,
+            cramped: env.st.cramped,
         };
         let em = self.em(st);
         let stretch = if kind == Environment::Cases { 1.2 } else { 1.0 };

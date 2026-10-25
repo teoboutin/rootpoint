@@ -12,7 +12,7 @@ mod layout;
 mod table;
 
 pub use font::{FontError, MathFont, VerticalConstruction};
-pub use latex::ParseError;
+pub use latex::{MAX_DEPTH, ParseError};
 pub use layout::{AtomBox, CellBox, FormulaLayout, PlacedGlyph, Rule, Style, lay_out};
 pub use table::{OPERATOR_NAMES, command, command_of, commands};
 
@@ -39,6 +39,16 @@ pub struct Command {
 
 /// A formula: a grid of rows, each row a list of cells, separated by `&` in LaTeX and the rows by
 /// `\\`. A formula with no `&` and no `\\` is one row of one cell.
+///
+/// `parse` gives only formulas that keep these invariants, and `to_latex` writes a formula that
+/// keeps them as a text that reads back equal; a caller that builds or edits a formula keeps them:
+/// - a grid, the formula's or a matrix's, has a row, and each row a cell;
+/// - a symbol of no name is not a space, `\`, `^` or `'`, and a radical's index holds no `]` at its
+///   top level, which a group around it keeps;
+/// - a `Text` holds balanced braces, and ends with no lone backslash;
+/// - a script has a subscript or a superscript; no script follows a group, which `parse` reads as
+///   its nucleus, and no script of an empty nucleus follows a script, which `parse` reads as one;
+/// - atoms nest at most `MAX_DEPTH` deep.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Formula {
     pub rows: Vec<Vec<List>>,

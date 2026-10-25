@@ -235,3 +235,30 @@ proptest! {
         prop_assert_eq!(back.to_latex(), text);
     }
 }
+
+#[test]
+fn a_delimiter_is_an_open_a_close_or_a_bar() {
+    let f = parse(r"\left< x \right>");
+    let [Atom::Delimited { open, close, .. }] = f.rows[0][0].as_slice() else {
+        panic!("{:?}", f.rows);
+    };
+    assert_eq!(open.map(|d| d.ch), Some('⟨'));
+    assert_eq!(close.map(|d| d.ch), Some('⟩'));
+    assert!(Formula::parse(r"\left\alpha x \right)").is_err());
+    assert!(Formula::parse(r"\left⟨ x \right⟩").is_ok());
+    assert!(Formula::parse(r"\left\lfloor x \right\rfloor").is_ok());
+}
+
+#[test]
+fn a_quote_is_a_prime_in_the_superscript() {
+    assert_eq!(parse("f'"), parse(r"f^{\prime}"));
+    assert_eq!(parse("f''"), parse(r"f^{\prime \prime}"));
+    assert_eq!(parse("f_i'"), parse(r"f_i^{\prime}"));
+}
+
+#[test]
+fn an_escaped_character_is_written_back_escaped() {
+    let f = parse(r"\{ a \} \% \_");
+    assert_eq!(parse(&f.to_latex()), f);
+    assert_eq!(f.to_latex(), r"\{ a\} \% \_");
+}

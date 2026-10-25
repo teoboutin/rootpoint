@@ -48,8 +48,8 @@ impl Default for TextBrush {
 pub struct FontError(pub String);
 
 /// The fonts a render may use: the built-in Noto Sans and Libertinus Math, and the font files of
-/// the document's asset table, and nothing else. No font of the system is ever discovered: parley's feature `system`
-/// is off, and the collection is created without system fonts.
+/// the document's asset table, and nothing else. No font of the system is ever discovered:
+/// parley's feature `system` is off, and the collection is created without system fonts.
 pub struct FontSet {
     fonts: FontContext,
     layouts: LayoutContext<TextBrush>,
@@ -109,7 +109,8 @@ impl FontSet {
     /// The family a font reference resolves to, or `None` when no font of the set has it and the
     /// built-in sans stands in. A built-in name is resolved by the model's `BUILTIN_FAMILIES`, so
     /// that a family the model reports as unknown is one drawn here in the built-in sans. The
-    /// binary carries one family, which `Builtin("sans")` names.
+    /// binary carries one text family, which `Builtin("sans")` names; its math font is no family a
+    /// text names.
     fn family(&self, font: &FontRef) -> Option<String> {
         match font {
             FontRef::Builtin(name) if BUILTIN_FAMILIES.contains(&name.as_str()) => {
@@ -320,7 +321,7 @@ mod tests {
         );
     }
 
-    /// The binary carries one family, so `family` resolves every built-in name to it: a second
+    /// The binary carries one text family, so `family` resolves every built-in name to it: a second
     /// name in the model's list would need a family of its own here, and this test then fails.
     #[test]
     fn the_model_lists_the_one_built_in_family_the_set_carries() {

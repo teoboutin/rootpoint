@@ -28,6 +28,22 @@ const ALIASES: [(&str, &str); 10] = [
 /// `\emptyset`, a symbol of `path@elsewhere@base/fontdef.dtx`, which the file names `\varnothing`.
 const SYMBOLS: [(&str, u32); 1] = [("emptyset", 0x2205)];
 
+/// The delimiters LaTeX declares an open or a close that `unicode.xml` types otherwise, each with
+/// its class, as `path@elsewhere@base/fontdef.dtx` declares `\langle` and `\rangle`, `\lgroup` and
+/// `\rgroup`, `\lmoustache` and `\rmoustache`.
+const FENCES: [(u32, &str); 6] = [
+    (0x27E8, "Open"),
+    (0x27E9, "Close"),
+    (0x27EE, "Open"),
+    (0x27EF, "Close"),
+    (0x23B0, "Open"),
+    (0x23B1, "Close"),
+];
+
+/// The prefix of unicode-math's names of an upright letter, as `\mupalpha`, which the math crate
+/// does not take: its letters are set italic, as LaTeX sets them, and `\mathrm` sets one upright.
+const UPRIGHT_PREFIX: &str = "mup";
+
 /// The names the math crate reads as structures, which are not symbols of the table.
 const STRUCTURES: &[&str] = &[
     "frac",
@@ -68,8 +84,8 @@ struct Character {
 }
 
 /// Write `path@rootpoint-math@src/commands.rs` and `path@rootpoint-math@W3C-NOTICE.txt`, under
-/// `root`, from the `unicode.xml` at `source` and the font at `font`, whose characters alone enter
-/// the table. `revision` and `date` are written in the notice, which the W3C licence asks of a
+/// `root`, from the `unicode.xml` at `source` and the font at `font`: the commands of the
+/// characters the font has, and apart those of the characters it lacks. `revision` and `date` are written in the notice, which the W3C licence asks of a
 /// derived file.
 pub fn generate(
     root: &Path,
@@ -77,7 +93,7 @@ pub fn generate(
     font: &Path,
     revision: &str,
     date: &str,
-) -> Result<(usize, usize), String> {
+) -> Result<(usize, usize, usize), String> {
     let xml = std::fs::read_to_string(source).map_err(|e| format!("{}: {e}", source.display()))?;
     let bytes = std::fs::read(font).map_err(|e| format!("{}: {e}", font.display()))?;
     let face =
@@ -95,10 +111,10 @@ pub fn generate(
     let mut classes: BTreeMap<u32, &'static str> = BTreeMap::new();
     for c in &characters {
         let Some(code) = c.code else { continue };
-        if !has(code) {
-            continue;
-        }
-        let class = class_of(c.kind.as_deref());
+        let class = FENCES
+            .iter()
+            .find(|(f, _)| *f == code)
+            .map_or_else(|| class_of(c.kind.as_deref()), |(_, class)| *class);
         if class != "Ord" {
             classes.insert(code, class);
         }
@@ -106,7 +122,10 @@ pub fn generate(
             if *column == 4 && c.text_mode {
                 continue;
             }
-            if STRUCTURES.contains(&name.as_str()) || OPERATOR_NAMES.contains(&name.as_str()) {
+            if STRUCTURES.contains(&name.as_str())
+                || OPERATOR_NAMES.contains(&name.as_str())
+                || name.starts_with(UPRIGHT_PREFIX)
+            {
                 continue;
             }
             let entry = best.entry(name.clone()).or_insert((*column, code));
@@ -115,8 +134,6 @@ pub fn generate(
             }
         }
     }
-    let class_by_code =
-        |code: u32| -> &'static str { classes.get(&code).copied().unwrap_or("Ord") };
     let mut table: BTreeMap<String, u32> = best.into_iter().map(|(n, (_, c))| (n, c)).collect();
     for (alias, target) in ALIASES {
         let code = *table
@@ -125,10 +142,15 @@ pub fn generate(
         table.insert(alias.to_owned(), code);
     }
     for (name, code) in SYMBOLS {
-        if has(code) {
-            table.insert(name.to_owned(), code);
-        }
+        table.insert(name.to_owned(), code);
     }
+    // The commands of a character the font lacks are read, and drawn as the font's missing glyph,
+    // but the table the palette lists holds none of them.
+    let (present, absent): (BTreeMap<String, u32>, BTreeMap<String, u32>) =
+        table.into_iter().partition(|(_, code)| has(*code));
+    classes.retain(|code, _| has(*code) || absent.values().any(|c| c == code));
+    let class_by_code =
+        |code: u32| -> &'static str { classes.get(&code).copied().unwrap_or("Ord") };
 
     let mut out = String::new();
     out.push_str(
@@ -140,18 +162,29 @@ pub fn generate(
          #[rustfmt::skip]\n\
          pub(crate) const COMMANDS: &[Command] = &[\n",
     );
-    for (name, code) in &table {
-        let class = class_by_code(*code);
-        writeln!(
-            out,
-            "    Command {{ name: {name:?}, ch: '\\u{{{code:x}}}', class: Class::{class} }},"
-        )
-        .unwrap();
-    }
+    let write = |out: &mut String, table: &BTreeMap<String, u32>| {
+        for (name, code) in table {
+            let class = class_by_code(*code);
+            writeln!(
+                out,
+                "    Command {{ name: {name:?}, ch: '\\u{{{code:x}}}', class: Class::{class} }},"
+            )
+            .unwrap();
+        }
+    };
+    write(&mut out, &present);
     out.push_str(
         "];\n\n\
-         /// The class of each character of the math font that `unicode.xml` gives a class other than\n\
-         /// ord, sorted by character.\n\
+         /// The commands of a character the math font lacks, sorted by name: read, and drawn as the\n\
+         /// font's missing glyph.\n\
+         #[rustfmt::skip]\n\
+         pub(crate) const ABSENT: &[Command] = &[\n",
+    );
+    write(&mut out, &absent);
+    out.push_str(
+        "];\n\n\
+         /// The class of each character of the table that `unicode.xml`, or LaTeX for a fence, gives a\n\
+         /// class other than ord, sorted by character.\n\
          #[rustfmt::skip]\n\
          pub(crate) const CLASSES: &[(char, Class)] = &[\n",
     );
@@ -166,14 +199,14 @@ pub fn generate(
         "The table of commands of this crate, `src/commands.rs`, is derived from `unicode.xml`,\n\
          {revision}, of the repository https://github.com/w3c/xml-entities.\n\
          On {date}, `cargo x math-commands` of rootpoint's xtask extracted from it the LaTeX names,\n\
-         the code point and the type of each character, kept those of the characters the math font\n\
-         has, and added a list of LaTeX's own aliases. The file's notice, verbatim:\n\n\
+         the code point and the type of each character, split them by whether the math font has the\n\
+         character, and added a list of LaTeX's own aliases. The file's notice, verbatim:\n\n\
          {header}\n\n{license}",
         header = header.trim(),
         license = include_str!("w3c-software-license.txt"),
     );
     std::fs::write(crate_dir.join("W3C-NOTICE.txt"), notice).map_err(|e| e.to_string())?;
-    Ok((table.len(), classes.len()))
+    Ok((present.len(), absent.len(), classes.len()))
 }
 
 /// The operator names, which the math crate reads as atoms of their own.

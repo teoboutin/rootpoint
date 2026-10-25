@@ -1,8 +1,8 @@
 The table of commands of this crate, `src/commands.rs`, is derived from `unicode.xml`,
 w3c/xml-entities at efed20d, of 2026-09-28, of the repository https://github.com/w3c/xml-entities.
 On 2026-10-25, `cargo x math-commands` of rootpoint's xtask extracted from it the LaTeX names,
-the code point and the type of each character, kept those of the characters the math font
-has, and added a list of LaTeX's own aliases. The file's notice, verbatim:
+the code point and the type of each character, split them by whether the math font has the
+character, and added a list of LaTeX's own aliases. The file's notice, verbatim:
 
 unicode.xml
 

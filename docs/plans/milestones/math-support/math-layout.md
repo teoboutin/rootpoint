@@ -22,8 +22,9 @@ renderer. It lands the shape of `thread@math-support@math-storage-form`,
   `opentype-layout` exports the `math` module. It holds, by the milestone's "New names, in one
   place":
   - `Formula`, the tree: rows of atoms, an atom a symbol with its class, a fraction, a radical with
-    an optional index, a script (nucleus, optional subscript, optional superscript), a delimited
-    group (`\left…\right`), an accent, a big operator with its limits, a font change (`\mathbf`,
+    an optional index, a script (nucleus, optional subscript, optional superscript), which a big
+    operator's limits are, a delimited group (`\left…\right`), an accent, an operator name, a font
+    change (`\mathbf`,
     `\mathrm`, `\mathcal`, `\mathbb`, `\mathit`), a `\text` run, a matrix of one of the environments
     matrix, pmatrix, bmatrix and cases, a space, a group, and an unknown command, which keeps its
     name and takes no argument;
@@ -35,7 +36,8 @@ renderer. It lands the shape of `thread@math-support@math-storage-form`,
     and LaTeX's aliases, by the milestone's decided design of #latex-command-set and its D6; the class from the character's `type`, by the milestone's mapping table "A
     `unicode.xml` type, to the class of an atom"; and only the characters Libertinus Math's cmap
     has. The W3C notice sits beside it, in `path@rootpoint-math@W3C-NOTICE.txt`;
-  - the generator, the command `cargo x math-commands <unicode.xml> <font file>` of
+  - the generator, the command `cargo x math-commands <unicode.xml> <font file> --revision <text>
+    --date <date>` of
     `path@xtask@src/main.rs`, which writes the two files; it is run again by hand when the font or
     the source changes, and xtask takes quick-xml 0.41 as a dependency for it, MIT, already in
     `path@rootpoint@Cargo.lock` through wayland-scanner, so the workspace gains no package;

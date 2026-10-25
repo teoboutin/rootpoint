@@ -1152,9 +1152,11 @@ Every name is an illustration of a shape; a slice's audit may rename one, in pla
 
 ```text
 crates/rootpoint-math/                 the math crate, new
-  Formula, Row, Atom                   the tree of a formula
+  Formula, Atom, List                  the tree of a formula: a grid of rows of cells, a cell a List
+  MAX_DEPTH                            how deep atoms nest, 64
   Formula::parse, Formula::to_latex    the LaTeX subset, read and written
-  COMMANDS                             the table of commands, generated
+  COMMANDS, ABSENT                     the table of commands, and the commands of characters the font
+                                       lacks, generated
   MathFont, MathFont::new              a font file's bytes: cmap, metrics, MATH and GSUB, read by ttf-parser
   lay_out, FormulaLayout, AtomBox      the layout: a box per atom and per cell, and its glyphs
   CellPath                             a path of cells and an offset in a row, for the caret
@@ -1197,8 +1199,10 @@ The model holds `Formula`, a tree: a formula is rows, separated by `\\`; a row i
 formula as LaTeX, written by `to_latex` and read by `parse`, over the closed subset of the mapping
 table "A LaTeX construct, to the atom it reads as". Text that does not parse makes the file refused,
 as a broken RON file is, and a command refused: an unbalanced brace, a second superscript or a second
-subscript on one nucleus, as in `x^a^b`, as TeX refuses it, or an `\end` that closes no
-`\begin`. An unknown command is an atom of its own that takes no argument, so the braced groups after
+subscript on one nucleus, as in `x^a^b`, as TeX refuses it, an `\end` that closes no
+`\begin`, a `\right` with no `\left`, a missing argument, an `&` or a `\\` outside a grid, an
+environment the subset does not know, or atoms nested deeper than the bound `MAX_DEPTH`, 64, which
+keeps reading and laying out from overflowing the stack. An unknown command is an atom of its own that takes no argument, so the braced groups after
 it stay groups and write back as they were read; it is drawn red, and the renderer's report names it,
 as it names a missing glyph, so it is no breach of the document and a command may write one. The file
 sets ron's `escape_strings(false)`, so formulas read as raw strings. Nearest rival, the LaTeX string as the model edited as source: fails C1, #arg-9. A RON tree
@@ -1292,7 +1296,10 @@ scripts are small and it has no kerning, and the owner chose Libertinus from the
 ### #math-glyph-fallback
 
 A command whose character the math font lacks is drawn as the font's missing glyph and reported in
-`missing_glyphs`; the palette lists only the commands the font has. Nearest rival, STIX Two Math as a
+`missing_glyphs`; the palette lists only the commands the font has. The generator writes such
+commands apart from `COMMANDS`, so `parse` reads one as its character, where a single table limited
+to the font's characters would read it as an unknown command, drawn red: found at the review of
+#math-layout, which reconciles this design with #latex-command-set's. Nearest rival, STIX Two Math as a
 fallback: 819 KB in every build for 44 rare symbols, #arg-69, weighed by the owner in #arg-73.
 
 ### #builtin-text-family
@@ -1321,8 +1328,9 @@ notice beside it. A name means what it means in LaTeX's math mode: the generator
 a `<character>` gives in its columns `<AMS>`, `<mathlatex>` without a set, `<IEEE>`, `<mathlatex
 set="unicode-math">` and `<latex>`, and a name two characters claim goes to the first column of
 that order, so `\epsilon` is ϵ and `\varepsilon` ε, as in TeX; LaTeX's aliases of
-`path@elsewhere@base/fontdef.dtx` that no column gives, as `\to`, `\le` and `\neq`, are a list of
-the generator's own, D6; the structures of #math-storage-form's subset are commands too. A command typed
+`path@elsewhere@base/fontdef.dtx` that no column gives, as `\to`, `\le` and `\neq`, and its
+`\emptyset`, are a list of the generator's own, D6; unicode-math's names of an upright letter,
+`\mupalpha` and the others, are left out, since `\mathrm` sets one upright, D6; the structures of #math-storage-form's subset are commands too. A command typed
 after `\` and closed by a character that is not a letter becomes its atom. Nearest rival, unicode-math's
 table: LPPL, #arg-61.
 
@@ -1334,7 +1342,8 @@ inserts at the caret, by commands. Nearest rival, a palette in a menu: more clic
 ### #empty-cell-placeholder
 
 An empty cell is laid out as a placeholder box, half an em wide, in every display; the overlay draws
-its outline while editing. Nearest rival, a zero-width cell: the caret has nowhere to stand, #arg-26.
+its outline while editing. An empty group, and an empty nucleus of scripts, take no width, as TeX
+gives them none, so `{}^{14}\mathrm{C}` and `a{}={}b` are set as in LaTeX, D8. Nearest rival, a zero-width cell: the caret has nowhere to stand, #arg-26.
 
 ### #math-in-protocol-grammar
 
@@ -1385,9 +1394,10 @@ the owner chose both, #arg-47.
 | `\frac{a}{b}` | fraction |
 | `\sqrt{a}`, `\sqrt[n]{a}` | radical, with an index for the second |
 | `x_a`, `x^b`, `x_a^b`, `x^b_a` | script of the atom before; a second superscript or subscript on one nucleus does not parse |
-| `\left( … \right)`, with any delimiter of `COMMANDS` or `.` | delimited group |
+| `\left( … \right)`, with an open, a close, a bar or a slash of `COMMANDS`, `<` and `>` as ⟨ and ⟩, or `.` | delimited group |
 | `\hat`, `\bar`, `\vec`, `\dot`, `\ddot`, `\tilde`, `\check`, `\breve`, `\acute`, `\grave`, `\overline`, `\underline` | accent |
-| `\sum`, `\prod`, `\int`, `\oint` and the other operators of class op, with `_` and `^` | big operator with limits |
+| `\sum`, `\prod`, `\int`, `\oint` and the other operators of class op, with `_` and `^` | scripts whose nucleus is the operator, set as limits in display style but for the integrals |
+| `x'`, `x''` | a prime, or primes, in the superscript of the atom before, as `x^{\prime}`, D7 |
 | `\mathbf`, `\mathrm`, `\mathcal`, `\mathbb`, `\mathit` | font change |
 | `\text{…}` | text run |
 | `\log`, `\lg`, `\ln`, `\lim`, `\limsup`, `\liminf`, `\sin`, `\arcsin`, `\sinh`, `\cos`, `\arccos`, `\cosh`, `\tan`, `\arctan`, `\tanh`, `\cot`, `\coth`, `\sec`, `\csc`, `\max`, `\min`, `\sup`, `\inf`, `\arg`, `\ker`, `\dim`, `\hom`, `\det`, `\exp`, `\Pr`, `\gcd`, `\deg` | operator name, upright, of class op; with limits for `\lim`, `\limsup`, `\liminf`, `\max`, `\min`, `\sup`, `\inf`, `\det`, `\Pr` and `\gcd`, as `path@elsewhere@base/ltmath.dtx` defines the 32; D7 |
@@ -1770,8 +1780,13 @@ The same finding for the ASCII characters: `unicode.xml` types `.` a punctuation
 take a thin space after its point, and `-` and `*` ordinary characters, where LaTeX's fontdef.dtx
 declares `.` an ord, `-` and `*` bins drawn as − and ∗, `:` a rel, `!` and `?` closes. The default:
 those six characters take LaTeX's classes, and `-` and `*` are drawn as LaTeX draws them, the other
-characters keeping the mapping table "A `unicode.xml` type, to the class of an atom". It widens the
-table's source beyond `unicode.xml` by these lists, which is the scope change.
+characters keeping the mapping table "A `unicode.xml` type, to the class of an atom". The reviews of #math-layout found three more of the same kind, built
+on the same default: `\emptyset`, which no column gives, is the generator's too, as ∅; `\langle`
+and `\rangle`, `\lgroup` and `\rgroup`, `\lmoustache` and `\rmoustache`, which `unicode.xml`
+types `other`, take the open and close classes fontdef.dtx declares; and unicode-math's 56 names of
+an upright letter, as `\mupalpha`, are left out, since the layout sets a letter italic, as LaTeX
+does, and `\mathrm` sets one upright. It widens the table's source beyond `unicode.xml` by these
+lists, which is the scope change.
 
 ### D7: the operator names of LaTeX
 
@@ -1779,8 +1794,22 @@ Bears on #math-storage-form and #latex-command-set. A finding of #math-layout's 
 formulas of #math-layout's "Fixtures" write `\cos` and `\sin`, which the closed subset read as
 unknown atoms, drawn red. The default, in the mapping table "A LaTeX construct, to the atom it reads
 as": the 32 operator names LaTeX defines in `path@elsewhere@base/ltmath.dtx`, each an atom of its own,
-upright, of class op, with limits for the ten that LaTeX sets without `\nolimits`. It adds a kind of
-atom to the subset the owner approved, which is the scope change.
+upright, of class op, with limits for the ten that LaTeX sets without `\nolimits`, `\liminf` and
+`\limsup` with LaTeX's thin space; and, found at the review of #math-layout, `'` read as LaTeX
+reads it, a prime in the superscript of the atom before, `f'` being `f^{\prime}`. It adds a kind of
+atom and a construct to the subset the owner approved, which is the scope change.
+
+### D8: an empty group takes no width
+
+Bears on #empty-cell-placeholder. The owner, round 2: "empty-cell-placeholder: agreed, I believe
+this is needed and an unfinished formula is not supposed to exist in a real presenter run". A
+finding of the review of #math-layout: LaTeX's own idioms `{}^{14}\mathrm{C}`, a prescript, and
+`a{}={}b`, a relation spaced as between ords, hold an empty group in a finished formula, which a
+placeholder would widen by half an em in presenter mode, outside the premise of the owner's words.
+The default: an empty group, and an empty nucleus of scripts, take no width, as TeX gives them,
+their box still marked empty for the editor's overlay; every other empty cell, of a fraction, a
+radical, a script, a delimited group, an accent, a font change, a matrix or the formula's grid,
+keeps the placeholder. It narrows the placeholder the owner approved, which is the scope change.
 
 ## Harvest
 

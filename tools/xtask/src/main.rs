@@ -111,8 +111,10 @@ fn main() -> ExitCode {
                 return ExitCode::FAILURE;
             };
             match math_commands::generate(&root, &unicode_xml, &font, &revision, &date) {
-                Ok((commands, classes)) => {
-                    println!("{commands} commands, {classes} classes");
+                Ok((commands, absent, classes)) => {
+                    println!(
+                        "{commands} commands, {absent} absent from the font, {classes} classes"
+                    );
                     ExitCode::SUCCESS
                 }
                 Err(e) => {

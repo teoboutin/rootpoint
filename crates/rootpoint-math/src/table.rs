@@ -1,7 +1,7 @@
 //! The names the subset reads: the generated table of commands, and the commands of the structures
 //! and the operator names, written here.
 
-use crate::commands::{CLASSES, COMMANDS};
+use crate::commands::{ABSENT, CLASSES, COMMANDS};
 use crate::{Accent, Class, Command, Environment, MathVariant, Space};
 
 /// The operator names of LaTeX, as `path@elsewhere@base/ltmath.dtx` defines them, each with whether
@@ -41,17 +41,21 @@ pub const OPERATOR_NAMES: &[(&str, bool)] = &[
     ("tanh", false),
 ];
 
-/// Every command of the table, sorted by name.
+/// Every command of the table, sorted by name: only the characters the math font has, which the
+/// palette lists and an author types.
 pub fn commands() -> &'static [Command] {
     COMMANDS
 }
 
-/// The command of the table named `name`, without its backslash.
+/// The command named `name`, without its backslash: one of the table, or one of a character the
+/// math font lacks, which a formula may hold and which is drawn as the font's missing glyph.
 pub fn command(name: &str) -> Option<Command> {
-    COMMANDS
-        .binary_search_by(|c| c.name.cmp(name))
-        .ok()
-        .map(|i| COMMANDS[i])
+    [COMMANDS, ABSENT].into_iter().find_map(|table| {
+        table
+            .binary_search_by(|c| c.name.cmp(name))
+            .ok()
+            .map(|i| table[i])
+    })
 }
 
 /// The first command of the table, by name, whose character is `ch`.
@@ -247,6 +251,7 @@ mod tests {
     #[test]
     fn the_tables_are_sorted_for_their_searches() {
         assert!(COMMANDS.windows(2).all(|w| w[0].name < w[1].name));
+        assert!(ABSENT.windows(2).all(|w| w[0].name < w[1].name));
         assert!(CLASSES.windows(2).all(|w| w[0].0 < w[1].0));
     }
 }

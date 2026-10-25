@@ -106,7 +106,8 @@ fn katex() -> Vec<(String, char)> {
 }
 
 /// The commands whose character the font lacks are exactly the 44, so a change of the font or of
-/// its version fails here; and the table holds none of their characters.
+/// its version that changes its coverage of these commands fails here; and the table holds none of
+/// their characters.
 #[test]
 fn the_missing_set_is_pinned_both_ways() {
     let font = common::font();

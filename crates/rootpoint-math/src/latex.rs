@@ -35,6 +35,7 @@ impl Formula {
             text,
             tokens: tokenize(text),
             pos: 0,
+            depth: 0,
         };
         let (rows, stop) = p.grid()?;
         match stop {
@@ -127,10 +128,18 @@ impl Stop {
     }
 }
 
+/// How deep atoms may nest, one in the cell of another. Reading and laying out recurse once per
+/// level, so a bound keeps a formula of a few kilobytes from overflowing the stack, which aborts
+/// the program; a browser's stack of 1 MB held a nesting of 200 in a debug build, measured at the
+/// review of the math crate. No formula of a talk nests near it.
+pub const MAX_DEPTH: usize = 64;
+
 struct Parser<'a> {
     text: &'a str,
     tokens: Vec<(usize, Token)>,
     pos: usize,
+    /// How deep the atom being read is nested.
+    depth: usize,
 }
 
 impl Parser<'_> {
@@ -197,6 +206,7 @@ impl Parser<'_> {
                 Token::Char(']') if in_index => return Ok((list, Stop::Bracket)),
                 Token::Symbol('\\') => return Ok((list, Stop::Row)),
                 Token::Char(c @ ('^' | '_')) => self.script(&mut list, c == '^')?,
+                Token::Char('\'') => prime(&mut list),
                 Token::Word(name) if name == "right" => {
                     let delim = self.delimiter()?;
                     return Ok((list, Stop::Right(delim)));
@@ -302,15 +312,25 @@ impl Parser<'_> {
         self.skip_spaces();
         match self.next() {
             Some(Token::Char('.')) => Ok(None),
-            Some(Token::Char(c)) if "()[]|/<>".contains(c) => Ok(Some(Delim { ch: c, name: None })),
-            Some(Token::Symbol(s)) if ESCAPED.iter().any(|(e, _)| *e == s) => {
+            // `<` and `>` stand for the angle brackets after `\left` and `\right`, as plain.tex's
+            // `\delcode` makes them.
+            Some(Token::Char('<')) => Ok(Some(Delim {
+                ch: '\u{27E8}',
+                name: Some("langle"),
+            })),
+            Some(Token::Char('>')) => Ok(Some(Delim {
+                ch: '\u{27E9}',
+                name: Some("rangle"),
+            })),
+            Some(Token::Char(c)) if is_delimiter(c) => Ok(Some(Delim { ch: c, name: None })),
+            Some(Token::Symbol(s @ ('{' | '}' | '|'))) => {
                 let ch = ESCAPED.iter().find(|(e, _)| *e == s).unwrap().1;
                 Ok(Some(Delim {
                     ch,
                     name: Some(escaped_name(s)),
                 }))
             }
-            Some(Token::Word(name)) => match command(&name) {
+            Some(Token::Word(name)) => match command(&name).filter(|c| is_delimiter(c.ch)) {
                 Some(c) => Ok(Some(Delim {
                     ch: c.ch,
                     name: Some(c.name),
@@ -321,8 +341,18 @@ impl Parser<'_> {
         }
     }
 
-    /// The atom a token begins.
+    /// The atom a token begins, refused when it nests deeper than `MAX_DEPTH`.
     fn atom(&mut self, token: Token) -> Result<Atom, ParseError> {
+        if self.depth >= MAX_DEPTH {
+            return Err(self.error_at_last(&format!("atoms nest deeper than {MAX_DEPTH} levels")));
+        }
+        self.depth += 1;
+        let atom = self.atom_at_depth(token);
+        self.depth -= 1;
+        atom
+    }
+
+    fn atom_at_depth(&mut self, token: Token) -> Result<Atom, ParseError> {
         Ok(match token {
             Token::Char('{') => Atom::Group(self.group()?),
             Token::Char(c) => Atom::Symbol {
@@ -336,6 +366,8 @@ impl Parser<'_> {
                 if let Some((_, space)) = SPACES.iter().find(|(n, _)| *n == one) {
                     Atom::Space(*space)
                 } else if let Some((_, ch)) = ESCAPED.iter().find(|(e, _)| *e == s) {
+                    // A character the subset reads otherwise is a symbol of no name, written back
+                    // with its backslash; `\|` alone names another character, ‖.
                     Atom::Symbol {
                         ch: *ch,
                         class: if s == '{' {
@@ -345,7 +377,7 @@ impl Parser<'_> {
                         } else {
                             class_of(*ch)
                         },
-                        name: Some(escaped_name(s)),
+                        name: (s == '|').then_some("|"),
                     }
                 } else if s == '\0' {
                     return Err(self.error_at_last("a backslash ends the formula"));
@@ -447,6 +479,48 @@ impl Parser<'_> {
             }
         })
     }
+}
+
+/// A character that may stand after `\left` or `\right`: an open, a close, a bar or a slash.
+fn is_delimiter(ch: char) -> bool {
+    matches!(class_of(ch), Class::Open | Class::Close)
+        || matches!(
+            ch,
+            '|' | '/' | '\\' | '\u{2016}' | '\u{2215}' | '\u{2223}' | '\u{2225}'
+        )
+}
+
+/// A `'` after an atom: a prime in its superscript, as LaTeX reads `f'` as `f^{\prime}`, a
+/// second `'` adding a second prime.
+fn prime(list: &mut List) {
+    let prime = Atom::Symbol {
+        ch: '\u{2032}',
+        class: Class::Ord,
+        name: Some("prime"),
+    };
+    if let Some(Atom::Scripts { sup, .. }) = list.last_mut() {
+        match sup {
+            None => {
+                *sup = Some(vec![prime]);
+                return;
+            }
+            Some(primes) if primes.iter().all(|a| *a == prime) => {
+                primes.push(prime);
+                return;
+            }
+            Some(_) => {}
+        }
+    }
+    let nucleus = match list.pop() {
+        Some(Atom::Group(inner)) => inner,
+        Some(atom) => vec![atom],
+        None => Vec::new(),
+    };
+    list.push(Atom::Scripts {
+        nucleus,
+        sub: None,
+        sup: Some(vec![prime]),
+    });
 }
 
 /// The name a symbol written with a backslash and one character keeps.
