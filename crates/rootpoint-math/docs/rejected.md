@@ -47,7 +47,7 @@ commands.
 
 ### The LaTeX string as the model of a formula, edited as source `##latex-string-model`
 
-`live`. `Formula` is a public type the renderer lays out; a string in its place makes LaTeX the way
+`live`. `Formula` is a public type, which `lay_out` takes; a string in its place makes LaTeX the way
 to write math in the window, which `goal@rootpoint@no-language-no-build` rules out, and gives an
 editor no cell to place a caret in.
 

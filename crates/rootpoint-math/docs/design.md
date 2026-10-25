@@ -44,16 +44,16 @@ relations of a derivation under one another.
 
 On the owner's word: the owner's talks need aligned rows often.
 
-### A matrix is an atom of its own, in amsmath's matrix, pmatrix, bmatrix and cases environments `##matrix-atom`
+### A matrix is an atom of its own, holding a grid and an environment of amsmath `##matrix-atom`
 
 `Atom::Matrix` holds a grid of cells and its environment, written `\begin{…}…\end{…}`, which sets
-its delimiters: none, parentheses, brackets, or a brace on the left. Its cells are in text style,
-as LaTeX's arrays set them, and it is centred on the axis. A matrix stands inside a formula, between
-other atoms, so it is an atom with a grid of its own: the rival, the formula's own grid, holds the
-formula's rows and cannot stand inside parentheses beside `R(\theta) =`. The four environments are
-amsmath's for a matrix and a case analysis, which need no specification of their columns; the
-rival, LaTeX's `array`, would add the grammar of a column specification, and an unknown environment
-does not parse, since its delimiters and its alignment are unknown.
+its delimiters. Its cells are in text style, as LaTeX's arrays set them, and it is centred on the
+axis. A matrix stands inside a formula, between other atoms, so it is an atom with a grid of its
+own: the rival, the formula's own grid, holds the formula's rows and cannot stand inside
+parentheses beside `R(\theta) =`. The environments read today are matrix, pmatrix, bmatrix and
+cases: no delimiter, parentheses, brackets, or a brace on the left. amsmath's Bmatrix, vmatrix,
+Vmatrix and smallmatrix are not read yet, and an environment not read does not parse, since its
+delimiters and its alignment are unknown.
 
 On the owner's word: the owner's talks need matrices occasionally.
 
@@ -123,16 +123,13 @@ under MIT OR Apache-2.0, `design@rootpoint@permissive-licence`, which rules out 
 the GPL. Its rivals are `rejected@rootpoint-math@unicode-math-table` and
 `rejected@rootpoint-math@katex-table`.
 
-### The commands of the characters the math font lacks are read, kept apart from those it has `##commands-of-the-font`
+### A command of a character the math font lacks is read as that character `##absent-commands-read`
 
-The generator writes the commands of the characters the font has in `COMMANDS`, which `commands`
-lists, and those of the characters it lacks apart, in `ABSENT`; `command` reads both. So a formula
-holding a command of the second kind, as a hand-written `\Game`, reads it as LaTeX does,
-`goal@rootpoint-math@latex-text`, drawn as the font's missing glyph,
-`design@rootpoint-render@no-fallback-math-font`, and a list of commands offered to an author, as
-`commands`, holds none the font draws as a box, `goal@rootpoint@no-language-no-build`. The rivals
-lose one each: a single table of the font's characters reads `\Game` as an unknown command, drawn
-red; a single table of every command lists commands the font draws as boxes.
+The generator writes the commands of the characters the font lacks in `ABSENT`, beside `COMMANDS`,
+and `command` reads both, so a formula holding such a command, as a hand-written `\Game`, reads it
+as LaTeX does, `goal@rootpoint-math@latex-text`, and draws it as the font's missing glyph,
+`design@rootpoint-render@no-fallback-math-font`. The rival, a table of the font's characters alone,
+reads `\Game` as an unknown command, drawn red, where that head draws a missing glyph.
 
 ### A command's name means what it means in LaTeX's math mode `##latex-command-meanings`
 
@@ -150,7 +147,7 @@ names. The rival is `rejected@rootpoint-math@unicode-math-names-first`.
 
 A character takes the class its `type` gives in `unicode.xml`, ord where it has none, but for the
 characters whose class `path@elsewhere@base/fontdef.dtx` declares otherwise: `.` an ord, `-` and
-`*` bins drawn as − and ∗, `:` a rel, `!` and `?` closes, and `\langle`, `\rangle`, `\lgroup`,
+`*` bins, `:` a rel, `!` and `?` closes, and `\langle`, `\rangle`, `\lgroup`,
 `\rgroup`, `\lmoustache` and `\rmoustache` opens and closes. The class sets the space around a
 character, so a formula is spaced as a reader of TeX expects, `goal@rootpoint-math@tex-quality`.
 The rival, the type alone, types `.` a punctuation, so `3.14` would take a thin space after its

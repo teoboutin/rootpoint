@@ -41,8 +41,9 @@ pub const OPERATOR_NAMES: &[(&str, bool)] = &[
     ("tanh", false),
 ];
 
-/// Every command of the table, sorted by name: only those of the characters the math font has, the
-/// ones to offer an author.
+/// Every command of the table, sorted by name: only those of the characters the math font has, kept
+/// apart from those of the characters it lacks so that a list offered to an author, as the
+/// palette the milestone of math plans, holds none the font draws as a box.
 pub fn commands() -> &'static [Command] {
     COMMANDS
 }
