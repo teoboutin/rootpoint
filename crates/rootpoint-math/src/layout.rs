@@ -503,8 +503,8 @@ impl Ctx<'_, '_> {
         }
     }
 
-    /// TeX's space between two classes, by `math_spacing` of tex.web: a space in parentheses in
-    /// the milestone's table is set in display and text styles only.
+    /// TeX's space between two classes, by `math_spacing` of tex.web: a conditional space, 1, 3 and
+    /// 4 below, is set in display and text styles only.
     fn space_between(&self, left: Class, right: Class, st: St) -> f64 {
         use Class::*;
         // 0 none, 1 conditional thin, 2 thin, 3 conditional medium, 4 conditional thick.
@@ -1240,9 +1240,9 @@ fn atom_class(atom: &Atom) -> Option<Class> {
     })
 }
 
-/// The code point a character is drawn with under a font change, by the milestone's mapping
-/// table "A character under a font change, to the code point drawn", the holes of the
-/// Mathematical Alphanumeric Symbols filled from the Letterlike Symbols.
+/// The code point a character is drawn with under a font change: the character of the
+/// Mathematical Alphanumeric Symbols for its variant, the holes of that block filled from the
+/// Letterlike Symbols.
 pub(crate) fn font_change(ch: char, variant: Option<MathVariant>) -> char {
     let latin = |base: u32| -> Option<char> {
         let i = match ch {

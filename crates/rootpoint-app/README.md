@@ -103,6 +103,20 @@ document lacks, and text not drawn.
   keeps its text. Ctrl+B and Ctrl+I make the selection, or the letters typed next, bold or italic;
   Ctrl+Space cuts the span that holds the caret at the caret, or leaves it at its edge, so typing
   goes on in its parent's style.
+- A formula is edited in place, as in LyX: Ctrl+M, or "Insert formula" of the Selection tab,
+  inserts one at the caret of a text, its selection its content where it reads as one; the arrows
+  enter a formula of a text at its edge, and a click on the selected equation area, or in a formula
+  of the text edited, puts the caret in it. In a formula, a letter, a digit or an operator inserts
+  its symbol, `^` and `_` make a script, `{` a group, `&` an alignment point, Ctrl+Return a row, and
+  `\` a command, named by letters, Tab completing the name, which any other character closes, as
+  `\frac` then Space makes a fraction; Space leaves the cell, then the formula, and Backspace or
+  Delete next to a structure selects it, and a second press deletes it. LyX's Alt+M keys insert a
+  structure, a symbol, an accent, a delimiter or a Greek letter, Alt+M G then a letter, and edit a
+  matrix's rows and columns, Alt+M W and C; the status line names a sequence that waits for its next
+  key. Ctrl+Shift+M and Ctrl+Alt+N make the selected area an unnumbered or a numbered equation, its
+  text the formula where it reads as one. While a formula is edited, the Selection tab shows the
+  palette: the structures, the controls of a matrix's rows and columns, and every command by
+  category. A formula left empty in a text is removed when the caret leaves it.
 - Preview, in the toolbar, shows the shown slide as it will be presented, inside the editor: no
   mark is drawn over it, no area is selected, and a press on it starts no gesture. A click on an
   area selects it and leaves the preview, a double-click acting as that one click, and Esc or the
@@ -132,6 +146,8 @@ above, with these differences:
 - Add an image, and Import… of the asset tab, ask for a PNG, a JPEG or a font file, which is copied
   into the presentation under its name, or the name with a number when another file with other
   bytes has it.
+- The page keeps Ctrl+M and Alt+M from the browser while a text or a formula is edited, and
+  Ctrl+Shift+M and Ctrl+Alt+N while an area is selected and not edited.
 - Present asks the browser for full screen; when the browser leaves full screen, as it does on
   Esc, presenter mode ends.
 - It has no control socket.

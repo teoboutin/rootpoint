@@ -1,6 +1,5 @@
 //! The closed subset of LaTeX a formula is written in, read by `Formula::parse` and written by
-//! `Formula::to_latex`, by the milestone's mapping table "A LaTeX construct, to the atom it reads
-//! as". `to_latex` of `parse` of a text `to_latex` wrote gives the same text.
+//! `Formula::to_latex`, `design@rootpoint-math@math-storage-form`. `to_latex` of `parse` of a text `to_latex` wrote gives the same text.
 
 use std::fmt;
 

@@ -180,7 +180,8 @@ fn grid_index(rows: &[Vec<List>], r: usize, k: usize) -> usize {
     rows[..r].iter().map(Vec::len).sum::<usize>() + k
 }
 
-/// The position Right gives, as LyX's `Cursor::mathForward`: past a symbol; into an atom with cells
+/// The position Right gives, as LyX's `Cursor::mathForward`, `design@rootpoint-math@lyx-caret-moves`:
+/// past a symbol; into an atom with cells
 /// at the start of the cell [`first_cell`] names; at a cell's end, to the cell
 /// [`cell_forward`] names, or out of the atom; at the end of a cell of the formula's grid, to the
 /// next column of its row; `None` at the end of a row's last cell, where the caret leaves the

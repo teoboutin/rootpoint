@@ -78,8 +78,8 @@ pub struct App {
     /// Whether the primary button, pressed inside the edited text, drags a selection.
     text_drag: bool,
     /// The keys of a sequence of the math keys typed so far, `keymap::lookup`, while it waits for
-    /// its next key; and whether a text egui gives for its chord, as Alt+M can give `m` or `µ`, is
-    /// still to be dropped.
+    /// its next key; and whether a text egui gives for its chord in the chord's frame, as Alt+M can
+    /// give `m` or `µ`, is still to be dropped.
     key_sequence: Vec<keymap::Stroke>,
     chord_text: bool,
     /// When a click on the slide last left the final view, in egui's seconds: the next press, if
@@ -1216,6 +1216,9 @@ impl App {
     fn editing_keys(&mut self, ui: &mut Ui) {
         use editing::CaretMove;
         let events = ui.input(|i| i.events.clone());
+        // The text egui gives for a chord comes in the chord's own frame; a text of a later frame
+        // is a key of its own, as the `m` of Alt+M M.
+        self.chord_text = false;
         for event in events {
             if self.edit.is_none() {
                 return;

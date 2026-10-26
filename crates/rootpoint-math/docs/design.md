@@ -57,6 +57,30 @@ parentheses beside `R(\theta) =`.
 
 On the owner's word: the owner's talks need matrices occasionally.
 
+## Editing
+
+### Right and Left enter an atom by one cell and leave it at that cell's end, as LyX's caret does `##lyx-caret-moves`
+
+`right` enters an atom at the start of its first cell, a root's index where it has one, and at a
+cell's end goes to a matrix's next column in the same row, or from a root's index to its body, and
+else out of the atom; `left` is the mirror, entering at the end of an atom's last cell, a root's body.
+In the formula's grid both keep to the caret's row and give no position past its first or last cell.
+`vertical_move` moves between a fraction's numerator and denominator, between the rows of a matrix,
+to the nearest column of a shorter row, and of the formula, and from a script's nucleus to its script
+only at the nucleus's end, a script going back to that end; `next_cell` gives the next cell, as Tab
+does, and `leave_cell` the position after the atom whose cell holds the caret. So a denominator or a
+script is reached by `left`, `vertical_move` or `next_cell`, and every position by one of them, which
+`goal@rootpoint-math@editable-in-place` asks; `positions` gives them all.
+
+LyX's source, read in section 1 of `path@rootpoint@docs/grounding/math-typesetting.md`: Right is
+`Cursor::mathForward`, which enters by `idxFirst` and, at a cell's end, moves by `idxForward` or
+leaves the inset; `InsetMathFrac::idxForward` and `InsetMathScript::idxForward` return false, a
+grid's moves to its next column, a root's from its index to its body; `InsetMathScript::idxUpDown`
+reaches a script from the nucleus's end, and from its start for an operator with displayed limits,
+which the moves here do not, since they do not depend on the style a formula is laid out in. The
+window copies LyX's editing of math, `design@rootpoint-app@lyx-formula-keys`. The rival that visits
+every position by Right is `rejected@rootpoint-math@every-position-moves`.
+
 ## Layout
 
 ### A formula is laid out by the crate's own code from the font's MATH table, a box per atom and per cell `##math-layout-engine`

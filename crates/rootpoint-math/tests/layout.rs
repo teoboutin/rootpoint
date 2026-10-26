@@ -153,7 +153,8 @@ fn an_italic_letter_is_drawn_from_the_math_italic_block() {
 }
 
 /// A command whose character the font lacks is read, drawn as the font's missing glyph and
-/// reported, by #math-glyph-fallback, though the table the palette lists holds none.
+/// reported, `design@rootpoint-render@no-fallback-math-font`, though the table offered to an author
+/// holds none, `design@rootpoint-math@offered-commands-drawn`.
 #[test]
 fn a_command_the_font_lacks_is_drawn_missing() {
     let f = Formula::parse(r"\Game").unwrap();

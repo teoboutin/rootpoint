@@ -42,5 +42,5 @@ download holds them, against `goal@rootpoint-app@browser-window`.
 
 The bytes are awaited first and the inbox borrowed after, as
 `let picked = match file.bytes_async().await { … }; inbox.borrow_mut().push(picked);`; clippy for the
-wasm target gives no warning, and the gate runs clippy for that target too, or the entry says why it
-does not.
+wasm target gives no warning, and the gate runs clippy for that target too, or a comment at the
+gates of `path@xtask@src/main.rs` says why it does not.

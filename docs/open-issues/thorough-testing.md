@@ -28,7 +28,8 @@ What exists, read in the tree:
   missing style among them, and saves to a text that loads back equal. It does not check that an
   undo restores the document as it was before;
 - `path@rootpoint-app@tests/editing.rs` holds a proptest of the caret over random text trees with
-  formulas, each position visited once each way and drawn on its glyph or its cell;
+  formulas: each position outside formulas visited once each way and drawn on its glyph, and each
+  position of a formula drawn on its cell;
 - `path@rootpoint-math@tests/latex.rs` holds a proptest that a random formula written as LaTeX
   reads back equal;
 - `path@rootpoint-math@tests/edit.rs` holds a proptest that random edits at random positions of a

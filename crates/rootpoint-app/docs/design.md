@@ -434,11 +434,12 @@ owner's word: the owner proposed the edge as an invisible character the caret en
 the explicit choice the key feature, and that in practice no place has many edges meeting, since
 these trees rarely go deep, maths aside, where LaTeX has the same problem.
 
-### Backspace and Delete act in the caret's text node, selecting a span before deleting it `##delete-in-caret-node`
+### Backspace and Delete act in the caret's text node, selecting a span or a formula before deleting it `##delete-in-caret-node`
 
 With no selection, Backspace and Delete act on the item before or after the caret in its text node.
 A character is deleted, by the logical clusters `App::delete` reads. A span with items, and a
-formula, are selected whole by a first press and deleted by a second; an empty span goes at once. At a span's own start
+formula that is not empty, are selected whole by a first press and deleted by a second; an empty
+span or formula goes at once. At a span's own start
 for Backspace, or its end for Delete, the span is unwrapped, `unwrap`, its content kept in its
 parent and the caret where it was drawn. At the root's start or end the keys do nothing.
 
@@ -452,7 +453,8 @@ before an action. LyX acts the same, read in its source, the Codeberg mirror `Ly
 commit `64141cf0e7a073e1226ec168d317618537ba0fab`: `site.bind` binds both keys with `confirm`;
 `Text::dispatch` of `path@elsewhere@src/Text.cpp` selects a non-empty text inset before deleting
 it, `InsetText::confirmDeletion` being `!text().empty()`; and `Text::backspace` at an inset's start
-calls `dissolveInset`. The rival, deleting the character drawn before or after the caret in
+calls `dissolveInset`; a formula is an inset of LyX's too, `InsetMathHull::confirmDeletion` being
+true of one that is not empty. The rival, deleting the character drawn before or after the caret in
 whatever text node holds it, never a span whole, edits a node the caret is not in, which the
 author does not see, and leaves an emptied span behind until the stay ends. The two shapes meet
 every binding constraint. On the owner's word: the owner chose LyX's, finding it very convenient.
@@ -551,7 +553,7 @@ group, so the stay is still one undo step. A position inside the unwrapped span,
 there by Shift with an arrow, stands at the span's place in its parent. An empty span the caret has left draws nothing, and would remain an item the
 arrows step into and a file keeps, with nothing to show the author where it is.
 
-### A first click on a text area selects it, and a click on the selected text area edits it `##edit-entry`
+### A first click on a text or an equation area selects it, and a click on the selected area edits it `##edit-entry`
 
 A click on an area selects it. A click on the selected text area, so a double-click on any text
 area, enters editing with the caret at the click, wherever no other gesture takes the press: a press
@@ -569,7 +571,8 @@ leaves editing before it opens the node menu, `design@rootpoint-app@node-menu`. 
 empty text, per `design@rootpoint-model@no-empty-kind`, so a second click enters editing on a new
 area too, and typing into it needs no step that makes it a text first. A click on the selected
 equation area enters editing its formula, `design@rootpoint-app@math-editing-model`, and a click on
-an image area, which holds nothing to edit, only selects it.
+an image area, which holds nothing to edit, only selects it. On the owner's word, the equation area
+falls under the same rule as the text area.
 
 On the owner's word: the owner chose this shape over a single click that selects a text area and
 edits it at once, which saves a click before typing in an area not yet selected, but leaves the node
@@ -592,9 +595,8 @@ drag's position does, and the protocol has no command that places or reads them;
 the text they lead to is a command of `design@rootpoint-protocol@text-edit-commands`, per
 `design@rootpoint-app@edit-in-place`. The caret is a caret position, a text node and an offset,
 `design@rootpoint-app@boundary-caret-positions`, so its text node is part of the caret, which the
-owner's ruling below covers as it stands; so are the path of cells of a caret in a formula, the
-atom a first Backspace selected there and the name of a command being typed,
-`design@rootpoint-app@math-editing-model`. On the
+owner's ruling below covers as it stands; so are the path of cells of a caret in a formula and
+the atom a first Backspace selected there, its selection, `design@rootpoint-app@math-editing-model`. On the
 owner's word, they are not among the views `goal@rootpoint-protocol@commands-drive-everything`
 makes commands of: the owner chose editor state alone over a protocol command for the caret and
 the selection, `rejected@rootpoint-app@caret-command`, and approved the same for the composing
@@ -614,51 +616,44 @@ ends it, removing the composing text.
 
 ### A formula is edited in place as its tree of cells, with no LaTeX source to type `##math-editing-model`
 
-A math item of a text and an equation area's formula are edited on the slide, the caret a path of
+A math item of a text and an equation area's formula are edited on the slide, as the tree of atoms
+in a grid of cells the math crate holds, `design@rootpoint-math@formula-tree`, the caret a path of
 cells and an offset in a cell's list, `rootpoint_math::CellPath`, which the editor holds as it holds
 a text's caret, `design@rootpoint-app@caret-editor-state`. Each change sends the whole formula,
 `math` for a math item and `equation` for an equation area, inside the stay's group,
 `design@rootpoint-protocol@math-edit-commands` and `design@rootpoint-app@gesture-groups`; the caret
-is drawn and placed on the formula's layout that `render_slide` draws, `area_text`'s formulas for a
-math item and `area_formula` for an equation, `design@rootpoint-app@edit-in-place`. A math item left
-empty when the caret leaves it is removed, as an empty span is unwrapped,
-`design@rootpoint-app@empty-span-unwrapped`; an equation area keeps its formula, empty or not. The
-keys and the moves are LyX's, `design@rootpoint-app@lyx-formula-keys`; a command typed after `\`
-becomes its atom when it closes, its name until then held by the editor and shown by the overlay,
-since a name being typed, as `\fra` on the way to `\frac`, can be one the session refuses.
+is drawn and placed on the formula's layout that `render_slide` draws, its box per cell,
+`design@rootpoint-math@math-layout-engine`, by `area_text`'s formulas for a math item and
+`area_formula` for an equation, `design@rootpoint-app@edit-in-place`. A math item left empty when the
+caret leaves it is removed, as an empty span is unwrapped, `design@rootpoint-app@empty-span-unwrapped`;
+an equation area keeps its formula, empty or not. The keys are LyX's,
+`design@rootpoint-app@lyx-formula-keys`.
 
 So an author writes math with no LaTeX to know, which `goal@rootpoint@no-language-no-build` asks,
 and every cell carries the caret, `goal@rootpoint-math@editable-in-place`. The rival, a field of
-LaTeX source with a preview, makes LaTeX the way to write math in the window, against that goal.
+LaTeX source with a preview, makes LaTeX the way to write math in the window, against that goal,
+as `rejected@rootpoint-math@latex-string-model` says of LaTeX as the model.
 
-### In a formula, each key acts as LyX's caret and `InsetMathNest::interpretChar` make it act `##lyx-formula-keys`
+### In a formula, each key acts as LyX's `InsetMathNest::interpretChar` and its caret make it act `##lyx-formula-keys`
 
-Right enters an atom at the start of its first cell, a root's index where it has one, and leaves it
-at that cell's end, but goes across a matrix's columns and from a root's index to its body; Left is
-the mirror, entering at the end of an atom's last cell. So Right goes from a fraction's numerator out
-of the fraction, and a denominator or a script is reached by Left, Up, Down or Tab. In the
-formula's grid both keep to the caret's row, and at its first or last position they leave the
-formula, into its text, one press, as at a span's edge, `design@rootpoint-app@boundary-caret-positions`.
-Up and Down move between a fraction's numerator and denominator, between the rows of a matrix and
-of the formula, and from a script's nucleus to its script only at the nucleus's end; with no cell
-above or below, in a text, the move is the text's. Tab goes to the next cell, Space and `}` leave
-the cell, then the formula. A letter, a digit or an operator inserts its symbol; `^` and `_` make the
-atom before the caret a script's nucleus; `{` opens a group; `&` cuts a cell of the grid or moves to
-a matrix's next cell; Ctrl+Return starts a row; `\` opens a command name, which a letter extends,
-Tab completing it, and any other character closes, a space being swallowed. Backspace and Delete
-delete a symbol, select an atom with cells by a first press and delete it by a second, as
-`design@rootpoint-app@delete-in-caret-node` does a span, and at the formula's first or last
-position do nothing.
+Right, Left, Up and Down move as `design@rootpoint-math@lyx-caret-moves` says; at the formula's first
+or last position Right and Left leave it, into its text, one press, as at a span's edge,
+`design@rootpoint-app@boundary-caret-positions`, and with no cell above or below, in a text, Up and
+Down are the text's moves. Tab goes to the next cell, Space and `}` leave the cell, then the formula.
+A letter, a digit or an operator inserts its symbol; `^` and `_` make the atom before the caret a
+script's nucleus, the caret in the new script; `{` opens a group; `&` cuts a cell of the grid or
+moves to a matrix's next cell; Ctrl+Return starts a new row of the formula, or of the matrix that
+holds the caret; `\` opens a command name, which a letter extends, Tab completing it, and any other
+character closes, then acts, a space being swallowed. Backspace and Delete delete a symbol, select an
+atom with cells by a first press and delete it by a second, as `design@rootpoint-app@delete-in-caret-node`
+does a span, and at the formula's first or last position do nothing.
 
-LyX's source, read in section 1 of `path@rootpoint@docs/grounding/math-typesetting.md`: Right is
-`Cursor::mathForward`, which enters by `idxFirst` and, at a cell's end, moves by `idxForward` or
-leaves; `InsetMathFrac::idxForward` and `InsetMathScript::idxForward` return false, a grid's moves
-to its next column, a root's from its index to its body; `InsetMathScript::idxUpDown` reaches a
-script only from the nucleus's end; `InsetMathNest` leaves an Up or Down it cannot make to the text;
-the typed characters are `InsetMathNest::interpretChar`'s, ASCII letters extending a command's name
-at its lines 2052 to 2055. The owner's keys work as they do in LyX, the weighed criterion of the
-owner's message in the milestone on math. The rival that visits every position by Right, a
-numerator then its denominator, is how the editor first moved, and is not LyX's.
+LyX's source, read in section 1 of `path@rootpoint@docs/grounding/math-typesetting.md`: the typed
+characters are `InsetMathNest::interpretChar`'s, ASCII letters extending a command's name at its
+lines 2052 to 2055, any other character closing it and then interpreted again; `InsetMathNest`
+leaves an Up or Down it cannot make to the text. The math keys are LyX's,
+`design@rootpoint-app@math-keys`, so an author who types math in LyX finds its keys and its caret
+here too.
 
 ### While a formula is edited, the Selection tab shows the table's commands by category, each inserted by a click `##math-symbol-palette`
 
@@ -679,37 +674,53 @@ menu, costs a click more for each symbol. The table holds only the characters th
 
 ### LyX's math keys are copied with their oddities `##math-keys`
 
-The keys of the milestone's mapping table "A LyX math key, to the action it runs" are LyX's, from
-`path@elsewhere@lib/bind/math.bind` as section 1 of
-`path@rootpoint@docs/grounding/math-typesetting.md` reads it: Ctrl+M inserts a formula at the caret,
-its selection the formula's content where it reads as one; Alt+M then a key inserts a structure, a
-symbol, an accent or a delimiter, makes a script, toggles the equation's number or edits a matrix's
-rows and columns, and Alt+M G then a letter a Greek letter, o and w both ω, v θ and q ϑ, six Shift
-keys giving a variant in lowercase. They act while a text or a formula is edited; in a text whose
-caret is in no formula, an action that edits a formula first inserts one. Ctrl+Shift+M and
-Ctrl+Alt+N act while an area is selected and not edited, making it an unnumbered or a numbered
-equation, as LyX's `math-display` does. A key LyX gives an action this editor has is bound, and one
-whose action it lacks is not: the sub-table T, which changes the hull type, where an equation has
-one kind; the keys of C and W for rules and alignment; Shift+N, a number per row; and M, D, L and O.
-A binding with a modifier is matched with its modifiers exactly. The browser build disables a
-binding the browser keeps from a page; none is, by the session's knowledge of the browsers, not
-measured, `design@rootpoint-app@editor-keys-kept-from-browser`.
+The keys are LyX's `path@elsewhere@lib/bind/math.bind`, as section 1 of
+`path@rootpoint@docs/grounding/math-typesetting.md` reads it, and its Ctrl+M: Ctrl+M inserts a
+formula at the caret, its selection the formula's content where it reads as one, else a `\text` of
+it; Alt+M then a key inserts a structure, a symbol, an accent or a delimiter, makes a script, toggles
+the equation's number or edits a matrix's rows and columns, and Alt+M G then a letter a Greek letter,
+o and w both ω, v θ and q ϑ, six Shift keys giving a variant in lowercase. Where LyX's action names a
+construct the subset writes otherwise, the key inserts the subset's: `\root` as `\sqrt[]{}`,
+`\underbar` as `\underline{}`. They act while a text or a formula is edited; in a text whose caret
+is in no formula, an action that edits a formula first inserts one. Ctrl+Shift+M and Ctrl+Alt+N act
+while an area is selected and not edited, making it an unnumbered or a numbered equation, as LyX's
+`math-display` does. A binding with a modifier is matched with its modifiers exactly. Alt+M acts
+only while editing, and Alt with an arrow, `design@rootpoint-app@selection-keys`, only outside it, so
+the two never meet.
+
+Not bound: the sub-table T, which changes the hull type, where an equation has one kind; the keys of
+C and W for rules and alignment, which the subset has no construct for; Shift+N, a number per row,
+which an equation does not have; and Alt+M D, L and O, whose actions, `math-display`,
+`math-limits` and a macro's arguments, have none here while editing, `math-display`'s being
+Ctrl+Shift+M's, which acts outside editing. Alt+M M is LyX's `math-mode`, and inserts a formula as
+Ctrl+M does. The browser build
+disables a binding the browser keeps from a page; none is, by the session's knowledge of the
+browsers, not measured, `design@rootpoint-app@editor-keys-kept-from-browser`.
 
 A corrected table would cost the muscle memory the keys are copied for. On the owner's word: the
 owner asked that LyX's keys be copied exactly, and allowed the browser build to disable a few
 bindings that conflict. Whether an Alt+M chord reaches the native window is watched by
 `tripwire@rootpoint-app@alt-m-lost-natively`.
 
-### The math keys are a built-in table from key sequences to actions `##keymap-table`
+### LyX's math autocorrection is not built `##no-math-autocorrection`
 
-`path@rootpoint-app@src/keymap.rs` holds each binding as a sequence, a chord then the characters
-typed after it, and its action; the editor reads a chord against it, waits on a prefix, names the
-waiting sequence on the status line, and takes the keys typed next as egui's text events, the first
-text egui gives for Alt+M itself dropped; a key that types no text, as Backspace or an arrow, drops a
-waiting sequence, and so does leaving editing. The editor's other shortcuts stay where they are,
-until `issue@rootpoint-app@configurable-keys` makes the keys configurable, and the table is where a
-configuration fills them. The rival, moving every key into the table now, is the same work earlier,
-with the existing key tests at risk in work on math.
+LyX can replace a typed sequence by a symbol as it is typed, by the rules of its `lib/autocorrect`;
+this editor does not. LyX ships it off, `autocorrection_math` defaulting to false, read in section 1
+of
+`path@rootpoint@docs/grounding/math-typesetting.md`, and the keys copy LyX's as it ships,
+`design@rootpoint-app@math-keys`.
+
+### Only the math keys are a built-in table of key sequences, the other shortcuts staying where they are `##keymap-table`
+
+`path@rootpoint-app@src/keymap.rs` holds each binding of the math keys as a sequence, a chord then
+the characters typed after it, and its action; the editor reads a chord against it, waits on a
+prefix, names the waiting sequence on the status line, and takes the keys typed next as egui's text
+events, a text egui gives for Alt+M itself, in the chord's own frame, dropped; a key that types no text, as Backspace or
+an arrow, drops a waiting sequence, and so does leaving editing. The editor's other shortcuts stay
+where they are. On the owner's word: the owner wants the keys configurable later,
+`issue@rootpoint-app@configurable-keys`; a configuration then fills this table, and making the keys
+configurable is a loader of it. The rival, moving every key into the table now, is that later work
+done earlier, with the existing tests of the keys at risk in the same change.
 
 ### Every action a math key runs has a control in the window `##key-actions-have-controls`
 
@@ -1061,6 +1072,8 @@ default of Ctrl+M and of Alt+M while a text or a formula is edited, and of Ctrl+
 Ctrl+Alt+N while an area is selected and not edited, by a second flag `App::frame` sets at each
 frame, so in no other state does the browser lose them. Each is matched with its modifiers exactly,
 as the table matches them, so AltGr+M, which is Ctrl and Alt on Windows, types its character; M is
-read by its physical key too, since Option+M gives "µ". The test `the_math_keys_reach_the_editor`
+read by its physical key too, since Option+M gives "µ". By the session's knowledge of the browsers,
+not measured, Firefox gives Ctrl+M to muting the tab, and no menu of Firefox's takes Alt+M. The test
+`the_math_keys_reach_the_editor`
 of `path@rootpoint-app@tests/web.rs` checks them in a headless browser, which shows that the
 listener prevents a default, not that a browser honours it.

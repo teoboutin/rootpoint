@@ -56,3 +56,10 @@ editor no cell to place a caret in.
 `live`. It would replace the text grammar of `parse` and `to_latex`, and it is about ten times
 longer than LaTeX for `\frac{a}{b}`, a text nobody writes by hand, against
 `goal@rootpoint-math@latex-text`.
+
+### Right visiting every position, a numerator then its denominator `##every-position-moves`
+
+`live`. It is not LyX's caret, which the window copies: LyX's `InsetMathFrac::idxForward` and
+`InsetMathScript::idxForward` return false, so its Right leaves a fraction at its numerator's end and
+a script at its nucleus's end, as section 1 of `path@rootpoint@docs/grounding/math-typesetting.md`
+reads LyX's source; an author who knows LyX's keys would meet another caret.

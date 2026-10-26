@@ -59,9 +59,11 @@ pub struct Binding {
 /// The prefix of LyX's math table, Alt+M.
 pub const ALT_M: Stroke = Stroke::Chord(Modifiers::ALT, Key::M);
 
-/// The characters typed after Alt+M, and what each runs, LyX's, as
-/// `design@rootpoint-app@math-keys` names them.
+/// The characters typed after Alt+M, and what each runs: LyX's `math.bind`, as section 1 of
+/// `path@rootpoint@docs/grounding/math-typesetting.md` reads it, `design@rootpoint-app@math-keys`.
 const AFTER_ALT_M: &[(&str, Action)] = &[
+    // LyX's `math-mode`, which Ctrl+M runs too.
+    ("m", Action::InsertFormula),
     ("f", Action::Insert(r"\frac{}{}")),
     ("s", Action::Insert(r"\sqrt{}")),
     // LyX's `\root`.
@@ -89,6 +91,7 @@ const AFTER_ALT_M: &[(&str, Action)] = &[
     ("b", Action::Insert(r"\overline{}")),
     // LyX's `\underbar`.
     ("_", Action::Insert(r"\underline{}")),
+    // LyX's `\prime`, a symbol, as the subset reads it.
     ("'", Action::Insert(r"\prime")),
     ("(", Action::Insert(r"\left(\right)")),
     ("[", Action::Insert(r"\left[\right]")),
@@ -96,6 +99,8 @@ const AFTER_ALT_M: &[(&str, Action)] = &[
     ("<", Action::Insert(r"\left\langle\right\rangle")),
     (">", Action::Insert(r"\left\rangle\right\langle")),
     ("|", Action::Insert(r"\left|\right|")),
+    // LyX's `math-space`, which inserts its `defaultSpace`, the thin space `\,`, by
+    // `InsetMathSpace` of its source.
     (" ", Action::Insert(r"\,")),
     ("ci", Action::Matrix(false, MatrixEdit::Append)),
     ("cd", Action::Matrix(false, MatrixEdit::Delete)),

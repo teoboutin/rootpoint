@@ -146,8 +146,8 @@ pub fn generate(
     }
     // The commands of a character the font lacks go apart, in `ABSENT`, which `command` reads, so a
     // formula holding one draws the font's missing glyph; the table `commands` lists holds none,
-    // so a list offered to an author, as the palette of the milestone of math, holds none drawn as
-    // a box.
+    // so a list offered to an author holds none drawn as a box,
+    // `design@rootpoint-math@offered-commands-drawn`.
     let (present, absent): (BTreeMap<String, u32>, BTreeMap<String, u32>) =
         table.into_iter().partition(|(_, code)| has(*code));
     classes.retain(|code, _| has(*code) || absent.values().any(|c| c == code));
@@ -218,7 +218,7 @@ const OPERATOR_NAMES: &[&str] = &[
     "Pr", "sec", "sin", "sinh", "sup", "tan", "tanh",
 ];
 
-/// The class of a character of `type`, by the milestone's mapping table of the types.
+/// The class of a character of `type`: the TeX class its `unicode.xml` type names.
 fn class_of(kind: Option<&str>) -> &'static str {
     match kind {
         Some("relation") => "Rel",

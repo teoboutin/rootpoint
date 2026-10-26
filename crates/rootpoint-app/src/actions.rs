@@ -1830,9 +1830,11 @@ impl App {
                 self.put_caret(CaretPos { node: up, offset }, None, edit.affinity, None);
                 return;
             }
-            // A span with items, or a formula, is selected whole, so that a second press deletes
-            // it.
-            Some(item @ (Item::Span(_) | Item::Object(TextItem::Math(_)))) if !matches!(item, Item::Span(s) if s.text.items.is_empty()) =>
+            // A span with items, or a formula that is not empty, is selected whole, so that a
+            // second press deletes it; an empty one goes at once.
+            Some(item @ (Item::Span(_) | Item::Object(TextItem::Math(_))))
+                if !matches!(item, Item::Span(s) if s.text.items.is_empty())
+                    && !matches!(item, Item::Object(TextItem::Math(f)) if f.is_empty()) =>
             {
                 let other = if forward { i + 1 } else { i - 1 };
                 let anchor = Some(caret);

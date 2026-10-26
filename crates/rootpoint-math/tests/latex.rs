@@ -9,7 +9,7 @@ fn parse(text: &str) -> Formula {
     Formula::parse(text).unwrap_or_else(|e| panic!("{text}: {e}"))
 }
 
-/// The reference formulas of the milestone of math, as `REFERENCE` of
+/// The five reference formulas the layout is judged on, as `REFERENCE` of
 /// `path@rootpoint-math@tests/layout.rs` holds them.
 pub const REFERENCE: [&str; 5] = [
     r"\frac{\partial f_i}{\partial t} + \mathbf{c}_i \cdot \nabla_{\mathbf{x}} f_i = \Omega(f_i)",

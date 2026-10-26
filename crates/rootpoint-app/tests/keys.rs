@@ -1,7 +1,8 @@
 //! The math keys, `design@rootpoint-app@math-keys`: each sequence of the table runs its action
 //! through `App::frame`, given as the events egui gives for it, a chord, then the text of each key
-//! after it; the expected actions are restated here from the milestone's table "A LyX math key, to
-//! the action it runs", so a table with one binding swapped fails.
+//! after it; the expected actions are restated here from LyX's `lib/bind/math.bind` as section 1 of
+//! `path@rootpoint@docs/grounding/math-typesetting.md` reads it, so a table with one binding swapped
+//! fails.
 
 use eframe::egui::{Context, Event, Key, Modifiers, Pos2, RawInput, Rect, Vec2};
 use rootpoint_app::{App, MemoryFiles};
@@ -109,7 +110,7 @@ enum Expect {
     Matrix(bool, MatrixEdit),
 }
 
-/// The keys after Alt+M, by the milestone's table and section 1 of the survey it cites.
+/// The keys after Alt+M, by section 1 of the survey.
 const AFTER_ALT_M: &[(&str, Expect)] = &[
     ("f", Expect::Insert(r"\frac{}{}")),
     ("s", Expect::Insert(r"\sqrt{}")),
@@ -251,11 +252,17 @@ fn an_unbound_sequence_is_dropped() {
     );
 }
 
-/// Ctrl+M inserts a formula at the caret of a text, the caret in it; Alt+M F in a text inserts a
+/// Ctrl+M inserts a formula at the caret of a text, the caret in it, and so does Alt+M M, LyX's
+/// `math-mode`, whether egui gives Alt+M's own `m` in its frame or not; Alt+M F in a text inserts a
 /// formula holding a fraction.
 #[test]
 fn ctrl_m_and_alt_m_f_insert_a_formula_in_a_text() {
-    for (name, keys) in [("Ctrl+M", None), ("Alt+M F", Some("f"))] {
+    for (name, keys) in [
+        ("Ctrl+M", None),
+        ("Alt+M F", Some("f")),
+        ("Alt+M M", Some("m")),
+        ("Alt+M M, no text for the chord", Some("M")),
+    ] {
         let mut app = App::new(Box::new(MemoryFiles::default()));
         let ctx = Context::default();
         ok(&mut app, "sample");
@@ -272,6 +279,12 @@ fn ctrl_m_and_alt_m_f_insert_a_formula_in_a_text() {
                 key(Key::M, Modifiers::COMMAND),
                 Modifiers::COMMAND,
             ),
+            // The chord with no text of its own, then `m` in a frame of its own.
+            Some("M") => {
+                frame(&ctx, &mut app, key(Key::M, Modifiers::ALT), Modifiers::ALT);
+                let (events, modifiers) = typed('m');
+                frame(&ctx, &mut app, events, modifiers);
+            }
             Some(after) => alt_m(&ctx, &mut app, after),
         }
         assert!(
@@ -279,7 +292,7 @@ fn ctrl_m_and_alt_m_f_insert_a_formula_in_a_text() {
             "{name}: the caret in the formula"
         );
         let latex = app.edited_formula().map(|f| f.to_latex());
-        let want = if keys.is_some() { r"\frac{}{}" } else { "" };
+        let want = if keys == Some("f") { r"\frac{}{}" } else { "" };
         assert_eq!(latex.as_deref(), Some(want), "{name}");
     }
 }

@@ -13,19 +13,23 @@ the presentation is not an acceptable fix for the owner. `Report::missing_glyphs
 **Re-entry:** the first real talk given with the prototype; and the standing-state review before
 every merge.
 
-## Guarding `design@rootpoint-render@slide-renderer`: a frame of a divider drag or a 4K render takes longer than its bound `##render-within-bounds`
+## Guarding `design@rootpoint-render@slide-renderer` and `design@rootpoint-math@math-layout-engine`: a frame of a divider drag or a 4K render takes longer than its bound `##render-within-bounds`
 
 AC2 of the first prototype, which did not fire when its slices measured it, recorded as a tripwire
-on the owner's word when the milestone closed, put to the owner as T8.
+on the owner's word when the milestone closed, put to the owner as T8; and AC5 of the milestone on
+math, which did not fire either, its slide of formulas added to the clause on the owner's word when
+that milestone closed.
 
 **Fires when:** in a release build on the owner's machine, any frame of a divider drag in a 1600×900
 editor view takes more than 33 ms, by
 `cargo test --release -p rootpoint-app --test presenter -- --ignored --nocapture`, or any render of
-one 3840×2160 slide with text and an image takes more than 200 ms, by
+one 3840×2160 slide with text and an image, or of 4 equations and a text with 6 inline formulas,
+takes more than 200 ms, by
 `cargo test --release -p rootpoint-render --test text -- --ignored --nocapture`. The bounds are
-defaults the session proposed and the owner kept.
+defaults the session proposed and the owner kept, and so are the counts of the slide of formulas.
 **Response:** reopen `design@rootpoint-render@slide-renderer`, with GPU vello or vello_hybrid as the
-candidate.
+candidate; for the slide of formulas, first `design@rootpoint-math@math-layout-engine`, its layout
+cached or made faster.
 **Re-entry:** the design audit of any work that adds a content kind or changes the renderer; and
 the standing-state review before every merge.
 

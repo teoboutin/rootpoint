@@ -141,8 +141,7 @@ fn time_the_mixed_slide_at_4k() {
     );
 }
 
-/// AC5 of the milestone on math, `tripwire@rootpoint-render@render-within-bounds`'s 4K bound on a
-/// slide of formulas: a text holding 6 inline formulas above 4 equations, two of them of several
+/// The 4K bound of `tripwire@rootpoint-render@render-within-bounds` on its slide of formulas: a text holding 6 inline formulas above 4 equations, two of them of several
 /// rows, 10 renders at 3840×2160, each within 200 ms. Run with the test above.
 #[test]
 #[ignore]
