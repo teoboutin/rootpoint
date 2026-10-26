@@ -19,11 +19,13 @@ in the commit that completes its harvest.
   code.
 - Where the owner's word is awaited, `skill@knowledge-architect-planning@working-a-slice` says
   what waits. The defaults awaiting the owner are listed in their own section.
-- It was assembled from the transcript of one session, through an extraction of it. The discussion
-  begins at the owner's message that opens "Hey, now that the project has most of the features I
-  wanted". That session also held three other subjects, the compatibility of saved presentations,
-  the publication on GitHub Pages and the README, all merged before this spec; only the sample is
-  planned here.
+- It was assembled from the transcripts of two sessions. In the first, the discussion begins at
+  the owner's message that opens "Hey, now that the project has most of the features I wanted";
+  that session also held three other subjects, the compatibility of saved presentations, the
+  publication on GitHub Pages and the README, all merged before this spec, and it was interrupted
+  while writing this spec up to its Arguments. The second begins at the owner's message that opens
+  "I had a design session for improving the sample presentation be interrupted", and wrote the
+  rest from an extraction of the first, then repaired it after its reviews.
 
 **The owner's messages on the sample**, verbatim, the parts on other subjects elided.
 
@@ -80,10 +82,11 @@ one spec and a milestone of three slices to the owner:
   by the sample as an image asset.
 - **a callout**: a numbered mark with a short label drawn over a picture, naming what one widget
   does.
-- **the recorded rectangles**: `App::view.buttons`, the rectangle of each widget a frame records
-  by its label, which `App::button_rect` returns; today `App::button` of
+- **the recorded rectangles**: `App::view.buttons`, the rectangle of each widget a frame records by
+  its label, which `App::button_rect` returns; today `App::button` of
   `path@rootpoint-app@src/panels.rs`, the side panel's tabs, the tab buttons of the asset tab and a
-  few named buttons record theirs, and most of the toolbar's buttons, drawn by `ui.button`, do not.
+  few named buttons record theirs, and most of the toolbar's buttons, drawn by `ui.button` or
+  `ui.add_enabled`, do not.
 - **the fixture**: the frozen copy of today's sample that the tests open in its place.
 - **the prototype**: a throwaway test, not committed, that drew one frame of the window at
   1600×900 into a PNG by filling egui's triangles on the CPU.
@@ -91,57 +94,62 @@ one spec and a milestone of three slices to the owner:
 ## What the work is
 
 **Today.** `sample` replaces the session by the sample, in memory, its images in the session's
-map, with empty undo stacks: `Command::Sample` of `path@rootpoint-protocol@src/session.rs` calls
-`crate::sample::sample()`, then `*self = Session::new()`, then sets the document and
-`Store::Memory(images)`. The sample has six slides, s1 "rootpoint", s7 "Dividers and moving", s13
-"The same image in fit, left, and in fill, right.", s20 "Where it is saved", s24 "Styling text" and
-s33 "Equations", one image asset, `splits.png`, 580 bytes, and `next_id` 38. Its texts name keys:
-Ctrl+B, Ctrl+I and Ctrl+Space in s24. The window opens it by the toolbar's button "Sample",
-`App::open_sample` of `path@rootpoint-app@src/actions.rs`, and the browser build opens it at
-start, `path@rootpoint-app@src/main.rs`.
+map, with empty undo stacks: `Command::Sample`, in `Session::run_inner` of
+`path@rootpoint-protocol@src/session.rs`, calls `crate::sample::sample()`, then
+`*self = Session::new()`, then sets the document and `Store::Memory(images)`. The sample has six
+slides, s1 "rootpoint", s7 "Dividers and moving", s13, whose legend reads "The same image in fit,
+left, and in fill, right.", s20 "Where it is saved", s24 "Styling text" and s33 "Equations", one
+image asset, `splits.png`, 580 bytes, and `next_id` 38. Its texts name keys, as the Alt and arrow
+keys in s1, Esc in s7, and Ctrl+B, Ctrl+I and Ctrl+Space in s24. The window opens it by the
+toolbar's button "Sample", `App::open_sample` of `path@rootpoint-app@src/actions.rs`, and the
+browser build opens it at start, in the wasm `main` of `path@rootpoint-app@src/main.rs`.
 
-**The tests read its content.** The app's tests open it at 54 sites in 16 files of
+**The tests read its content.** The app's tests name it on 54 lines in 16 files of
 `path@rootpoint-app@tests/`: `actions.rs` 9, `panel.rs` 8, `view.rs` 7, `web.rs` 7, `keys.rs` 5,
 `control.rs` 4, `assets_tab.rs` 3, `socket_move.rs` 2, `workspace.rs` 2, and `autosave.rs`,
 `editing.rs`, `edit_ops.rs`, `gestures.rs`, `hit.rs`, `presenter.rs`, `slides.rs` 1 each, counted by
-`grep -c` of `open_sample`, `"sample"` and `Command::Sample`. They name its ids: `editing.rs` edits
-the area n3 of s1; `gestures.rs` reads s1's tree, `n4 stacked[n2 | n6 beside[n3 | n5]]`, and the
-spans of s24; `web.rs` compares s1 and s33, drawn in a headless Firefox, with the native golden
-images `path@rootpoint-app@tests/data/sample-s1.png` and `sample-s33.png`. The protocol's tests run
-`sample` in `pack.rs`, `styles.rs` and `commands.rs`; `pack.rs` reads
-`path@rootpoint-protocol@sample/splits.png` and measures the pack of the sample at 318 bytes against
-390, a figure that `design@rootpoint-protocol@pack-container` quotes.
+`grep -c -e open_sample -e '"sample"' -e Command::Sample`; several of these lines are helpers that
+many tests call. A 17th file, `native_workspace.rs`, reads `splits.png` from the sample's
+directory. They name its ids: `editing.rs` edits the area n3 of s1; `gestures.rs` reads s1's tree,
+`n4 stacked[n2 | n6 beside[n3 | n5]]`, and the spans of s24; `web.rs` compares s1 and s33, drawn in
+a headless Firefox, with the native golden images `path@rootpoint-app@tests/data/sample-s1.png` and
+`sample-s33.png`. The protocol's tests run `sample` in 5 files, `pack.rs`, `styles.rs`,
+`commands.rs`, `view.rs` and `workspace.rs`, the last in scripts piped into `rootpoint-headless`.
+`pack.rs` reads `path@rootpoint-protocol@sample/splits.png`, and its
+`a_pack_adds_only_the_zip_s_headers` prints, for the sample, a pack's overhead over its assets and
+its deflated RON, 318 bytes against a bound of 390, the figure that
+`design@rootpoint-protocol@pack-container` quotes.
 
 **The window draws its own frame and keeps no image of it.** egui 0.37 gives the frame's shapes,
-`Context::tessellate` turns them into triangle meshes, each vertex with a position, texture
-coordinates and a premultiplied colour, and the font atlas and every other texture arrive as
-`ColorImage` in `FullOutput::textures_delta`, a list of deltas per texture. The prototype filled
-those triangles on the CPU: a full 1600×900 frame took 30 ms at 1 pixel per point and 115 ms at 2,
-in release, on an AMD Ryzen 9 9950X, and the picture matched the window, the slide drawn by the
-render crate included, by sight. The prototype is not committed.
+`Context::tessellate` turns them into triangle meshes, each vertex with a position in points,
+texture coordinates and a premultiplied sRGB colour, and the font atlas and every other texture
+arrive as `ColorImage` in `FullOutput::textures_delta`, a list of deltas per texture. The prototype
+filled those triangles on the CPU: a full 1600×900 frame took 30 ms at 1 pixel per point and 115
+ms at 2, in release, on an AMD Ryzen 9 9950X, and the picture matched the window, the slide drawn
+by the render crate included, by sight. The prototype is not committed.
 
 **Outside the work:**
-- an interactive tour over the real window, #live-ui-tour, which the owner left for later; an
-  issue entry carries it, opened by the commit that adds this spec;
+- an interactive tour over the real window, #live-ui-tour, which the owner left for later;
+  `issue@rootpoint-app@interactive-tour` carries it;
 - a change of the save format: the sample is a version-7 file, and nothing here changes the file's
   grammar, `design@rootpoint@saved-presentations-stay-loadable`;
-- the browser build's speed at drawing the pictures, which no test measures: T2 watches it.
+- the browser build's speed at drawing the pictures on the owner's machine, which no test can
+  measure: T2 watches it. Step 4's browser test prints a first figure on the machine that runs it.
 
 ## What is already decided
 
 The design rests on, and does not argue again:
-- `design@rootpoint-protocol@builtin-sample`: every build carries the sample, which `sample` opens,
-  headless too; its images stay under 50 KB in all. **Rewritten at the harvest**: it gains the
-  pictures a host draws, its slides' subjects, and the tests' fixture.
 - `design@rootpoint@gui-only-in-app`: no crate but the app links egui, so the protocol cannot draw a
   picture.
-- `design@rootpoint-app@gui-toolkit`: the window draws no slide content itself; the pictures are
-  image assets the render crate draws like any other, so the slides stay the renderer's.
+- `design@rootpoint-protocol@session-files`: the session reads files only through the `Files` its
+  caller passes to each command; a picture is read through it, by `Files::picture`.
+- `design@rootpoint-protocol@no-new-breach`: no command creates a breach, so the sample headless
+  holds a placeholder at each picture path, not a missing image.
+- `design@rootpoint@readme-preview-link`: the owner keeps pictures out of the README because the
+  interface will be reworked; the session read that reason as the criterion of the sample's
+  pictures, `argument@sample-redesign@arg-4`.
 - `design@rootpoint-app@editor-overlay` and `goal@rootpoint-app@faithful-slide-view`: no editor mark
   in a slide's image; a callout is part of a picture's pixels, not a mark over the slide.
-- `design@rootpoint-app@actions-are-commands`: every action runs protocol commands through
-  `App::run`; the pictures enter the session inside `sample`, not by an action of their own.
-- `design@rootpoint-protocol@session-files`: the session opens no file.
 - `design@rootpoint-model@asset-paths-only`: an image is an asset path whose bytes the store holds.
 - `design@rootpoint-render@caller-supplies-assets`: the renderer draws an image the caller hands it.
 - `rejected@rootpoint-render@toolkit-painter`: drawing slides with the toolkit's painter. Not
@@ -149,32 +157,54 @@ The design rests on, and does not argue again:
   egui, and from its triangles filled on the CPU, not from a GPU offscreen path.
 - `goal@rootpoint@minimal-content-set`: no content kind is added; a picture is an image.
 
-Texts that cite what the work rewrites, each updated at the harvest:
-- `design@rootpoint-protocol@builtin-sample` is cited by `path@rootpoint-protocol@README.md`, which
-  describes "a presentation of six slides": rewritten to the new slides.
-- `design@rootpoint-protocol@pack-container` quotes "318 bytes for the sample": the measurement
-  moves to the fixture, the figure measured again.
+Decisions the work rewrites, each with the texts that cite it:
+- `design@rootpoint-protocol@builtin-sample`: rewritten at the harvest to hold the pictures a host
+  draws, the slides' subjects and the tests' fixture. `cargo klarch show` lists no text that cites
+  it; `path@rootpoint-protocol@README.md` describes the sample in prose, "a presentation of six
+  slides", and is rewritten at step 5.
+- `design@rootpoint-app@gui-toolkit`: its list of what the host needs gains frames run with no
+  window, their shapes tessellated and their textures given, at the harvest, as #toolkit-snapshot
+  argues. It cites `rejected@rootpoint-app@other-gui-hosts`, which stands, as #toolkit-snapshot
+  says.
+- `design@rootpoint-protocol@editing-modes`, `design@rootpoint-protocol@control-commands` and
+  `design@rootpoint-app@actions-are-commands`: each states that a presentation in memory, or a
+  script of commands, behaves the same headless and in the window, which `sample` no longer does
+  for the pictures. Their rewrite at the harvest, a stated exception for the sample's pictures, is
+  D3, awaiting the owner.
+- `design@rootpoint-protocol@pack-container` quotes 318 bytes "for the sample": reworded at step 1
+  to name the fixture, the figure unchanged.
 - `design@rootpoint-app@workspace-autosave` times `autosave_gui_cost` on slides "of the sample,
-  whose document holds no image's bytes": the test moves to the fixture, the premise restated.
+  whose document holds no image's bytes": the test moves to the fixture at step 1, the premise
+  restated at the harvest.
 - `design@rootpoint-app@edit-in-place` and `design@rootpoint-app@editor-overlay` name tests that run
-  over the sample's n3 and s24: rewritten to the fixture.
-- `path@rootpoint-app@README.md` names the sample's slides as a copy of the editor's keys: kept.
+  over the sample's n3 and its styled text: rewritten to the fixture at the harvest.
+- `path@rootpoint-app@README.md` names the sample's slides as a copy of the editor's keys: kept,
+  since the new slides still name keys.
 
 Standing entries the discussion's searches returned, and their outcome here:
 - the `todo` issue `sample-teaches-no-math-editing` of the protocol: this spec schedules its work,
-  slide 10, so the commit that adds this spec closes it, and its leads are in slide 10's row of
-  #sample-slide-plan.
+  slide 10, so the commit that adds this spec closes it, and its leads are in the paragraph under
+  the table of slides of #sample-slide-plan. Its closing condition named the golden image of s33
+  rewritten; the golden images stay on the fixture instead, #sample-test-fixture, and slide 10 does
+  the issue's work.
+- `issue@rootpoint@image-export`: an export of slides through `render_slide`. The pictures are of
+  the window, drawn by egui's triangles, not slides, so the two share no path; bears on nothing.
+- `rejected@rootpoint-app@other-gui-hosts`: weighs a toolkit's screenshots only if slides are drawn
+  with its painter, which stays false; bears on the rewrite of `design@rootpoint-app@gui-toolkit`
+  above, and stands.
 - `tripwire@rootpoint-render@render-within-bounds`: its re-entry, work that adds a content kind or
   changes the renderer: this work does neither; bears on nothing.
 - `tripwire@rootpoint-render@glyph-missing-everywhere`: the new texts and the callouts could use a
-  character no font has: the claim of step 6, no breach in the sample, watches it.
+  character no font has: step 4's claim that every slide renders with no missing glyph watches the
+  texts. The callouts are drawn by egui, whose own fonts the window already uses.
 - `issue@rootpoint-app@configurable-keys`: the sample's texts and callouts name the fixed keys,
   which a later configuration of keys would leave stale; that work updates them.
 - `tripwire@rootpoint-app@browser-pack-too-large`: the pictures add bytes to the sample held in the
   page; bears on nothing below its clause.
 - `issue@rootpoint-model@linked-dividers`: a showcase of layouts cannot align rows across columns;
   the layouts of slide 6 stay guillotine layouts.
-- `rejected@rootpoint-render@toolkit-painter`: not brought back, as above.
+- The palette's math font, which a picture of formula editing needs: `App::frame` installs it in
+  every frame, so a staged frame has it; bears on nothing.
 
 ## Criteria
 
@@ -207,12 +237,15 @@ and their placeholders are small.
 
 ### The pictures show the editor as built, after any rework, with no step by hand `##c-pictures-current`
 
-Weighed, from the owner's reason for keeping pictures out of the README. Met by #toolkit-snapshot
+Weighed, from the session's reading of the owner's reason for keeping pictures out of the README,
+`design@rootpoint@readme-preview-link`. Met by #toolkit-snapshot
 and #picture-staging, and watched by AC4.
 
 ### A new user learns from each slide what a feature does, how to use it, and can try it there `##c-teaches`
 
-Weighed, from the owner's request. Met by #sample-slide-plan.
+Weighed, from the owner's request. The editing of a formula in the window serves
+`goal@rootpoint@no-language-no-build`, an author with no LaTeX to know, so slide 10 teaches it. Met
+by #sample-slide-plan.
 
 ## Threads
 
@@ -221,7 +254,7 @@ Weighed, from the owner's request. Met by #sample-slide-plan.
 Proposed by the session in round 1, with three shapes: #toolkit-snapshot, #split-tree-mockup and
 #live-ui-tour, and question Q2 on what "self rendered" meant. Approved in round 2: "Q2: I meant
 (a), a picture of the editor drawn by itself". Shape: "Decided design". Harvest: a head of
-`register@rootpoint-app@design`, `sample-pictures` or the thread's own slug.
+`register@rootpoint-app@design`, by the primer's rules on heads.
 
 ### The window draws a staged frame and fills egui's triangles on the CPU `##toolkit-snapshot`
 
@@ -229,12 +262,12 @@ Proposed by the session in round 1, `argument@sample-redesign@arg-13` for it,
 `argument@sample-redesign@arg-14` its costs, `argument@sample-redesign@arg-15` against the rejected
 painter. Approved in round 2: "toolkit-snapshot is the shape I would go for." The prototype showed
 it can be built, `argument@sample-redesign@arg-26`. Shape: "Decided design". Harvest: a head of
-`register@rootpoint-app@design`, `sample-pictures` or the thread's own slug.
+`register@rootpoint-app@design`, by the primer's rules on heads.
 
 ### A mock-up of the window built from slide areas `##split-tree-mockup`
 
 Proposed by the session in round 1 as a rival, `argument@sample-redesign@arg-16` for it,
-`argument@sample-redesign@arg-17` against. Ruled out in round 2 by the session, from the owner's
+`argument@sample-redesign@arg-17` against. Ruled out in round 3 by the session, from the owner's
 choice of #toolkit-snapshot and `argument@sample-redesign@arg-17`; it stood uncontested in the
 checkpoint of round 3. Harvest: none, see "Losing alternatives".
 
@@ -245,15 +278,15 @@ owner's word in round 2: "The ui tour is not fully ruled out IMO. […] I think 
 later for more completeness and interactive help." Its re-entry is the issue entry the commit that
 adds this spec opens, `issue@rootpoint-app@interactive-tour`.
 
-### One picture per part of the window, and one of the whole window naming its parts `##picture-focus`
+### Several pictures, each of one part of the window, and one of the whole window naming its parts `##picture-focus`
 
 Proposed by the owner in round 2: "The pictures should not be full screen of the ui, but several
 each focussed one one menu, maybe one picture with the full ui to name each part of it before going
 into details", and "I don't want the sample pictures to be fully exhaustive". Approved, the slug
 minted by the session in round 3. The picture of the whole window was a default put to the owner,
 D2, since the owner wrote "maybe", and the owner agreed in round 4. Shape: "Decided design", the
-table of pictures. Harvest: a head of `register@rootpoint-app@design`, `sample-pictures` or the
-thread's own slug.
+table of pictures. Harvest: a head of `register@rootpoint-app@design`, by the primer's rules on
+heads.
 
 ### The sample's slides follow the outline of fourteen slides `##sample-slide-plan`
 
@@ -261,25 +294,30 @@ Proposed by the session in round 1, `argument@sample-redesign@arg-21`. Approved 
 "sample-slide-plan: this outline looks good." Shape: "Decided design", the slides. Harvest: the
 rewritten `design@rootpoint-protocol@builtin-sample`.
 
-### A host gives the session a source of pictures, which `sample` asks inside the command `##sample-host-pictures`
+### A host gives the session the pictures through its `Files`, which `sample` asks inside the command `##sample-host-pictures`
 
 Proposed by the session in round 1 as a placeholder the app replaces, then in round 3 as a source
 `sample` asks, `argument@sample-redesign@arg-24`, `argument@sample-redesign@arg-27`. Approved by the
 session's reading of round 3's "proceed" against the checkpoint table, a default put to the owner,
-D1, which the owner agreed in round 4. Shape: "Decided design". Harvest:
+D1, which the owner agreed in round 4. The review of this spec found that a source stored in the
+session is a channel `design@rootpoint-protocol@session-files` does not admit; the session moved
+the source into `Files`, which that head admits, keeping the protocol's source, the placeholder
+headless and the asking inside the command that D1 approved. It found also that the session's map
+then differs between the window and headless, which three heads state it does not: D3, awaiting
+the owner. Shape: "Decided design". Harvest:
 `design@rootpoint-protocol@builtin-sample`.
 
 ### The pictures are a table in the app of stages, regions and anchored callouts `##picture-staging`
 
 Proposed by the session in round 3, `argument@sample-redesign@arg-28`,
 `argument@sample-redesign@arg-32`. Approved as #sample-host-pictures, D1. Shape: "Decided design".
-Harvest: a head of `register@rootpoint-app@design`, `sample-pictures` or the thread's own slug.
+Harvest: a head of `register@rootpoint-app@design`, by the primer's rules on heads.
 
 ### The pictures are drawn when the sample opens, at 2 pixels per point, cropped to their region `##picture-cost`
 
 Proposed by the session in round 3, `argument@sample-redesign@arg-29`,
 `argument@sample-redesign@arg-31`. Approved as #sample-host-pictures, D1. Shape: "Decided design".
-Harvest: a head of `register@rootpoint-app@design`, `sample-pictures` or the thread's own slug, and
+Harvest: a head of `register@rootpoint-app@design`, by the primer's rules on heads, and
 T2.
 
 ### The tests open a frozen copy of today's sample, not the sample `##sample-test-fixture`
@@ -483,35 +521,45 @@ in 16 files and name its ids and its golden images, and the approved outline cha
 Each name is a default of this spec; the implementer may rename one, and the commit says so.
 
 ```
+rootpoint-protocol, src/files.rs
+  Files::picture                 trait method, default None: the PNG bytes a host draws for
+                                 a picture path of the sample, or None
 rootpoint-protocol, src/session.rs
-  PictureSource                  type: Box<dyn FnMut(&str) -> Option<Vec<u8>>>, an asset path
-                                 to the PNG bytes of its picture, or None
-  Session::pictures              field: Option<PictureSource>, kept by every reset of the session
-  Session::set_picture_source    method: sets or clears the field
+  Session::open_sample           private method: what `Command::Sample` runs, taking the
+                                 list of picture paths, so a unit test passes its own list
 rootpoint-protocol, src/sample.rs
   PICTURES                       const: the asset paths of the sample that a host may draw
   sample/placeholder.png         file: the one image every picture path holds headless
 rootpoint-protocol, tests/data/sample-fixture/
   presentation.ron, splits.png   files: today's sample.ron and splits.png, frozen
-rootpoint-app, src/pictures.rs   module, new
-  Stage                          enum: what the staged window shows before it is drawn
+rootpoint-app, src/pictures.rs   module, new, `pub mod pictures` of src/lib.rs
+  Stage                          struct: what the staged window shows before it is drawn
   Region                         enum: the part of the window a picture is cropped to
-  Callout                        struct: a recorded label to anchor on, a number, a short text
+  Anchor                         enum: Label(&str), a recorded label; SelectedOutlineRow
+  Callout                        struct: an anchor, a number from 1, a text of a few words
   PictureSpec                    struct: path, stage, region, callouts
   PICTURE_TABLE                  const: one PictureSpec per path of PICTURES
-  draw_picture                   fn: one PictureSpec to PNG bytes, or an error naming what failed
-  rasterize                      fn: tessellated primitives and textures to RGBA pixels
+  staged_app                     fn: an App on files in memory that draws no picture
+  draw_picture                   fn: a staged App and one PictureSpec to PNG bytes, or an
+                                 error naming what failed
+  rasterize                      fn: tessellated primitives and textures to RGBA pixels, or
+                                 an error for a primitive it cannot draw
   STAGE_SIZE                     const: 1600×900 points, the staged window's size
   PICTURE_PPP                    const: 2.0, pixels per point
+  CALLOUT_FILL                   const: the colour of a callout's circle and box
 rootpoint-app, src/lib.rs
+  App::draws_pictures            field: whether `App::run` hands the session a Files that
+                                 draws pictures; set by App::new, cleared by staged_app
   App::view.regions              field: Vec<(String, Rect)>, each panel's rectangle by name
   App::region_rect               method: the rectangle the last frame gave a panel, by name
 rootpoint-app, tests/
-  pictures.rs                    test file: AC4, AC5, AC7, and AC6 as an ignored test
-  common/mod.rs                  test module: fixture_app, which opens the fixture
+  pictures.rs                    test file: steps 3 and 4, AC4, AC5, AC7, and AC6 ignored
+  common/mod.rs                  test module: fixture_files and open_fixture
 existing, used as they are
-  App::button, App::button_rect, App::in_memory, App::new, App::open_directory, App::run,
-  App::frame, Context::run_ui, Context::tessellate, FullOutput::textures_delta, MemoryFiles,
+  App::button, App::button_rect, App::side_panel_rect, App::in_memory, App::new, App::run,
+  App::frame, App::layout, App::outline_rows, App::show_slide, App::show_tab,
+  App::select_node, App::edit_at, App::select_all, App::select_asset, App::open_directory,
+  Context::run_ui, Context::tessellate, FullOutput::textures_delta, MemoryFiles,
   Command::Sample, Command::OpenCopy
 rootpoint-app, Cargo.toml
   image 0.25, feature png        moves from [dev-dependencies] to [dependencies], to encode a
@@ -524,99 +572,156 @@ rootpoint-app, Cargo.toml
 
 **Shape.** Today's `sample.ron` and `splits.png` are copied, unchanged, to
 `planned@rootpoint-protocol@tests/data/sample-fixture/`, as `presentation.ron` and `splits.png`, so
-the directory is one a workspace or `open-copy` reads. Every test that runs `sample` to get
-content opens the fixture instead:
-- the protocol's tests, `pack.rs`, `styles.rs` and `commands.rs`, run `open-copy` of the fixture's
-  directory, with the files of their own test harness;
-- the app's tests call one helper of `planned@rootpoint-app@tests/common/mod.rs`, which gives the
-  fixture's files to the app, through `App::open_directory` on an app made by `App::in_memory`, or,
-  for a test whose app is built on other files, through `App::run` of `Command::OpenCopy`. The
-  helper reads the files with `include_bytes!`, so the tests of the wasm target, which have no file
-  system, open it too;
+the directory is one that `open-copy` and a workspace read. Every test that runs `sample` to get
+content opens the fixture instead, as the first mapping table says site by site:
+- the app's tests use `planned@rootpoint-app@tests/common/mod.rs`. Its `fixture_files()` gives a
+  `MemoryFiles` holding the fixture's two files under `sample-fixture/`, written through
+  `Files::write` from `include_bytes!`, so the tests of the wasm target, which have no file system,
+  read it too. Its `open_fixture(app)` runs `Command::OpenCopy` of `sample-fixture` through
+  `App::run`. A test whose app is built on `NoFiles` builds it on `fixture_files()` instead. A test
+  whose app is built on the native files runs `open-copy` of the fixture's absolute path,
+  the app crate's `CARGO_MANIFEST_DIR` joined to the relative path of
+  `planned@rootpoint-protocol@tests/data/sample-fixture/`. A test whose app is
+  made by `App::in_memory` gives the files to `App::open_directory`;
+- the protocol's tests write the fixture's files into the `MemoryFiles` of
+  `path@rootpoint-protocol@tests/common/mod.rs` and run `open-copy`, or, for a script piped into
+  `rootpoint-headless`, run `open-copy` of the fixture's absolute path;
 - the two golden images, `sample-s1.png` and `sample-s33.png`, stay as they are: they are images of
   the fixture's s1 and s33, which do not change.
 
-A test whose subject is `sample` itself keeps running it: that the command opens the sample, with
-empty undo stacks, in memory, and with no missing image. `pack.rs`'s measurement of a pack against
-its files, 318 bytes against 390, moves to the fixture, whose content is the same, and the figure
-in `design@rootpoint-protocol@pack-container` is taken again at the step.
+A test whose subject is `sample` itself keeps running it, and asserts of its content only what
+`design@rootpoint-protocol@builtin-sample` states: that the command opens a presentation in memory,
+with empty undo stacks, every slide rendered with no breach and no missing glyph. Its assertions on
+today's slides, as `the_sample_opens_with_its_images_and_no_history` of
+`path@rootpoint-protocol@tests/commands.rs` makes on the last slide's equation, move at step 1 to a
+test of the fixture.
 
-**Argument.** The approved outline changes every slide. 54 sites in 16 test files of the app, and 3
-test files of the protocol, read today's slides by id, by text, by tree and by golden image. Moving
-them to a frozen copy first lets the sample change with no test edit after step 1, and a test that
-fails after step 1 is a fault of the new code, never of the content.
+`a_pack_adds_only_the_zip_s_headers` of `path@rootpoint-protocol@tests/pack.rs` bounds the bytes a
+pack adds over its assets and its deflated RON. On the sample today it prints an overhead of 318
+bytes against a bound of 390, measured on this branch's base by
+`cargo test -p rootpoint-protocol --test pack a_pack_adds_only_the_zip_s_headers -- --nocapture`. It
+moves to the fixture, whose content is the same, so it prints the same figures, and
+`design@rootpoint-protocol@pack-container`, which quotes 318 bytes "for the sample", is reworded at
+step 1 to name the fixture.
+
+**Argument.** The approved outline changes every slide. 54 lines in 16 test files of the app, a
+17th that reads `splits.png`, and 5 test files of the protocol read today's slides by id, by text,
+by tree and by golden image. Moving them to a frozen copy first lets the sample change with no test
+edit after step 1, so a test that fails after step 1 is a fault of the new code, never of the
+content.
 
 **Nearest rival**: keep today's slides and ids inside the new sample. Defeated by the outline: it
 has fourteen slides with new subjects, so keeping s1, s7, s13, s20, s24 and s33 with their trees
 binds the outline to the tests, which the owner's approval of the outline did not include.
 
-### A host gives the session a picture source, which `sample` asks inside the command (#sample-host-pictures)
+### A host gives the session the pictures through its `Files`, which `sample` asks inside the command (#sample-host-pictures)
 
 **Shape.**
-- `Session` gains a field `pictures: Option<PictureSource>`, set by
-  `Session::set_picture_source`, `None` in `Session::new`. Every place that resets the session,
-  `*self = Session::new()` at five sites of `Session::run` today, keeps the field: a private reset
-  method takes it out, builds the new session, and puts it back, so no site can forget it.
-- `sample.rs` bundles one placeholder image, `planned@rootpoint-protocol@sample/placeholder.png`,
-  and lists in `PICTURES` the asset paths of the sample that are pictures, all under `ui/`.
-  `sample()` gives each of those paths the placeholder's bytes, as it gives `splits.png` its own.
-- `Command::Sample`, after the reset, asks the source, when one is set, for each path of
-  `PICTURES` in order, and puts each `Some` answer in the store's map in place of the placeholder.
-  A `None` keeps the placeholder. It runs inside the one command, so the opened sample has empty
-  undo stacks and no unsaved change, as today.
-- The headless binary, `rootpoint-headless`, sets no source, so its sample holds the placeholders.
-  The app sets one on its session in `App::new`. The source draws each picture in a staged window,
-  an `App` of its own, which clears its session's source before it opens the sample, so drawing
-  never recurses and the staged window shows the placeholders where the sample has pictures.
+- The trait `Files` gains a method `picture(&mut self, path: &str) -> Option<Vec<u8>>`, whose
+  default answers `None`. The session reads a picture through the `Files` its caller passes to the
+  command, as it reads every file, `design@rootpoint-protocol@session-files`, and stores no source,
+  so the five resets of `Session::run_inner` keep the session as they do today.
+- `sample.rs` bundles one placeholder image,
+  `planned@rootpoint-protocol@sample/placeholder.png`, and lists in `PICTURES` the asset paths of
+  the sample that are pictures, all under `ui/`. `sample()` gives each path of `PICTURES` the
+  placeholder's bytes, and looks in `IMAGES` for the other paths only: today it fails on any asset
+  with no bundled bytes.
+- `Command::Sample` runs `Session::open_sample`, which takes the list of picture paths: the command
+  passes `PICTURES`, and a unit test of `session.rs` passes a list of its own. After the reset, it
+  asks `files.picture(path)` for each path of the list, in order, and puts each `Some` answer in
+  the store's map in place of the placeholder; a `None` keeps the placeholder. It runs inside the
+  one command, so the opened sample has empty undo stacks and no unsaved change, as today.
+- The headless binary's `Files` and the tests' keep the default, so their sample holds the
+  placeholders. The app answers through a wrapper of its own `Files` that `App::run` passes to the
+  session while `App::draws_pictures` holds: the wrapper hands every other method to the app's
+  files, and answers `picture` by drawing. `App::new` sets the flag, so every `sample` that reaches
+  `App::run` gets pictures: the toolbar's button, the browser's start, and a `sample` sent over the
+  control socket. `staged_app` clears it, so drawing never recurses.
+- A picture that fails to draw keeps its placeholder, and `App::run` sets the app's error to a line
+  naming the path and the failure, which the window shows as it shows every error. The tests of
+  AC4 and AC5 call `draw_picture` directly, so they see the failure itself.
 
-**Argument.** The protocol links no GUI toolkit, `design@rootpoint@gui-only-in-app`, so the drawing
-is the app's, and the protocol needs a way to receive it. The reset of `sample` replaces the whole
-session, `argument@sample-redesign@arg-24`, so the source must outlive the reset. Asking inside the
-command keeps one command, one opened state, `argument@sample-redesign@arg-27`.
+**Argument.** The protocol links no GUI toolkit, `design@rootpoint@gui-only-in-app`, so the
+drawing is the app's, and the protocol needs a way to receive it. `Files` is the one channel by
+which a host gives the session bytes, `design@rootpoint-protocol@session-files`, and it is passed to
+each command, so a source stored in the session, which every reset of `sample` would have to keep,
+`argument@sample-redesign@arg-24`, is not needed. Asking inside the command keeps one command, one
+opened state, `argument@sample-redesign@arg-27`.
 
-**Nearest rivals.** Replacing the placeholders afterwards through protocol commands creates undo
-steps, so Ctrl+Z would take the pictures back. Leaving the picture missing headless makes the
-sample name an image it does not have, a breach every headless open reports, which
-`design@rootpoint-protocol@builtin-sample` rules out.
+**Nearest rivals.** A source stored in the session, the shape put to the owner in round 3: it adds
+a channel `design@rootpoint-protocol@session-files` does not admit, and must survive five resets.
+Replacing the placeholders afterwards through protocol commands creates undo steps, so Ctrl+Z
+would take the pictures back. Leaving the picture missing headless makes the sample name an image
+it does not have, a breach, which `design@rootpoint-protocol@no-new-breach` rules out for any
+command.
+
+**What the session's map holds depends on the host.** In the window, `sample` puts the drawn
+pictures in the map; headless, the placeholders. So `sample` followed by `assets`, `render` or
+`pack` replies differently in the two, where `design@rootpoint-protocol@editing-modes`,
+`design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands` state
+that a presentation in memory behaves the same headless and in the window. Every shape that puts
+pictures the window draws into the presentation has this difference, since the headless binary
+cannot draw them. Whether to accept it is D3, awaiting the owner.
 
 **What a placeholder is.** One PNG, flat and small, that says in words that the editor draws this
 picture when it opens the sample. It is made once and committed; its size counts in the 50 KB of
-`design@rootpoint-protocol@builtin-sample`, with a bound of 4 KB as a default of this spec.
+`design@rootpoint-protocol@builtin-sample`, with a bound of 4 KB, a default of this spec.
 
 ### The window draws a staged frame, and the app fills egui's triangles on the CPU (#toolkit-snapshot)
 
-**Shape.** `draw_picture` of `planned@rootpoint-app@src/pictures.rs`, for one row of the table:
-1. builds a staged window, `App::new` on files in memory with no source, opens the sample, and
-   applies the row's stage through the app's own actions;
-2. runs frames on a fresh `egui::Context` with no window, as `path@rootpoint-app@tests/presenter.rs`
-   drives `App::frame`: `Context::run_ui` with a `RawInput` whose `screen_rect` is `STAGE_SIZE` and
-   whose viewport's `native_pixels_per_point` is `PICTURE_PPP`. It runs frames until two in a row
-   give the same recorded rectangles, at most 4: egui sizes its panels again on the second frame,
-   as `path@rootpoint-app@CLAUDE.md` says;
-3. keeps every texture the frames send, from `FullOutput::textures_delta`: a delta with no `pos`
-   replaces the whole texture, one with a `pos` writes its rectangle, and `free` removes one; each
-   texture id holds a list of deltas;
-4. draws the callouts, as the next subsection says, on a layer above the window's;
-5. tessellates the last frame's shapes, `Context::tessellate`, and `rasterize` fills each mesh's
-   triangles, clipped to the primitive's clip rectangle, into RGBA pixels of
-   `STAGE_SIZE × PICTURE_PPP`, crops them to the row's region, and encodes them as PNG.
+**Shape.** In `planned@rootpoint-app@src/pictures.rs`:
+1. `staged_app()` builds an `App` by `App::new` on a `MemoryFiles`, with `App::draws_pictures`
+   cleared. Its caller opens a presentation in it: the app's `Files` wrapper opens the sample, a
+   test opens the fixture.
+2. `draw_picture(app, row)` runs frames on a fresh `egui::Context` with no window, as
+   `path@rootpoint-app@tests/presenter.rs` drives `App::frame`: `Context::run_ui` with a `RawInput`
+   whose `screen_rect` is `STAGE_SIZE`, whose viewport's `native_pixels_per_point` is
+   `PICTURE_PPP`, and whose `max_texture_side` is 8192, as that harness sets it. egui's default is
+   2048, and `texture_size` of `path@rootpoint-app@src/lib.rs` caps the slide view's texture at
+   it, which at 2 pixels per point would shrink a slide view wider than 1024 points.
+3. It runs one frame, then applies the row's stage through the app's actions, as the second
+   mapping table says, since entering a text needs the layout a frame records. It then runs frames
+   until two in a row record the same rectangles, at most 4, a default of this spec: egui sizes its
+   panels again on the second frame, as `path@rootpoint-app@CLAUDE.md` says. A last frame paints
+   the callouts after `App::frame`, inside the same `run_ui`, on the layer order `Order::Tooltip`,
+   above every layer the window uses, with the rectangles that frame records.
+4. It keeps every texture the frames send, from `FullOutput::textures_delta`: for each texture id,
+   it applies the id's list of deltas in order, a delta with no `pos` replacing the whole texture
+   and one with a `pos` writing its rectangle; `free` removes a texture.
+5. It tessellates the last frame's shapes, `Context::tessellate`, and `rasterize` fills them into
+   RGBA pixels of `STAGE_SIZE × PICTURE_PPP`. `draw_picture` crops them to the row's region and
+   encodes them as PNG.
 
-`rasterize` is the prototype's method: a triangle covers a pixel whose centre has three
+`rasterize(primitives, textures, size, pixels_per_point)` is public, so a test hands it a primitive
+of its own. It is the prototype's method: a triangle covers a pixel whose centre has three
 non-negative barycentric weights, with no back-face culling, since egui's winding order varies;
-the colour is the weighted vertex colour times the texture, sampled bilinearly; the pixel is
-blended over the buffer as premultiplied alpha. A primitive that is no mesh, such as a paint
-callback, or a mesh whose texture the frames did not send, is an error that `draw_picture`
-returns, never a silent gap (AC5). A slide view's own texture is an egui texture like any other,
-so the slide drawn by the render crate appears as in the window.
+each vertex position, in points, is scaled by the pixels per point; the triangle is clipped to the
+primitive's clip rectangle; the colour is the weighted vertex colour times the texture, sampled
+bilinearly; the pixel is blended over the buffer as premultiplied alpha, on the stored sRGB values,
+with no conversion to linear light. The prototype blended so, and its picture matched the window by
+sight; that it matches the GPU's blending to the pixel is an assumption, not measured. A primitive
+that is no mesh, `Primitive::Callback`, or a mesh whose texture the frames did not send, is an
+error `rasterize` returns, never a silent gap (AC5). A slide view's own texture is an egui texture
+like any other, so the slide drawn by the render crate appears as in the window.
 
 The prototype filled a frame of 1600×900 points in 30 ms at 1 pixel per point and 115 ms at 2, in
 release, on an AMD Ryzen 9 9950X. Those times cover the tessellation and the filling only, not the
-four frames run before them nor the creation of the context: step 2 measures the whole.
+four frames it ran before them nor the creation of the context. The prototype is not committed, so
+its figures cannot be taken again; step 3 measures the whole.
 
 **Argument.** The picture is the window as built, by its own code, so it cannot go stale after a
-rework of the interface, the owner's reason in `argument@sample-redesign@arg-4`; the same code runs
-natively and in the browser, with no GPU, so a test checks it, `argument@sample-redesign@arg-13`. It
-adds no content kind, `goal@rootpoint@minimal-content-set`: a picture is an image asset.
+rework of the interface, the session's reading of the owner's reason in
+`argument@sample-redesign@arg-4`. The same code runs natively and in the browser, with no GPU, so a
+test checks it, `argument@sample-redesign@arg-13`. It adds no content kind,
+`goal@rootpoint@minimal-content-set`: a picture is an image asset.
+
+**It adds a need of the window's host.** `design@rootpoint-app@gui-toolkit` lists what the host
+needs under the project's renderer, "only panels, a list, a texture view, input forwarding, a
+browser build, …". Drawing the window's picture needs one more: frames run with no window, their
+shapes tessellated and their textures given. egui 0.37 meets it, as the prototype showed. The head
+is rewritten at the harvest to name it, a member its argument covers: egui was chosen over the
+hosts of `rejected@rootpoint-app@other-gui-hosts` on grounds this need does not change, and that
+entry weighs a toolkit's screenshots only if slides were drawn with its painter, which stays false.
 
 **Nearest rival**: #split-tree-mockup, the window mocked from slide areas. Defeated by the owner's
 choice in round 2 and by `argument@sample-redesign@arg-17`: areas have no fill and no border, and a
@@ -628,57 +733,70 @@ taken from the toolkit's offscreen path.
 
 **Shape.** `PICTURE_TABLE` holds one `PictureSpec` per path of the protocol's `PICTURES`, and a
 test checks that the two lists name the same paths. A row gives:
-- **its stage**: the slide shown, by id, the side panel's tab, and at most one of an area
-  selected, a text edited in place with a range selected, or a formula edited. The stage is
-  reached through the app's own actions on the staged window, never by setting its fields;
-- **its region**: the whole window, or one panel the frame records by name: `toolbar`, `slides`,
-  `side`, `view` or `status`. The frame records each panel's rectangle in `App::view.regions`,
-  which `App::region_rect` returns, as `App::button_rect` returns a button's;
-- **its callouts**: each a recorded label to anchor on, a number from 1, and a text of at most four
-  words. An anchor is a label `App::button_rect` or `App::region_rect` finds. The callout is a
-  filled circle holding the number, drawn at the anchor's top-left corner, and the text in a box
-  beside it, both on a layer above every window layer, so the same rasterizer draws them. A slide
-  that shows a picture explains each number in a sentence.
+- **its stage**: the slide shown, by its position in the presentation, from 1; the side panel's
+  tab; and at most one of an area selected, an asset selected, a text edited in place with all its
+  text selected, or a formula edited. The second mapping table gives the actions that reach each;
+  the stage never sets the app's fields;
+- **its region**: the whole window, or one panel by name: `toolbar`, `slides`, `side`, `view` or
+  `status`. The frame records the rectangles of `toolbar`, `slides`, `view` and `status` in
+  `App::view.regions`, from the response of each `Panel::…show` and of the `CentralPanel` in
+  `App::editor`; `App::region_rect` returns them, and returns for `side` what
+  `App::side_panel_rect` already returns;
+- **its callouts**: each an anchor, a number from 1, and a text of at most four words, a default
+  of this spec. An anchor is a label, found among the labels `App::view.buttons` records and the
+  names `App::view.regions` records, or the selected outline row, the row of `App::outline_rows`
+  whose `selected` holds.
 
-The toolbar's buttons draw through `App::button` instead of `ui.button`, so they record their
-rectangles, `argument@sample-redesign@arg-32`; "Preview" and the state label already do.
-`draw_picture` returns an error when an anchor is not recorded in the frame, or recorded twice
-(AC4): a callout never points at a place the window does not have.
+`draw_picture` returns an error when an anchor is found in neither list, or when its label occurs
+more than once in the two lists together (AC4). It scans the lists itself, since
+`App::button_rect` returns the first match only. A callout never points at a place the window does
+not have, nor at one of two.
+
+A callout is drawn as a filled circle of radius 10 points, in `CALLOUT_FILL`, centred on the
+anchor's top-left corner, holding its number in white at 13 points; its text is drawn in white at
+13 points in a box of the same fill, at the circle's right, or at its left where the box would
+leave the stage. The colour is an opaque saturated orange, a default of this spec, chosen to differ
+from the colours of the window's own widgets. A slide that shows a picture explains each number
+in a sentence.
+
+The toolbar's buttons draw through `App::button` instead of `ui.button` and `ui.add_enabled`, so
+they record their rectangles, `argument@sample-redesign@arg-32`; "Preview" and the state label
+already do.
 
 **Argument.** The callouts are what the owner asked for, overlays "that say what buttons do",
 `argument@sample-redesign@arg-3`; anchoring them on recorded rectangles keeps them on the widget
-after a rework, and makes a widget that no longer exists a test failure rather than a wrong picture,
-`argument@sample-redesign@arg-28`.
+after a rework, and makes a widget that no longer exists a test failure rather than a wrong
+picture, `argument@sample-redesign@arg-28`.
 
-**Nearest rival**: callouts placed at fixed coordinates in the table. Defeated by the owner's reason
-for runtime pictures, `argument@sample-redesign@arg-4`: fixed coordinates go stale after a rework
-exactly as a bundled image would.
+**Nearest rival**: callouts placed at fixed coordinates in the table. Defeated by the reason the
+session read into the owner's words on the README, `argument@sample-redesign@arg-4`: fixed
+coordinates go stale after a rework exactly as a bundled image would.
 
-### One picture of the whole window, then one per part, not exhaustive (#picture-focus)
+### Several pictures, each of one part of the window, and one of the whole window naming its parts (#picture-focus)
 
-**Shape.** The table's rows, as the work starts; the implementer may add a callout or change a
-text within a row, and adds no row without the owner, since the owner asked that the pictures
-not be exhaustive.
+**Shape.** The table's rows, as the work starts. The implementer may change a row, a callout or a
+text, within the owner's words below.
 
 | path | slide | stage | region | callouts |
 | --- | --- | --- | --- | --- |
-| `ui/editor.png` | 2 | slide 3, one area selected, tab Selection | the whole window | 1 `toolbar`, 2 `slides`, 3 `view`, 4 `side`, 5 `status`, 6 `state` |
-| `ui/outline.png` | 4 | slide 3, a nested area selected, tab Selection | `side` | 1 `Selection`, 2 the selected outline row, 3 `Styles`, 4 `Assets` |
-| `ui/styles.png` | 8 | slide 8, tab Styles | `side` | 1 `New`, 2 `Duplicate`, 3 `New span style` |
-| `ui/text.png` | 9 | slide 9, a text edited, one word selected, tab Selection | `side` | 1 `text`, 2 `Split here`, 3 `Insert formula` |
-| `ui/formula.png` | 10 | slide 10, a formula edited, tab Selection | `side` | 1 `a/b`, 2 `√`, 3 `matrix` |
-| `ui/assets.png` | 11 | slide 11, tab Assets | `side` | 1 `Import…`, 2 `Remove unused`, 3 `Replace…` |
-| `ui/toolbar.png` | 12 | slide 12 | `toolbar` | 1 `Open…`, 2 `Open pack…`, 3 `Save`, 4 `Save as pack…`, 5 `state` |
+| `ui/editor.png` | 2 | slide 3, one area selected, tab Selection | the whole window | 1 `toolbar` "Files, preview, undo"; 2 `slides` "The slides"; 3 `view` "The shown slide"; 4 `side` "Selection, styles, assets"; 5 `status` "Messages"; 6 `state` "Where it is saved" |
+| `ui/outline.png` | 4 | slide 3, a nested area selected, tab Selection | `side` | 1 `Selection` "This tab"; 2 the selected outline row "The selected area"; 3 `Styles` "Named styles"; 4 `Assets` "Images and fonts" |
+| `ui/styles.png` | 8 | slide 8, tab Styles | `side` | 1 `New` "A new style"; 2 `Duplicate` "Copy this style"; 3 `New span style` "A new span style" |
+| `ui/text.png` | 9 | slide 9, a text edited with all its text selected, tab Selection | `side` | 1 `Split here` "Cut the span here"; 2 `Insert formula` "A formula here" |
+| `ui/formula.png` | 10 | slide 10, its equation edited, tab Selection | `side` | 1 `a/b` "A fraction"; 2 `√` "A square root"; 3 `matrix` "A matrix" |
+| `ui/assets.png` | 11 | slide 11, the asset `splits.png` selected, tab Assets | `side` | 1 `Import…` "Add a file"; 2 `Remove unused` "Drop unused files"; 3 `Replace…` "Swap this file" |
+| `ui/toolbar.png` | 12 | slide 12 | `toolbar` | 1 `Open…` "Open a directory"; 2 `Open pack…` "Open a pack"; 3 `Save` "Save"; 4 `Save as pack…` "Write a pack"; 5 `state` "Where it is" |
 
-The selected outline row is an anchor of its own kind: the row of `App::outline_rows` whose
-`selected` holds. The callout on `Replace…` needs an asset selected in the tab: the stage selects
-`splits.png`. Every label above is one the window records today or records once the toolbar draws
-through `App::button`, and each exists natively and in the browser; the step that builds the table
-checks each against the frame.
+`Replace…` shows only with an asset selected, which the stage does. Every label above is one the
+window records today or records once the toolbar draws through `App::button`, and each exists
+natively and in the browser: "Save as pack…" is drawn by the browser build always, and natively
+while the store has no root, as the sample's store in memory has none. The step that builds the
+table checks each label against the frame.
 
 **Argument.** The owner's words in round 2: the pictures are "several each focussed one one menu",
-"maybe one picture with the full ui to name each part of it before going into details", and not
-"fully exhaustive". The whole-window picture was a default the owner ruled on in round 4, D2.
+"maybe one picture with the full ui to name each part of it before going into details", and "I
+don't want the sample pictures to be fully exhaustive". The picture of the whole window was a
+default put to the owner, D2, which the owner agreed in round 4.
 
 ### The pictures are drawn when the sample opens, at 2 pixels per point, cropped (#picture-cost)
 
@@ -722,12 +840,14 @@ picture this spec gives each slide:
 | 13 | previewing and presenting, F5 and Esc | a title over a short text | none |
 | 14 | agents: the text protocol and the control socket | a title over a short text | none |
 
-A picture of the side panel is tall and narrow, about 520 by 1,700 pixels at the default width of
-260 points, so its area is a column at most 520 pixels wide at 1920×1080 (AC7). Slide 10 does the
-work of the protocol's issue `sample-teaches-no-math-editing`, closed when this spec was added: its
-text names a second click on a formula to edit it, Alt+M then f for a fraction, `\` to type a
-command, and the palette of the Selection tab, and a text of the slide holds an inline formula and a
-reference to its equation. The sample's texts use only characters the bundled fonts hold,
+A picture of the side panel is tall and narrow, about 520 by 1,700 pixels, an estimate: the panel's
+default width, 260 points, `default_size` in `App::editor` of `path@rootpoint-app@src/lib.rs`, and
+about 850 points of height, the stage's 900 less the toolbar and the status line, each times 2, so
+its area is a column at most 520 pixels wide at 1920×1080 (AC7). Slide 10 does the work of the
+protocol's issue `sample-teaches-no-math-editing`, closed when this spec was added: its text names a
+second click on a formula to edit it, Alt+M then f for a fraction, `\` to type a command, and the
+palette of the Selection tab, and a text of the slide holds an inline formula and a reference to its
+equation. The sample's texts use only characters the bundled fonts hold,
 `tripwire@rootpoint-render@glyph-missing-everywhere`.
 
 **Argument.** The owner's request, `argument@sample-redesign@arg-1` and
@@ -740,22 +860,38 @@ descriptions are hard for a new user. The owner approved the outline in round 2.
 #picture-focus and #picture-cost above.
 
 **Argument.** The owner's reading of Q2 in round 2, reading (a), "a picture of the editor drawn by
-itself", with the owner's reason from round 1, `argument@sample-redesign@arg-4`: the interface will
-be reworked, and a bundled picture would go stale. Reading (b), a picture drawn by the slide
+itself". The session offered (a) as the default on the owner's reason for keeping pictures out of
+the README, `argument@sample-redesign@arg-4`: the interface will be reworked, and a bundled picture
+would go stale. Reading (b), a picture drawn by the slide
 renderer from slide content, is #split-tree-mockup's shape and loses with it.
 
 ## Mapping tables
 
-**Each test site that runs `sample` today, to what it runs after step 1.** The sites are the 54 of
-the app and the 3 files of the protocol that "What the work is" counts.
+**Each test site that reads the sample today, to what it does after step 1.** The sites are the 54
+lines in 16 files of the app and the 5 files of the protocol that "What the work is" counts, and
+`path@rootpoint-app@tests/native_workspace.rs`, which reads `splits.png` from the sample's
+directory.
 
 | the site | after step 1 |
 | --- | --- |
-| an app test that reads the sample's content: an id, a text, a tree, a style, an asset or a golden image | the helper of `planned@rootpoint-app@tests/common/mod.rs`, which opens the fixture |
-| an app test whose subject is the action that opens the sample: `App::open_sample`, the toolbar's "Sample", the browser opening it at start | unchanged: it still opens the sample, and asserts nothing of its content but what `design@rootpoint-protocol@builtin-sample` states |
-| a protocol test that reads the sample's content, in `pack.rs`, `styles.rs` or `commands.rs` | `open-copy` of the fixture's directory |
-| a protocol test whose subject is `sample` | unchanged, as the second row |
-| `pack.rs` reading `path@rootpoint-protocol@sample/splits.png` | reads the fixture's `splits.png` |
+| an app test that reads the sample's content: an id, a text, a tree, a style, an asset or a golden image | opens the fixture through the helpers of `planned@rootpoint-app@tests/common/mod.rs`, by the kind of files its app is built on, as #sample-test-fixture says |
+| an app test whose subject is the action that opens the sample: `App::open_sample` or the toolbar's "Sample" | unchanged, asserting of the content only what `design@rootpoint-protocol@builtin-sample` states |
+| a protocol test that reads the sample's content, in `pack.rs`, `styles.rs`, `commands.rs` or `view.rs` | `open-copy` of the fixture, its files written into the harness's `MemoryFiles` |
+| a script piped into `rootpoint-headless` by `path@rootpoint-protocol@tests/workspace.rs` | `open-copy` of the fixture's absolute path in place of `sample` |
+| a protocol test whose subject is `sample` | keeps `sample`; its assertions on today's slides move to a test of the fixture |
+| `pack.rs` reading `path@rootpoint-protocol@sample/splits.png`, and `native_workspace.rs` reading it | read the fixture's `splits.png` |
+
+**Each part of a stage, to the actions that reach it.** Each runs after the first frame, on the
+staged app, in this order.
+
+| part of the stage | actions |
+| --- | --- |
+| the slide at position k | `App::show_slide` of the id of the presentation's k-th slide |
+| the side panel's tab | `App::show_tab` |
+| an area selected | `App::select_node` of the area |
+| a text edited, all its text selected | `App::select_node` of the area, then `App::edit_at` at the centre of the area's rectangle in `App::layout`, then `App::select_all` |
+| a formula edited | `App::select_node` of the equation's area, then `App::edit_at` at the centre of its rectangle, which enters a formula on an equation area |
+| an asset selected | `App::select_asset` of the asset's id |
 
 **Each picture path, to its row.** `PICTURES` of the protocol and the paths of `PICTURE_TABLE` are
 the same set, which a test checks; the table of #picture-focus gives each row.
@@ -769,6 +905,14 @@ the same set, which a test checks; the table of #picture-focus gives each row.
   later, for completeness and interactive help. It is no part of the presentation, so a pack or a
   slide cannot hold it, `argument@sample-redesign@arg-18`. Its issue entry is
   `issue@rootpoint-app@interactive-tour`.
+- **A picture source stored in the session**, set by its host and kept across its resets, the
+  shape put to the owner in round 3, lost to the same thread's source in `Files` at the review of
+  this spec: `design@rootpoint-protocol@session-files` admits no channel of bytes but the `Files`
+  passed to each command, and the stored source had to survive five resets.
+- **Drawing the pictures into the window's view only**, the app giving its renderer the drawn bytes
+  for the sample's picture paths while the session's map keeps the placeholders: the rival of D3.
+  It keeps the session the same headless and in the window, and costs a pack saved from the window
+  holding placeholders, and `render` replying a picture other than the window's.
 - **Replacing the placeholders by protocol commands** lost to #sample-host-pictures: it makes undo
   steps, so Ctrl+Z would remove the pictures, `argument@sample-redesign@arg-27`.
 - **No picture headless** lost to #sample-host-pictures: the sample would name an image it does
@@ -787,11 +931,13 @@ behaviour, read in its source by the session in round 1 and confirmed by the pro
 `Context::tessellate` returns triangle meshes whose vertices carry a position, texture coordinates
 and a premultiplied colour; a texture arrives as a `ColorImage` in `FullOutput::textures_delta`,
 a list of deltas per texture id, each whole or at a `pos`; egui's winding order is not consistent,
-as a comment on `epaint::Mesh` says. The harvest records these in the head of
-`sample-pictures`, entry test 3.
+as a comment on `epaint::Mesh` says. The harvest records these in the head of #toolkit-snapshot,
+which earns its entry by entry test 3.
 
 ## Premortem
 
+The labels AC4 to AC7 and T2 follow AC1 to AC3 and T1, which the same session put to the owner in
+the same messages on another subject, the compatibility of saved presentations, already merged.
 Run by the session in round 3, in the convergence proposal, as "assume it shipped and failed". The
 owner's ruling in round 3: "keep all AC and tripwires, proceed".
 
@@ -822,11 +968,11 @@ learns to draw it, or the stage avoids it, on the owner's word.
 
 ### AC6: all pictures are drawn in at most 500 ms natively, in release `##ac-pictures-time`
 
-Guards #picture-cost. Judged at step 4, by an ignored test of the same file, run by hand in
-release like the project's other timing tests, that times one `sample` of an app's session with
-its source set, every picture drawn. The bound, 500 ms, is the owner's. Fires when the time
-exceeds it on the machine the step names. Response: #picture-cost is reopened: lazy drawing, a
-lower density, or fewer pictures.
+Guards #picture-cost. Judged at step 4, by an ignored test of the same file, run by hand in release
+like the project's other timing tests, that times one `sample` of an app made by `App::new`, every
+picture drawn. The bound, 500 ms, was proposed by the session in round 3 and kept by the owner.
+Fires when the time exceeds it on the machine the step names. Response: #picture-cost is reopened:
+lazy drawing, a lower density, or fewer pictures.
 
 ### AC7: each picture is at least as wide in pixels as its area at 1920×1080 `##ac-picture-width`
 
@@ -841,80 +987,90 @@ outline fits, #picture-cost's density is reopened.
 
 ### Step 1: the tests open the fixture
 
-**Builds**: `planned@rootpoint-protocol@tests/data/sample-fixture/`, the helper of
+**Builds**: `planned@rootpoint-protocol@tests/data/sample-fixture/`, the helpers of
 `planned@rootpoint-app@tests/common/mod.rs`, and every test site moved as the first mapping table
-says. No code of `src/` changes.
+says; `design@rootpoint-protocol@pack-container` reworded to name the fixture. No code of `src/`
+changes.
 
 **Claims**:
 - the fixture is byte for byte today's `sample.ron` and `splits.png`: `cmp` of each pair, in the
   commit message;
-- every moved test passes unchanged in what it asserts: the gates. A wrong implementation, the
-  helper opening an empty presentation, fails the tests that read s1's tree, which the step shows
-  once by that mutation;
-- after the step, no test but those of the mapping table's "unchanged" rows runs `sample`: the
-  grep of "What the work is", run again, lists each remaining site and its subject.
-- the pack measurement of `pack.rs` gives the same figures on the fixture, 318 and 390 bytes, or
-  the head of `design@rootpoint-protocol@pack-container` takes the new ones in this step.
+- every moved test passes unchanged in what it asserts: the gates. A wrong implementation, a helper
+  that opens an empty presentation, fails the tests that read s1's tree, which the step shows once
+  by that mutation;
+- after the step, the only tests that run `sample` are those of the mapping table's rows that keep
+  it: the grep of "What the work is", `grep -c -e open_sample -e '"sample"' -e Command::Sample`
+  over each crate's `tests/`, run again, and each remaining site named in the commit message with
+  its subject;
+- `a_pack_adds_only_the_zip_s_headers` prints, for the fixture, the overhead of 318 bytes and the
+  bound of 390.
 
 **Fails alone on**: a moved test that fails, since nothing else changed.
 
-### Step 2: the session keeps a picture source, and `sample` asks it
+### Step 2: the session asks its `Files` for the pictures
 
-**Builds**: `PictureSource`, `Session::pictures`, `Session::set_picture_source`, the reset that
-keeps it, `PICTURES` empty, and the asking in `Command::Sample`. Nothing sets a source, so nothing
-a user sees changes.
+**Builds**: `Files::picture` with its default, `Session::open_sample`, the placeholder
+`planned@rootpoint-protocol@sample/placeholder.png` in `IMAGES`, the change of `sample()` that gives
+each path of `PICTURES` the placeholder, and `PICTURES` empty. No `Files` answers a picture and the
+sample names none, so nothing a user sees changes.
 
-**Claims**, each a test of `path@rootpoint-protocol@tests/commands.rs` with a test source and a
-test list of paths:
-- a source set before `sample` gives its bytes to each path it answers, and a `None` keeps the
-  placeholder;
-- the source survives each of the five resets of `Session::run`: a test runs each resetting
-  command, then `sample`, and finds the source's bytes. A wrong implementation, a reset that drops
-  the source, fails it;
-- after `sample` with a source, the undo stack is empty and nothing is unsaved.
+**Claims**, each a unit test in `path@rootpoint-protocol@src/session.rs` that calls
+`Session::open_sample` with a list of its own and a `Files` whose `picture` answers some paths:
+- a path the files answer holds their bytes, and a path they do not holds the placeholder's;
+- after it, the undo stack is empty and nothing is unsaved;
+- with the default `Files`, every path of the list holds the placeholder. A wrong implementation
+  that skips the asking fails the first claim, which the step shows once by that mutation.
 
-**Fails alone on**: the protocol's tests, since the app sets no source yet.
+**Fails alone on**: the protocol's tests, since the app answers no picture yet.
 
 ### Step 3: the app draws a picture
 
-**Builds**: `planned@rootpoint-app@src/pictures.rs` with `rasterize`, `draw_picture`, the stages,
-the regions and the callouts; `App::view.regions` and `App::region_rect`; the toolbar's buttons
-drawn through `App::button`; `image` as a normal dependency. `PICTURE_TABLE` is empty and no source
-is set, so nothing a user sees changes. Measures the cost of one picture of the whole window, frames
-and context included, in release, against the prototype's figures.
+**Builds**: `planned@rootpoint-app@src/pictures.rs` with `staged_app`, `draw_picture`,
+`rasterize`, the stages, the regions and the callouts; `App::view.regions` and
+`App::region_rect`; the toolbar's buttons drawn through `App::button`; `App::draws_pictures` and
+the `Files` wrapper of `App::run`, with the flag cleared in `App::new` until step 4; `image` as a
+normal dependency. `PICTURE_TABLE` is empty, so nothing a user sees changes.
 
-**Claims**, tests of `planned@rootpoint-app@tests/pictures.rs` with test rows on the fixture:
-- a picture of the whole window has `STAGE_SIZE × PICTURE_PPP` pixels, and the pixel at the
-  centre of the "Preview" button's recorded rectangle has the colour of a selected toggle or of the
-  button's fill, not the background: a test with a wrong scale, 1 pixel per point, fails it;
-- a crop to `toolbar` has the toolbar's recorded size times the density;
-- a callout drawn on "Save" puts the callout's colour at the top-left corner of "Save"'s rectangle;
+**Claims**, tests of `planned@rootpoint-app@tests/pictures.rs` on a staged app that opened the
+fixture, with rows of their own:
+- a picture of the whole window has `STAGE_SIZE × PICTURE_PPP` pixels, 3200 by 1800, and the pixel
+  at the centre of the "Preview" button's rectangle times the density is not the colour of the
+  pixel at the centre of the empty part of the toolbar: a test with the density forgotten, one
+  pixel per point, fails it;
+- a crop to `toolbar` has the size of `App::region_rect("toolbar")` times the density;
+- a callout anchored on "Save" puts `CALLOUT_FILL` at the top-left corner of "Save"'s rectangle,
+  times the density;
 - a callout on a label the frame does not record is an error, and so is a label recorded twice;
-- a primitive that is no mesh is an error: a test frame that adds a paint callback gets one;
+- `rasterize` given a `Primitive::Callback` returns an error;
 - `cargo x gates` builds the module for the wasm target.
 
-**Fails alone on**: a test of `pictures.rs` with the test rows, since the sample is unchanged.
+**Measures**: an ignored test, run by hand in release, prints the time of one `draw_picture` of
+the whole window, frames and context included; the commit message gives it with the machine,
+beside the prototype's 115 ms. No bound: AC6 bounds the whole at step 4.
 
-### Step 4: the new sample, its pictures and the source
+**Fails alone on**: a test of `pictures.rs`, since the sample is unchanged.
 
-**Builds**: the new `sample.ron` of fourteen slides,
-`planned@rootpoint-protocol@sample/placeholder.png`, `PICTURES` and `PICTURE_TABLE` as
-#picture-focus gives them, and the source set in `App::new`. `splits.png` stays.
+### Step 4: the new sample, its pictures, and the window drawing them
+
+**Builds**: the new `sample.ron` of fourteen slides, `PICTURES` and `PICTURE_TABLE` as
+#picture-focus gives them, and `App::draws_pictures` set by `App::new`. `splits.png` stays.
 
 **Claims**:
-- the sample opens headless with no breach and no missing image, and its bundled images stay under
-  50 KB: `path@rootpoint-protocol@tests/headless.rs` or a test beside it, with the sum of the
-  bundled bytes printed;
+- the sample opens headless with no breach and no missing image, every slide renders with
+  `Report::missing_glyphs` empty, the report `tripwire@rootpoint-render@glyph-missing-everywhere`
+  names, and the bundled images stay under 50 KB: the test of `sample` in
+  `path@rootpoint-protocol@tests/commands.rs`, with the sum of the bundled bytes printed;
 - `PICTURES` and the table's paths are the same set: a test;
+- an app made by `App::new` that opens the sample holds, for each path of `PICTURES`, PNG bytes
+  other than the placeholder's: a test of `planned@rootpoint-app@tests/pictures.rs`. A wrong
+  implementation, the flag left cleared, fails it;
 - AC4, AC5 and AC7: the tests named in "Acceptance criteria";
 - AC6: the ignored test, run by hand in release, its time in the commit message with the machine;
-- every slide's text uses characters the bundled fonts hold: a test that renders each slide and
-  finds `Report::missing_glyphs` empty, the report
-  `tripwire@rootpoint-render@glyph-missing-everywhere` names;
 - the browser draws the pictures: a new test of `path@rootpoint-app@tests/web.rs` opens the sample
   in an app made by `App::in_memory` and finds, for each path of `PICTURES`, bytes other than the
-  placeholder's. It prints the time `sample` took in the headless browser, a first figure for T2,
-  which the commit message reports with the machine; it is not the owner's machine, so it fires
+  placeholder's, which it reads with `include_bytes!`. It prints the time `sample` took, read from
+  `js_sys::Date::now`, since `std::time::Instant` panics on the wasm target: a first figure for
+  T2, which the commit message reports with the machine. It is not the owner's machine, so it fires
   nothing.
 
 **Fails alone on**: the content, a slide's text or layout, or a row of the table, since the
@@ -926,9 +1082,9 @@ mechanism passed steps 2 and 3.
 text "What is already decided" lists as updated at the harvest; the report on AC4 to AC7; the
 harvest.
 
-**Claims**: `cargo klarch check` passes, and `cargo klarch show` of each rewritten head lists no
-text that still describes the sample of six slides: the check and a grep of "six slides" in the
-commit message.
+**Claims**: `cargo klarch check` passes, and no text of the record but a test of the fixture
+describes six slides: `git grep -n "six slides"`, its hits in the commit message, each one a test
+of the fixture.
 
 **Fails alone on**: the checker, since the code is unchanged.
 
@@ -936,8 +1092,8 @@ commit message.
 
 - Step 1 before step 2: the tests stop reading the sample before any code can change it, so a
   later test failure is never a fixture's.
-- Step 2 before step 3: the app's source has a place to plug into, proven in the protocol alone.
-- Step 3 before step 4: the drawing is proven on test rows before any content depends on it.
+- Step 2 before step 3: the app's wrapper has a method to answer, proven in the protocol alone.
+- Step 3 before step 4: the drawing is proven on the fixture before any content depends on it.
 - Step 4 before step 5: the record describes what was built and measured.
 
 ## Defaults awaiting the owner
@@ -947,28 +1103,47 @@ commit message.
   showed as proposed. The owner agreed in round 4.
 - **D2, ruled in round 4.** Bears on #picture-focus: the owner wrote "maybe" for a picture of the
   whole window naming its parts; the default included it, as slide 2. The owner agreed in round 4.
+- **D3, awaiting the owner.** Bears on #sample-host-pictures. With the pictures in the session's
+  map, `sample` fills the map differently in the window and headless, so `sample` then `assets`,
+  `render` or `pack` replies differently in the two. `design@rootpoint-protocol@editing-modes`,
+  `design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands`
+  state that a presentation in memory, or a script, behaves the same in both. No goal is defeated:
+  `goal@rootpoint@headless-core` asks that an operation run and be checked with no window, which
+  the tests of the pictures do. Two shapes meet every binding constraint:
+  - **default, the pictures in the session's map**, as the spec is written: the three heads gain,
+    at the harvest, a stated exception for the pictures of the sample, the one content a host
+    draws. A pack saved from the window holds the pictures, and `render` draws them;
+  - **the pictures in the window's view only**: the session keeps the placeholders everywhere, and
+    the app hands its renderer the drawn bytes for the sample's picture paths. The three heads hold
+    as they are; a pack saved from the window holds placeholders, and `render`, natively and over
+    the control socket, replies a picture other than the window's.
+
+  The work goes on with the default; the branch merges once the owner has ruled.
 - No acceptance criterion awaits the owner: AC4 to AC7 were kept in round 3.
 
 ## Harvest
 
 At step 5, in the commits that land the work, under
-`skill@knowledge-architect-decision-recording` and `skill@knowledge-architect-issue-tracking`. The
-primer's rules on design heads decide how the threads are cut into heads and whether each earns
-one; a thread's name is its head's slug, as those rules say.
+`skill@knowledge-architect-decision-recording` and `skill@knowledge-architect-issue-tracking`,
+except the rows whose "when" names an earlier step, which land in that step. The primer's rules on
+design heads decide how the threads are cut into heads and whether each earns one; a thread's name
+is its head's slug, as those rules say.
 
-| what | where | from |
-| --- | --- | --- |
-| the pictures of the window, drawn by the window and filled on the CPU, their staging, their callouts and their cost | new heads in `register@rootpoint-app@design`, under the slug `sample-pictures` or the threads' own: #ui-picture-source, #toolkit-snapshot, #picture-staging, #picture-focus, #picture-cost | "Decided design" |
-| the picture source, the slides' subjects and the tests' fixture | `design@rootpoint-protocol@builtin-sample`, rewritten in place | #sample-host-pictures, #sample-slide-plan, #sample-test-fixture |
-| the window mocked from slide areas | `register@rootpoint-app@rejected`, if a recording test of the decision-recording skill holds, cited by the head of #toolkit-snapshot | #split-tree-mockup |
-| T2 | `register@rootpoint-app@tripwire`, guarding the head of #picture-cost | "Premortem" |
-| AC4 to AC7 | reported in the landing commits; each one that did not fire and recurs at later work is proposed to the owner as a tripwire | "Acceptance criteria" |
-| the measurement of the pack | `design@rootpoint-protocol@pack-container`, taken on the fixture | step 1 |
-| the premise of `autosave_gui_cost` and the tests named by `design@rootpoint-app@edit-in-place` and `design@rootpoint-app@editor-overlay` | those heads, restated on the fixture | step 1 |
-| the six slides described | `path@rootpoint-protocol@README.md` | step 4 |
-| the tests open the fixture, never the sample, unless `sample` is their subject | `path@rootpoint-app@CLAUDE.md` and `path@rootpoint-protocol@CLAUDE.md` | #sample-test-fixture |
-| a picture's callout anchors on a recorded label | `path@rootpoint-app@CLAUDE.md`, its section on the places the last frame records | #picture-staging |
-| #live-ui-tour | `issue@rootpoint-app@interactive-tour`, opened by the commit that adds this spec | "Losing alternatives" |
+| what | where | when | from |
+| --- | --- | --- | --- |
+| the pictures of the window, drawn by the window and filled on the CPU, their staging, their callouts and their cost | new heads in `register@rootpoint-app@design`, among #ui-picture-source, #toolkit-snapshot, #picture-staging, #picture-focus and #picture-cost | step 5 | "Decided design" |
+| the pictures through `Files`, the slides' subjects and the tests' fixture | `design@rootpoint-protocol@builtin-sample`, rewritten in place | step 5 | #sample-host-pictures, #sample-slide-plan, #sample-test-fixture |
+| the host's new need | `design@rootpoint-app@gui-toolkit`, its list of needs | step 5 | #toolkit-snapshot |
+| the session's map differing by host for the sample's pictures | `design@rootpoint-protocol@editing-modes`, `design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands`, as D3 rules | step 5 | #sample-host-pictures, D3 |
+| the window mocked from slide areas | `register@rootpoint-app@rejected`, if a recording test of the decision-recording skill holds, cited by the head of #toolkit-snapshot | step 5 | #split-tree-mockup |
+| T2 | `register@rootpoint-app@tripwire`, guarding the head of #picture-cost | step 5 | "Premortem" |
+| AC4 to AC7 | reported in the landing commits; each one that did not fire and recurs at later work is proposed to the owner as a tripwire | steps 4 and 5 | "Acceptance criteria" |
+| the pack's figure named on the fixture | `design@rootpoint-protocol@pack-container` | step 1 | #sample-test-fixture |
+| the premise of `autosave_gui_cost` and the tests named by `design@rootpoint-app@edit-in-place` and `design@rootpoint-app@editor-overlay` | those heads, restated on the fixture | step 5 | #sample-test-fixture |
+| the six slides described | `path@rootpoint-protocol@README.md` | step 5 | #sample-slide-plan |
+| the tests open the fixture, never the sample, unless `sample` is their subject | `path@rootpoint-app@CLAUDE.md` and `path@rootpoint-protocol@CLAUDE.md` | step 1 | #sample-test-fixture |
+| a picture's callout anchors on a recorded label, so a label the window records occurs once | `path@rootpoint-app@CLAUDE.md`, its section on the places the last frame records | step 3 | #picture-staging |
+| #live-ui-tour | `issue@rootpoint-app@interactive-tour`, opened by the commit that adds this spec | done | "Losing alternatives" |
 
 ## Later consequences
 
