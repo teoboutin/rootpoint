@@ -111,8 +111,10 @@ until a session starts it.
   few named buttons record theirs, and most of the toolbar's buttons, drawn by `ui.button` or
   `ui.add_enabled`, do not.
 - **the fixture**: the frozen copy of today's sample that the tests open in its place.
-- **the prototype**: a throwaway test, not committed, that drew one frame of the window at
-  1600×900 into a PNG by filling egui's triangles on the CPU.
+- **the prototype**: a throwaway test, not on the main branch, that drew one frame of the window at
+  1600×900 into a PNG by filling egui's triangles on the CPU. It is kept on the branch
+  `sample-prototype`, as `path@elsewhere@crates/rootpoint-app/tests/snapshot_proto.rs`, a
+  starting point for step 3.
 
 ## What the work is
 
@@ -149,7 +151,7 @@ texture coordinates and a premultiplied sRGB colour, and the font atlas and ever
 arrive as `ColorImage` in `FullOutput::textures_delta`, a list of deltas per texture. The prototype
 filled those triangles on the CPU: a full 1600×900 frame took 30 ms at 1 pixel per point and 115
 ms at 2, in release, on an AMD Ryzen 9 9950X, and the picture matched the window, the slide drawn
-by the render crate included, by sight. The prototype is not committed.
+by the render crate included, by sight. The prototype is not on the main branch.
 
 **Outside the work:**
 - an interactive tour over the real window, #live-ui-tour, which the owner left for later;
@@ -759,8 +761,9 @@ like any other, so the slide drawn by the render crate appears as in the window.
 
 The prototype filled a frame of 1600×900 points in 30 ms at 1 pixel per point and 115 ms at 2, in
 release, on an AMD Ryzen 9 9950X. Those times cover the tessellation and the filling only, not the
-four frames it ran before them nor the creation of the context. The prototype is not committed, so
-its figures cannot be taken again; step 3 measures the whole.
+four frames it ran before them nor the creation of the context. The prototype, on the branch
+`sample-prototype`, gave 28 and 112 ms when run again on the main branch that holds this spec; step
+3 measures the whole.
 
 **Argument.** The picture is the window as built, by its own code, so it cannot go stale after a
 rework of the interface, the session's reading of the owner's reason in
