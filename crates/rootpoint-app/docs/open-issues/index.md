@@ -1,6 +1,6 @@
 **Generated — do not edit.** `cargo klarch index`
 
-10 entries
+11 entries
 
 | kind | title |
 | --- | --- |
@@ -11,6 +11,7 @@
 | question | [Two tripwires guard the decision on passing control, where one entry per decision is asked](two-tripwires-guard-control-passing.md) |
 | todo | [The browser build keeps no copy of its edits between two pages](browser-autosave.md) |
 | todo | [The editor's keys cannot be configured](configurable-keys.md) |
+| todo | [The window offers no interactive tour of its parts](interactive-tour.md) |
 | todo | [The window does not show the commands its control socket runs](socket-commands-not-shown.md) |
 | todo | [Copy and paste carry a text's characters alone, and drop its spans](styled-copy-paste.md) |
 | todo | [The authority to edit is one lock over the whole document](wider-lock.md) |
