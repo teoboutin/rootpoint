@@ -1,0 +1,65 @@
+# Publishes the browser build of the editor to GitHub Pages, at every push to main.
+#
+# The build job runs `cargo x gates` first: where the project has continuous integration, it runs
+# the same one command that judges a branch before it merges, as the xtask goal on gates asks, so
+# a build reaches the page only when the gates pass on it. It then builds the page with
+# `cargo x web`, which refuses a wasm-bindgen program of another version than the `wasm-bindgen`
+# crate of Cargo.lock, so the program is installed at that version.
+
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a run already deploying finishes.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      # The whole history: the gate on commit messages reads the range from origin/main.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Install wasm-bindgen-cli at the version of Cargo.lock
+        run: |
+          version=$(cargo metadata --format-version 1 --locked \
+            | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version')
+          cargo install wasm-bindgen-cli --version "$version" --locked
+      # The gate `wasm-test` runs the browser tests in a headless Firefox through geckodriver.
+      - uses: browser-actions/setup-firefox@v1
+      - uses: browser-actions/setup-geckodriver@latest
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Gates
+        run: cargo x gates
+      - name: Build the page
+        run: cargo x web
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: target/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
