@@ -18,8 +18,9 @@ crates.io asks for.
 
 ### Why it matters
 
-None while the tool serves the owner alone: no one else can install it from crates.io. The owner
-named publishing to crates.io as probable later, if the tool works out well.
+None while no program but rootpoint's own builds on its crates: no one else can install them from
+crates.io, and the browser build that GitHub Pages serves needs no install. The owner named
+publishing to crates.io as probable later, if the tool works out well.
 
 ### What would close it
 
