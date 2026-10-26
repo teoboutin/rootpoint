@@ -239,8 +239,10 @@ struct SlideView {
     outline: Vec<OutlineRow>,
     /// The node of the outline's row under the pointer in this frame, which the overlay outlines.
     hovered_row: Option<NodeId>,
-    /// Where the last frame placed each button and tab it records, by label: the toolbar's
-    /// "Preview", the side panel's tabs, the Styles tab's controls and the removal dialog's buttons.
+    /// Where the last frame placed each widget it records, by label: every button `App::button`
+    /// draws, the side panel's tabs, the asset tab's tab buttons, the toolbar's "Preview" and state
+    /// label, each span row by its span's id, the Styles tab's "bold", and the buttons of the
+    /// banner on an outside change and of the dialogs.
     buttons: Vec<(String, Rect)>,
     /// Where the last frame placed each entry of the node menu, by label.
     menu_entries: Vec<(String, Rect)>,
