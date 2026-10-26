@@ -1,10 +1,18 @@
-# Publishes the browser build of the editor to GitHub Pages, at every push to main.
+# Publishes the browser build of the editor to GitHub Pages, a static site any browser opens with
+# no install, as `goal@rootpoint@runs-in-browser` asks; its page loads its files by relative paths,
+# `design@rootpoint-app@relative-page-paths`.
 #
 # The build job runs `cargo x gates` first: where the project has continuous integration, it runs
-# the same one command that judges a branch before it merges, as the xtask goal on gates asks, so
-# a build reaches the page only when the gates pass on it. It then builds the page with
-# `cargo x web`, which refuses a wasm-bindgen program of another version than the `wasm-bindgen`
-# crate of Cargo.lock, so the program is installed at that version.
+# the same one command that judges a branch before it merges, per
+# `goal@xtask@one-command-runs-every-gate`, so a build reaches the page only when the gates pass on
+# it. It runs on the push to main, not on a pull request, since the project merges a branch into
+# main locally and then pushes main, `instructions@git-workflow`.
+# It then builds the page with `cargo x web`, which refuses a wasm-bindgen program of another
+# version than the `wasm-bindgen` crate of Cargo.lock, per `design@xtask@one-tool-binds-and-tests`,
+# so the program is installed at that version.
+#
+# The tools installed here are those the gates need, which `path@xtask@README.md` lists: a gate
+# that comes to need another tool installs it here too.
 
 name: Pages
 
@@ -27,7 +35,8 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      # The whole history: the gate on commit messages reads the range from origin/main.
+      # The whole history, so that origin/main is there: the gate on commit messages judges the
+      # range from it, which is empty on a push to main.
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -41,7 +50,8 @@ jobs:
           version=$(cargo metadata --format-version 1 --locked \
             | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version')
           cargo install wasm-bindgen-cli --version "$version" --locked
-      # The gate `wasm-test` runs the browser tests in a headless Firefox through geckodriver.
+      # The gate `wasm-test` runs the browser tests in a headless Firefox through geckodriver, per
+      # `design@xtask@browser-tests-gated`.
       - uses: browser-actions/setup-firefox@v1
       - uses: browser-actions/setup-geckodriver@latest
         with:

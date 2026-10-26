@@ -1,5 +1,9 @@
 # rootpoint-app
 
+This file describes every action of the editor. The guide of `path@rootpoint@README.md` teaches
+the main ones, its table of keys and its first presentation naming the same keys and buttons, and
+the slides of the built-in sample, `path@rootpoint-protocol@sample/`, name some of them too.
+
 The editor of rootpoint, in a window: the binary `rootpoint`. `rootpoint [<dir> | <file>.rpk]`
 opens the directory given as a workspace, its `presentation.ron` and its assets' files, or the pack
 given in memory, or an empty presentation in memory. A workspace is held by one process at a time:
@@ -131,8 +135,8 @@ document lacks, and text not drawn.
 ## In a web browser
 
 `cargo x web` builds the browser build into `web/` under cargo's target directory, `target/web/`
-unless cargo is told another: a page, the editor built for the wasm
-target and its loader, which any static file server serves, such as
+unless cargo is told another: a page, the editor built for the wasm target and its loader, and the
+licences and notices in `licences/`, which any static file server serves, such as
 `python3 -m http.server -d target/web`. It opens the built-in sample, and has the editor's actions
 above, with these differences:
 

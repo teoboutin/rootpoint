@@ -299,8 +299,8 @@ fn require_version(program: &str, locked: &str) -> Result<(), String> {
 }
 
 /// Build the editor's binary for the wasm target, bind it with `wasm-bindgen` for a page that
-/// loads it as a module, and write it with the app's page into `out`. The `wasm-bindgen` program
-/// must be the version of the `wasm-bindgen` crate in `Cargo.lock`, per
+/// loads it as a module, and write it with the app's page and the notices into `out`. The
+/// `wasm-bindgen` program must be the version of the `wasm-bindgen` crate in `Cargo.lock`, per
 /// `design@xtask@one-tool-binds-and-tests`.
 fn build_web(root: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
     let target = target_directory(root)?;
@@ -330,6 +330,29 @@ fn build_web(root: &Path, out: Option<PathBuf>) -> Result<PathBuf, String> {
         .arg(&module))?;
     let page = root.join("crates/rootpoint-app/web/index.html");
     std::fs::copy(&page, out.join("index.html")).map_err(|e| format!("{}: {e}", page.display()))?;
+    // The site is a copy of the binary, so it serves the licences of the project and the notices of
+    // what the project itself builds in, per `design@rootpoint@permissive-licence`: the W3C licence
+    // of the table of commands asks for its notice on every copy. The notices of the crates it
+    // links and of the toolkit's fonts are not here yet,
+    // `issue@rootpoint@dependency-notices-in-builds`.
+    let notices = out.join("licences");
+    std::fs::create_dir(&notices).map_err(|e| format!("{}: {e}", notices.display()))?;
+    for (from, to) in [
+        ("LICENSE-MIT", "LICENSE-MIT"),
+        ("LICENSE-APACHE", "LICENSE-APACHE"),
+        ("crates/rootpoint-math/W3C-NOTICE.txt", "W3C-NOTICE.txt"),
+        (
+            "crates/rootpoint-render/fonts/open-sans/OFL.txt",
+            "OFL-open-sans.txt",
+        ),
+        (
+            "crates/rootpoint-render/fonts/libertinus/OFL.txt",
+            "OFL-libertinus.txt",
+        ),
+    ] {
+        let from = root.join(from);
+        std::fs::copy(&from, notices.join(to)).map_err(|e| format!("{}: {e}", from.display()))?;
+    }
     Ok(out)
 }
 

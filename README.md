@@ -11,8 +11,8 @@ and present from the same program.
 
 The editor runs in a web browser, with nothing to install: <https://teoboutin.github.io/rootpoint/>.
 It opens the built-in sample, a short presentation whose slides explain the editor. Every change
-stays in the page until you download it with "Save as pack…". The page keeps no copy when it is
-closed or reloaded, and it asks before it closes while a change is not downloaded.
+stays in the page until you download it, with Save or "Save as pack…". The page keeps no copy
+when it is closed or reloaded, and it asks before either while a change is not downloaded.
 
 ## Build and run
 
@@ -26,7 +26,8 @@ cargo run --release -p rootpoint-app -- <file>.rpk    # a pack, in memory
 
 The button "Sample" of the toolbar opens the built-in sample. `cargo x web` builds the browser
 version into `target/web/`, which any static file server serves, for example
-`python3 -m http.server -d target/web`.
+`python3 -m http.server -d target/web`. It needs the wasm target and the `wasm-bindgen` program,
+as [the maintenance tool's README](tools/xtask/README.md) says.
 
 ## How a slide is built
 
@@ -39,8 +40,9 @@ version into `target/web/`, which any static file server serves, for example
 - **A text has a style.** A named style, such as "Title" or "Subtitle", is shared by every area that
   names it, so changing it in the Styles tab changes them all. A text can also be "custom", with
   values of its own. Inside a text, a span style, such as bold in a colour, marks a few words.
-- **An equation** is a formula, numbered or not, either in an area of its own or inside a text. A
-  text can refer to a numbered equation, and the reference shows its number.
+- **An equation** is a formula in an area of its own, numbered or not. A formula can also sit
+  inside a text, unnumbered. A text can refer to a numbered equation, and the reference shows its
+  number.
 - **Images and fonts are assets** of the presentation. The side panel's Assets tab lists them and
   shows where each is used.
 
@@ -52,8 +54,8 @@ version into `target/web/`, which any static file server serves, for example
 3. Select the upper area, and choose the style "Title" in the Selection tab. Double-click it and
    type a title. Esc leaves the text.
 4. Select the lower area, and split it with Shift+→ into two columns. Type a text in one. Select
-   the other, add a picture with "Add an image…" of the Selection tab, and choose the content
-   "image".
+   the other, add a picture with "Add an image…" of the Selection tab, choose the content "image",
+   and pick your picture by its name in the list "image" that the tab then shows.
 5. Drag a divider to give the columns other widths.
 6. Press F5 to present. → and ← change slide, and Esc returns to the editor.
 7. Save: Ctrl+S, or "Save as pack…" in the browser.
@@ -68,7 +70,7 @@ version into `target/web/`, which any static file server serves, for example
 | split it where you click | hold Ctrl (a vertical cut) or Shift (a horizontal cut), and click; add Alt to snap |
 | remove the selected area | Delete |
 | resize two areas | drag the divider between them; a double-click puts it halfway |
-| swap or move an area | drag the grip in its top-left corner onto another area |
+| swap or move an area | select it, and drag the grip in its top-left corner onto the middle of another area to swap them, or onto its edge to move it there |
 | open the menu of an area | right-click it |
 | edit a text | double-click it, or click the selected text area; Esc leaves |
 | bold, italic | Ctrl+B, Ctrl+I, on the selection or on what you type next |
@@ -97,8 +99,10 @@ category.
 
 Every action of the editor is a command of a text protocol, one per line, so a script or an AI
 agent can build and change a presentation. `rootpoint-headless` runs the commands of its standard
-input with no window. On Unix, `rootpoint-ctl` sends them to a running editor, which shows each
-change as it is made; the editor's banner "Take control" gives the authority to edit back to you.
+input with no window. On Unix, `rootpoint-ctl` sends them to a running editor. The editor holds the
+authority to edit at start: a client asks for it with the command `control`, the editor then shows
+each change as it is made, and its banner's button "Take control" gives the authority back to
+you.
 The protocol is described in [the protocol's README](crates/rootpoint-protocol/README.md).
 
 The complete description of the editor, every action and every key, is in

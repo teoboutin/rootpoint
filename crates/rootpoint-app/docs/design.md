@@ -1079,3 +1079,16 @@ not measured, Firefox gives Ctrl+M to muting the tab, and no menu of Firefox's t
 `the_math_keys_reach_the_editor`
 of `path@rootpoint-app@tests/web.rs` checks them in a headless browser, which shows that the
 listener prevents a default, not that a browser honours it.
+
+### The browser build's page loads its files by paths relative to itself `##relative-page-paths`
+
+The page, `path@rootpoint-app@web/index.html`, imports the loader by `./rootpoint.js`, and the
+loader that `wasm-bindgen` 0.2.129 writes finds the module by
+`new URL('rootpoint_bg.wasm', import.meta.url)`, relative to itself, as
+`cargo x web && grep -n import.meta.url target/web/rootpoint.js` shows again. So the directory
+`cargo x web` writes runs from any path a server gives it. GitHub Pages serves the build that
+`path@rootpoint@.github/workflows/pages.yml` publishes under the repository's name, at
+`https://teoboutin.github.io/rootpoint/`, as `gh api repos/teoboutin/rootpoint/pages` answers in
+its `html_url`. The rival, a path from the root of the host, `/rootpoint.js`, would ask
+`https://teoboutin.github.io/rootpoint.js`, which no file serves, and no gate would see it, since
+no test serves the page.

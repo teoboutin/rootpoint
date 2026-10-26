@@ -78,6 +78,20 @@ so every display of one slide is the same slide, at any size, which
 window, would show another slide in each window, as `rejected@rootpoint-model@reflowing-slides`
 says of a slide reflowed to its window.
 
+## Documentation
+
+### While its interface is to be reworked, the README previews the editor by a link to its published build, not by pictures of it `##readme-preview-link`
+
+The root README, `path@rootpoint@README.md`, holds no picture of the editor. Its section "Try it"
+links the browser build that `path@rootpoint@.github/workflows/pages.yml` publishes from main, so
+the preview a reader opens is the editor as it is built, which `goal@rootpoint@runs-in-browser`
+makes possible with no install. A picture taken before the planned rework of the interface would
+show an interface that the rework replaces.
+
+On the owner's word: the owner keeps pictures out of the README for now, since the owner plans to
+rework the interface and does not want to carry outdated pictures, and wants the published build to
+serve as the preview.
+
 ## Licence
 
 ### The project is licensed MIT OR Apache-2.0, and builds in nothing that binds it to a copyleft licence `##permissive-licence`
