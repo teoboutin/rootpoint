@@ -65,6 +65,20 @@ one spec and a milestone of three slices to the owner:
 
 > Agreed on D1, D2, and on one spec + one branch.
 
+**Round 5**, the answer to D3, which the review of this spec produced:
+
+> D3: I'm not sure what you mean here. The question is about whether saving the sample
+> presentation in a workspace or a pack should save the pictures with it ? I think it should, I
+> don't want an additional mechanism to make sure reloading a sample from one saved to a workspace
+> in a previous verison replaces the pictures with current ones. The sample can stay frozen, it is
+> not meant to be saved anyway, at most it is used as a starting point were everything will be
+> replaced, but in most cases it is more of a playground where users can try out the features in a
+> live presentation. […]
+
+The session answered that this was the question, and that the shape the owner chose also makes
+`sample` headless hold the placeholders where the window holds the pictures, which it took the
+owner's reasons to accept, telling the owner to say otherwise.
+
 ## How the work is done
 
 `skill@knowledge-architect-planning@working-a-slice`, its paragraph on the work of a spec.
@@ -170,7 +184,7 @@ Decisions the work rewrites, each with the texts that cite it:
   `design@rootpoint-app@actions-are-commands`: each states that a presentation in memory, or a
   script of commands, behaves the same headless and in the window, which `sample` no longer does
   for the pictures. Their rewrite at the harvest, a stated exception for the sample's pictures, is
-  D3, awaiting the owner.
+  D3, ruled in round 5.
 - `design@rootpoint-protocol@pack-container` quotes 318 bytes "for the sample": reworded at step 1
   to name the fixture, the figure unchanged.
 - `design@rootpoint-app@workspace-autosave` times `autosave_gui_cost` on slides "of the sample,
@@ -300,11 +314,11 @@ Proposed by the session in round 1 as a placeholder the app replaces, then in ro
 `sample` asks, `argument@sample-redesign@arg-24`, `argument@sample-redesign@arg-27`. Approved by the
 session's reading of round 3's "proceed" against the checkpoint table, a default put to the owner,
 D1, which the owner agreed in round 4. The review of this spec found that a source stored in the
-session is a channel `design@rootpoint-protocol@session-files` does not admit; the session moved
-the source into `Files`, which that head admits, keeping the protocol's source, the placeholder
-headless and the asking inside the command that D1 approved. It found also that the session's map
-then differs between the window and headless, which three heads state it does not: D3, awaiting
-the owner. Shape: "Decided design". Harvest:
+session is a channel `design@rootpoint-protocol@session-files` does not admit; the session moved the
+source into `Files`, which that head admits, keeping the protocol's source, the placeholder headless
+and the asking inside the command that D1 approved. It found also that the session's map then
+differs between the window and headless, which three heads state it does not: D3, which the owner
+ruled in round 5 for the pictures in the session's map. Shape: "Decided design". Harvest:
 `design@rootpoint-protocol@builtin-sample`.
 
 ### The pictures are a table in the app of stages, regions and anchored callouts `##picture-staging`
@@ -661,7 +675,10 @@ pictures in the map; headless, the placeholders. So `sample` followed by `assets
 `design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands` state
 that a presentation in memory behaves the same headless and in the window. Every shape that puts
 pictures the window draws into the presentation has this difference, since the headless binary
-cannot draw them. Whether to accept it is D3, awaiting the owner.
+cannot draw them. The owner accepted it in round 5, D3, choosing that a sample saved to a
+workspace or a pack keeps its pictures: a sample saved and opened again shows the pictures drawn
+when it was first opened, and no mechanism replaces them by current ones, since the sample is a
+playground, not meant to be saved.
 
 **What a placeholder is.** One PNG, flat and small, that says in words that the editor draws this
 picture when it opens the sample. It is made once and committed; its size counts in the 50 KB of
@@ -910,7 +927,9 @@ the same set, which a test checks; the table of #picture-focus gives each row.
   this spec: `design@rootpoint-protocol@session-files` admits no channel of bytes but the `Files`
   passed to each command, and the stored source had to survive five resets.
 - **Drawing the pictures into the window's view only**, the app giving its renderer the drawn bytes
-  for the sample's picture paths while the session's map keeps the placeholders: the rival of D3.
+  for the sample's picture paths while the session's map keeps the placeholders: the rival of D3,
+  lost on the owner's word in round 5, since a saved sample would hold placeholders and need a
+  mechanism to draw its pictures again.
   It keeps the session the same headless and in the window, and costs a pack saved from the window
   holding placeholders, and `render` replying a picture other than the window's.
 - **Replacing the placeholders by protocol commands** lost to #sample-host-pictures: it makes undo
@@ -1103,7 +1122,7 @@ of the fixture.
   showed as proposed. The owner agreed in round 4.
 - **D2, ruled in round 4.** Bears on #picture-focus: the owner wrote "maybe" for a picture of the
   whole window naming its parts; the default included it, as slide 2. The owner agreed in round 4.
-- **D3, awaiting the owner.** Bears on #sample-host-pictures. With the pictures in the session's
+- **D3, ruled in round 5.** Bears on #sample-host-pictures. With the pictures in the session's
   map, `sample` fills the map differently in the window and headless, so `sample` then `assets`,
   `render` or `pack` replies differently in the two. `design@rootpoint-protocol@editing-modes`,
   `design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands`
@@ -1118,7 +1137,11 @@ of the fixture.
     as they are; a pack saved from the window holds placeholders, and `render`, natively and over
     the control socket, replies a picture other than the window's.
 
-  The work goes on with the default; the branch merges once the owner has ruled.
+  The owner chose the first, writing that the owner thinks saving the sample should keep its
+  pictures, with no mechanism that replaces them when a saved sample is opened again; the sample is
+  a playground, not meant to be saved. The owner's answer addressed the saving; the difference
+  between the window and headless follows from the same shape, and the session told the owner it
+  took it as accepted.
 - No acceptance criterion awaits the owner: AC4 to AC7 were kept in round 3.
 
 ## Harvest
