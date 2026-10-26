@@ -1123,8 +1123,6 @@ fn the_formula_actions_issue_their_commands() {
             ]
         },
     );
-    // A sentence is no formula, which would drop its spaces: it becomes a text of the formula; a
-    // selection neither keeps stays, and the formula goes after it.
     check(
         "Backspace after an empty formula deletes it at once",
         &["select n3", r#"text n3 ["a", $$, "b"]"#],
@@ -1135,6 +1133,8 @@ fn the_formula_actions_issue_their_commands() {
         },
         |_| vec![c("begin"), c("delete n3 1..2"), c("end")],
     );
+    // A sentence is no formula, which would drop its spaces: it becomes a text of the formula; a
+    // selection neither keeps stays, and the formula goes after it.
     check(
         "Ctrl+M over a sentence",
         &["select n3", r#"text n3 ["hello world"]"#],

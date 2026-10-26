@@ -369,8 +369,10 @@ impl App {
         let (Some(f), Some(path)) = (self.edited_formula(), self.math_caret()) else {
             return;
         };
-        if let Some(p) = next_cell(&f, &path) {
-            self.set_math_caret(p);
+        match next_cell(&f, &path) {
+            Some(p) => self.set_math_caret(p),
+            None if matches!(self.place(), Some(Place::Item { .. })) => self.leave_formula(true),
+            None => {}
         }
     }
 

@@ -168,3 +168,11 @@ the author tell the two caret positions of an edge apart; the owner said they mi
 relaxing the goal if the overlay alone does not work, while believing it has good chances of
 working out, and `tripwire@rootpoint-app@frames-mislead` brings this design
 back.
+
+### LyX's math autocorrection `##lyx-math-autocorrection`
+
+`live`. LyX ships it off: `autocorrection_math` defaults to false, `LyXRC.h:545`, read in section 1
+of `path@rootpoint@docs/grounding/math-typesetting.md`, so an author of LyX's meets it only by
+turning it on, and its rules of `lib/autocorrect` would add to the keys a mode no key of LyX's
+needs.
+

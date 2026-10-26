@@ -319,17 +319,26 @@ pub fn vertical_move(f: &Formula, p: &CellPath, up: bool) -> Option<CellPath> {
     Some(top(row, column, offset.min(f.rows[row][column].len())))
 }
 
-/// The position Tab gives: the start of the next cell of the nearest atom holding the caret that
-/// has one, then of the grid; `None` where there is none.
+/// The position Tab gives, as LyX's `cell-forward` of `InsetMathNest`, in the atom whose cell holds
+/// the caret: the start of its next cell, of its first after its last, and, in an atom of one cell,
+/// the position after it; in the formula's grid the same, row by row, and `None` in a grid of one
+/// cell, where the caret leaves the formula.
 pub fn next_cell(f: &Formula, p: &CellPath) -> Option<CellPath> {
-    let mut path = p.clone();
-    while let Some((up, c)) = parent(&path) {
-        if c + 1 < atom_at(f, &up)?.cells().len() {
-            return Some(child(&up, c + 1, 0));
+    match parent(p) {
+        Some((up, c)) => {
+            let n = atom_at(f, &up)?.cells().len();
+            Some(match (c + 1 < n, n) {
+                (true, _) => child(&up, c + 1, 0),
+                (false, 1) => with_offset(&up, up.offset + 1),
+                (false, _) => child(&up, 0, 0),
+            })
         }
-        path = up;
+        None => match next_grid(f, p.row, p.column) {
+            Some((r, c)) => Some(top(r, c, 0)),
+            None if f.rows.len() == 1 && f.rows[0].len() == 1 => None,
+            None => Some(top(0, 0, 0)),
+        },
     }
-    next_grid(f, path.row, path.column).map(|(r, c)| top(r, c, 0))
 }
 
 /// The position Space gives: after the atom whose cell holds the caret; `None` in a cell of the

@@ -417,3 +417,23 @@ fn a_matrix_with_rows_of_unequal_length_is_edited_whole() {
         r"\begin{matrix} a & b & \\ c & & \end{matrix}"
     );
 }
+
+/// Tab moves as LyX's `cell-forward`: to the next cell of the atom that holds the caret, back to
+/// its first after its last, out of an atom of one cell, and in the formula's grid from cell to
+/// cell, back to the first, but out of a grid of one cell.
+#[test]
+fn tab_goes_to_the_next_cell_and_wraps() {
+    let f = parse(r"\frac{a}{b}");
+    assert_eq!(next_cell(&f, &at(&[(0, 0)], 1)), Some(at(&[(0, 1)], 0)));
+    assert_eq!(next_cell(&f, &at(&[(0, 1)], 0)), Some(at(&[(0, 0)], 0)));
+    let f = parse(r"\sqrt{x}y");
+    assert_eq!(next_cell(&f, &at(&[(0, 0)], 0)), Some(at(&[], 1)));
+    assert_eq!(next_cell(&f, &at(&[], 0)), None);
+    let f = parse(r"a & b");
+    let second = CellPath {
+        column: 1,
+        ..CellPath::default()
+    };
+    assert_eq!(next_cell(&f, &start()), Some(second.clone()));
+    assert_eq!(next_cell(&f, &second), Some(start()));
+}

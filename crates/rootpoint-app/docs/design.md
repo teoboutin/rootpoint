@@ -634,12 +634,13 @@ and every cell carries the caret, `goal@rootpoint-math@editable-in-place`. The r
 LaTeX source with a preview, makes LaTeX the way to write math in the window, against that goal,
 as `rejected@rootpoint-math@latex-string-model` says of LaTeX as the model.
 
-### In a formula, each key acts as LyX's `InsetMathNest::interpretChar` and its caret make it act `##lyx-formula-keys`
+### In a formula, a typed character acts as LyX's `InsetMathNest::interpretChar` makes it act, and the caret moves as the math crate's moves `##lyx-formula-keys`
 
 Right, Left, Up and Down move as `design@rootpoint-math@lyx-caret-moves` says; at the formula's first
 or last position Right and Left leave it, into its text, one press, as at a span's edge,
 `design@rootpoint-app@boundary-caret-positions`, and with no cell above or below, in a text, Up and
-Down are the text's moves. Tab goes to the next cell, Space and `}` leave the cell, then the formula.
+Down are the text's moves. Tab goes to the next cell, as `design@rootpoint-math@lyx-caret-moves`
+says, and out of a formula of one cell; Space and `}` leave the cell, then the formula.
 A letter, a digit or an operator inserts its symbol; `^` and `_` make the atom before the caret a
 script's nucleus, the caret in the new script; `{` opens a group; `&` cuts a cell of the grid or
 moves to a matrix's next cell; Ctrl+Return starts a new row of the formula, or of the matrix that
@@ -650,8 +651,9 @@ does a span, and at the formula's first or last position do nothing.
 
 LyX's source, read in section 1 of `path@rootpoint@docs/grounding/math-typesetting.md`: the typed
 characters are `InsetMathNest::interpretChar`'s, ASCII letters extending a command's name at its
-lines 2052 to 2055, any other character closing it and then interpreted again; `InsetMathNest`
-leaves an Up or Down it cannot make to the text. The math keys are LyX's,
+lines 2052 to 2055, any other character closing it and then interpreted again. In LyX's own source,
+`InsetMathNest::doDispatch` of `path@elsewhere@src/mathed/InsetMathNest.cpp`, an Up or Down that
+`Cursor::upDownInMath` cannot make is left undispatched, to the text, read at commit e7ffd8d. The math keys are LyX's,
 `design@rootpoint-app@math-keys`, so an author who types math in LyX finds its keys and its caret
 here too.
 
@@ -705,10 +707,9 @@ bindings that conflict. Whether an Alt+M chord reaches the native window is watc
 ### LyX's math autocorrection is not built `##no-math-autocorrection`
 
 LyX can replace a typed sequence by a symbol as it is typed, by the rules of its `lib/autocorrect`;
-this editor does not. LyX ships it off, `autocorrection_math` defaulting to false, read in section 1
-of
-`path@rootpoint@docs/grounding/math-typesetting.md`, and the keys copy LyX's as it ships,
-`design@rootpoint-app@math-keys`.
+this editor does not, `rejected@rootpoint-app@lyx-math-autocorrection`. An author who types math in
+LyX, whose keys this editor copies, `design@rootpoint-app@math-keys`, meets no autocorrection there
+unless the author turns it on, so the keys and the caret are the whole of what that author expects.
 
 ### Only the math keys are a built-in table of key sequences, the other shortcuts staying where they are `##keymap-table`
 
