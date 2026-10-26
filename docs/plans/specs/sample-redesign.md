@@ -76,8 +76,13 @@ one spec and a milestone of three slices to the owner:
 > live presentation. […]
 
 The session answered that this was the question, and that the shape the owner chose also makes
-`sample` headless hold the placeholders where the window holds the pictures, which it took the
-owner's reasons to accept, telling the owner to say otherwise.
+`sample` headless hold the placeholders where the window holds the pictures, so that a script of
+`sample` then `pack` or `render` replies differently in the two, against three heads that each gain
+a stated exception; it asked the owner to say if that cost was not accepted.
+
+**Round 6**, the answer:
+
+> cost if fine. […]
 
 ## How the work is done
 
@@ -171,27 +176,54 @@ The design rests on, and does not argue again:
   egui, and from its triangles filled on the CPU, not from a GPU offscreen path.
 - `goal@rootpoint@minimal-content-set`: no content kind is added; a picture is an image.
 
-Decisions the work rewrites, each with the texts that cite it:
-- `design@rootpoint-protocol@builtin-sample`: rewritten at the harvest to hold the pictures a host
-  draws, the slides' subjects and the tests' fixture. `cargo klarch show` lists no text that cites
-  it; `path@rootpoint-protocol@README.md` describes the sample in prose, "a presentation of six
-  slides", and is rewritten at step 5.
+Decisions the work rewrites. The texts that `cargo klarch show` lists as citing each, other than
+this spec, are read in the step named, and each one the rewrite makes false is updated there.
+- `design@rootpoint-protocol@builtin-sample`: rewritten at step 5 to hold the pictures a host draws,
+  the slides' subjects and the tests' fixture. No text cites it. `path@rootpoint-protocol@README.md`
+  describes the sample in prose, "a presentation of six slides", and is rewritten at step 5.
 - `design@rootpoint-app@gui-toolkit`: its list of what the host needs gains frames run with no
-  window, their shapes tessellated and their textures given, at the harvest, as #toolkit-snapshot
-  argues. It cites `rejected@rootpoint-app@other-gui-hosts`, which stands, as #toolkit-snapshot
-  says.
+  window, their shapes tessellated and their textures given, at step 5, as #toolkit-snapshot argues.
+  Cited by 2 texts, in `register@rootpoint-app@design`,
+  `register@rootpoint-render@rejected`. Among them `rejected@rootpoint-app@other-gui-hosts`
+  stands, as #toolkit-snapshot says.
 - `design@rootpoint-protocol@editing-modes`, `design@rootpoint-protocol@control-commands` and
   `design@rootpoint-app@actions-are-commands`: each states that a presentation in memory, or a
   script of commands, behaves the same headless and in the window, which `sample` no longer does
-  for the pictures. Their rewrite at the harvest, a stated exception for the sample's pictures, is
-  D3, ruled in round 5.
+  for the pictures. Each gains at step 5 a stated exception for the sample's pictures, D3, on the
+  owner's word in rounds 5 and 6. Their citing texts are read at step 5:
+  - `design@rootpoint-protocol@editing-modes`: cited by 6 texts, in `register@rootpoint-app@design`,
+    `register@rootpoint-model@design`, `register@rootpoint-protocol@design`,
+    `path@rootpoint-protocol@tests/store.rs`.
+  - `design@rootpoint-protocol@control-commands`: cited by 5 texts, in
+    `register@rootpoint-app@design`, `register@rootpoint-protocol@rejected`,
+    `path@rootpoint-protocol@src/session.rs`. The comment in `Session::run_inner` on refusing a
+    command while a group is open says that a script holding the authority "gives the same replies
+    in a window and headless"; it gains the same exception.
+  - `design@rootpoint-app@actions-are-commands`: cited by 9 texts, in
+    `path@rootpoint-app@CLAUDE.md`, `register@rootpoint-app@design`,
+    `path@rootpoint-app@src/actions.rs`, `path@rootpoint-app@src/autosave.rs`,
+    `path@rootpoint-app@tests/actions.rs`.
 - `design@rootpoint-protocol@pack-container` quotes 318 bytes "for the sample": reworded at step 1
-  to name the fixture, the figure unchanged.
+  to name the fixture, the figure unchanged. Cited by 8 texts, in
+  `register@rootpoint-model@design`, `register@rootpoint-protocol@design`,
+  `path@rootpoint-protocol@src/pack.rs`, `path@rootpoint-protocol@tests/pack.rs`,
+  `register@rootpoint@design`.
 - `design@rootpoint-app@workspace-autosave` times `autosave_gui_cost` on slides "of the sample,
-  whose document holds no image's bytes": the test moves to the fixture at step 1, the premise
-  restated at the harvest.
+  whose document holds no image's bytes": its test moves to the fixture at step 1, and the head
+  names the fixture in the same step. Cited by 6 texts, in `register@rootpoint-app@design`,
+  `issue@rootpoint-app@abandoned-composition-undo-step`,
+  `path@rootpoint-app@src/autosave.rs`, `path@rootpoint-app@tests/autosave.rs`.
 - `design@rootpoint-app@edit-in-place` and `design@rootpoint-app@editor-overlay` name tests that run
-  over the sample's n3 and its styled text: rewritten to the fixture at the harvest.
+  over the sample's n3 and its styled text: rewritten to name the fixture at step 1, when the tests
+  move. `design@rootpoint-app@edit-in-place`: cited by 10 texts, in `register@rootpoint-app@design`,
+  `path@rootpoint-app@src/actions.rs`, `path@rootpoint-app@src/editing.rs`,
+  `path@rootpoint-app@src/view.rs`, `path@rootpoint-app@tests/editing.rs`,
+  `path@rootpoint-app@tests/edit_ops.rs`, `register@rootpoint-render@design`.
+  `design@rootpoint-app@editor-overlay`: cited by 11 texts, in `path@rootpoint-app@CLAUDE.md`,
+  `register@rootpoint-app@design`, `issue@rootpoint-app@interactive-tour`,
+  `register@rootpoint-app@rejected`, `register@rootpoint-app@tripwire`,
+  `path@rootpoint-app@src/view.rs`, `path@rootpoint-app@tests/gestures.rs`,
+  `path@rootpoint-app@tests/presenter.rs`.
 - `path@rootpoint-app@README.md` names the sample's slides as a copy of the editor's keys: kept,
   since the new slides still name keys.
 
@@ -337,10 +369,10 @@ T2.
 ### The tests open a frozen copy of today's sample, not the sample `##sample-test-fixture`
 
 Proposed by the session at the assembly of this spec, `argument@sample-redesign@arg-33`. Closed
-`argued`: the approved outline changes every slide, and 54 sites of the app's tests and three files
-of the protocol's read today's slides, their ids, their texts and two golden images; keeping today's
-ids in the new sample would bind the outline to the tests. Shape: "Decided design". Harvest: the
-rewritten `design@rootpoint-protocol@builtin-sample`.
+`argued`: the approved outline changes every slide, and 54 lines in 16 files of the app's tests, a
+17th file, and 5 files of the protocol's read today's slides, their ids, their texts and two golden
+images; keeping today's ids in the new sample would bind the outline to the tests. Shape: "Decided
+design". Harvest: the rewritten `design@rootpoint-protocol@builtin-sample`.
 
 ## Arguments
 
@@ -675,10 +707,10 @@ pictures in the map; headless, the placeholders. So `sample` followed by `assets
 `design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands` state
 that a presentation in memory behaves the same headless and in the window. Every shape that puts
 pictures the window draws into the presentation has this difference, since the headless binary
-cannot draw them. The owner accepted it in round 5, D3, choosing that a sample saved to a
+cannot draw them. The owner accepted it, D3: in round 5 choosing that a sample saved to a
 workspace or a pack keeps its pictures: a sample saved and opened again shows the pictures drawn
 when it was first opened, and no mechanism replaces them by current ones, since the sample is a
-playground, not meant to be saved.
+playground, not meant to be saved, and in round 6 accepting the difference itself.
 
 **What a placeholder is.** One PNG, flat and small, that says in words that the editor draws this
 picture when it opens the sample. It is made once and committed; its size counts in the 50 KB of
@@ -1008,8 +1040,9 @@ outline fits, #picture-cost's density is reopened.
 
 **Builds**: `planned@rootpoint-protocol@tests/data/sample-fixture/`, the helpers of
 `planned@rootpoint-app@tests/common/mod.rs`, and every test site moved as the first mapping table
-says; `design@rootpoint-protocol@pack-container` reworded to name the fixture. No code of `src/`
-changes.
+says; `design@rootpoint-protocol@pack-container`, `design@rootpoint-app@workspace-autosave`,
+`design@rootpoint-app@edit-in-place` and `design@rootpoint-app@editor-overlay` reworded to name the
+fixture where they name the sample's tests. No code of `src/` changes.
 
 **Claims**:
 - the fixture is byte for byte today's `sample.ron` and `splits.png`: `cmp` of each pair, in the
@@ -1098,8 +1131,8 @@ mechanism passed steps 2 and 3.
 ### Step 5: the record
 
 **Builds**: the rewritten `path@rootpoint-protocol@README.md` on the sample's slides, and every
-text "What is already decided" lists as updated at the harvest; the report on AC4 to AC7; the
-harvest.
+text "What is already decided" lists as read at step 5, the three heads of D3 and the comment in
+`Session::run_inner` among them; the report on AC4 to AC7; the harvest.
 
 **Claims**: `cargo klarch check` passes, and no text of the record but a test of the fixture
 describes six slides: `git grep -n "six slides"`, its hits in the commit message, each one a test
@@ -1127,8 +1160,11 @@ of the fixture.
   `render` or `pack` replies differently in the two. `design@rootpoint-protocol@editing-modes`,
   `design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands`
   state that a presentation in memory, or a script, behaves the same in both. No goal is defeated:
-  `goal@rootpoint@headless-core` asks that an operation run and be checked with no window, which
-  the tests of the pictures do. Two shapes meet every binding constraint:
+  `goal@rootpoint@headless-core` asks that every operation the window offers can be performed and
+  its result checked in a test or a script that opens no window. The drawing of the pictures is
+  performed and checked by the tests of `planned@rootpoint-app@tests/pictures.rs`, which open no
+  window; what no headless script obtains is the drawn bytes, since the headless binary links no
+  toolkit, `design@rootpoint@gui-only-in-app`. Two shapes meet every binding constraint:
   - **default, the pictures in the session's map**, as the spec is written: the three heads gain,
     at the harvest, a stated exception for the pictures of the sample, the one content a host
     draws. A pack saved from the window holds the pictures, and `render` draws them;
@@ -1139,9 +1175,9 @@ of the fixture.
 
   The owner chose the first, writing that the owner thinks saving the sample should keep its
   pictures, with no mechanism that replaces them when a saved sample is opened again; the sample is
-  a playground, not meant to be saved. The owner's answer addressed the saving; the difference
-  between the window and headless follows from the same shape, and the session told the owner it
-  took it as accepted.
+  a playground, not meant to be saved. The answer addressed the saving; the difference between
+  the window and headless follows from the same shape, and the owner accepted it in round 6, when
+  the session put it as a cost.
 - No acceptance criterion awaits the owner: AC4 to AC7 were kept in round 3.
 
 ## Harvest
@@ -1157,16 +1193,17 @@ is its head's slug, as those rules say.
 | the pictures of the window, drawn by the window and filled on the CPU, their staging, their callouts and their cost | new heads in `register@rootpoint-app@design`, among #ui-picture-source, #toolkit-snapshot, #picture-staging, #picture-focus and #picture-cost | step 5 | "Decided design" |
 | the pictures through `Files`, the slides' subjects and the tests' fixture | `design@rootpoint-protocol@builtin-sample`, rewritten in place | step 5 | #sample-host-pictures, #sample-slide-plan, #sample-test-fixture |
 | the host's new need | `design@rootpoint-app@gui-toolkit`, its list of needs | step 5 | #toolkit-snapshot |
-| the session's map differing by host for the sample's pictures | `design@rootpoint-protocol@editing-modes`, `design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands`, as D3 rules | step 5 | #sample-host-pictures, D3 |
+| the session's map differing by host for the sample's pictures | `design@rootpoint-protocol@editing-modes`, `design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands`, each gaining the exception on the owner's word in rounds 5 and 6, and the comment in `Session::run_inner` that restates the sameness | step 5 | #sample-host-pictures, D3 |
+| the pictures in the window's view only, the rival of D3 | `register@rootpoint-protocol@rejected`, if a recording test of the decision-recording skill holds, cited by the three heads that gain the exception | step 5 | D3 |
 | the window mocked from slide areas | `register@rootpoint-app@rejected`, if a recording test of the decision-recording skill holds, cited by the head of #toolkit-snapshot | step 5 | #split-tree-mockup |
 | T2 | `register@rootpoint-app@tripwire`, guarding the head of #picture-cost | step 5 | "Premortem" |
 | AC4 to AC7 | reported in the landing commits; each one that did not fire and recurs at later work is proposed to the owner as a tripwire | steps 4 and 5 | "Acceptance criteria" |
 | the pack's figure named on the fixture | `design@rootpoint-protocol@pack-container` | step 1 | #sample-test-fixture |
-| the premise of `autosave_gui_cost` and the tests named by `design@rootpoint-app@edit-in-place` and `design@rootpoint-app@editor-overlay` | those heads, restated on the fixture | step 5 | #sample-test-fixture |
+| the premise of `autosave_gui_cost` and the tests named by `design@rootpoint-app@edit-in-place` and `design@rootpoint-app@editor-overlay` | those heads, restated on the fixture | step 1 | #sample-test-fixture |
 | the six slides described | `path@rootpoint-protocol@README.md` | step 5 | #sample-slide-plan |
 | the tests open the fixture, never the sample, unless `sample` is their subject | `path@rootpoint-app@CLAUDE.md` and `path@rootpoint-protocol@CLAUDE.md` | step 1 | #sample-test-fixture |
 | a picture's callout anchors on a recorded label, so a label the window records occurs once | `path@rootpoint-app@CLAUDE.md`, its section on the places the last frame records | step 3 | #picture-staging |
-| #live-ui-tour | `issue@rootpoint-app@interactive-tour`, opened by the commit that adds this spec | done | "Losing alternatives" |
+| #live-ui-tour | `issue@rootpoint-app@interactive-tour`, opened by the commit that adds this spec; its sentence citing this spec is restated against the pictures as built in the commit that deletes this spec | done; restated at step 5 | "Losing alternatives" |
 
 ## Later consequences
 
