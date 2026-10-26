@@ -55,9 +55,10 @@ pub(crate) struct Editing {
     pub math: Option<MathCaret>,
 }
 
-/// The caret in a formula, the editor's state alone, `design@rootpoint-app@caret-editor-state`: its
-/// place, the atom a first press of Backspace or Delete selected, and the name of the command being
-/// typed after `\`, which the overlay shows at the caret and the formula holds once it closes.
+/// The caret in a formula: its place and the atom a first press of Backspace or Delete selected,
+/// the editor's state alone, `design@rootpoint-app@caret-editor-state`; and the name of the command
+/// being typed after `\`, which the overlay shows at the caret and the formula holds once it closes,
+/// held by the editor for the reason `App::rename_command` gives.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct MathCaret {
     pub path: rootpoint_math::CellPath,

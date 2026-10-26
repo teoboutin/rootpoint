@@ -719,7 +719,7 @@ prefix, names the waiting sequence on the status line, and takes the keys typed 
 events, a text egui gives for Alt+M itself, in the chord's own frame, dropped; a key that types no text, as Backspace or
 an arrow, drops a waiting sequence, and so does leaving editing. The editor's other shortcuts stay
 where they are. On the owner's word: the owner wants the keys configurable later,
-`issue@rootpoint-app@configurable-keys`; a configuration then fills this table, and making the keys
+`issue@rootpoint-app@configurable-keys`. A configuration then fills this table, so making the keys
 configurable is a loader of it. The rival, moving every key into the table now, is that later work
 done earlier, with the existing tests of the keys at risk in the same change.
 
@@ -1072,7 +1072,8 @@ The math keys, `design@rootpoint-app@math-keys`, are the editor's too: the liste
 default of Ctrl+M and of Alt+M while a text or a formula is edited, and of Ctrl+Shift+M and
 Ctrl+Alt+N while an area is selected and not edited, by a second flag `App::frame` sets at each
 frame, so in no other state does the browser lose them. Each is matched with its modifiers exactly,
-as the table matches them, so AltGr+M, which is Ctrl and Alt on Windows, types its character; M is
+as the table matches them, so AltGr+M types its character where it arrives as Ctrl and Alt, as on
+Windows, by the session's knowledge, not measured; M is
 read by its physical key too, since Option+M gives "µ". By the session's knowledge of the browsers,
 not measured, Firefox gives Ctrl+M to muting the tab, and no menu of Firefox's takes Alt+M. The test
 `the_math_keys_reach_the_editor`

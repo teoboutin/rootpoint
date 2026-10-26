@@ -291,8 +291,9 @@ pub fn keep_editor_keys(
             // The math keys of `crate::keymap`, each with its modifiers exactly, as the table
             // matches them: Ctrl+M and the prefix Alt+M while a text or a formula is edited, and
             // Ctrl+Shift+M and Ctrl+Alt+N while an area is selected and not edited. M is read by
-            // its physical key too, since Option+M gives "µ"; AltGr+M, Ctrl and Alt on Windows,
-            // matches none and types its character.
+            // its physical key too, since Option+M gives "µ"; AltGr+M, which arrives as Ctrl and
+            // Alt on Windows by the session's knowledge, not measured, matches none and types its
+            // character.
             let key = e.key().to_lowercase();
             let m = key == "m" || e.code() == "KeyM";
             let (shift, alt) = (e.shift_key(), e.alt_key());

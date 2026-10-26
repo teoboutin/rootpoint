@@ -504,7 +504,8 @@ fn frame_with(app: &mut App, events: Vec<eframe::egui::Event>, modifiers: eframe
 /// then F inserts a formula holding a fraction, given as the events egui gives for them; and, in a
 /// browser, the window's listener prevents the default of Ctrl+M and of Alt+M while a text is
 /// edited, and of Ctrl+Shift+M and Ctrl+Alt+N while an area is selected and not edited, each
-/// with its modifiers exactly, so AltGr+M, Ctrl and Alt, reaches the page.
+/// with its modifiers exactly, so Ctrl and Alt with M, as AltGr+M is taken to arrive on Windows,
+/// reaches the page.
 #[test]
 fn the_math_keys_reach_the_editor() {
     use eframe::egui::{Event, Key, Modifiers};
