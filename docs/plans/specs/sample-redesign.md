@@ -82,7 +82,11 @@ a stated exception; it asked the owner to say if that cost was not accepted.
 
 **Round 6**, the answer:
 
-> cost if fine. […]
+> cost if fine.
+> we won't implement the spec right now, once ready, merge it to main.
+
+The spec was merged to the main branch on that word, its work to be built later; it waits there
+until a session starts it.
 
 ## How the work is done
 
@@ -707,10 +711,10 @@ pictures in the map; headless, the placeholders. So `sample` followed by `assets
 `design@rootpoint-protocol@control-commands` and `design@rootpoint-app@actions-are-commands` state
 that a presentation in memory behaves the same headless and in the window. Every shape that puts
 pictures the window draws into the presentation has this difference, since the headless binary
-cannot draw them. The owner accepted it, D3: in round 5 choosing that a sample saved to a
-workspace or a pack keeps its pictures: a sample saved and opened again shows the pictures drawn
-when it was first opened, and no mechanism replaces them by current ones, since the sample is a
-playground, not meant to be saved, and in round 6 accepting the difference itself.
+cannot draw them. The owner accepted it, D3: in round 5 writing that the owner thinks a sample saved
+to a workspace or a pack should keep its pictures: a sample saved and opened again shows the
+pictures drawn when it was first opened, and no mechanism replaces them by current ones, since the
+sample is a playground, not meant to be saved, and in round 6 accepting the difference itself.
 
 **What a placeholder is.** One PNG, flat and small, that says in words that the editor draws this
 picture when it opens the sample. It is made once and committed; its size counts in the 50 KB of
@@ -990,7 +994,8 @@ which earns its entry by entry test 3.
 The labels AC4 to AC7 and T2 follow AC1 to AC3 and T1, which the same session put to the owner in
 the same messages on another subject, the compatibility of saved presentations, already merged.
 Run by the session in round 3, in the convergence proposal, as "assume it shipped and failed". The
-owner's ruling in round 3: "keep all AC and tripwires, proceed".
+owner's ruling in round 3: "keep all AC and tripwires, proceed". The responses of AC4 to AC7 below
+are worded by the session, each reopening the thread the premortem names as stressed.
 
 | cause | thread stressed | verdict |
 | --- | --- | --- |
@@ -1006,7 +1011,9 @@ owner's ruling in round 3: "keep all AC and tripwires, proceed".
 
 Guards #picture-staging. Judged at step 4, by a test of `planned@rootpoint-app@tests/pictures.rs`
 that draws every row of `PICTURE_TABLE` and fails when `draw_picture` reports an anchor not
-recorded, or recorded twice. Fires when that test fails on the built table. Response: the row is
+recorded in the frame. Fires when that test fails on the built table. A label recorded twice is
+also an error of `draw_picture`, a guard of #picture-staging that step 3 tests, not part of this
+criterion. Response, worded by the session: the row is
 repaired if the anchor's label changed; if no recorded rectangle can anchor the callout, the
 anchoring of #picture-staging is reopened.
 
@@ -1014,25 +1021,25 @@ anchoring of #picture-staging is reopened.
 
 Guards #toolkit-snapshot. Judged at step 4, by a test of the same file that draws every row and
 fails when `draw_picture` reports a primitive that is no mesh or a texture it was not sent. Fires
-when that test fails. Response: #toolkit-snapshot is reopened for that primitive: the rasterizer
-learns to draw it, or the stage avoids it, on the owner's word.
+when that test fails. Response, worded by the session: #toolkit-snapshot is reopened for that
+primitive: the rasterizer learns to draw it, or the stage avoids it, on the owner's word.
 
 ### AC6: all pictures are drawn in at most 500 ms natively, in release `##ac-pictures-time`
 
 Guards #picture-cost. Judged at step 4, by an ignored test of the same file, run by hand in release
 like the project's other timing tests, that times one `sample` of an app made by `App::new`, every
 picture drawn. The bound, 500 ms, was proposed by the session in round 3 and kept by the owner.
-Fires when the time exceeds it on the machine the step names. Response: #picture-cost is reopened:
-lazy drawing, a lower density, or fewer pictures.
+Fires when the time exceeds it on the machine the step names. Response, worded by the session:
+#picture-cost is reopened: lazy drawing, a lower density, or fewer pictures.
 
 ### AC7: each picture is at least as wide in pixels as its area at 1920×1080 `##ac-picture-width`
 
 Guards #toolkit-snapshot and the density of #picture-cost. Judged at step 4, by a test of the same
 file that, for each slide of the sample showing a picture, compares the picture's width in pixels
-with its area's width in slide units, which `area_rects` of
-`path@rootpoint-model@src/geometry.rs` gives and which are pixels at 1920×1080. Fires when
-one picture is narrower. Response: the slide's layout is changed first; if no layout of the
-outline fits, #picture-cost's density is reopened.
+with its area's width in slide units, which `area_rects` of `path@rootpoint-model@src/geometry.rs`
+gives and which are pixels at 1920×1080. Fires when one picture is narrower. Response, worded by
+the session: the slide's layout is changed first; if no layout of the outline fits, #picture-cost's
+density is reopened.
 
 ## Implementation sequence
 
