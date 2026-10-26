@@ -20,7 +20,9 @@ crates.io asks for.
 
 None while no program but rootpoint's own builds on its crates: no one else can install them from
 crates.io, and the browser build that GitHub Pages serves needs no install. The owner named
-publishing to crates.io as probable later, if the tool works out well.
+publishing to crates.io as probable later, if the tool works out well. A published crate has
+callers outside the project, which `design@rootpoint@grammar-and-api-stay-free` does not serve,
+`issue@rootpoint@grammar-and-api-compatibility`.
 
 ### What would close it
 

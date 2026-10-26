@@ -11,7 +11,7 @@ mod ops;
 mod validate;
 
 pub use document::*;
-pub use file::{FORMAT_VERSION, LoadError, load_ron, save_ron};
+pub use file::{FORMAT_VERSION, LoadError, OLDEST_VERSION, load_ron, save_ron};
 pub use geometry::{Rect, SLIDE_HEIGHT, area_rects, node_rects};
 pub use ops::{Op, OpError, Replacement, Side, apply, span_style_users};
 pub use validate::{Breach, Invalid};

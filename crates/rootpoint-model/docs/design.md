@@ -514,23 +514,23 @@ each move. Ids are part of every saved file and of the crate's public types.
 
 ### A presentation is saved as RON text, with the version of its format first `##save-format`
 
-`save_ron` writes the document as RON, its first field the format version, and `load_ron` refuses
-another version. Ids are plain numbers, and the file enables ron's `unwrap_variant_newtypes`, so a
-node reads `Split(id: 4, ...)`, and `implicit_some`, so a value a span sets reads `bold: true`. A
-text's item is tagged, `Chars("...")`, `Span(id: ..., style: ..., text: [...])`,
-`Math(r#"..."#)` or `Ref(<id>)`: an untagged
-item, a bare string beside a span, writes a span with no name, and a hand-written `Span(...)` then
-fails to load, as measured with ron 0.12.2, `rejected@rootpoint-model@untagged-text-items`, which a
-file edited by hand, `goal@rootpoint-model@faithful-readable-file`, rules out; the test
-`a_hand_written_span_loads` of `path@rootpoint-model@tests/file.rs` loads the tagged form written by
-hand.
+`save_ron` writes the document as RON, its first field the format version, and `load_ron` reads a
+version from `OLDEST_VERSION` to `FORMAT_VERSION` that a step reads, and refuses any other. Ids are
+plain numbers, and the file enables ron's `unwrap_variant_newtypes`, so a node reads `Split(id: 4,
+...)`, and `implicit_some`, so a value a span sets reads `bold: true`. A text's item is tagged,
+`Chars("...")`, `Span(id: ..., style: ..., text: [...])`, `Math(r#"..."#)` or `Ref(<id>)`: an
+untagged item, a bare string beside a span, writes a span with no name, and a hand-written
+`Span(...)` then fails to load, as measured with ron 0.12.2,
+`rejected@rootpoint-model@untagged-text-items`, which a file edited by hand,
+`goal@rootpoint-model@faithful-readable-file`, rules out; the test `a_hand_written_span_loads` of
+`path@rootpoint-model@tests/file.rs` loads the tagged form written by hand.
 
 RON writes enum variants as they read and allows comments and trailing commas, which helps editing
 by hand; the rival, JSON, `rejected@rootpoint-model@json-save-format`, is universal and slightly
 better for tools other than rootpoint. The choice is held weakly. The version comes first so a
-file of another version is refused, not misread; no migration reads an older version while the
-project keeps no compatibility, `design@rootpoint@no-compat-in-initial-dev`, and a migration of each
-earlier version is `rejected@rootpoint-model@format-migration`. It serves
+file of a version that does not load is refused, not misread, and so `load_ron` knows which
+migration a file of an older version takes, `design@rootpoint@saved-presentations-stay-loadable`.
+It serves
 `goal@rootpoint@readable-save-file`, and the file is an interface every saved presentation
 consumes.
 

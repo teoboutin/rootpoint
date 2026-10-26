@@ -1,4 +1,5 @@
-//! Saving then loading a document gives it back, and a file of another version is refused.
+//! Saving then loading a document gives it back, and a file of a version that does not load is
+//! refused.
 
 use std::path::PathBuf;
 
@@ -187,18 +188,21 @@ fn a_file_of_another_version_is_refused() {
         load_ron(&text),
         Err(LoadError::Version {
             found: 99,
-            expected: FORMAT_VERSION
+            oldest: OLDEST_VERSION,
+            newest: FORMAT_VERSION
         })
     );
-    // Version 1 had an empty kind of content; it is refused, not migrated, per
-    // `design@rootpoint@no-compat-in-initial-dev`.
+    // Version 1, which had an empty kind of content, is older than the oldest that loads and is
+    // refused, per
+    // `design@rootpoint@saved-presentations-stay-loadable`.
     let text =
         save_ron(&fixture()).replacen(&format!("version: {FORMAT_VERSION},"), "version: 1,", 1);
     assert_eq!(
         load_ron(&text),
         Err(LoadError::Version {
             found: 1,
-            expected: FORMAT_VERSION
+            oldest: OLDEST_VERSION,
+            newest: FORMAT_VERSION
         })
     );
 }

@@ -4,7 +4,7 @@
 
 | kind | title |
 | --- | --- |
-| deferred | [How files, scripts and callers stay compatible once the project is in real use is not decided](compatibility-after-real-use.md) |
+| deferred | [How the protocol's scripts and the crates' callers stay compatible is not decided](grammar-and-api-compatibility.md) |
 | todo | [A distributed build carries no notice of the crates and the toolkit's fonts it links](dependency-notices-in-builds.md) |
 | todo | [Slides cannot be exported as images](image-export.md) |
 | todo | [Bullet lists, code snippets and video are not content kinds yet](more-content-kinds.md) |

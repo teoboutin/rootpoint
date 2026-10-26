@@ -65,4 +65,6 @@ A decision, by `design@rootpoint-model@validated-documents` and
 `design@rootpoint-model@cosmetic-fallbacks`, of whether a size not above 0 in a file is structural,
 refused by `load_ron`, or cosmetic, drawn with a stand-in and named by `Document::breaches`; built,
 with a test that loads a file holding such a size in each of these four places and finds it
-refused, or finds every line the session prints for it parsing.
+refused, or finds every line the session prints for it parsing. Such a file of version 7 loads
+today, and `design@rootpoint@saved-presentations-stay-loadable` keeps it loading in later versions,
+so the structural choice is a breaking change: its step rewrites such a size.

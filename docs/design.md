@@ -49,20 +49,46 @@ function that compiles for the wasm target and fails when called, as `std::fs` d
 
 ## Compatibility
 
-### Nothing is kept compatible with an earlier version while the project is in initial development `##no-compat-in-initial-dev`
+### A saved presentation of any version from 7 on loads in every later version, a breaking change of the format migrating the version before `##saved-presentations-stay-loadable`
 
-A change of the save format, of the protocol's grammar or of a crate's public API may break the
-files, the scripts and the callers of the version before it, and no migration and no deprecated
-form is written for them. A saved file names its format's version first, so a file of another
-version is refused rather than misread, `design@rootpoint-model@save-format`. This holds until the
-owner rules that the project is in real use, when the owner starts using it for actual
-presentations, `goal@rootpoint@real-presentations`.
+A presentation saved as a workspace's `presentation.ron` or as a pack loads in every later version
+of rootpoint. A breaking change of the save format, one after which a file of the version before
+would be refused or would load as another presentation, raises `FORMAT_VERSION`, of
+`path@rootpoint-model@src/file.rs`, and adds a step that migrates a file of the version before to
+the new one, run by `load_ron` before it reads the file. Version 7, `OLDEST_VERSION`, is the oldest
+that loads, and every other version is refused, as `design@rootpoint-model@save-format` says. A
+pack carries the same RON text and no version of its own,
+`design@rootpoint-protocol@pack-container`, so it migrates the same way. How a step is written is
+open, `issue@rootpoint-model@migration-shape`; the cost is a step and frozen files for each breaking
+change.
 
-On the owner's word: no presentation exists that a change could break, the owner will not use the
-project for real while it is in initial development, and backward compatibility is needed only from
-the owner's ruling. The rival, a migration for each change of format,
-`rejected@rootpoint-model@format-migration`, costs a loader and a test for each version with no file to
-read.
+A frozen file of every version from 7 on, in `path@rootpoint-model@tests/data/formats/`, loads in
+the test `a_frozen_file_of_every_version_loads` of `path@rootpoint-model@tests/formats.rs`, saves as
+its committed text, and the newest holds every part of the format, its formulas every kind of atom
+the math crate's parser builds and a grid of rows; a frozen pack of every version, in
+`path@rootpoint-protocol@tests/data/formats/`, opens to the same presentation in
+`path@rootpoint-protocol@tests/formats.rs`. So a breaking change with no step fails the gates. The
+rival, refusing a file of every earlier version, is `rejected@rootpoint@refuse-earlier-versions`.
+
+It serves `goal@rootpoint@real-presentations`: a file the owner prepares a talk in must still open
+after an update. The compatibility is the file's: it promises nothing of the look of a slide, and a
+change of the renderer may draw a loaded presentation differently.
+
+On the owner's word: with the project holding most of the features the owner wanted, the owner
+proposed declaring the compatibility from then on, every later breaking change of the file format
+coming with a migration to the new format; and ruled that, for now, it holds for saved presentations, packed and unpacked,
+and not for the protocol or the crates' API.
+
+### The protocol's grammar and the crates' public API keep no form of an earlier version until the owner rules otherwise `##grammar-and-api-stay-free`
+
+A change of the protocol's grammar or of a crate's public API may break the scripts and the
+callers of the version before it, and no deprecated form is written for them. When that ends is
+`issue@rootpoint@grammar-and-api-compatibility`.
+
+On the owner's word: for now, the compatibility the owner ruled covers saved presentations and not
+the protocol nor the crates' API, `design@rootpoint@saved-presentations-stay-loadable`; and the
+crates are not meant to be pulled in by another program, not yet at least. The crates are not
+published, `issue@rootpoint@publish-to-crates-io`.
 
 ## Displays
 

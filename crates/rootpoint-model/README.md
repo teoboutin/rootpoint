@@ -6,7 +6,9 @@ window and needs no GUI, so every editing operation runs headless. It also build
 
 Its public API: the types of `Document`, `apply` with the operations of `Op`, `area_rects` and
 `node_rects`, the rectangles of a slide's areas and of all its nodes in slide units, and `save_ron`
-and `load_ron` for the RON save file. A text is a tree, `TextContent::root`, of runs of characters,
+and `load_ron` for the RON save file, which reads a file of a format version from
+`OLDEST_VERSION` to `FORMAT_VERSION`, an older one migrated first, and refuses any other. A text is
+a tree, `TextContent::root`, of runs of characters,
 spans, formulas and references to equation areas, each span with an id from the document's counter
 and its own values over its parent's; an offset in a text node counts characters, a span, a formula
 and a reference each counting as one, and `TextContent::plain_text` gives the characters in order,

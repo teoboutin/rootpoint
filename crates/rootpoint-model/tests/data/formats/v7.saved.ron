@@ -1,0 +1,211 @@
+#![enable(implicit_some)]
+#![enable(unwrap_variant_newtypes)]
+(
+    version: 7,
+    aspect: (
+        width: 16,
+        height: 9,
+    ),
+    next_id: 40,
+    assets: {
+        30: (
+            path: "images/figure.png",
+        ),
+        31: (
+            path: "fonts/body.ttf",
+        ),
+    },
+    styles: {
+        "Body": (
+            font: Asset(31),
+            size: 40.0,
+            bold: false,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Left,
+            v_align: Top,
+        ),
+        "Title": (
+            font: Builtin("sans"),
+            size: 96.0,
+            bold: true,
+            italic: false,
+            colour: (
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 255,
+            ),
+            h_align: Center,
+            v_align: Middle,
+        ),
+    },
+    span_styles: {
+        "Key": (
+            bold: true,
+            colour: (
+                r: 42,
+                g: 157,
+                b: 143,
+                a: 255,
+            ),
+        ),
+    },
+    slides: [
+        (
+            id: 1,
+            root: Split(
+                id: 2,
+                axis: TopToBottom,
+                children: [
+                    Area(
+                        id: 3,
+                        content: Text(
+                            root: [
+                                Chars("Every part of the format"),
+                            ],
+                            style: Named("Title"),
+                        ),
+                    ),
+                    Split(
+                        id: 4,
+                        axis: LeftToRight,
+                        children: [
+                            Area(
+                                id: 5,
+                                content: Text(
+                                    root: [
+                                        Chars("A "),
+                                        Span(
+                                            id: 20,
+                                            style: Named("Key"),
+                                            text: [
+                                                Chars("named span"),
+                                            ],
+                                        ),
+                                        Chars(", a "),
+                                        Span(
+                                            id: 21,
+                                            style: Custom(
+                                                font: Builtin("sans"),
+                                                size: 32.0,
+                                                italic: true,
+                                            ),
+                                            text: [
+                                                Chars("custom span holding "),
+                                                Span(
+                                                    id: 22,
+                                                    style: Custom(
+                                                        bold: true,
+                                                    ),
+                                                    text: [
+                                                        Chars("another"),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                        Chars(", a formula "),
+                                        Math(r#"\frac{a}{b}"#),
+                                        Chars(" and a reference to "),
+                                        Ref(7),
+                                        Chars("."),
+                                    ],
+                                    style: Named("Body"),
+                                ),
+                            ),
+                            Area(
+                                id: 6,
+                                content: Image(
+                                    asset: 30,
+                                    fit: Fill,
+                                ),
+                            ),
+                            Area(
+                                id: 7,
+                                content: Equation(
+                                    formula: r#"e^{i\pi} + 1 & = 0 \\ \lim_n \sin x & = \undefinedcommand + {y + 1}"#,
+                                    numbered: true,
+                                    size: AtMost(60.0),
+                                    colour: (
+                                        r: 0,
+                                        g: 0,
+                                        b: 0,
+                                        a: 255,
+                                    ),
+                                ),
+                            ),
+                        ],
+                        dividers: [
+                            0.4,
+                            0.7,
+                        ],
+                    ),
+                ],
+                dividers: [
+                    0.25,
+                ],
+            ),
+        ),
+        (
+            id: 8,
+            root: Split(
+                id: 9,
+                axis: LeftToRight,
+                children: [
+                    Area(
+                        id: 10,
+                        content: Image(
+                            asset: 30,
+                            fit: Fit,
+                        ),
+                    ),
+                    Area(
+                        id: 11,
+                        content: Equation(
+                            formula: r#"\sum_{i = 1}^n \sqrt[3]{\hat{x}_i} + \left( \frac{\alpha}{\mathbf{b}} \right) \, \begin{pmatrix} a & b \\ c & d \end{pmatrix} \text{ end}"#,
+                            numbered: false,
+                            size: Fit,
+                            colour: (
+                                r: 200,
+                                g: 0,
+                                b: 0,
+                                a: 255,
+                            ),
+                        ),
+                    ),
+                    Area(
+                        id: 12,
+                        content: Text(
+                            root: [
+                                Chars("Custom text"),
+                            ],
+                            style: Custom(
+                                font: Builtin("sans"),
+                                size: 48.0,
+                                bold: false,
+                                italic: false,
+                                colour: (
+                                    r: 0,
+                                    g: 0,
+                                    b: 255,
+                                    a: 255,
+                                ),
+                                h_align: Right,
+                                v_align: Bottom,
+                            ),
+                        ),
+                    ),
+                ],
+                dividers: [
+                    0.3,
+                    0.6,
+                ],
+            ),
+        ),
+    ],
+)

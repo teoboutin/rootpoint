@@ -17,11 +17,13 @@ The project's own skills, agents and workflows are named with the prefix `rootpo
 | --- | --- | --- |
 | a survey of prior art or of outside tools, run as grounding for a design discussion | one file per survey in `path@rootpoint@docs/grounding/`, linked from its `README.md` | never: the owner keeps them as material for later design |
 
-## No backward compatibility `##no-backward-compat`
+## Compatibility of a change `##change-compatibility`
 
-While the project is in initial development, a change of the save format, of the protocol's grammar
-or of a crate's public API writes no migration and keeps no old form, per
-`design@rootpoint@no-compat-in-initial-dev`.
+A breaking change of the save format raises `FORMAT_VERSION`, adds the step that migrates the
+version before, and freezes the files of the new version as `path@rootpoint-model@tests/formats.rs`
+says, per `design@rootpoint@saved-presentations-stay-loadable`. Until the owner rules otherwise, a
+change of the protocol's grammar or of a crate's public API keeps no old form, per
+`design@rootpoint@grammar-and-api-stay-free`.
 
 ## Git workflow `##git-workflow`
 
